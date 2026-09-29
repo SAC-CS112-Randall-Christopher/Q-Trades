@@ -1,0 +1,26 @@
+{
+  "fixture": "Disposable synthetic QA; no market windows",
+  "checks": [
+    {
+      "name": "Fourteen campaign members plus six originals visible",
+      "passed": true
+    },
+    {
+      "name": "Cancelled campaign retained through reload",
+      "passed": true
+    },
+    {
+      "name": "Finite attempt and zero paid budgets visible",
+      "passed": true
+    },
+    {
+      "name": "Normal research and campaign exports offered",
+      "passed": true
+    },
+    {
+      "name": "Numerical worker separate and healthy",
+      "passed": true
+    }
+  ],
+  "initial_assertion": "An immediate snapshot after navigation preceded initial data load; checks repeated after loaded controls were observed."
+}

@@ -1,0 +1,416 @@
+{
+  "contract": {
+    "seconds_per_case": 30,
+    "ticks_per_second": 4,
+    "accounts": [
+      1,
+      10,
+      20
+    ],
+    "research": [
+      "idle",
+      "busy"
+    ],
+    "slos": {
+      "commit_p95_ms": 100,
+      "commit_p99_ms": 250,
+      "commit_max_ms": 2000,
+      "queue_lag_p99_ms": 250,
+      "queue_peak": 2,
+      "parent_rss_mib": 512,
+      "parent_rss_growth_mib": 64,
+      "child_rss_mib": 256,
+      "parent_cpu_one_core_percent": 50,
+      "journal_balanced": true
+    },
+    "input": "Shared synthetic executable BTC/ETH books; accelerated signals",
+    "cpu_scope": "Parent and fixed fit child separately; host includes all other work",
+    "gpu": "No GPU calls; numerical path is CPU-only",
+    "authority": "Synthetic QA only; paid $0; no market/24x7 inference"
+  },
+  "declared_at": 1790718997.260617,
+  "host": "MAIN",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.10",
+  "logical_processors": 12,
+  "cases": [
+    {
+      "accounts": 1,
+      "research": "idle",
+      "ticks": 120,
+      "elapsed_seconds": 29.75454410002567,
+      "parent_cpu_seconds": 0.0,
+      "parent_cpu_one_core_percent": 0.0,
+      "parent_rss_mib": {
+        "mean": 61.10266927083333,
+        "p95": 61.31640625,
+        "p99": 61.31640625,
+        "max": 61.31640625
+      },
+      "parent_rss_growth_mib": 0.515625,
+      "commit_ms": {
+        "mean": 2.769235838786699,
+        "p95": 4.230999969877303,
+        "p99": 5.203700042329729,
+        "max": 6.89690001308918
+      },
+      "decision_ms": {
+        "mean": 0.3780725004617125,
+        "p95": 0.7868000539019704,
+        "p99": 0.9094999404624104,
+        "max": 0.9308999869972467
+      },
+      "queue_lag_ms": {
+        "mean": 0.15244333577963212,
+        "p95": 0.2145000034943223,
+        "p99": 0.25050004478543997,
+        "max": 0.5612000823020935
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 0.916600013927867,
+        "p95": 0.9073000401258469,
+        "p99": 0.9073000401258469,
+        "max": 1.6368000069633126
+      },
+      "child": null,
+      "storage_growth_bytes": {
+        "database_bytes": 1630208,
+        "candles": 0,
+        "events": 22,
+        "journal_lines": 16,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 40960
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 46.70868347338936,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 1,
+      "research": "busy",
+      "ticks": 120,
+      "elapsed_seconds": 31.59771020000335,
+      "parent_cpu_seconds": 0.015625,
+      "parent_cpu_one_core_percent": 0.0494497857632682,
+      "parent_rss_mib": {
+        "mean": 61.451009114583336,
+        "p95": 61.4609375,
+        "p99": 61.4609375,
+        "max": 61.4609375
+      },
+      "parent_rss_growth_mib": -0.0625,
+      "commit_ms": {
+        "mean": 3.1216641693996885,
+        "p95": 4.540800000540912,
+        "p99": 5.095400032587349,
+        "max": 9.814799996092916
+      },
+      "decision_ms": {
+        "mean": 0.4066375026013702,
+        "p95": 0.569300027564168,
+        "p99": 0.8757999166846275,
+        "max": 1.1949000181630254
+      },
+      "queue_lag_ms": {
+        "mean": 0.20909999245001623,
+        "p95": 0.3160999622195959,
+        "p99": 0.5641999887302518,
+        "max": 5.659999907948077
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 1.0958666874406238,
+        "p95": 1.2174000730738044,
+        "p99": 1.2174000730738044,
+        "max": 1.3861999614164233
+      },
+      "child": {
+        "fits": 312,
+        "cpu_seconds": 25.84375,
+        "wall_seconds": 30.125,
+        "peak_rss_mib": 58.03125,
+        "paid_usd": "0"
+      },
+      "storage_growth_bytes": {
+        "database_bytes": 745472,
+        "candles": 0,
+        "events": 21,
+        "journal_lines": 16,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 40960
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 50.7006264424662,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "research": "idle",
+      "ticks": 120,
+      "elapsed_seconds": 29.76857920002658,
+      "parent_cpu_seconds": 0.234375,
+      "parent_cpu_one_core_percent": 0.7873234339641938,
+      "parent_rss_mib": {
+        "mean": 61.832584635416666,
+        "p95": 61.84375,
+        "p99": 61.84375,
+        "max": 61.84375
+      },
+      "parent_rss_growth_mib": 0.30859375,
+      "commit_ms": {
+        "mean": 7.854870009274843,
+        "p95": 13.018400059081614,
+        "p99": 27.137700002640486,
+        "max": 35.009599989280105
+      },
+      "decision_ms": {
+        "mean": 2.2293558441257724,
+        "p95": 4.025100031867623,
+        "p99": 5.608000094071031,
+        "max": 7.340500014834106
+      },
+      "queue_lag_ms": {
+        "mean": 0.1648974905644233,
+        "p95": 0.2484999131411314,
+        "p99": 0.3329000901430845,
+        "max": 1.9574000034481287
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 3.0297000193968415,
+        "p95": 2.6514000492170453,
+        "p99": 2.6514000492170453,
+        "max": 6.479100091382861
+      },
+      "child": null,
+      "storage_growth_bytes": {
+        "database_bytes": 1032192,
+        "candles": 0,
+        "events": 202,
+        "journal_lines": 160,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 204800
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 45.17906336088154,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "research": "busy",
+      "ticks": 120,
+      "elapsed_seconds": 31.61923079995904,
+      "parent_cpu_seconds": 1.53125,
+      "parent_cpu_one_core_percent": 4.8427806789088095,
+      "parent_rss_mib": {
+        "mean": 61.87721354166667,
+        "p95": 61.87890625,
+        "p99": 61.8828125,
+        "max": 61.8828125
+      },
+      "parent_rss_growth_mib": -0.00390625,
+      "commit_ms": {
+        "mean": 9.488576664201295,
+        "p95": 16.71989995520562,
+        "p99": 23.69529998395592,
+        "max": 44.14889996405691
+      },
+      "decision_ms": {
+        "mean": 2.691800834145397,
+        "p95": 6.0301999328657985,
+        "p99": 6.354200071655214,
+        "max": 8.593100006692111
+      },
+      "queue_lag_ms": {
+        "mean": 0.1765500036223481,
+        "p95": 0.2644999185577035,
+        "p99": 0.38409989792853594,
+        "max": 0.45469996985048056
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 2.6168499995643892,
+        "p95": 3.258400014601648,
+        "p99": 3.258400014601648,
+        "max": 4.194399924017489
+      },
+      "child": {
+        "fits": 351,
+        "cpu_seconds": 27.546875,
+        "wall_seconds": 30.031000000075437,
+        "peak_rss_mib": 57.98828125,
+        "paid_usd": "0"
+      },
+      "storage_growth_bytes": {
+        "database_bytes": 783740,
+        "candles": 0,
+        "events": 192,
+        "journal_lines": 160,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 204800
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 44.75049407114625,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "research": "idle",
+      "ticks": 120,
+      "elapsed_seconds": 29.77837419998832,
+      "parent_cpu_seconds": 1.59375,
+      "parent_cpu_one_core_percent": 5.352038325855362,
+      "parent_rss_mib": {
+        "mean": 62.202473958333336,
+        "p95": 62.23046875,
+        "p99": 62.23046875,
+        "max": 62.23046875
+      },
+      "parent_rss_growth_mib": 0.1015625,
+      "commit_ms": {
+        "mean": 17.798475831902277,
+        "p95": 28.27370003797114,
+        "p99": 32.920299912802875,
+        "max": 67.39769992418587
+      },
+      "decision_ms": {
+        "mean": 5.164035004175578,
+        "p95": 9.078400093130767,
+        "p99": 9.396300069056451,
+        "max": 10.666900081560016
+      },
+      "queue_lag_ms": {
+        "mean": 0.19516583221654096,
+        "p95": 0.2883000997826457,
+        "p99": 0.3215000033378601,
+        "max": 0.3901999443769455
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 3.69824996838967,
+        "p95": 4.031799966469407,
+        "p99": 4.031799966469407,
+        "max": 5.6362999603152275
+      },
+      "child": null,
+      "storage_growth_bytes": {
+        "database_bytes": 1957888,
+        "candles": 0,
+        "events": 402,
+        "journal_lines": 320,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 385024
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 33.228401538999655,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "research": "busy",
+      "ticks": 120,
+      "elapsed_seconds": 31.200182699947618,
+      "parent_cpu_seconds": 1.765625,
+      "parent_cpu_one_core_percent": 5.6590213492658945,
+      "parent_rss_mib": {
+        "mean": 62.70299479166667,
+        "p95": 62.7265625,
+        "p99": 62.7265625,
+        "max": 62.7265625
+      },
+      "parent_rss_growth_mib": 0.46484375,
+      "commit_ms": {
+        "mean": 16.097335005179048,
+        "p95": 28.774800011888146,
+        "p99": 40.47999996691942,
+        "max": 67.43239995557815
+      },
+      "decision_ms": {
+        "mean": 4.663927501921232,
+        "p95": 9.931399952620268,
+        "p99": 10.745499981567264,
+        "max": 13.709599967114627
+      },
+      "queue_lag_ms": {
+        "mean": 0.1680083330332612,
+        "p95": 0.2658000448718667,
+        "p99": 0.31779997516423464,
+        "max": 0.38519990630447865
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 3.787050023674965,
+        "p95": 4.808700061403215,
+        "p99": 4.808700061403215,
+        "max": 4.913400043733418
+      },
+      "child": {
+        "fits": 372,
+        "cpu_seconds": 28.640625,
+        "wall_seconds": 30.0,
+        "peak_rss_mib": 57.98046875,
+        "paid_usd": "0"
+      },
+      "storage_growth_bytes": {
+        "database_bytes": 1523712,
+        "candles": 0,
+        "events": 382,
+        "journal_lines": 320,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 360448
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 36.67584710398932,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    }
+  ]
+}

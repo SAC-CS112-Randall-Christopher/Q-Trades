@@ -17,7 +17,7 @@ function loadDraft(): Draft {
     const saved = JSON.parse(localStorage.getItem(draftKey) ?? "null") as Draft | null;
     if (saved && typeof saved.request_id === "string" && typeof saved.name === "string" &&
       typeof saved.attempted === "boolean" && Array.isArray(saved.accounts) &&
-      saved.accounts.length === 10 && saved.accounts.every(a =>
+      [10, 14].includes(saved.accounts.length) && saved.accounts.every(a =>
         typeof a.label === "string" && ["50", "100"].includes(a.starting_cash) &&
         strategies.includes(a.strategy) && typeof a.execution_profile === "string" &&
         typeof a.operating_daily_usd === "string")) return saved;
@@ -114,7 +114,7 @@ export function PaperCampaignPanel({ data, unavailable }: {
   }
 
   return <section className="campaign-panel" aria-label="Paper campaigns">
-    <div className="economics-heading"><div><p className="eyebrow">TEN SEPARATE PAPER ACCOUNTS</p>
+    <div className="economics-heading"><div><p className="eyebrow">SEPARATE PAPER ACCOUNTS · LIMIT 20 TOTAL</p>
       <h3>{campaign ? campaign.name : "Launch a paper campaign"}</h3></div>
       <span className="pill">Paper only · cash only</span></div>
     <p>Each account uses the same BTC/ETH observations with its own money, orders, fees and loss limits.
@@ -127,6 +127,14 @@ export function PaperCampaignPanel({ data, unavailable }: {
       <fieldset disabled={pending || draft.attempted || unavailable}>
         <label>Campaign name<input value={draft.name} required maxLength={60}
           onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} /></label>
+        <label>Campaign size<select value={draft.accounts.length} onChange={e => {
+          const count = Number(e.target.value);
+          setDraft(d => ({ ...d, accounts: Array.from({length: count}, (_, i) => d.accounts[i] ?? {
+            label: `${strategies[i % 3].replace("-v1", "")} ${Math.floor(i / 3) + 1}`,
+            starting_cash: "100", strategy: strategies[i % 3],
+            execution_profile: "paper-rest-ioc-v1", operating_daily_usd: "",
+          }) }));
+        }}><option value={10}>10 campaign accounts</option><option value={14}>14 campaign + 6 retained = 20 total</option></select></label>
         <div className="campaign-setup">
           {draft.accounts.map((a, i) => <fieldset key={i} className="campaign-draft-account">
             <legend>Account {i + 1}</legend>
@@ -150,10 +158,12 @@ export function PaperCampaignPanel({ data, unavailable }: {
       </fieldset>
       <p className="fine-print">Blank operating cost means unknown; enter 0 only for a declared zero-cost scenario.
         Funding and strategy/cost assumptions are frozen at launch. Hard loss stops cannot add funds or reset losses.
-        This checkpoint permits one ten-account campaign alongside the retained original accounts.</p>
+        One campaign and the original accounts remain retained. The total limit is twenty, including exploratory accounts; a larger campaign uses those available places.</p>
       {draft.attempted && <p role="status">This launch is saved for retry. Its configuration stays fixed until the server confirms the outcome.</p>}
+      {draft.attempted && <button type="button" disabled={pending || unavailable} onClick={() =>
+        setDraft(d => ({...d,request_id:crypto.randomUUID(),attempted:false}))}>Edit a new campaign request</button>}
       <button className="button secondary" type="submit" disabled={pending || unavailable}>
-        {pending ? "Confirming launch…" : draft.attempted ? "Retry same campaign launch" : "Launch ten paper accounts"}
+        {pending ? "Confirming launch…" : draft.attempted ? "Retry same campaign launch" : draft.accounts.length === 14 ? "Launch fourteen paper accounts" : "Launch ten paper accounts"}
       </button>
     </form> : <>
       <p className="fine-print">{names.length} accounts · frozen strategies and costs · hard loss stops · no top-ups.

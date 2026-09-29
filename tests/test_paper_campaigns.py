@@ -65,7 +65,7 @@ def test_funding_and_identity_are_isolated_idempotent_and_bounded():
     changed = spec().model_copy(update={"name": "Changed request"})
     with pytest.raises(ValueError, match="different configuration"):
         create_campaign(e, changed)
-    with pytest.raises(ValueError, match="one ten-account"):
+    with pytest.raises(ValueError, match="One campaign"):
         create_campaign(e, spec("test-campaign-0002"))
     assert state == before
 

@@ -1,4 +1,13 @@
-# Next: CP6 persistent bounded research and twenty-account capacity
+# Next: CP7 forward comparison, learning reports and paper role rollback
+
+CP6 now persists finite research campaigns and bounds total retained accounts at
+twenty. See CP6_BOUNDED_RESEARCH.md and reviews/cp6-bounded-research/README.md for
+restart, normal UI and six actual-host synthetic capacity cases. Continue CP7–CP9
+and audit all checkpoints. Prospective market evidence and installation are separate.
+
+---
+
+# Historical: CP6 persistent bounded research and twenty-account capacity
 
 CP5 adds three distinct frozen numerical families, common protected windows, honest
 history-gap rejection, train-only fitting, parameter/cost diagnostics and explicit

@@ -36,6 +36,8 @@ def admit(
         return {"status": "already_applied", **admissions[key]}
     if len(admissions) >= 4:
         raise ValueError("Four forward admissions retained; preserve history before extending")
+    if len(set(engine.state["accounts"]) | {"universe-wide-v1", "universe-control-v1"}) >= 20:
+        raise ValueError("Twenty-account limit reached; retained accounts cannot be discarded")
     name = "forward-" + artifact["sha256"][:24]
     if name in engine.state["accounts"]:
         raise ValueError("This artifact already has a forward account")

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { PaperSnapshot } from "./PaperPanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
+import { ResearchCampaignPanel, type ResearchCampaign } from "./ResearchCampaignPanel";
 
 type Plan = { name: string; mechanism: string; falsification: string; feature: string;
   horizon_minutes: number; test_start: number; test_end: number; as_of: number; request_id: string };
@@ -11,7 +12,8 @@ type Run = { seq: number; request_id: string; plan: Plan; status: string; progre
   reason: string | null; attempt: number };
 type Lab = { runs: Run[]; counts: Record<string, number>; protected_through: number;
   preflight_result: string; worker_running: boolean; blocked_reason: string | null;
-  capacity: number; queue_capacity: number; next_cursor: number | null };
+  capacity: number; queue_capacity: number; next_cursor: number | null;
+  research_campaigns?: ResearchCampaign[] };
 type Result = Run & { plan_sha256: string; code_sha256: string; snapshot_sha256: string;
   manifest: { rows: number; older_rows_omitted: boolean } | null;
   result: { status: string; reason?: string; decision: string; next_action: string;
@@ -106,6 +108,8 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
       Retained preflight: {lab.preflight_result}. Worker: {lab.worker_running ? "running" : "stopped"}.
       {lab.blocked_reason && ` ${lab.blocked_reason}.`} Queue limit {lab.queue_capacity}; receipt limit {lab.capacity}.</p>}
     {error && <p role="alert">{error}</p>}
+    {lab && <ResearchCampaignPanel campaigns={lab.research_campaigns ?? []}
+      protectedThrough={lab.protected_through} blocked={lab.blocked_reason} select={setSelected} />}
     <form onSubmit={event => void launch(event)}><fieldset disabled={busy || !!retry}>
       <label>Hypothesis name<input value={name} onChange={e => setName(e.target.value)} required minLength={3} maxLength={100} /></label>
       <label><input type="checkbox" checked={distinct} onChange={e => setDistinct(e.target.checked)} />Compare three distinct mechanisms on one protected window</label>

@@ -1,3 +1,12 @@
+# CP6 persistent research
+
+Read docs/CP6_BOUNDED_RESEARCH.md. Twenty is the total retained spot-account cap,
+including originals and exploratory accounts. Finite research has frozen family
+coverage, windows, attempt allocation and expiry; it cannot fund/admit/promote.
+Preserve every rejection and consumed window across restarts. Keep numerical child
+limits separate from the approved advisory-model/GIS resource monitor. Continue
+CP7–CP9 and the measured full-stack audit; source drafts are not installation.
+
 # CP5 numerical challengers
 
 Read docs/CP5_NUMERICAL_CHALLENGERS.md. Preserve common-holdout search groups, all

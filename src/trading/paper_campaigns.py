@@ -42,7 +42,7 @@ class CampaignSpec(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,64}$")
     name: str = Field(min_length=1, max_length=60)
-    accounts: list[AccountSpec] = Field(min_length=10, max_length=10)
+    accounts: list[AccountSpec] = Field(min_length=10, max_length=14)
 
     @field_validator("name")
     @classmethod
@@ -52,6 +52,8 @@ class CampaignSpec(BaseModel):
     @field_validator("accounts")
     @classmethod
     def unique_labels(cls, value: list[AccountSpec]) -> list[AccountSpec]:
+        if len(value) not in {10, 14}:
+            raise ValueError("Launch ten or fourteen campaign accounts")
         if len({a.label.casefold() for a in value}) != len(value):
             raise ValueError("Each campaign account needs a distinct name")
         return value
@@ -70,9 +72,13 @@ def create_campaign(engine: "PaperEngine", spec: CampaignSpec) -> dict[str, Any]
         return {"status": "already_applied", "campaign": previous}
     if campaigns:
         raise ValueError(
-            "This checkpoint supports one ten-account campaign; history cannot be reset"
+            "One campaign is retained; history cannot be reset"
         )
-    members = [f"campaign-{spec.request_id}-{i + 1:02d}" for i in range(10)]
+    # Reserve the two original universe accounts even before the feed creates them.
+    retained = set(engine.state["accounts"]) | {"universe-wide-v1", "universe-control-v1"}
+    if len(retained) + len(spec.accounts) > 20:
+        raise ValueError("Twenty-account limit reached; retained accounts cannot be discarded")
+    members = [f"campaign-{spec.request_id}-{i + 1:02d}" for i in range(len(spec.accounts))]
     if any(name in engine.state["accounts"] for name in members):
         raise ValueError("Account identity already exists; no funding was added")
     campaign = {
