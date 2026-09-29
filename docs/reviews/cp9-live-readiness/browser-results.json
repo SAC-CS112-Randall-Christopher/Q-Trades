@@ -1,0 +1,25 @@
+{
+  "scope": "normal UI, generated synthetic QA only",
+  "checks": [
+    {
+      "name": "Explicit no-go and disabled live mode",
+      "passed": true
+    },
+    {
+      "name": "50/100 total-capital costs and illustrative operating expense",
+      "passed": true
+    },
+    {
+      "name": "Published facts, account unknowns and liability retained",
+      "passed": true
+    },
+    {
+      "name": "Read-only packet export visible",
+      "passed": true
+    },
+    {
+      "name": "Current synthetic paper evidence remains classified",
+      "passed": true
+    }
+  ]
+}

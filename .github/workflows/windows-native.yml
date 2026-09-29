@@ -51,4 +51,4 @@ jobs:
             tests/test_paper_campaigns.py tests/test_campaign_store.py `
             tests/test_experiment_registry.py tests/test_numerical_candidates.py `
             tests/test_research_campaigns.py tests/test_paper_learning.py `
-            tests/test_lab_resilience.py
+            tests/test_lab_resilience.py tests/test_live_readiness.py

@@ -1,4 +1,10 @@
-# Next: CP9 readiness packet and whole-stack audit
+# Next: measured CP0–CP9 performance and efficiency audit
+
+CP9's source-dated normal UI/read-only export now concludes not ready, with explicit
+candidate, account, funding/liability and engineering gaps. See CP9_LIVE_READINESS.md.
+Complete the requested full-stack audit with measured before/after receipts and
+fixes; then reconcile every source draft and verification stage. Merge/install and
+prospective forward evidence remain separate work.
 
 CP8's finite twenty-account soak, actual crash/backup recovery and normal UI checks
 passed locally; see reviews/cp8-integrated-acceptance/README.md for scopes and the

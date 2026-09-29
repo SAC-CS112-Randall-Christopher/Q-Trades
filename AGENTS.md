@@ -1,3 +1,10 @@
+# CP9 live-readiness decision packet
+
+Read docs/CP9_LIVE_READINESS.md. The source-dated normal UI/export concludes not
+ready: no live candidate, capital or authority. Separate published facts from
+private account evidence, paper from broker fills, and planned risk from loss
+guarantees. Next complete the measured CP0–CP9 audit, preserving all prior receipts.
+
 # CP8 integrated acceptance
 
 Read docs/CP8_INTEGRATED_ACCEPTANCE.md and its receipt. Preserve finite predeclared
