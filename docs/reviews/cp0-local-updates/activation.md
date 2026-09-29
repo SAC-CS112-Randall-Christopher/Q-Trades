@@ -122,3 +122,9 @@ Verified surviving process handles are still checked/terminated when present.
 The extra actual-script/mock-OS case passes with only the idempotent disable action.
 The final full suite above includes it; prior build/browser receipts retain their
 exact earlier source identities because those paths did not change.
+
+The final inspector text now describes the available explicit Activate/Recover
+commands instead of the obsolete preparation-only wording. It still never applies
+updates. All 26 inspector tests passed again (18.27 seconds), and Ruff passed after
+this text-only correction; the 335-case full result above precedes only that message
+change and this note. No new native Windows retest is implied.

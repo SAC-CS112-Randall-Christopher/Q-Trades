@@ -101,6 +101,6 @@ if ($null -ne $launcherId) {
     listener_ownership = $ownership
     current_health = $health
     health_error = $healthError
-    activation = 'Not connected; this receipt does not authorize a restart or deployment'
+    activation = 'Explicit Activate/Recover commands are available; this inspection never applies them'
     action = 'Read-only inspection; no credentials, task changes, financial writes, or restarts'
 } | ConvertTo-Json -Depth 4
