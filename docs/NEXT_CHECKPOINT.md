@@ -1,4 +1,18 @@
-# Next: measured CP0–CP9 performance and efficiency audit
+# Next: Q-Trades UI based on the September 29 inspiration
+
+CP0–CP9 source implementation and the measured audit are complete as draft changes.
+Read CP0_CP9_EFFICIENCY_AUDIT.md and reviews/cp0-cp9-efficiency-audit/README.md for
+final clean-source before/after, capacity, soak, database and browser receipts.
+Chris requested the UI next, using the three local images in
+`C:\Projects\Q-Trades UI Inspo`. Adapt their dark dashboard, accounts control center
+and AI lab to actual paper-account and research evidence. Preserve every existing
+workflow, stale-state fence, unresolved outcome and paper-only boundary.
+Keep source drafts, approved merge/native update and real forward acceptance
+separate. The original operating trial and model/GIS runtimes remain untouched.
+
+---
+
+# Historical: measured CP0–CP9 performance and efficiency audit
 
 CP9's source-dated normal UI/read-only export now concludes not ready, with explicit
 candidate, account, funding/liability and engineering gaps. See CP9_LIVE_READINESS.md.

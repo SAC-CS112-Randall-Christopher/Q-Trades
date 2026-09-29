@@ -34,6 +34,12 @@ Initial discovery: receipt get p95 61.23 ms; state 2,895,274 bytes; write p95
 Python allocation 19,188,635 bytes; state 2,895,292 bytes; write p95 257.79 ms.
 Initial audited repeat: get p95 7.77 ms, allocation 5,471 bytes; state 39,836 bytes;
 write p95 3.80 ms. Full journal reconciliation balanced in every measurement.
+Final clean-source repeat at 06ca527: get p95 **17.17 ms**, allocation **5,471
+bytes**, state **39,819 bytes**, write p95 **3.56 ms**. The final five-minute,
+twenty-account busy soak passed: commit p95/p99 **26.66/35.81 ms**, maximum
+87.28 ms, queue peak one, parent peak 62.96 MiB and 3.09% of one CPU core.
+The actual IDLE two-processor child peaked at 58.54 MiB; supervised and observed
+PIDs matched. All six thirty-second 1/10/20 idle/busy cases passed separately.
 All runs remain retained; timing varies with the host and is not a universal speedup.
 Final clean-source receipts and capacity/soak results are in the review folder.
 
@@ -43,19 +49,25 @@ Financial report compaction verifies old journal receipts before replacing their
 duplicate projection. No report, rejected window, event or journal line is pruned.
 The unique report lookup index avoids scanning growing financial history. An
 eligible paper designation cannot trust only a displayed summary or forged receipt.
+Approval checks the decision on the verified full receipt after loading it; changing
+a displayed no-promotion summary cannot create approval authority.
 
 ## Verification and failures
 
-Final local full PostgreSQL suite: **381 passed, no skips**, 83.66 seconds
-(earlier audit full run: 76.74 seconds).
+Final local full PostgreSQL suite: **382 passed, no skips**, 80.41 seconds.
+Earlier full runs had 381 passes in 76.74 and 83.66 seconds before the additional
+immutable no-promotion approval regression.
 The affected registry/numerical/forward/audit component run had **38 passes**;
 lint, 47-module types and production dashboard build passed. The final independent
-report-reader/forward component check had eighteen passes. Manual exports use a
+report-reader/forward component check had nineteen passes. Manual exports use a
 separate read-only connection, keeping them outside the writer's transaction.
 Added regression
 contracts cover legacy manifests, complete receipt preservation/restart, hashed
 approval, modified numerical risk/cost/timing and safe risk reduction. Original
 CP0–CP9 software and fault coverage remains included in the full suite.
+Exact implementation-head hosted run 36642583198 passed with 158 tests and 32
+database-dependent skips; the complete local PostgreSQL run above covers those
+separately. Seven normal-browser checks passed in a disposable synthetic database.
 
 The first audit browser check exposed a new empty-campaign null guard in the
 waiting-control UI: the initial dashboard rendered, then disappeared when paper

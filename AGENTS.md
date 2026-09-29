@@ -1,3 +1,12 @@
+# UI work after the completed CP0–CP9 audit
+
+Chris requested a UI based on the three images in `C:\Projects\Q-Trades UI Inspo`.
+Use actual retained account/research evidence for every metric and chart; unknown
+confidence, live authority and future results cannot be invented to match artwork.
+Preserve existing controls, review/export workflows and the paper-only boundary.
+The measured audit is complete; retain its receipts and source proof separately
+from UI changes, merge/install and prospective market acceptance.
+
 # CP0–CP9 efficiency audit
 
 Read docs/CP0_CP9_EFFICIENCY_AUDIT.md and its retained measurements. Full receipts
@@ -12,7 +21,7 @@ the simple updater or model/GIS runtimes to demonstrate success.
 Read docs/CP9_LIVE_READINESS.md. The source-dated normal UI/export concludes not
 ready: no live candidate, capital or authority. Separate published facts from
 private account evidence, paper from broker fills, and planned risk from loss
-guarantees. Next complete the measured CP0–CP9 audit, preserving all prior receipts.
+guarantees. The measured CP0–CP9 audit is complete; preserve all prior receipts.
 
 # CP8 integrated acceptance
 
