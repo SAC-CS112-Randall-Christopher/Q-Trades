@@ -1,0 +1,11 @@
+{
+  "scope": "No runner allocated; no CP2 Windows tests executed",
+  "head_sha": "90db4f774e367a2d45042bd4524866bcded0a037",
+  "run_id": 36615568896,
+  "run_url": "https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/36615568896",
+  "job_id": 109567568048,
+  "status": "completed",
+  "conclusion": "failure",
+  "steps": [],
+  "annotation": "The job was not started because an Actions budget is preventing further use."
+}

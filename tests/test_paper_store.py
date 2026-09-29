@@ -19,7 +19,7 @@ class RedactedDsn(str):
 
 
 @pytest.fixture
-def pg_store():
+def pg_store(request):
     settings = Path("data/paper-database.json")
     if not settings.is_file():
         pytest.skip("Dedicated local paper PostgreSQL is not configured")
@@ -29,7 +29,7 @@ def pg_store():
     admin.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
     test_dsn = make_conninfo(dsn, options=f"-c search_path={schema}")
     store = PaperStore(test_dsn, owner=True)
-    store.initialize(START)
+    store.initialize(START, starting_cash=getattr(request, "param", "100"))
     try:
         yield store, RedactedDsn(test_dsn)
     finally:

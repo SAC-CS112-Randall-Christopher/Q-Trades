@@ -1,4 +1,13 @@
-# CP1 implemented; audit evidence and CP2 are next
+# CP2 implementation and audit
+
+Read docs/CP2_ACCOUNT_ECONOMICS.md and its implementation audit. Compare complete
+whole-account windows after execution and explicit operating costs; never return
+to closed-trade averages or a trade-count quota. Fee profiles are frozen assumptions,
+not verified account commissions. Preserve legacy fees/history and CP1 risk controls.
+CP3 is the next product step after review. Do not change the simple CP0 updater,
+reset the operating trial, or describe a draft PR as an installed application.
+
+# Historical CP1 handoff (implemented and audited)
 
 Read docs/CP1_PAPER_RISK.md. New spot accounts use latched hard stops without
 replenishment; unversioned existing accounts keep an explicitly labeled historical

@@ -8,7 +8,9 @@ import time
 from decimal import Decimal
 from typing import Any
 
+from trading.execution_profiles import PROFILES, execution
 from trading.market import parse_book, parse_instruments
+from trading.paper_economics import report as economics_report
 from trading.paper_engine import SYMBOLS, PaperEngine, filters, fresh_frame, risk_summary
 from trading.paper_store import PaperStore
 from trading.paper_strategy import VARIANTS, Bar, features, parse_bars
@@ -233,6 +235,10 @@ class PaperRuntime:
             "promotions": self.state["promotion_count"],
             "features": self.state["features"],
             "accounts": accounts,
+            "economics": economics_report(
+                self.state, now, self.running and not stale and self.error is None
+            ),
+            "execution_profiles": [p.describe() for p in PROFILES.values()],
             "events": self.recent,
             "journal": self.receipts,
             "bars_studied": self.state["study_bars"],
@@ -246,7 +252,12 @@ class PaperRuntime:
                 "open": int(primary["attempt"]["outcome"] == "open"),
                 "conclusion": "Not established; open attempts and correlated shadows are not proof",
             },
-            "cost_model": "0.10% fee per side + 2 bps adverse price + 10% depth participation",
+            "cost_model": (
+                PROFILES[execution(primary).id].label
+                if primary.get("execution_profile", "paper-rest-ioc-v1") in PROFILES
+                else "Unknown execution profile"
+            )
+            + " · 2 bps adverse price + 10% depth participation",
             "sampling": "Public REST, about 2 seconds plus request time; stops can gap",
         }
 
@@ -281,3 +292,16 @@ class PaperRuntime:
             "account": name,
             "risk": risk_summary(self.state["accounts"][name], self.state["paused"], time.time()),
         }
+
+    def economics_control(
+        self, name: str, profile: str, daily_usd: str | None, expected_version: int
+    ) -> dict[str, Any]:
+        if not self.running or self.error or not 0 <= time.time() - self.state["last_tick"] <= 10:
+            raise ValueError("Paper worker unavailable; wait for fresh status")
+        result: dict[str, Any] = {}
+
+        def apply(engine: PaperEngine) -> None:
+            result.update(engine.set_economics(name, profile, daily_usd, expected_version))
+
+        self.state = self.store.transact(time.time(), apply)
+        return {**result, "account": name}

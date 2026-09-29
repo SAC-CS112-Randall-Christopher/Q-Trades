@@ -1,3 +1,4 @@
+import { PaperEconomicsPanel, type EconomicsSnapshot, type ExecutionProfile } from "./PaperEconomicsPanel";
 import { useState } from "react";
 import { PaperRiskPanel, type RiskStatus } from "./PaperRiskPanel";
 import { FeedPanel, type FeedDetails } from "./FeedPanel";
@@ -21,6 +22,7 @@ type Position = {
 };
 type Decision = { symbol: string; at: number; reason: string; version: string };
 type Account = {
+  starting_capital?: string;
   risk?: RiskStatus;
   cash: string;
   equity: string;
@@ -55,6 +57,8 @@ type Event = {
   body: Record<string, unknown>;
 };
 export type PaperSnapshot = Partial<FeedDetails> & {
+  economics?: EconomicsSnapshot;
+  execution_profiles?: ExecutionProfile[];
   futures_context?: FuturesSnapshot;
   enabled: boolean;
   running: boolean;
@@ -119,7 +123,7 @@ function eventDescription(event: Event) {
   if (event.kind === "drawdown_stop") return `Drawdown stop at ${money(String(b.equity))}; risk reference ${money(String(b.risk_reference))}`;
   if (event.kind === "risk_policy_changed" || event.kind === "risk_recovered") return String(b.reason);
   if (event.kind === "attempt_won")
-    return "$100 → $1,000 target reached in this attempt";
+    return "$1,000 target reached in this attempt";
   if (event.kind === "attempt_failed")
     return "Attempt ended below $5; loss remains in the record";
   if (event.kind === "entry_control")
@@ -190,7 +194,7 @@ export function PaperPanel({
       <div className="experiment-heading">
         <div>
           <p className="eyebrow">ACTIVE EXPERIMENT / TIER 03</p>
-          <h2>Can $100 become $1,000?</h2>
+          <h2>Can {money(a.starting_capital ?? "100")} become $1,000?</h2>
           <p>
             Continuous paper trading. A permanent record of what works, what
             fails, and what changes.
@@ -226,7 +230,7 @@ export function PaperPanel({
             value={Math.min(1000, Number(a.equity))}
           />
           <div className="goal-label">
-            <span>$100 starting capital</span>
+            <span>{money(a.starting_capital ?? "100")} starting capital</span>
             <span>
               <Target size={13} /> $1,000 target
             </span>
@@ -235,7 +239,7 @@ export function PaperPanel({
         <div className="paper-numbers">
           <div>
             <span>Lifetime net P&L</span>
-            <strong>{money(a.net_pnl)}</strong>
+            <strong>{a.valuation_fresh && !stale ? money(a.net_pnl) : "Mark unavailable"}</strong>
             <small>After all fake funding</small>
           </div>
           <div>
@@ -297,6 +301,7 @@ export function PaperPanel({
         </button>
       </div>
       <PaperRiskPanel accounts={data.accounts} unavailable={stale || !data.running || !!data.error} />
+      <PaperEconomicsPanel data={data.economics} profiles={data.execution_profiles} unavailable={stale || !data.running || !!data.error} />
       <div className="learning-grid">
         <article className="learning-card">
           <Clock3 size={20} />
@@ -408,8 +413,8 @@ export function PaperPanel({
                   .map(([name, s]) => (
                     <tr key={name}>
                       <td>{name}</td>
-                      <td>{money(s.equity)}</td>
-                      <td>{money(s.net_pnl)}</td>
+                      <td>{s.valuation_fresh ? money(s.equity) : "Mark unavailable"}</td>
+                      <td>{s.valuation_fresh ? money(s.net_pnl) : "Not available"}</td>
                       <td>{s.closed}</td>
                       <td>{s.replenishments}</td><td>{s.risk?.reason ?? "Risk status unavailable"}</td>
                     </tr>

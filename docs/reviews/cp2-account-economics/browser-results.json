@@ -1,0 +1,42 @@
+{
+  "scope": "Actual compiled dashboard, API and TieredPaperRuntime; synthetic in-memory accounts and quotes, PostgreSQL separately tested",
+  "checks": [
+    {
+      "name": "After-operating return in the normal UI agrees with the actual API window",
+      "passed": true
+    },
+    {
+      "name": "Normal UI saves a prospective profile without repricing funds",
+      "passed": true
+    },
+    {
+      "name": "Lost success acknowledgment and retry do not duplicate settings or debit cash",
+      "passed": true
+    },
+    {
+      "name": "Held position prevents a misleading execution-profile switch",
+      "passed": true
+    },
+    {
+      "name": "Missing holding suppresses current P&L and rank explanations remain accessible",
+      "passed": true
+    },
+    {
+      "name": "Economics layout 1440",
+      "width": 1440,
+      "document": 1440
+    },
+    {
+      "name": "Economics layout 360",
+      "width": 360,
+      "document": 360
+    },
+    {
+      "name": "Fresh observations recover current balances automatically",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "httpErrors": [],
+  "blocked": []
+}

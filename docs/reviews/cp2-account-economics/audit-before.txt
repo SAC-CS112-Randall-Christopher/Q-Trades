@@ -1,0 +1,44 @@
+.FF                                                                      [100%]
+=================================== FAILURES ===================================
+_____ test_pristine_fifty_dollar_universe_pairs_use_same_capital_and_costs _____
+
+    def test_pristine_fifty_dollar_universe_pairs_use_same_capital_and_costs():
+        state=initial_state(START,"50",PUBLIC_EXECUTION)
+        e=PaperEngine(state,START);e.universe_experiment(["BTCUSD","ETHUSD"])
+        for name in ("universe-control-v1","universe-wide-v1"):
+>           assert state["accounts"][name]["starting_capital"]=="50"
+E           AssertionError: assert '100' == '50'
+E
+E             - 50
+E             + 100
+
+tests/test_paper_economics.py:249: AssertionError
+______ test_unknown_execution_on_primary_does_not_crash_healthy_siblings _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7c3ca93522d0>
+
+    def test_unknown_execution_on_primary_does_not_crash_healthy_siblings(monkeypatch):
+        state=windows(monkeypatch)
+        state["accounts"]["primary"]["execution_profile"]="unsupported"
+>       PaperEngine(state,START+20).review()
+
+tests/test_paper_economics.py:258:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src/trading/paper_engine.py:849: in review
+    score["execution_profile"] != execution(primary).id
+                                  ^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+a = {'attempt': {'number': 1, 'outcome': 'open', 'started_at': 1800000000.0}, 'attempt_failures': 0, 'attempt_wins': 0, 'cash': '100.20', ...}
+
+    def execution(a: dict[str, Any]) -> ExecutionProfile:
+        key = a.get("execution_profile", LEGACY_EXECUTION)
+        if not isinstance(key, str) or key not in PROFILES:
+>           raise ValueError("Unknown execution profile; no fees or fills were guessed")
+E           ValueError: Unknown execution profile; no fees or fills were guessed
+
+src/trading/execution_profiles.py:70: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_paper_economics.py::test_pristine_fifty_dollar_universe_pairs_use_same_capital_and_costs
+FAILED tests/test_paper_economics.py::test_unknown_execution_on_primary_does_not_crash_healthy_siblings
+2 failed, 1 passed, 19 deselected in 0.13s

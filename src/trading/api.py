@@ -45,6 +45,13 @@ class RiskControl(BaseModel):
     stop_id: int = Field(default=0, ge=0)
 
 
+class EconomicsControl(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    execution_profile: str = Field(min_length=1, max_length=80)
+    operating_daily_usd: str | None = Field(default=None, pattern=r"^\d{1,5}(\.\d{1,6})?$")
+    expected_version: int = Field(ge=0)
+
+
 class ToolRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     tool: str = Field(min_length=1, max_length=64)
@@ -350,6 +357,38 @@ def create_app(
             raise HTTPException(409, str(exc)) from exc
         except psycopg.Error as exc:
             raise HTTPException(503, "Risk control was not saved; refresh before retrying") from exc
+
+    @app.post("/api/paper/accounts/{account}/economics-settings")
+    async def paper_economics_settings(
+        account: str, control: EconomicsControl, request: Request
+    ) -> dict[str, Any]:
+        origin = request.headers.get("origin")
+        if request.headers.get("x-local-operator") != "1" or (
+            origin
+            and (
+                urlsplit(origin).scheme != "http"
+                or urlsplit(origin).netloc != request.headers.get("host")
+            )
+        ):
+            raise HTTPException(403, "Local operator request required")
+        paper: PaperRuntime | None = request.app.state.paper
+        if paper is None:
+            raise HTTPException(409, "Paper experiment is not enabled")
+        if account not in paper.state["accounts"]:
+            raise HTTPException(404, "Paper account not found")
+        try:
+            return paper.economics_control(
+                account,
+                control.execution_profile,
+                control.operating_daily_usd,
+                control.expected_version,
+            )
+        except (ValueError, ArithmeticError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Cost assumptions were not saved; refresh before retrying"
+            ) from exc
 
     @app.get("/api/paper/journal")
     async def paper_journal(
