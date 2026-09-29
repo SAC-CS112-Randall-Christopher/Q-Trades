@@ -104,7 +104,7 @@ def test_prepare_uses_exact_main_not_development_branch_and_keeps_prior_release(
     assert result["commit"] == main
     assert not (release / "candidate.txt").exists()
     assert not (release / "data").exists()
-    assert result["state"] == "prepared" and result["activation"] == "not_connected"
+    assert result["state"] == "prepared" and result["activation"] == "not_activated"
     assert len(result["assets"]) == 2
     assert retained(updater) == before
     second = updater.prepare(releases, fake_build)

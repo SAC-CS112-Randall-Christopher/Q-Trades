@@ -331,7 +331,7 @@ class MainUpdates:
                 "phase": "prepared" if prepared else "available" if ready else "no_release",
                 "main_commit": commit,
                 "checked_at": time.time(),
-                "activation": "not_connected",
+                "activation": "not_activated",
             },
         )
         return commit
@@ -436,7 +436,7 @@ class MainUpdates:
                 "contract": RELEASE_CONTRACT,
                 "prepared_at": time.time(),
                 "assets": assets,
-                "activation": "not_connected",
+                "activation": "not_activated",
             }
             write_record(destination / RECEIPT_NAME, receipt)
             write_record(
