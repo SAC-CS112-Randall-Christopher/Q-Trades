@@ -1,4 +1,15 @@
-# Next: CP4 protected experiment registry
+# Next: CP5 distinct hypotheses and frozen numerical challengers
+
+CP4 now provides protected durable hypotheses, frozen evaluation/input/code versions,
+one bounded numerical child and normal UI results/rejection/history/export. Read
+CP4_PROTECTED_RESEARCH.md and reviews/cp4-protected-research/README.md. The retained
+1790595239.9180105 window remains consumed across features/hashes/restarts. Continue
+CP5–CP9, then audit all checkpoints for measured performance/efficiency. No merge,
+paid calls, running-trial changes or installation is implied.
+
+---
+
+# Historical: CP4 protected experiment registry
 
 CP3 implements one ten-account campaign through the normal Paper screen, with
 separate funding, reservations, inventory, costs, loss controls and readable paged

@@ -48,4 +48,5 @@ jobs:
             tests/test_paper_risk.py tests/test_paper_risk_store.py `
             tests/test_paper_economics.py tests/test_economics_store.py `
             tests/test_paper_runtime.py tests/test_api.py tests/test_paper_store.py `
-            tests/test_paper_campaigns.py tests/test_campaign_store.py
+            tests/test_paper_campaigns.py tests/test_campaign_store.py `
+            tests/test_experiment_registry.py

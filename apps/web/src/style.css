@@ -1526,3 +1526,15 @@ h1 {
   .campaign-setup { grid-template-columns: 1fr; }
   .campaign-panel .economics-heading { align-items: flex-start; flex-direction: column; }
 }
+:root { scroll-behavior: smooth; }
+.experiment-lab form, .experiment-lab fieldset { display: grid; gap: 12px; }
+.experiment-lab fieldset { border: 0; padding: 0; }
+.experiment-lab label { display: grid; gap: 5px; }
+.experiment-lab input, .experiment-lab textarea, .experiment-lab select { padding: 9px; border: 1px solid #c9d2c7; border-radius: 5px; background: #fff; color: #153531; }
+.lab-form-row { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.lab-form-row label { flex: 1; min-width: 180px; }
+.lab-runs { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin: 18px 0; }
+.lab-runs button { display: grid; gap: 7px; text-align: left; padding: 12px; }
+.lab-result { border-top: 1px solid #c9d2c7; padding-top: 14px; overflow-wrap: anywhere; }
+.lab-result dl > div { display: flex; justify-content: space-between; gap: 15px; border-bottom: 1px solid #dce2d7; padding: 8px 0; }
+.lab-status { background: #eef2e8; padding: 12px; }

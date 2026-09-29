@@ -23,6 +23,7 @@ from fastapi import Request
 from fastapi.responses import HTMLResponse
 from psycopg import sql
 from psycopg.conninfo import make_conninfo
+from psycopg.types.json import Jsonb
 
 from trading.api import create_app
 from trading.config import Settings
@@ -96,7 +97,7 @@ def features(bar, eligible):
     }
 
 
-def serve(port):
+def serve(port, lab_qa=False):
     app = create_app(
         Settings(),
         ROOT / "data/cp3-browser-monitor.sqlite3",
@@ -137,6 +138,47 @@ def serve(port):
                 }
                 runtime.running = True
                 app.state.paper = runtime
+                lab_task = None
+                if lab_qa:
+                    from trading.experiment_registry import PREFLIGHT_END, ExperimentRegistry
+
+                    # Only this fixture's generated schema receives these synthetic copies.
+                    rows = json.loads(
+                        (
+                            ROOT / "docs/evidence/numeric-preflight-20260928T113855Z.quotes.json"
+                        ).read_text()
+                    )["rows"]
+                    shift = int((time.time() - 3600 - PREFLIGHT_END) // 60) * 60
+                    for row in rows:
+                        row["at"] += shift
+                        row["body"]["last_observed_at"] += shift
+                        row["body"]["minute"] += shift // 60
+                        row["body"]["synthetic_qa"] = True
+                    store.connection.cursor().executemany(
+                        "INSERT INTO paper_events(revision,at,kind,account,body) "
+                        "VALUES (1,%s,'market_minute','synthetic-qa',%s)",
+                        [(r["at"], Jsonb(r["body"])) for r in rows],
+                    )
+                    lab = app.state.lab
+                    lab.registry.close()
+                    lab.registry = ExperimentRegistry(
+                        ROOT / "data" / ("labqa_" + uuid.uuid4().hex + ".sqlite3")
+                    )
+                    lab.dsn = store.connection.info.dsn
+                    lab.can_research = lambda: runtime.running
+                    original_result = json.loads(
+                        (ROOT / "docs/evidence/numeric-preflight-20260928T113855Z.json").read_text()
+                    )["result"]
+                    print(
+                        json.dumps(
+                            {
+                                "qa_test_start": original_result["split_at"] + shift,
+                                "qa_test_end": PREFLIGHT_END + shift,
+                            }
+                        ),
+                        flush=True,
+                    )
+                    lab_task = asyncio.create_task(lab.run())
 
                 async def feed():
                     seq = 0
@@ -164,6 +206,10 @@ def serve(port):
                 try:
                     yield
                 finally:
+                    if lab_task:
+                        lab_task.cancel()
+                        with contextlib.suppress(asyncio.CancelledError):
+                            await lab_task
                     task.cancel()
                     with contextlib.suppress(asyncio.CancelledError):
                         await task
@@ -177,7 +223,7 @@ def serve(port):
             html = (ROOT / "apps/web/dist/index.html").read_text()
             banner = (
                 '<div style="padding:12px;background:#663d00;color:white">'
-                "CP3 QA · SYNTHETIC OBSERVATIONS · DISPOSABLE DATABASE</div>"
+                "QA · SYNTHETIC OBSERVATIONS · DISPOSABLE DATABASE</div>"
             )
             return HTMLResponse(html.replace("<body>", "<body>" + banner))
         return await call_next(request)
@@ -400,11 +446,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=["serve", "benchmark"])
     parser.add_argument("--port", type=int, default=8793)
+    parser.add_argument("--lab", action="store_true")
     parser.add_argument(
         "--output", type=Path, default=ROOT / "docs/reviews/cp3-paper-campaigns/benchmark.json"
     )
     args = parser.parse_args()
     if args.mode == "serve":
-        serve(args.port)
+        serve(args.port, args.lab)
     else:
         benchmark(args.output)

@@ -132,6 +132,9 @@ def run_experiment(
     feature: str,
     horizon: int,
     prior_test_end: float = 0,
+    *,
+    evaluation_start: float | None = None,
+    evaluation_end: float | None = None,
 ) -> dict[str, Any]:
     data_hash = hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
     built = examples(rows, feature, horizon)
@@ -154,9 +157,16 @@ def run_experiment(
     }
     if len(samples) < 300:
         return dict(report, status="insufficient_data", reason="Fewer than 300 matured examples")
-    split_at = max(samples[int(len(samples) * 0.7)]["at"], prior_test_end + horizon * 60 + 1)
+    split_at = max(
+        evaluation_start
+        if evaluation_start is not None
+        else samples[int(len(samples) * 0.7)]["at"],
+        prior_test_end + horizon * 60 + 1,
+    )
     train = [s for s in samples if s["label_available_at"] < split_at - horizon * 60]
-    test = [s for s in samples if s["at"] >= split_at]
+    test = [s for s in samples if s["at"] >= split_at and (
+        evaluation_end is None or s["label_available_at"] <= evaluation_end
+    )]
     report.update(train_samples=len(train), test_samples=len(test), split_at=split_at)
     if len(train) < 200 or len(test) < 50:
         return dict(
