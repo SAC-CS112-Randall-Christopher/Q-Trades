@@ -1,0 +1,26 @@
+{
+  "basis": "Read-only named Windows project exposed under the existing Codex mount; task root supplied by Chris",
+  "original_import": "24464451818b8ffc4d5280142e268e4d02c9e85c",
+  "files": [
+    {
+      "path": "src/trading/engine_diagnostics.py",
+      "sha256": "7ad3a2afb1f547702d3096dbaa0e1854346d683575bab15d8ac57af3e923ecff"
+    },
+    {
+      "path": "src/trading/tiered_runtime.py",
+      "sha256": "b8b97d817a177a6f1982133eff561f42397a3eac4cb1bb41cb4f0ee67bff3ebe"
+    },
+    {
+      "path": "tests/test_engine_diagnostics.py",
+      "sha256": "e7d14651dde15804047f780e1898234a63e2a3bfdac83ebef39c0800a1014380"
+    },
+    {
+      "path": "tests/test_streaming.py",
+      "sha256": "e41f21092cdd1e4561d6e7b2c311a811ad5e02fe8d2e40a6f6493935277c2733"
+    }
+  ],
+  "other_compared_code_files_unchanged": 92,
+  "native_git": "unborn HEAD; local source has no committed Git history",
+  "scope": "engine timing diagnostics and associated tests only; no account data or model receipts copied",
+  "native_execution_verified": false
+}

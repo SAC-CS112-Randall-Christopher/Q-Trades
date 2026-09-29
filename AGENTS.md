@@ -1,3 +1,17 @@
+# Current work order: a simple manual updater, then CP1
+
+Chris's September 29 correction supersedes the earlier managed-installer design.
+Use `Update Q-Trades.cmd`: fetch main, build, back up code, stop the existing task,
+copy application code, install dependencies, restart and report health/version.
+Keep the existing runtime folder, task and desktop launcher. Do not add release
+registries, activation state machines, task migration or financial-checkpoint gates
+to this updater. See `docs/LOCAL_UPDATES.md` and issue #1.
+
+The database, configuration, credentials and research evidence stay local and are
+never mirrored or reset by an update. A Git push is not a deployment. Preserve local
+source work and require the existing merge/deployment authorization. The archived
+installer implementation is not the current product direction.
+
 # September 28, 2026 product-alignment update
 
 Read `docs/PRODUCT_DIRECTION_2026-09-28.md` and `docs/reviews/2026-09-28-analysis.md` before the historical instructions below. The current request adopts the stronger paper-only, cash-only brief and authorizes private GitHub source storage. For new default experiments, derivatives exposure and automatic replenishment are excluded. Earlier options/replenishment permissions below are historical, not authority to expand the new default. Preserve their evidence and do not modify a running local experiment without inspecting and explicitly reconciling its frozen policy.

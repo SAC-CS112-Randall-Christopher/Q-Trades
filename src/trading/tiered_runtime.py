@@ -13,6 +13,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from trading.engine_diagnostics import EngineWorkDiagnostics
 from trading.futures_context import POLL_SECONDS, FuturesContext, FuturesPublicData
 from trading.live_quotes import quote_snapshot
 from trading.market import parse_book
@@ -51,6 +52,7 @@ class TieredPaperRuntime(PaperRuntime):
         self._constrained_until = 0.0
         self._loop_ms: deque[float] = deque(maxlen=1000)
         self._commit_ms: deque[float] = deque(maxlen=1000)
+        self._work_diagnostics = EngineWorkDiagnostics()
         self._captured_bytes = 0
         self._started_mono = time.monotonic()
         self._started_cpu = time.process_time()
@@ -76,7 +78,9 @@ class TieredPaperRuntime(PaperRuntime):
             or self._capture_failure is not None
         )
 
-    def observe_engine_work(self, elapsed_ms: float, now_mono: float) -> None:
+    def observe_engine_work(
+        self, elapsed_ms: float, now_mono: float, details: dict[str, Any] | None = None
+    ) -> None:
         self._loop_ms.append(elapsed_ms)
         recent = list(self._loop_ms)[-20:]
         # A single Windows disk/scheduling outlier is not sustained saturation.
@@ -84,6 +88,14 @@ class TieredPaperRuntime(PaperRuntime):
         repeated = len(recent) == 20 and sum(value > 100 for value in recent) >= 4
         if repeated or elapsed_ms >= 1000:
             self._constrained_until = now_mono + 300
+        notice = self._work_diagnostics.record(
+            {"at": time.time(), "elapsed_ms": elapsed_ms, **(details or {})},
+            now_mono,
+            repeated=repeated,
+            severe=elapsed_ms >= 1000,
+        )
+        if notice is not None:
+            self._notice_queue.append({"kind": "engine_resource_guard", "body": notice})
 
     def update_features(self, symbol: str, now: float) -> None:
         bars = self.history.get(symbol, [])
@@ -421,6 +433,8 @@ class TieredPaperRuntime(PaperRuntime):
                     await asyncio.wait_for(self.stream.changed.wait(), 0.25)
                 self.stream.changed.clear()
                 started = time.monotonic()
+                measured_start, cpu_start = time.perf_counter(), time.thread_time()
+                stage_ms: dict[str, float] = {}
                 for task in tasks:
                     if task.done():
                         task.result()
@@ -500,22 +514,45 @@ class TieredPaperRuntime(PaperRuntime):
                     engine.tick(frames, study)
 
                 commit_started = time.monotonic()
+                measured_commit = time.perf_counter()
+                stage_ms["prepare"] = (measured_commit - measured_start) * 1000
                 self.state = self.store.transact(now, apply)
                 self._commit_ms.append((time.monotonic() - commit_started) * 1000)
+                stage_ms["transaction"] = (time.perf_counter() - measured_commit) * 1000
                 self._last_commit, self._last_study_key = now, study_key
                 self._last_status_key, self._last_sources = status_key, sources
                 self.error = None
                 if now - self._last_audit >= 60:
+                    stage_started = time.perf_counter()
                     self.receipts = self.store.reconcile()
+                    stage_ms["reconcile"] = (time.perf_counter() - stage_started) * 1000
+                    stage_started = time.perf_counter()
                     self.database_usage = self.store.storage_usage()
+                    stage_ms["storage_usage"] = (time.perf_counter() - stage_started) * 1000
                     self._last_audit = now
                     if not self.receipts["balanced"]:
                         raise RuntimeError("Paper journal reconciliation failed; engine stopped")
                 if now - self._last_receipts >= 5:
+                    stage_started = time.perf_counter()
                     self.recent = self.store.recent()
+                    stage_ms["recent"] = (time.perf_counter() - stage_started) * 1000
                     self._last_receipts = now
                 elapsed = (time.monotonic() - started) * 1000
-                self.observe_engine_work(elapsed, time.monotonic())
+                self.observe_engine_work(
+                    elapsed,
+                    time.monotonic(),
+                    {
+                        "measured_elapsed_ms": round(
+                            (time.perf_counter() - measured_start) * 1000, 3
+                        ),
+                        "thread_cpu_ms": round((time.thread_time() - cpu_start) * 1000, 3),
+                        "stages_ms": {name: round(value, 3) for name, value in stage_ms.items()},
+                        "active_portfolios": active,
+                        "frames": len(frames),
+                        "notices": len(notices),
+                        "bars_added": added,
+                    },
+                )
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -563,6 +600,9 @@ class TieredPaperRuntime(PaperRuntime):
                     ),
                     "engine_p95_ms": self._percentile(self._loop_ms),
                     "commit_p95_ms": self._percentile(self._commit_ms),
+                    "resource_guard": self._work_diagnostics.snapshot(
+                        time.monotonic(), self._constrained_until
+                    ),
                 },
                 "storage": {
                     **self.capture_status,

@@ -1,3 +1,17 @@
+# Local updates
+
+After the import and CP0 are merged, double-click **Update Q-Trades.cmd** in the
+GitHub checkout. It fetches `main`, builds the dashboard, backs up source, updates
+the existing local application and restarts its existing task. No app-folder move,
+new service, repeated ZIP import or release-management workflow is required.
+Databases, credentials, configuration and research evidence stay untouched.
+See [operation and failure handling](docs/LOCAL_UPDATES.md).
+
+The implementation is in draft PR #3; it is not installed merely by pushing it.
+The snapshot introduction below is retained as historical context.
+
+---
+
 # Reviewed Q-Trades snapshot
 
 Start with [the product direction](docs/PRODUCT_DIRECTION_2026-09-28.md) and [the evidence-backed analysis](docs/reviews/2026-09-28-analysis.md). This package retains the original runtime source and research evidence, with dated guidance updates only. It does **not** implement the proposed fixes. The original upload contained no Git history.

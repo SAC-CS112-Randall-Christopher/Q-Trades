@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import re
 import sqlite3
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -52,6 +53,13 @@ def create_app(
     paper_database: Path | None = None,
     research_evidence: Path | None = None,
 ) -> FastAPI:
+    code_commit: str | None
+    try:
+        marker = database.parent / "installed-commit.txt"
+        code_commit = marker.read_text().strip() if marker.stat().st_size <= 48 else ""
+        code_commit = code_commit if re.fullmatch(r"[0-9a-f]{40}", code_commit) else None
+    except (OSError, UnicodeError):
+        code_commit = None
     model_trials = ModelTrials(
         research_evidence
         if research_evidence is not None
@@ -360,12 +368,18 @@ def create_app(
         )
 
     @app.get("/api/health")
-    async def health(request: Request) -> dict[str, str]:
+    async def health(request: Request) -> dict[str, Any]:
         monitor = request.app.state.monitor
         paper: PaperRuntime | None = request.app.state.paper
         return {
             "service": "running",
             "mode": "paper",
+            "code_commit": code_commit,
+            "paper_fresh": bool(
+                paper and paper.running and time.time() - paper.state["last_tick"] < 10
+            ),
+            "journal_balanced": paper.receipts.get("balanced") if paper else None,
+            "paper_error_reported": paper.error is not None if paper else None,
             "feed": monitor.snapshot()["runtime_state"],
             "paper": "running" if paper and paper.running else "stopped",
             "options": "running"

@@ -29,6 +29,7 @@ from trading.tool_journal import ToolJournal
 def runtime(tmp_path, book):
     runtime = TieredPaperRuntime(ReadOnlyStub(), None, tmp_path / "raw.sqlite")
     runtime.running = True
+    runtime.disk_free = 10 * 1024**3  # A healthy fixture must not depend on host /tmp capacity.
     runtime.instruments = {"BTCUSD": instrument("BTC"), "ETHUSD": instrument("ETH")}
     runtime.metadata_at = time.time()
     runtime.stream.plan = {"BTCUSD": 100}
@@ -285,3 +286,19 @@ def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path):
         runtime.running = False
         assert client.post("/api/research/tools/run", json=args, headers=headers).status_code == 503
     assert runtime.state == before
+
+
+def test_station_optional_tools_respect_low_disk_without_changing_accounts(runtime, tmp_path):
+    runtime.disk_free = 5 * 1024**3 - 1
+    before = copy.deepcopy(runtime.state)
+    app = create_app(Settings(), tmp_path / "monitor.sqlite3", background=False)
+    with TestClient(app) as client:
+        client.app.state.paper = runtime
+        response = client.post(
+            "/api/research/tools/run",
+            json={"tool": "strategy_evidence", "symbol": "BTCUSD"},
+            headers={"X-Local-Operator": "1", "Origin": "http://testserver"},
+        )
+        assert response.status_code == 503
+        assert "free disk" in response.json()["detail"]
+        assert runtime.state == before

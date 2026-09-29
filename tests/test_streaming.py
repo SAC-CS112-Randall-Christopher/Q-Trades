@@ -7,6 +7,7 @@ from decimal import Decimal
 import pytest
 from test_paper_runtime import ReadOnlyStub, instrument
 
+from trading.engine_diagnostics import EngineWorkDiagnostics
 from trading.stream_book import DepthBook, StreamGap
 from trading.stream_capture import StreamCapture
 from trading.stream_feed import ExchangeClock, StreamFeed
@@ -18,6 +19,8 @@ def test_resource_guard_ignores_isolated_jitter_but_demotes_sustained_or_severe_
     runtime = object.__new__(TieredPaperRuntime)
     runtime._loop_ms = deque(maxlen=1000)
     runtime._constrained_until = 0
+    runtime._work_diagnostics = EngineWorkDiagnostics()
+    runtime._notice_queue = []
     for duration in [20] * 19 + [150]:
         runtime.observe_engine_work(duration, 1000)
     assert runtime._constrained_until == 0

@@ -1,3 +1,17 @@
+# Next: finish the simple CP0 update, then CP1
+
+The source import is draft PR #2. PR #3 has been simplified at Chris's request:
+**Update Q-Trades.cmd** is the only normal update entry point. The script uses
+standard Git, npm, pip, robocopy and the existing Windows task. No release manager,
+new runtime folder, task repointing or separate activation workflow.
+
+Verify the small updater in isolated Windows fixtures, merge after approval, then
+perform the first authorized real update and confirm the running commit and health.
+No new batch of tests in another Windows verification folder is the normal workflow.
+Keep CP1's existing branch/fixtures; its risk fixes are not included in CP0.
+
+---
+
 # Current checkpoint
 
 The September 28 review prioritizes **reliable paper valuation and risk boundaries**. Follow checkpoint A in [the analysis](reviews/2026-09-28-analysis.md) and [the implementation directive](PRODUCT_DIRECTION_2026-09-28.md).

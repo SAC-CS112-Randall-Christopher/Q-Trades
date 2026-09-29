@@ -2,6 +2,7 @@
 param([switch] $CheckOnly)
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'PaperStartupIdentity.ps1')
 $projectRoot = (Resolve-Path -LiteralPath (Split-Path -Parent $PSScriptRoot)).Path
 $taskName = 'TradingResearch-Paper-20260927'
 $dashboardUrl = 'http://127.0.0.1:8780/#experiment'
@@ -21,12 +22,7 @@ function Write-LauncherLog([string] $Message) {
 
 function Get-OwnedStartupTask {
     $task = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
-    $expectedArguments = '-NoProfile -NonInteractive -WindowStyle Hidden -File "' + $runnerPath + '"'
-    $actions = @($task.Actions)
-    if ($actions.Count -ne 1 -or
-        [IO.Path]::GetFileName($actions[0].Execute) -ine 'powershell.exe' -or
-        $actions[0].Arguments -cne $expectedArguments -or
-        $actions[0].WorkingDirectory.TrimEnd('\') -ine $projectRoot.TrimEnd('\')) {
+    if (-not (Test-PaperStartupAction $task $projectRoot)) {
         throw 'The startup task does not match this project. No task was changed or started.'
     }
     if ($task.State -eq 'Disabled') {

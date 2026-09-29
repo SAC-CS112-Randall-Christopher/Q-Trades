@@ -32,6 +32,8 @@ pythonpath = ["src"]
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+# Historical, hash-verified audit artifact; never rewrite it as part of product lint.
+extend-exclude = ["docs/reviews/verification/reproduce_findings.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
