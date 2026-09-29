@@ -1,3 +1,17 @@
+# Next: complete CP0 native local activation
+
+The source import is draft PR #2. The local-update follow-up provides main checks,
+separate release preparation, process-start version visibility and read-only Windows
+inspection. See [the exact scope and remaining acceptance](LOCAL_UPDATES.md).
+
+First inspect the actual installed Windows task/runtime path and reconcile local
+source drift, then implement the controlled activation/recovery path. Neither the
+Windows task nor desktop launcher has been repointed. Keep the existing accounts and
+model runtime untouched. CP1 regression groundwork remains on its separate branch;
+do not declare its risk defects fixed or advance to autonomous search yet.
+
+---
+
 # Current checkpoint
 
 The September 28 review prioritizes **reliable paper valuation and risk boundaries**. Follow checkpoint A in [the analysis](reviews/2026-09-28-analysis.md) and [the implementation directive](PRODUCT_DIRECTION_2026-09-28.md).

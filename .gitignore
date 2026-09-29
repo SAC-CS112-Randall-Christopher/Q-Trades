@@ -26,3 +26,9 @@ data/
 *.p12
 *.zip
 *.bundle
+
+# Prepared local release metadata, never source or account history
+.qtrades-release.json
+
+# Local wheel-build intermediates inside an isolated release
+/build/

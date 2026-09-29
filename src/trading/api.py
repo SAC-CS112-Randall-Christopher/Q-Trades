@@ -18,6 +18,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from trading.config import Settings
+from trading.local_updates import STATUS_NAME, MainUpdates, public_status, source_identity
 from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
@@ -51,7 +52,10 @@ def create_app(
     venue: PublicVenue | None = None,
     paper_database: Path | None = None,
     research_evidence: Path | None = None,
+    source_root: Path | None = None,
 ) -> FastAPI:
+    source = (source_root or Path(__file__).resolve().parents[2]).resolve()
+    updates = MainUpdates(source, database.parent)
     model_trials = ModelTrials(
         research_evidence
         if research_evidence is not None
@@ -63,6 +67,9 @@ def create_app(
         ownership = CollectorLock(database.with_suffix(".collector.lock"))
         ownership.acquire()
         try:
+            app.state.source_at_start = await asyncio.to_thread(source_identity, source)
+            app.state.update_busy = False
+            app.state.last_update_check = -60.0
             store = MonitorStore(database, settings.retained_observations)
             public_venue = venue or PublicVenue(settings.request_timeout_seconds)
             task = None
@@ -192,6 +199,41 @@ def create_app(
             for market in snapshot["markets"]:
                 market["entry_reason"] = "Monitor only; see separate Tier 3 paper engine status"
         return snapshot
+
+    @app.get("/api/installation")
+    async def installation(request: Request) -> dict[str, Any]:
+        return await asyncio.to_thread(
+            public_status, request.app.state.source_at_start, database.parent / STATUS_NAME
+        )
+
+    @app.post("/api/installation/check")
+    async def check_main(request: Request) -> dict[str, Any]:
+        origin = request.headers.get("origin")
+        if request.headers.get("x-local-operator") != "1" or (
+            origin
+            and (
+                urlsplit(origin).scheme != "http"
+                or urlsplit(origin).netloc != request.headers.get("host")
+            )
+        ):
+            raise HTTPException(403, "Local operator request required")
+        if (
+            request.app.state.update_busy
+            or time.monotonic() - request.app.state.last_update_check < 30
+        ):
+            raise HTTPException(429, "An update check is running or was just completed")
+        request.app.state.update_busy = True
+        request.app.state.last_update_check = time.monotonic()
+        try:
+            # Never block the financial event loop on GitHub or invoke an installer here.
+            await asyncio.to_thread(updates.check)
+        except (RuntimeError, OSError) as exc:
+            raise HTTPException(
+                503, "Main check unavailable; the running app is unchanged"
+            ) from exc
+        finally:
+            request.app.state.update_busy = False
+        return await installation(request)
 
     @app.get("/api/paper/quotes")
     async def paper_quotes(request: Request) -> dict[str, Any]:

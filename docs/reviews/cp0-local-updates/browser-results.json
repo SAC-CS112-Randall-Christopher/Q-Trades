@@ -1,0 +1,44 @@
+{
+  "checks": [
+    {
+      "name": "actual_main_check",
+      "result": {
+        "running_commit": "24464451818b8ffc4d5280142e268e4d02c9e85c",
+        "running_source_dirty": true,
+        "running_source_kind": "checkout",
+        "main_commit": "a7506186ce52503181dc4c53d9a90d9e2e78481b",
+        "checked_at": 1790644440.410024,
+        "phase": "no_release",
+        "same_commit": false,
+        "message": "Main does not contain the application release files yet.",
+        "activation": "not_connected",
+        "automatic_activation": false
+      }
+    },
+    {
+      "name": "viewport_1440",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "name": "viewport_360",
+      "viewport": 360,
+      "document": 360
+    },
+    {
+      "name": "unavailable_version_read",
+      "passed": true
+    },
+    {
+      "name": "periodic_read_recovery",
+      "passed": true
+    },
+    {
+      "name": "check_failure_visible",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "scope": "Isolated local application, no paper worker, injected HTTP failures labeled; not the Windows installation"
+}

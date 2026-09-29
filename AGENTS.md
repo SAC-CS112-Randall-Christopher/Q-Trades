@@ -1,3 +1,12 @@
+# Current work order: CP0 local delivery first
+
+Chris's latest direction is GitHub main -> verified local installation, then CP1 and
+later checkpoints in issue #1. Read `docs/LOCAL_UPDATES.md`. The current update code
+checks/prepares releases only; native activation is not connected. Preserve the
+operating Windows service and account/evidence roots. A PR merge is not a verified
+local deployment. Do not enable automatic activation, change a task, move a database,
+or restart a worker without the ownership/compatibility checks and authorization.
+
 # September 28, 2026 product-alignment update
 
 Read `docs/PRODUCT_DIRECTION_2026-09-28.md` and `docs/reviews/2026-09-28-analysis.md` before the historical instructions below. The current request adopts the stronger paper-only, cash-only brief and authorizes private GitHub source storage. For new default experiments, derivatives exposure and automatic replenishment are excluded. Earlier options/replenishment permissions below are historical, not authority to expand the new default. Preserve their evidence and do not modify a running local experiment without inspecting and explicitly reconciling its frozen policy.

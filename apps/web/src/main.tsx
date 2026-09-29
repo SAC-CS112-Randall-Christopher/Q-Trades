@@ -24,6 +24,7 @@ import { PaperPanel, type PaperSnapshot } from "./PaperPanel";
 import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { MarketStation } from "./MarketStation";
+import { InstallationPanel } from "./InstallationPanel";
 
 type Snapshot = {
   paper?: PaperSnapshot;
@@ -389,6 +390,7 @@ function App() {
             </div>
           </section>
 
+          <InstallationPanel disconnected={!!networkError} />
           <div className="bottom-grid">
             <section className="panel operations" id="operations">
               <div className="section-heading">

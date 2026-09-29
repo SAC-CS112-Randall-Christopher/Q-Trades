@@ -1,3 +1,15 @@
+# Local delivery checkpoint
+
+GitHub `main` is the intended accepted-code authority. The new [local-update path](docs/LOCAL_UPDATES.md)
+checks main and builds isolated releases; the dashboard distinguishes process-start
+code from the last checked main version. **Native activation is not connected yet.**
+No Git push/merge by itself updates or restarts the operating Windows application.
+
+The imported snapshot description below is historical. Follow issue #1, the current
+AGENTS instructions and LOCAL_UPDATES for the active work order.
+
+---
+
 # Reviewed Q-Trades snapshot
 
 Start with [the product direction](docs/PRODUCT_DIRECTION_2026-09-28.md) and [the evidence-backed analysis](docs/reviews/2026-09-28-analysis.md). This package retains the original runtime source and research evidence, with dated guidance updates only. It does **not** implement the proposed fixes. The original upload contained no Git history.
