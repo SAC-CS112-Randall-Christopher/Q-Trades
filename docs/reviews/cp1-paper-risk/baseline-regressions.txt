@@ -1,0 +1,37 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_______ test_pending_buy_cannot_fill_with_a_missing_held_asset_valuation _______
+
+    def test_pending_buy_cannot_fill_with_a_missing_held_asset_valuation():
+        state = initial_state(START)
+        studies = reserve_eth_after_btc(state)
+        a = state["accounts"]["primary"]
+        cash = a["cash"]
+        engine = PaperEngine(state, START + 5)
+        engine.tick({"ETHUSD": asset_frame("ETHUSD", START + 5, 5)}, studies)
+        assert not a["valuation_fresh"]
+>       assert set(a["positions"]) == {"BTCUSD"}
+E       AssertionError: assert {'BTCUSD', 'ETHUSD'} == {'BTCUSD'}
+E         
+E         Extra items in the left set:
+E         'ETHUSD'
+E         Use -v to get more diff
+
+tests/test_paper_risk.py:36: AssertionError
+________ test_scheduled_review_cannot_rearm_a_new_default_drawdown_stop ________
+
+    def test_scheduled_review_cannot_rearm_a_new_default_drawdown_stop():
+        state = initial_state(START)
+        a = state["accounts"]["primary"]
+        a["cash"] = "64"  # Isolated simulated loss; no actual journal or account touched.
+        PaperEngine(state, START + 1).tick({}, {})
+        assert a["drawdown_pause"] and D(a["max_drawdown"]) == D("0.36")
+        PaperEngine(state, START + REVIEW_SECONDS + 1).review()
+>       assert a["drawdown_pause"]
+E       assert False
+
+tests/test_paper_risk.py:49: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_paper_risk.py::test_pending_buy_cannot_fill_with_a_missing_held_asset_valuation
+FAILED tests/test_paper_risk.py::test_scheduled_review_cannot_rearm_a_new_default_drawdown_stop
+2 failed in 0.05s
