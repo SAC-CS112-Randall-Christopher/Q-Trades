@@ -49,12 +49,14 @@ export function PaperCampaignPanel({ data, unavailable }: {
   const [draft, setDraft] = useState(loadDraft);
   const [selected, setSelected] = useState("");
   const [pending, setPending] = useState(false);
+  const [awaiting, setAwaiting] = useState<{account:string;version:number}|null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const campaign = data.campaigns?.[0];
   const names = campaign?.accounts ?? [];
   const name = names.includes(selected) ? selected : names[0];
   const account = data.accounts[name];
+  const waiting = awaiting !== null && awaiting.account === name && (account?.control_version ?? 0) < awaiting.version;
   const mark = data.economics?.accounts[name];
   useEffect(() => {
     try { localStorage.setItem(draftKey, JSON.stringify(draft)); } catch { /* Server is authoritative. */ }
@@ -78,6 +80,7 @@ export function PaperCampaignPanel({ data, unavailable }: {
       throw new Error(typeof detail.detail === "string" ? detail.detail :
         "Check the distinct account names, balances and cost assumptions, then try again.");
     }
+    return response.json() as Promise<{version?:number}>;
   }
 
   async function launch(event: FormEvent) {
@@ -104,9 +107,10 @@ export function PaperCampaignPanel({ data, unavailable }: {
     setPending(true); setError(null); setNotice(null);
     try {
       const risk = action === "resume_hard_stop";
-      await post(`/api/paper/accounts/${encodeURIComponent(name)}/${risk ? "risk-control" : "control"}`,
+      const saved = await post(`/api/paper/accounts/${encodeURIComponent(name)}/${risk ? "risk-control" : "control"}`,
         risk ? { action, stop_id: account.risk?.stop_id } :
           { action, expected_version: account.control_version ?? 0 });
+      if (!risk && saved.version !== undefined) setAwaiting({account:name,version:saved.version});
       setNotice(`${account.label ?? name}: control saved. Waiting for refreshed status.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Control not confirmed; refresh before retrying.");
@@ -193,10 +197,10 @@ export function PaperCampaignPanel({ data, unavailable }: {
         <p>Execution: {data.execution_profiles?.find(p => p.id === mark?.execution_profile)?.label ?? "Unavailable"} ·
           estimated operating cost: {mark?.operating_daily_usd == null ? "unknown" : `${money(mark.operating_daily_usd)}/day`}.</p>
         <div className="campaign-actions">
-          <button className="button secondary small" disabled={pending || unavailable}
+          <button className="button secondary small" disabled={pending || waiting || unavailable}
             onClick={() => void control(account.entries_paused ? "resume" : "pause")}>
             {account.entries_paused ? "Clear account entry pause" : "Pause this account's entries"}</button>
-          {account.fault && <button className="button secondary small" disabled={pending || unavailable}
+          {account.fault && <button className="button secondary small" disabled={pending || waiting || unavailable}
             onClick={() => void control("recover")}>Retry account processing</button>}
           {account.drawdown_pause && <button className="button secondary small"
             disabled={pending || unavailable || !account.risk?.recoverable}

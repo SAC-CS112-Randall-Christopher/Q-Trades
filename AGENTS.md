@@ -1,3 +1,12 @@
+# CP0–CP9 efficiency audit
+
+Read docs/CP0_CP9_EFFICIENCY_AUDIT.md and its retained measurements. Full receipts
+stay in immutable journals; compact projections grant no independent authority.
+Keep frozen input hashes and registered numerical risk/timing/cost contracts.
+Source drafts, actual-host synthetic proof, approved merge/install and future
+market/account acceptance are distinct. Do not reset the original trial or alter
+the simple updater or model/GIS runtimes to demonstrate success.
+
 # CP9 live-readiness decision packet
 
 Read docs/CP9_LIVE_READINESS.md. The source-dated normal UI/export concludes not

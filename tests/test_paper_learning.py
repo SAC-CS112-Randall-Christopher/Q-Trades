@@ -122,7 +122,12 @@ def test_positive_contract_requires_explicit_approval_and_rollback_preserves_all
     assert rollback(engine, 1)["status"] == "already_applied"
     assert engine.state["accounts"] == accounts
     assert engine.state["learning"]["promotions"][0]["rolled_back"]
-    assert engine.state["learning"]["reports"][frozen["request_id"]] == frozen
+    reference = engine.state["learning"]["reports"][frozen["request_id"]]
+    assert reference["sha256"] == frozen["sha256"] and "daily_blocks" not in reference
+    assert reference["daily_block_count"] == len(frozen["daily_blocks"])
+    assert (
+        next(e["body"] for e in engine.events if e["kind"] == "learning_report_retained") == frozen
+    )
     engine.assert_invariants()
 
 

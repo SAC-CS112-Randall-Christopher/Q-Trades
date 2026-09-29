@@ -1,24 +1,30 @@
 """Finite synthetic capacity/soak measurements in generated disposable PostgreSQL schemas."""
 
 import argparse
+import asyncio
 import ctypes
+import hashlib
 import json
 import os
 import platform
 import queue
 import subprocess
 import sys
+import sysconfig
 import threading
 import time
 import uuid
 from pathlib import Path
 
+import httpx
 from lab_fixtures import synthetic_rows
 from verify_cp3 import disposable, features, frames, rss_bytes, summary
 
 from trading.numerical_candidates import evaluate_families
-from trading.numerical_resources import constrain_child
+from trading.numerical_resources import constrain_child, own_limits
 from trading.paper_campaigns import CampaignSpec, create_campaign
+from trading.paper_runtime import PaperRuntime
+from trading.venue import PublicVenue
 
 ROOT = Path(__file__).resolve().parents[1]
 SLOS = {
@@ -63,6 +69,7 @@ def busy_worker(seconds, output):
                 "wall_seconds": time.monotonic() - began,
                 "peak_rss_mib": peak / 1024**2,
                 "paid_usd": "0",
+                "worker_identity": own_limits(),
             }
         )
     )
@@ -90,7 +97,8 @@ def setup(engine, count):
     members = create_campaign(engine, spec)["campaign"]["accounts"]
     if count != 20:
         # Only the disposable load projection is limited; no operating history is touched.
-        engine.state["accounts"] = {n: engine.state["accounts"][n] for n in members[:count]}
+        names = ["primary", *members[: count - 1]]
+        engine.state["accounts"] = {n: engine.state["accounts"][n] for n in names}
 
 
 def benchmark(output, soak=False):
@@ -113,6 +121,21 @@ def benchmark(output, soak=False):
         "platform": platform.platform(),
         "python": platform.python_version(),
         "logical_processors": os.cpu_count(),
+        "source_commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip(),
+        "source_dirty": bool(
+            subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()
+        ),
+        "source_sha256": {
+            str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in [
+                Path(__file__),
+                ROOT / "scripts/verify_cp3.py",
+                ROOT / "scripts/lab_fixtures.py",
+                *sorted((ROOT / "src/trading").glob("*.py")),
+            ]
+        },
         "cases": [],
     }
     # Persist predeclaration before observing any case.
@@ -121,6 +144,10 @@ def benchmark(output, soak=False):
         for research in contract["research"]:
             with disposable() as store:
                 store.transact(time.time(), lambda e, count=count: setup(e, count))
+                # The actual account/economics status projection, with network disabled.
+                venue = PublicVenue(transport=httpx.MockTransport(lambda _: httpx.Response(503)))
+                runtime = PaperRuntime(store, venue)
+                runtime.running = True
                 before = store.storage_usage()
                 ticks = seconds * 4
                 q = queue.Queue(maxsize=1024)
@@ -134,7 +161,9 @@ def benchmark(output, soak=False):
                         for k, v in os.environ.items()
                         if k.upper() in {"SYSTEMROOT", "WINDIR", "TEMP", "TMP", "PATH"}
                     }
-                    env["PYTHONPATH"] = str(ROOT / "src")
+                    env["PYTHONPATH"] = os.pathsep.join(
+                        [str(ROOT / "src"), sysconfig.get_paths()["purelib"]]
+                    )
                     env["PYTHONNOUSERSITE"] = "1"
                     flags = (
                         subprocess.CREATE_NO_WINDOW | subprocess.IDLE_PRIORITY_CLASS
@@ -143,7 +172,7 @@ def benchmark(output, soak=False):
                     )
                     child = subprocess.Popen(
                         [
-                            sys.executable,
+                            str(Path(getattr(sys, "_base_executable", sys.executable)).resolve()),
                             __file__,
                             "worker",
                             "--seconds",
@@ -184,7 +213,8 @@ def benchmark(output, soak=False):
                         memory.append(rss_bytes() / 1024**2)
                         if i % 20 == 0:
                             started = time.perf_counter()
-                            json.dumps(store.read())
+                            runtime.state = store.read()
+                            json.dumps(runtime.snapshot())
                             reads.append((time.perf_counter() - started) * 1000)
                 finally:
                     producer.join(timeout=10)
@@ -194,6 +224,7 @@ def benchmark(output, soak=False):
                         except subprocess.TimeoutExpired:
                             child.terminate()
                             child.wait(timeout=3)
+                    asyncio.run(venue.close())
                 elapsed = time.perf_counter() - began
                 host_after = host_times()
                 child_receipt = json.loads(child_path.read_text()) if child_path.exists() else None
@@ -212,7 +243,12 @@ def benchmark(output, soak=False):
                     "queue_lag_ms": summary(lags),
                     "queue_peak": queue_peak,
                     "ui_state_read_ms": summary(reads),
+                    "ui_read_scope": (
+                        "PostgreSQL state read plus actual PaperRuntime account/economics status "
+                        "and JSON serialization; no network/paint timing"
+                    ),
                     "child": child_receipt,
+                    "child_supervised_pid": child.pid if child else None,
                     "storage_growth_bytes": {k: after[k] - v for k, v in before.items()},
                     "reconciliation": store.reconcile(),
                     "host_cpu_percent": None,
@@ -238,7 +274,15 @@ def benchmark(output, soak=False):
                     and (
                         research == "idle"
                         or bool(
-                            child_receipt and child_receipt["peak_rss_mib"] <= SLOS["child_rss_mib"]
+                            child_receipt
+                            and child_receipt["peak_rss_mib"] <= SLOS["child_rss_mib"]
+                            and child_receipt["worker_identity"]["pid"] == child.pid
+                            and child_receipt["worker_identity"]["processors_allowed"] is not None
+                            and 1 <= child_receipt["worker_identity"]["processors_allowed"] <= 2
+                            and (
+                                os.name != "nt"
+                                or child_receipt["worker_identity"]["priority_class"] == 0x40
+                            )
                         )
                     )
                 )
