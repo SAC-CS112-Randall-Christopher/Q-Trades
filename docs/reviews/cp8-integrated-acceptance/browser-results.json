@@ -1,0 +1,26 @@
+{
+  "scope": "normal UI, synthetic QA, original trial unchanged",
+  "checks": [
+    {
+      "name": "Normal campaign launch and inspection",
+      "passed": true
+    },
+    {
+      "name": "Account pause and retained failure were visible",
+      "passed": true
+    },
+    {
+      "name": "Recovery retains own funding and clears processing failure",
+      "passed": true
+    },
+    {
+      "name": "Experiment/result and no-promotion remain inspectable",
+      "passed": true
+    },
+    {
+      "check": "Retained experiment, journal and comparison exports visible after selecting the completed receipt",
+      "passed": true,
+      "note": "An initial check ran before the receipt was selected after reload; selecting it exposes its immutable export."
+    }
+  ]
+}

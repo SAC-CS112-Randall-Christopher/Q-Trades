@@ -14,6 +14,7 @@ def constrain_child(pid: int) -> None:
     kernel.CloseHandle.argtypes = [ctypes.c_void_p]
     kernel.GetProcessAffinityMask.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
     kernel.SetProcessAffinityMask.argtypes = [ctypes.c_void_p, ctypes.c_size_t]
+    kernel.SetPriorityClass.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
     handle = kernel.OpenProcess(0x0600, False, pid)
     if not handle:
         raise OSError("Cannot bound numerical worker processors")
@@ -24,8 +25,34 @@ def constrain_child(pid: int) -> None:
         bits = [1 << i for i in range(64) if available.value & (1 << i)]
         if not kernel.SetProcessAffinityMask(handle, sum(bits[:2])):
             raise OSError("Cannot enforce numerical worker processor allowance")
+        if not kernel.SetPriorityClass(handle, 0x40):
+            raise OSError("Cannot enforce numerical worker IDLE priority")
     finally:
         kernel.CloseHandle(handle)
+
+
+def own_limits() -> dict[str, int | None]:
+    if os.name != "nt":
+        return {"pid": os.getpid(), "processors_allowed": None, "priority_class": None}
+    kernel = ctypes.windll.kernel32
+    kernel.OpenProcess.restype = ctypes.c_void_p
+    kernel.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel.GetPriorityClass.argtypes = [ctypes.c_void_p]
+    handle = kernel.OpenProcess(0x0400, False, os.getpid())
+    try:
+        affinity, system = ctypes.c_size_t(), ctypes.c_size_t()
+        if not handle or not kernel.GetProcessAffinityMask(
+            handle, ctypes.byref(affinity), ctypes.byref(system)
+        ):
+            raise OSError("Cannot verify own numerical worker allowance")
+        return {
+            "pid": os.getpid(),
+            "processors_allowed": affinity.value.bit_count(),
+            "priority_class": int(kernel.GetPriorityClass(handle)),
+        }
+    finally:
+        if handle:
+            kernel.CloseHandle(handle)
 
 
 def child_rss(pid: int) -> int:

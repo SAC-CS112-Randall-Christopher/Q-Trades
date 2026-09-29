@@ -1,4 +1,10 @@
-# Next: CP8 integrated finite acceptance, CP9 readiness packet and whole-stack audit
+# Next: CP9 readiness packet and whole-stack audit
+
+CP8's finite twenty-account soak, actual crash/backup recovery and normal UI checks
+passed locally; see reviews/cp8-integrated-acceptance/README.md for scopes and the
+Windows worker supervision repair. Complete CP9's source-dated paper-only readiness
+packet, then measure and improve the entire CP0–CP9 stack. Drafts remain unmerged
+and the original application/trial remains unchanged.
 
 CP7 now retains protected forward whole-account reports, matched controls, drift,
 explicit no-promotion and reversible operator-approved paper research roles.

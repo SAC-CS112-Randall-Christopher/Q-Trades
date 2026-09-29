@@ -1,0 +1,101 @@
+{
+  "contract": {
+    "seconds_per_case": 300,
+    "ticks_per_second": 4,
+    "accounts": [
+      20
+    ],
+    "research": [
+      "busy"
+    ],
+    "slos": {
+      "commit_p95_ms": 100,
+      "commit_p99_ms": 250,
+      "commit_max_ms": 2000,
+      "queue_lag_p99_ms": 250,
+      "queue_peak": 2,
+      "parent_rss_mib": 512,
+      "parent_rss_growth_mib": 64,
+      "child_rss_mib": 256,
+      "parent_cpu_one_core_percent": 50,
+      "journal_balanced": true
+    },
+    "input": "Shared synthetic executable BTC/ETH books; accelerated signals",
+    "cpu_scope": "Parent and fixed fit child separately; host includes all other work",
+    "gpu": "No GPU calls; numerical path is CPU-only",
+    "authority": "Synthetic QA only; paid $0; no market/24x7 inference"
+  },
+  "declared_at": 1790719717.800402,
+  "host": "MAIN",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.10",
+  "logical_processors": 12,
+  "cases": [
+    {
+      "accounts": 20,
+      "research": "busy",
+      "ticks": 1200,
+      "elapsed_seconds": 301.51516949990764,
+      "parent_cpu_seconds": 11.859375,
+      "parent_cpu_one_core_percent": 3.933259815640431,
+      "parent_rss_mib": {
+        "mean": 61.99276692708333,
+        "p95": 62.01953125,
+        "p99": 62.02734375,
+        "max": 62.1796875
+      },
+      "parent_rss_growth_mib": 0.6640625,
+      "commit_ms": {
+        "mean": 12.494313834079852,
+        "p95": 22.840699995867908,
+        "p99": 33.47959998063743,
+        "max": 75.97219990566373
+      },
+      "decision_ms": {
+        "mean": 4.073300331947394,
+        "p95": 7.096100016497076,
+        "p99": 9.222900029271841,
+        "max": 13.767899945378304
+      },
+      "queue_lag_ms": {
+        "mean": 0.17288866656599566,
+        "p95": 0.2460000105202198,
+        "p99": 0.5897999508306384,
+        "max": 7.656099973246455
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 3.1265433334435024,
+        "p95": 4.495000001043081,
+        "p99": 5.969700054265559,
+        "max": 6.861399975605309
+      },
+      "child": {
+        "fits": 3177,
+        "cpu_seconds": 264.6875,
+        "wall_seconds": 300.219000000041,
+        "peak_rss_mib": 58.3125,
+        "paid_usd": "0"
+      },
+      "storage_growth_bytes": {
+        "database_bytes": 5062656,
+        "candles": 0,
+        "events": 2642,
+        "journal_lines": 320,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 1761280
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 1201
+      },
+      "host_cpu_percent": 48.09339966488746,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    }
+  ]
+}

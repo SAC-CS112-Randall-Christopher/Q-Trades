@@ -4,6 +4,7 @@ import asyncio
 import os
 import subprocess
 import sys
+import sysconfig
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -14,6 +15,8 @@ from trading.experiment_worker import code_fingerprint
 from trading.numerical_resources import child_rss, constrain_child
 from trading.research_campaigns import ResearchCampaigns
 from trading.research_data import quote_snapshot
+
+WALL_SECONDS = 25
 
 
 class ExperimentLab:
@@ -61,7 +64,12 @@ class ExperimentLab:
         }
         # Works in both an installed application and a clean source checkout.
         # Do not inherit an arbitrary caller-controlled module search path.
-        env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1])
+        env["PYTHONPATH"] = os.pathsep.join(
+            [
+                str(Path(__file__).resolve().parents[1]),
+                str(Path(sysconfig.get_paths()["purelib"]).resolve()),
+            ]
+        )
         env["PYTHONNOUSERSITE"] = "1"
         flags = (
             (subprocess.CREATE_NO_WINDOW | subprocess.IDLE_PRIORITY_CLASS) if os.name == "nt" else 0
@@ -71,7 +79,7 @@ class ExperimentLab:
         try:
             self.child = subprocess.Popen(
                 [
-                    sys.executable,
+                    str(Path(getattr(sys, "_base_executable", sys.executable)).resolve()),
                     "-m",
                     "trading.experiment_worker",
                     "--registry",
@@ -94,7 +102,7 @@ class ExperimentLab:
                 reason = None
                 if current_status is None or current_status == "cancelled":
                     reason = "Operator cancelled"
-                elif time.monotonic() - started > 25:
+                elif time.monotonic() - started > WALL_SECONDS:
                     reason = "Numerical worker exceeded its 25-second wall-clock limit"
                 elif peak_rss > 256 * 1024**2:
                     reason = "Numerical worker exceeded its 256 MiB memory limit"
@@ -122,6 +130,7 @@ class ExperimentLab:
                 await asyncio.to_thread(self.child.wait, 3)
             self.registry.finish(request_id, lease, None, "Numerical child could not complete")
         finally:
+            supervised_pid = self.child.pid if self.child else None
             self.child = None
             with self.registry.transaction():
                 self.registry.event(
@@ -133,6 +142,7 @@ class ExperimentLab:
                         "logical_processors_max": 2,
                         "gpu": False,
                         "paid_usd": "0",
+                        "supervised_pid": supervised_pid,
                     },
                 )
         return True

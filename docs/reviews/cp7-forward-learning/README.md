@@ -28,3 +28,7 @@ hosted skips remain separate from the local PostgreSQL full suite. Prospective
 28-day results, subsequent improvement, independently calibrated uncertainty and
 live feasibility are not established by synthetic tests or a paper role designation.
 No operating-trial change, live order, paid inference, merge or installation occurred.
+
+Exact-head CP7 hosted Windows run 36638202234 subsequently passed **139 tests /
+31 database skips** at edc9ddb1a77b4bb25bae873a6dacac9faefc75de. The local full
+PostgreSQL suite remains the database proof.
