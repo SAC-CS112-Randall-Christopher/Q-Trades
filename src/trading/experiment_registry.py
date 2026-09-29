@@ -210,6 +210,23 @@ class ExperimentRegistry:
         now = time.time() if now is None else now
         with self.transaction():
             for row in self.db.execute(
+                "SELECT request_id FROM experiments WHERE status='acquiring' AND created < ?",
+                (now - 30,),
+            ).fetchall():
+                self.db.execute(
+                    "UPDATE experiments SET status='failed',finished=?,"
+                    "reason='Input acquisition interrupted',progress='Failure retained' "
+                    "WHERE request_id=?",
+                    (now, row["request_id"]),
+                )
+                self.event(
+                    row["request_id"],
+                    "input_failure",
+                    {
+                        "reason": "Acquisition interrupted; consumed window cannot be retried",
+                    },
+                )
+            for row in self.db.execute(
                 "SELECT request_id,attempt FROM experiments "
                 "WHERE status='running' AND lease_until < ?",
                 (now,),

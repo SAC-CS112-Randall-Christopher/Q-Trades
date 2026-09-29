@@ -168,6 +168,10 @@ def serve(port, lab_qa=False, candidates_qa=False):
                     lab.registry = ExperimentRegistry(
                         ROOT / "data" / ("labqa_" + uuid.uuid4().hex + ".sqlite3")
                     )
+                    from trading.experiment_worker import code_fingerprint
+                    from trading.research_campaigns import ResearchCampaigns
+
+                    lab.campaigns = ResearchCampaigns(lab.registry, lab.enqueue, code_fingerprint)
                     lab.dsn = store.connection.info.dsn
                     lab.can_research = lambda: runtime.running
                     original_result = json.loads(

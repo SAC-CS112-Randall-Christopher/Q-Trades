@@ -29,6 +29,7 @@ from trading.ownership import CollectorLock
 from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
+from trading.research_campaigns import ResearchCampaignSpec
 from trading.runtime import Monitor
 from trading.station import TOOLS, execute_tool, market_detail, market_live
 from trading.storage import MonitorStore
@@ -160,16 +161,22 @@ def create_app(
                             app.state.options_error = (
                                 "Options account needs attention; spot trading continues"
                             )
+
                 def research_ready() -> bool:
                     paper = app.state.paper
-                    return bool(paper and paper.running and not paper.error
-                                and time.time() - paper.state["last_tick"] < 10
-                                and not paper.constrained())
+                    return bool(
+                        paper
+                        and paper.running
+                        and not paper.error
+                        and time.time() - paper.state["last_tick"] < 10
+                        and not paper.constrained()
+                    )
 
                 try:
                     lab = ExperimentLab(
                         database.parent / "experiments.sqlite3",
-                        load_dsn(paper_database) if paper_database else None, research_ready,
+                        load_dsn(paper_database) if paper_database else None,
+                        research_ready,
                     )
                 except (sqlite3.Error, OSError):
                     app.state.lab_error = "Research storage unavailable; paper management continues"
@@ -274,10 +281,13 @@ def create_app(
 
     def lab_operator(request: Request) -> ExperimentLab:
         origin = request.headers.get("origin")
-        if request.headers.get("x-local-operator") != "1" or (origin and (
-            urlsplit(origin).scheme != "http"
-            or urlsplit(origin).netloc != request.headers.get("host")
-        )):
+        if request.headers.get("x-local-operator") != "1" or (
+            origin
+            and (
+                urlsplit(origin).scheme != "http"
+                or urlsplit(origin).netloc != request.headers.get("host")
+            )
+        ):
             raise HTTPException(403, "Local operator request required")
         lab: ExperimentLab | None = request.app.state.lab
         if lab is None:
@@ -299,6 +309,33 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
 
+    @app.post("/api/lab/campaigns")
+    def research_campaign(request: Request, spec: ResearchCampaignSpec) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return lab.campaigns.create(spec)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/lab/campaigns/{request_id}")
+    def research_campaign_receipt(request: Request, request_id: str) -> dict[str, Any]:
+        lab: ExperimentLab | None = request.app.state.lab
+        if not lab:
+            raise HTTPException(503, "Research registry unavailable")
+        try:
+            return lab.campaigns.receipt(request_id)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/lab/campaigns/{request_id}/cancel")
+    def research_campaign_cancel(request: Request, request_id: str) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            lab.campaigns.cancel(request_id)
+            return {"status": "cancelled", "history_retained": True}
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
     @app.get("/api/lab/experiments/{request_id}")
     def research_result(request_id: str, request: Request) -> dict[str, Any]:
         lab: ExperimentLab | None = request.app.state.lab
@@ -318,20 +355,31 @@ def create_app(
         return {"status": lab.registry.status(request_id)}
 
     @app.post("/api/lab/experiments/{request_id}/forward")
-    async def research_forward(request_id: str, admission: ForwardAdmission,
-                               request: Request) -> dict[str, Any]:
+    async def research_forward(
+        request_id: str, admission: ForwardAdmission, request: Request
+    ) -> dict[str, Any]:
         lab = lab_operator(request)
         paper = campaign_operator(request)
         experiment = lab.registry.get(request_id)
         if not experiment or experiment["status"] != "completed" or not experiment["result"]:
             raise HTTPException(409, "A completed fitted result is required")
-        candidate = next((c for c in experiment["result"].get("candidate_group", [])
-                          if c["family"] == admission.family), None)
+        candidate = next(
+            (
+                c
+                for c in experiment["result"].get("candidate_group", [])
+                if c["family"] == admission.family
+            ),
+            None,
+        )
         if not candidate or not candidate.get("artifact"):
             raise HTTPException(409, "This family has no frozen fitted artifact")
         try:
-            return paper.forward_admit(request_id, candidate["artifact"], admission.starting_cash,
-                                       admission.operating_daily_usd)
+            return paper.forward_admit(
+                request_id,
+                candidate["artifact"],
+                admission.starting_cash,
+                admission.operating_daily_usd,
+            )
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
         except psycopg.Error as exc:
