@@ -2,6 +2,7 @@ import { PaperEconomicsPanel, type EconomicsSnapshot, type ExecutionProfile } fr
 import { useState } from "react";
 import { PaperRiskPanel, type RiskStatus } from "./PaperRiskPanel";
 import { PaperCampaignPanel } from "./PaperCampaignPanel";
+import { LearningPanel, type Learning } from "./LearningPanel";
 import { FeedPanel, type FeedDetails } from "./FeedPanel";
 import { FuturesPanel, type FuturesSnapshot } from "./FuturesPanel";
 import {
@@ -81,6 +82,7 @@ export type PaperSnapshot = Partial<FeedDetails> & {
   gaps: number;
   accounts: Record<string, Account>;
   campaigns?: { id: string; name: string; accounts: string[]; created_at: number }[];
+  learning?: Learning;
   events: Event[];
   journal: { balanced?: boolean };
   repeatability: {
@@ -308,6 +310,7 @@ export function PaperPanel({
         </button>
       </div>
       <PaperCampaignPanel data={data} unavailable={stale || !data.running || !!data.error} />
+      <LearningPanel data={data.learning} unavailable={stale || !data.running || !!data.error} />
       <PaperRiskPanel accounts={Object.fromEntries(Object.entries(data.accounts).filter(([, a]) => !a.campaign_id))} unavailable={stale || !data.running || !!data.error} />
       <PaperEconomicsPanel data={data.economics} profiles={data.execution_profiles} unavailable={stale || !data.running || !!data.error} />
       <div className="learning-grid">

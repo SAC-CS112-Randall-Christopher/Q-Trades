@@ -65,17 +65,20 @@ class PaperRuntime:
                     self._numerical_rows, now, a["numerical_artifact"], a["admitted_at"]
                 )
             except (ValueError, KeyError, TypeError, ArithmeticError):
-                feature = {"eligible": False,
-                           "reason": "Frozen numerical input/model needs attention"}
+                feature = {
+                    "eligible": False,
+                    "reason": "Frozen numerical input/model needs attention",
+                }
             study.setdefault("BTCUSD", {})[a["version"]] = feature
 
-    def forward_admit(self, experiment: str, artifact: dict[str, Any], cash: str,
-                      daily: str | None) -> dict[str, Any]:
+    def forward_admit(
+        self, experiment: str, artifact: dict[str, Any], cash: str, daily: str | None
+    ) -> dict[str, Any]:
         self.require_healthy_control()
         result: dict[str, Any] = {}
-        self.state = self.store.transact(time.time(), lambda e: result.update(
-            admit(e, experiment, artifact, cash, daily)
-        ))
+        self.state = self.store.transact(
+            time.time(), lambda e: result.update(admit(e, experiment, artifact, cash, daily))
+        )
         return result
 
     async def collect_candles(self, symbol: str) -> int:
@@ -275,6 +278,7 @@ class PaperRuntime:
             "features": self.state["features"],
             "accounts": accounts,
             "campaigns": list(self.state.get("campaigns", {}).values()),
+            "learning": self.learning_snapshot(),
             "economics": economics_report(
                 self.state, now, self.running and not stale and self.error is None
             ),
@@ -329,6 +333,85 @@ class PaperRuntime:
     def require_healthy_control(self) -> None:
         if not self.running or self.error or not 0 <= time.time() - self.state["last_tick"] <= 10:
             raise ValueError("Paper worker unavailable or stale; wait for fresh status")
+
+    def learning_snapshot(self) -> dict[str, Any]:
+        from trading.paper_learning import snapshot
+
+        return snapshot(self.state)
+
+    def forward_control(self, candidate: str) -> dict[str, Any]:
+        from trading.paper_learning import matched_control
+
+        self.require_healthy_control()
+        result: dict[str, Any] = {}
+        self.state = self.store.transact(
+            time.time(), lambda e: result.update(matched_control(e, candidate))
+        )
+        return result
+
+    def learning_report(self, request_id: str, candidate: str, registry: Any) -> dict[str, Any]:
+        from trading.paper_learning import comparison, retain_report
+
+        self.require_healthy_control()
+        old = self.state.get("learning", {}).get("reports", {}).get(request_id)
+        if old:
+            if old["candidate"] != candidate:
+                raise ValueError("Report retry names a different candidate")
+            return dict(old, status="already_applied")
+        now = time.time()
+        history = self.store.forward_windows(now)
+        protected = registry.snapshot()["protected_through"]
+        report = comparison(
+            self.state,
+            candidate,
+            history["windows"],
+            now,
+            protected,
+            truncated=history["truncated"],
+        )
+        report["source_event_ids"] = history["event_ids"]
+        # Inspection consumes information even if subsequent journal persistence fails.
+        with registry.transaction():
+            registry.db.execute(
+                "INSERT OR IGNORE INTO evidence_windows VALUES "
+                "(?,?,?,'forward account inspection')",
+                (
+                    "forward-" + request_id,
+                    self.state["accounts"][candidate].get("admitted_at", now),
+                    now,
+                ),
+            )
+            registry.event(
+                request_id,
+                "forward_inspection",
+                {
+                    "candidate": candidate,
+                    "decision": report["decision"],
+                    "consumed_through": now,
+                },
+            )
+        result: dict[str, Any] = {}
+        self.state = self.store.transact(
+            now, lambda e: result.update(retain_report(e, request_id, report))
+        )
+        return result
+
+    def learning_role(
+        self, action: str, version: int, report_id: str = "", sha: str = ""
+    ) -> dict[str, Any]:
+        from trading.paper_learning import designate, rollback
+
+        self.require_healthy_control()
+        result: dict[str, Any] = {}
+        self.state = self.store.transact(
+            time.time(),
+            lambda e: result.update(
+                designate(e, report_id, sha, version)
+                if action == "designate"
+                else rollback(e, version)
+            ),
+        )
+        return result
 
     def account_control(self, name: str, action: str, version: int) -> dict[str, Any]:
         self.require_healthy_control()

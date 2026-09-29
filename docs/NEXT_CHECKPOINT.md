@@ -1,4 +1,15 @@
-# Next: CP7 forward comparison, learning reports and paper role rollback
+# Next: CP8 integrated finite acceptance, CP9 readiness packet and whole-stack audit
+
+CP7 now retains protected forward whole-account reports, matched controls, drift,
+explicit no-promotion and reversible operator-approved paper research roles.
+See CP7_FORWARD_LEARNING.md and reviews/cp7-forward-learning/README.md. Real
+prospective evidence is still collecting after an approved installation; synthetic
+contracts do not prove advantage. Continue CP8/CP9 and audit CP0–CP9 for measured
+performance and efficiency. Merge/install/live decisions remain separate.
+
+---
+
+# Historical: CP7 forward comparison, learning reports and paper role rollback
 
 CP6 now persists finite research campaigns and bounds total retained accounts at
 twenty. See CP6_BOUNDED_RESEARCH.md and reviews/cp6-bounded-research/README.md for

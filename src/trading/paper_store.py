@@ -185,9 +185,22 @@ class PaperStore:
     def numerical_inputs(self, as_of: float) -> list[dict[str, Any]]:
         rows = self.connection.execute(
             "SELECT id,at,body FROM paper_events WHERE kind='market_minute' "
-            "AND at<=%s AND body->>'symbol'='BTCUSD' ORDER BY id DESC LIMIT 121", (as_of,),
+            "AND at<=%s AND body->>'symbol'='BTCUSD' ORDER BY id DESC LIMIT 121",
+            (as_of,),
         ).fetchall()
         return sorted(rows, key=lambda r: (r["at"], r["id"]))
+
+    def forward_windows(self, now: float) -> dict[str, Any]:
+        rows = self.connection.execute(
+            "SELECT id,body FROM paper_events WHERE kind='economics_window' AND at<=%s "
+            "ORDER BY id DESC LIMIT 513",
+            (now,),
+        ).fetchall()
+        return {
+            "windows": [r["body"] for r in reversed(rows[:512])],
+            "truncated": len(rows) > 512,
+            "event_ids": [r["id"] for r in rows[:512]],
+        }
 
     def export(self, after: int, limit: int, account: str | None = None) -> dict[str, Any]:
         rows = list(

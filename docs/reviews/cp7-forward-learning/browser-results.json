@@ -1,0 +1,33 @@
+{
+  "fixture": "Synthetic disposable QA; no real days of evidence",
+  "checks": [
+    {
+      "name": "Matched incumbent has separate funding and declared universe",
+      "passed": true
+    },
+    {
+      "name": "No promotion from synthetic and insufficient data",
+      "passed": true
+    },
+    {
+      "name": "Approval disabled when evidence is insufficient",
+      "passed": true
+    },
+    {
+      "name": "Regime and dependence limitations stay explicit",
+      "passed": true
+    },
+    {
+      "name": "Paper role and other change types remain distinct",
+      "passed": true
+    },
+    {
+      "name": "Forward report export accessible",
+      "passed": true
+    },
+    {
+      "name": "Report and role retained through reload",
+      "passed": true
+    }
+  ]
+}

@@ -207,6 +207,7 @@ def serve(port, lab_qa=False, candidates_qa=False):
                                 now,
                                 lambda e, seq=seq: (
                                     e.universe_experiment(["BTCUSD", "ETHUSD"]),
+                                    e.state.update(evidence_kind="synthetic_qa"),
                                     e.tick(runtime.books, features(seq // 20, False)),
                                 ),
                             )

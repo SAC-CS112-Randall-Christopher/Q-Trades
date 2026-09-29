@@ -1,3 +1,13 @@
+# CP7 forward learning
+
+Read docs/CP7_FORWARD_LEARNING.md. Reports inspect/consume forward information;
+insufficient or negative outcomes remain no-promotion. Only explicit operator
+approval may designate a qualified paper research incumbent. A role change or
+rollback preserves every account and does not modify the original primary trial.
+Matched controls use separate capital and consume the twenty-account cap. Unknown
+regimes, proxy stress and descriptive HAC errors must remain honestly labeled.
+Continue CP8/CP9 and the measured audit; live execution remains disabled.
+
 # CP6 persistent research
 
 Read docs/CP6_BOUNDED_RESEARCH.md. Twenty is the total retained spot-account cap,

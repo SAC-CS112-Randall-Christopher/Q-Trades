@@ -208,6 +208,7 @@ def initial_state(
         "model": MODEL_VERSION,
         "started_at": now,
         "last_tick": now,
+        "evidence_kind": "observed_public_feed",
         "last_review": now,
         "next_review": now + REVIEW_SECONDS,
         "paused": False,
