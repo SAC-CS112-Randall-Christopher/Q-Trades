@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import re
 import sqlite3
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -17,9 +18,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
-from trading.activation_state import verify_startup
 from trading.config import Settings
-from trading.local_updates import STATUS_NAME, MainUpdates, public_status, source_identity
 from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
@@ -53,11 +52,14 @@ def create_app(
     venue: PublicVenue | None = None,
     paper_database: Path | None = None,
     research_evidence: Path | None = None,
-    source_root: Path | None = None,
-    preserve_existing: bool = False,
 ) -> FastAPI:
-    source = (source_root or Path(__file__).resolve().parents[2]).resolve()
-    updates = MainUpdates(source, database.parent)
+    code_commit: str | None
+    try:
+        marker = database.parent / "installed-commit.txt"
+        code_commit = marker.read_text().strip() if marker.stat().st_size <= 48 else ""
+        code_commit = code_commit if re.fullmatch(r"[0-9a-f]{40}", code_commit) else None
+    except OSError:
+        code_commit = None
     model_trials = ModelTrials(
         research_evidence
         if research_evidence is not None
@@ -69,9 +71,6 @@ def create_app(
         ownership = CollectorLock(database.with_suffix(".collector.lock"))
         ownership.acquire()
         try:
-            app.state.source_at_start = await asyncio.to_thread(source_identity, source)
-            app.state.update_busy = False
-            app.state.last_update_check = -60.0
             store = MonitorStore(database, settings.retained_observations)
             public_venue = venue or PublicVenue(settings.request_timeout_seconds)
             task = None
@@ -94,59 +93,33 @@ def create_app(
                 app.state.tool_journal = tool_journal
                 store.set("config:" + settings.fingerprint, settings.model_dump())
                 app.state.monitor = Monitor(settings, store, public_venue)
+                task = asyncio.create_task(app.state.monitor.run()) if background else None
                 app.state.paper = None
                 app.state.options = None
                 app.state.options_error = None
                 if paper_database is not None:
                     paper_store = PaperStore(load_dsn(paper_database), owner=True)
-                    if preserve_existing:
-                        paper_store.read()
-                    else:
-                        paper_store.initialize(time.time())
+                    paper_store.initialize(time.time())
                     if not paper_store.reconcile()["balanced"]:
                         raise RuntimeError("Paper journal reconciliation failed at startup")
                     paper_venue = PublicVenue(3)
                     app.state.paper = PaperRuntime(
                         paper_store, paper_venue, database.parent / "paper-stream.sqlite"
                     )
+                    paper_task = asyncio.create_task(app.state.paper.run()) if background else None
                     try:
-                        present = paper_store.connection.execute(
-                            "SELECT to_regclass('options_paper.paper_state') IS NOT NULL AS present"
-                        ).fetchone()
-                        if not preserve_existing or (present and present["present"]):
-                            options_store = OptionsStore(load_dsn(paper_database))
-                        if options_store is not None:
-                            if preserve_existing:
-                                options_store.read()
-                            else:
-                                options_store.initialize(time.time())
-                        if options_store and not options_store.reconcile()["balanced"]:
+                        options_store = OptionsStore(load_dsn(paper_database))
+                        options_store.initialize(time.time())
+                        if not options_store.reconcile()["balanced"]:
                             raise RuntimeError("Options journal reconciliation failed")
-                        if options_store:
-                            app.state.options = OptionsRuntime(options_store)
+                        app.state.options = OptionsRuntime(options_store)
+                        options_task = (
+                            asyncio.create_task(app.state.options.run()) if background else None
+                        )
                     except Exception:
-                        if preserve_existing:
-                            raise
                         app.state.options_error = (
                             "Options account needs attention; spot trading continues"
                         )
-                if preserve_existing:
-                    if paper_store is None:
-                        raise RuntimeError("Managed updates require an existing paper account")
-                    verify_startup(
-                        source,
-                        database.parent.parent,
-                        app.state.source_at_start,
-                        paper_store,
-                        options_store,
-                    )
-                # The account checkpoint must pass before any feed or financial worker starts.
-                if background:
-                    task = asyncio.create_task(app.state.monitor.run())
-                    if app.state.paper:
-                        paper_task = asyncio.create_task(app.state.paper.run())
-                    if app.state.options:
-                        options_task = asyncio.create_task(app.state.options.run())
                 yield
             finally:
                 if tool_journal:
@@ -227,41 +200,6 @@ def create_app(
             for market in snapshot["markets"]:
                 market["entry_reason"] = "Monitor only; see separate Tier 3 paper engine status"
         return snapshot
-
-    @app.get("/api/installation")
-    async def installation(request: Request) -> dict[str, Any]:
-        return await asyncio.to_thread(
-            public_status, request.app.state.source_at_start, database.parent / STATUS_NAME
-        )
-
-    @app.post("/api/installation/check")
-    async def check_main(request: Request) -> dict[str, Any]:
-        origin = request.headers.get("origin")
-        if request.headers.get("x-local-operator") != "1" or (
-            origin
-            and (
-                urlsplit(origin).scheme != "http"
-                or urlsplit(origin).netloc != request.headers.get("host")
-            )
-        ):
-            raise HTTPException(403, "Local operator request required")
-        if (
-            request.app.state.update_busy
-            or time.monotonic() - request.app.state.last_update_check < 30
-        ):
-            raise HTTPException(429, "An update check is running or was just completed")
-        request.app.state.update_busy = True
-        request.app.state.last_update_check = time.monotonic()
-        try:
-            # Never block the financial event loop on GitHub or invoke an installer here.
-            await asyncio.to_thread(updates.check)
-        except (RuntimeError, OSError) as exc:
-            raise HTTPException(
-                503, "Main check unavailable; the running app is unchanged"
-            ) from exc
-        finally:
-            request.app.state.update_busy = False
-        return await installation(request)
 
     @app.get("/api/paper/quotes")
     async def paper_quotes(request: Request) -> dict[str, Any]:
@@ -430,12 +368,18 @@ def create_app(
         )
 
     @app.get("/api/health")
-    async def health(request: Request) -> dict[str, str]:
+    async def health(request: Request) -> dict[str, Any]:
         monitor = request.app.state.monitor
         paper: PaperRuntime | None = request.app.state.paper
         return {
             "service": "running",
             "mode": "paper",
+            "code_commit": code_commit,
+            "paper_fresh": bool(
+                paper and paper.running and time.time() - paper.state["last_tick"] < 10
+            ),
+            "journal_balanced": paper.receipts.get("balanced") if paper else None,
+            "paper_error_reported": paper.error is not None if paper else None,
             "feed": monitor.snapshot()["runtime_state"],
             "paper": "running" if paper and paper.running else "stopped",
             "options": "running"

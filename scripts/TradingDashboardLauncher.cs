@@ -15,7 +15,6 @@ using System.Windows.Forms;
 internal static class TradingDashboardLauncher
 {
     private const string ProjectRoot = @"{{PROJECT_ROOT}}";
-    private const string RuntimeRoot = @"{{RUNTIME_ROOT}}";
 
     [STAThread]
     private static int Main(string[] args)
@@ -71,8 +70,7 @@ internal static class TradingDashboardLauncher
                 @"WindowsPowerShell\v1.0\powershell.exe");
             var start = new ProcessStartInfo(powershell) {
                 Arguments = "-NoLogo -NoProfile -NonInteractive -WindowStyle Hidden -File \"" + script + "\"" +
-                    (checkOnly ? " -CheckOnly" : "") +
-                    (RuntimeRoot.Length == 0 ? "" : " -RuntimeRoot \"" + RuntimeRoot + "\""),
+                    (checkOnly ? " -CheckOnly" : ""),
                 WorkingDirectory = ProjectRoot,
                 UseShellExecute = false, CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
@@ -87,7 +85,7 @@ internal static class TradingDashboardLauncher
                 Task.WaitAll(output, error);
                 if (checkOnly)
                 {
-                    string receipt = Path.Combine(RuntimeRoot.Length == 0 ? ProjectRoot : RuntimeRoot, "data", "desktop-launcher-check-" +
+                    string receipt = Path.Combine(ProjectRoot, "data", "desktop-launcher-check-" +
                         DateTime.UtcNow.ToString("yyyyMMddTHHmmssfffffffZ") + ".txt");
                     File.WriteAllText(receipt, output.Result + error.Result);
                 }

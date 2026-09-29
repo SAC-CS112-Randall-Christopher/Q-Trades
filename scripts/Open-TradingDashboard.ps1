@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([switch] $CheckOnly, [string] $RuntimeRoot)
+param([switch] $CheckOnly)
 
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'PaperStartupIdentity.ps1')
@@ -8,14 +8,12 @@ $taskName = 'TradingResearch-Paper-20260927'
 $dashboardUrl = 'http://127.0.0.1:8780/#experiment'
 $healthUrl = 'http://127.0.0.1:8780/api/health'
 $runnerPath = Join-Path $PSScriptRoot 'Run-PaperExperiment.ps1'
-$dataRoot = if ($RuntimeRoot) { (Resolve-Path -LiteralPath $RuntimeRoot).Path } else { $projectRoot }
-if ($RuntimeRoot) { $RuntimeRoot = $dataRoot }
-$logPath = Join-Path $dataRoot 'data\desktop-launcher.log'
+$logPath = Join-Path $projectRoot 'data\desktop-launcher.log'
 
 function Write-LauncherLog([string] $Message) {
     # This operational log contains no model prompts, market payloads or credentials.
     if ((Test-Path -LiteralPath $logPath) -and (Get-Item -LiteralPath $logPath).Length -gt 1MB) {
-        $archivePath = Join-Path $dataRoot ('data\desktop-launcher-' + (Get-Date -Format 'yyyyMMdd-HHmmss-ffff') + '.log')
+        $archivePath = Join-Path $projectRoot ('data\desktop-launcher-' + (Get-Date -Format 'yyyyMMdd-HHmmss-ffff') + '.log')
         # Both fixed paths are inside this project's data folder. Preserve the old log.
         Move-Item -LiteralPath $logPath -Destination $archivePath
     }
@@ -24,7 +22,7 @@ function Write-LauncherLog([string] $Message) {
 
 function Get-OwnedStartupTask {
     $task = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
-    if (-not (Test-PaperStartupAction -Task $task -ProjectRoot $projectRoot -RuntimeRoot $RuntimeRoot)) {
+    if (-not (Test-PaperStartupAction $task $projectRoot)) {
         throw 'The startup task does not match this project. No task was changed or started.'
     }
     if ($task.State -eq 'Disabled') {
@@ -55,7 +53,6 @@ try {
     if ($CheckOnly) {
         [ordered]@{
             project = $projectRoot
-            runtime_root = $dataRoot
             url = $dashboardUrl
             task = $taskName
             task_state = $task.State.ToString()
@@ -84,7 +81,7 @@ try {
     }
 
     if (-not $available) {
-        throw "The local dashboard did not become available. Make sure Docker Desktop is running, then try again. Details: $dataRoot\data\supervisor.log. The existing task has not been stopped."
+        throw "The local dashboard did not become available. Make sure Docker Desktop is running, then try again. Details: $projectRoot\data\supervisor.log. The existing task has not been stopped."
     }
     # A visible default-browser window is the explicitly requested user interface.
     Start-Process -FilePath $dashboardUrl

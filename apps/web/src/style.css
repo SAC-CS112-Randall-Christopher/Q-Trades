@@ -1477,9 +1477,3 @@ h1 {
 .paper-diagnostics { margin: 20px 0; border: 1px solid var(--line, #d9dfd7); border-radius: 8px; }
 .paper-diagnostics > summary { cursor: pointer; padding: 15px 18px; font-size: 12px; color: var(--muted, #61706a); }
 .paper-diagnostics .feed-panel { border: 0; margin: 0; }
-
-.installation-panel { margin-block: 24px; padding: 18px; }
-.installation-panel .section-heading { gap: 16px; flex-wrap: wrap; padding: 0 0 16px; }
-.installation-values { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin: 16px 0; }
-.installation-values dt { font-size: 12px; opacity: .7; }
-.installation-values dd { margin: 6px 0 0; overflow-wrap: anywhere; }

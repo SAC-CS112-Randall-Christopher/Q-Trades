@@ -1,17 +1,14 @@
-# Next: complete CP0 native local activation
+# Next: finish the simple CP0 update, then CP1
 
-The source import remains draft PR #2. PR #3 now includes main checking, isolated
-preparation, explicit activation/recovery, account checkpoint verification before
-worker startup, desktop preservation and installation status. See
-[the operation and remaining acceptance](LOCAL_UPDATES.md).
+The source import is draft PR #2. PR #3 has been simplified at Chris's request:
+**Update Q-Trades.cmd** is the only normal update entry point. The script uses
+standard Git, npm, pip, robocopy and the existing Windows task. No release manager,
+new runtime folder, task repointing or separate activation workflow.
 
-The registered native path and newer source diagnostics were inspected and preserved.
-The remaining steps are native execution of the new isolated tests and, after explicit
-merge/cutover approval, the actual main-release installation and normal desktop/recovery
-acceptance. No task, desktop launcher, account or model runtime was changed by this
-implementation. Use scripts/Update-QTrades.ps1; do not repeat ZIP imports.
-CP1 regression groundwork remains on its separate branch and its risk defects are
-not fixed by CP0. Do not close CP0 or claim local deployment from passing Linux tests.
+Verify the small updater in isolated Windows fixtures, merge after approval, then
+perform the first authorized real update and confirm the running commit and health.
+No new batch of tests in another Windows verification folder is the normal workflow.
+Keep CP1's existing branch/fixtures; its risk fixes are not included in CP0.
 
 ---
 

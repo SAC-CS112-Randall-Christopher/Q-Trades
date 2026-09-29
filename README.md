@@ -1,13 +1,14 @@
-# Local delivery checkpoint
+# Local updates
 
-GitHub `main` is the intended accepted-code authority. The new [local-update path](docs/LOCAL_UPDATES.md)
-checks main, prepares isolated releases, and supports explicit native activation/recovery.
-The dashboard distinguishes process-start code from accepted main and installation status.
-**The activation driver is implemented but not yet installed or verified on the operating workstation.**
-No Git push/merge by itself updates or restarts the operating Windows application.
+After the import and CP0 are merged, double-click **Update Q-Trades.cmd** in the
+GitHub checkout. It fetches `main`, builds the dashboard, backs up source, updates
+the existing local application and restarts its existing task. No app-folder move,
+new service, repeated ZIP import or release-management workflow is required.
+Databases, credentials, configuration and research evidence stay untouched.
+See [operation and failure handling](docs/LOCAL_UPDATES.md).
 
-The imported snapshot description below is historical. Follow issue #1, the current
-AGENTS instructions and LOCAL_UPDATES for the active work order.
+The implementation is in draft PR #3; it is not installed merely by pushing it.
+The snapshot introduction below is retained as historical context.
 
 ---
 
