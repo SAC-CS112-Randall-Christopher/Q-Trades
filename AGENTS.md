@@ -1,3 +1,13 @@
+# QTrades reference UI and authorized merge/relaunch
+
+The reference UI is implemented; read docs/REFERENCE_UI.md and its synthetic
+review receipt. Chris explicitly authorized merging all outstanding Q-Trades PRs
+and relaunching the existing installed application when ready. Complete exact-head
+checks, preserve stack ancestry, verify final main, then use the existing CP0
+manual updater. Preserve the original trial, funding/history and private config.
+Keep private installation receipts/logs ignored. Never treat this authorization
+as permission for live orders, paid providers, model/GIS changes or trial resets.
+
 # UI work after the completed CP0–CP9 audit
 
 Chris requested a UI based on the three images in `C:\Projects\Q-Trades UI Inspo`.

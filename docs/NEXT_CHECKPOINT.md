@@ -1,4 +1,20 @@
-# Next: Q-Trades UI based on the September 29 inspiration
+# Next operating checkpoint: prospective evidence after verified installation
+
+The requested reference UI is implemented. Read REFERENCE_UI.md and
+reviews/reference-ui/README.md for source, local and browser proof. Chris authorized
+the full outstanding PR stack merge and the existing CP0 manual updater/relaunch.
+Complete and verify those stages against current GitHub and native health state.
+
+Then observe subsequent paper results and protected daily comparisons without
+resetting the original trial or treating source/synthetic acceptance as advantage.
+Keep loss policies, explicit operating costs, all failed research, twenty-place
+capacity and human paper-role approval intact. CP9 remains not ready for live.
+Private account eligibility, actual forward evidence and a separately approved
+live adapter/account decision remain future work.
+
+---
+
+# Historical: Q-Trades UI based on the September 29 inspiration
 
 CP0–CP9 source implementation and the measured audit are complete as draft changes.
 Read CP0_CP9_EFFICIENCY_AUDIT.md and reviews/cp0-cp9-efficiency-audit/README.md for

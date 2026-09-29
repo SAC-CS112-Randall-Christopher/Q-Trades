@@ -145,9 +145,11 @@ function eventDescription(event: Event) {
 export function PaperPanel({
   data,
   disconnected,
+  integrated = true,
 }: {
   data: PaperSnapshot | undefined;
   disconnected: boolean;
+  integrated?: boolean;
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -309,10 +311,12 @@ export function PaperPanel({
               : "Pause all paper entries"}
         </button>
       </div>
+      {integrated && <>
       <PaperCampaignPanel data={data} unavailable={stale || !data.running || !!data.error} />
       <LearningPanel data={data.learning} unavailable={stale || !data.running || !!data.error} />
       <PaperRiskPanel accounts={Object.fromEntries(Object.entries(data.accounts).filter(([, a]) => !a.campaign_id))} unavailable={stale || !data.running || !!data.error} />
       <PaperEconomicsPanel data={data.economics} profiles={data.execution_profiles} unavailable={stale || !data.running || !!data.error} />
+      </>}
       <div className="learning-grid">
         <article className="learning-card">
           <Clock3 size={20} />

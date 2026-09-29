@@ -1,31 +1,45 @@
-import { StrictMode, useEffect, useState } from "react";
+import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Activity,
   ArrowDownToLine,
+  ArrowRight,
   BarChart3,
-  Check,
+  BrainCircuit,
+  ChevronRight,
   CircleHelp,
-  Clock3,
-  Cpu,
-  Database,
-  Eye,
-  FlaskConical,
-  Layers3,
+  Command,
+  FileClock,
+  LayoutDashboard,
   LockKeyhole,
+  Menu,
   Pause,
   Play,
-  Radio,
+  Search,
+  Settings2,
   ShieldCheck,
-  Telescope,
+  Wallet,
+  X,
 } from "lucide-react";
 import "./style.css";
 import { PaperPanel, type PaperSnapshot } from "./PaperPanel";
+import { PaperEconomicsPanel } from "./PaperEconomicsPanel";
+import { PaperRiskPanel } from "./PaperRiskPanel";
+import { LearningPanel } from "./LearningPanel";
 import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
 import { ReadinessPanel } from "./ReadinessPanel";
 import { MarketStation } from "./MarketStation";
+import {
+  AccountsView,
+  DashboardView,
+  GlobalEntryControl,
+  OrdersView,
+  PerformanceChart,
+  RiskOverview,
+} from "./WorkspaceViews";
+import "./theme.css";
 
 type Snapshot = {
   paper?: PaperSnapshot;
@@ -34,10 +48,8 @@ type Snapshot = {
   runtime_state: string;
   paused: boolean;
   generated_at: string;
-  poll_seconds: number;
-  stale_after_seconds: number;
-  retry_in_seconds: number;
   storage_error: string | null;
+  retry_in_seconds: number;
   capture: {
     retained: number;
     total: number;
@@ -47,31 +59,136 @@ type Snapshot = {
   events: { id: number; observed_at: string; message: string }[];
   events_total: number;
 };
-
-const format = (value: string | null | undefined, digits = 2) =>
-  value == null
-    ? "—"
-    : Number(value).toLocaleString("en-US", {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-      });
-const timeLabel = (value: string | null | undefined) =>
+const navigation = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    description: "Account performance and current activity",
+  },
+  {
+    id: "accounts",
+    label: "Accounts",
+    icon: Wallet,
+    description: "Isolated paper accounts and campaigns",
+  },
+  {
+    id: "ai-lab",
+    label: "AI Lab",
+    icon: BrainCircuit,
+    description: "Frozen experiments, learning and model trials",
+  },
+  {
+    id: "strategies",
+    label: "Strategies",
+    icon: Activity,
+    description: "Recorded strategy decisions and evidence",
+  },
+  {
+    id: "orders",
+    label: "Orders",
+    icon: FileClock,
+    description: "Positions, pending paper orders and account history",
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    description: "Whole-account returns, fees and cost assumptions",
+  },
+  {
+    id: "risk",
+    label: "Risk",
+    icon: ShieldCheck,
+    description: "Entry limits, hard stops and live readiness",
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: Settings2,
+    description: "Local collector, exports and deferred practice",
+  },
+] as const;
+type Page = (typeof navigation)[number]["id"] | "markets";
+const aliases: Record<string, Page> = {
+  overview: "dashboard",
+  experiment: "accounts",
+  "paper-campaigns": "accounts",
+  "account-economics": "analytics",
+  "experiment-lab": "ai-lab",
+  "forward-learning": "ai-lab",
+  "model-lab": "ai-lab",
+  "strategy-lab": "strategies",
+  "live-quotes": "markets",
+  "live-readiness": "risk",
+  operations: "settings",
+  research: "ai-lab",
+  roadmap: "settings",
+  options: "settings",
+};
+function currentPage(): Page {
+  const hash = location.hash.slice(1);
+  return (
+    aliases[hash] ??
+    (navigation.some((n) => n.id === hash) || hash === "markets"
+      ? (hash as Page)
+      : "dashboard")
+  );
+}
+const timeLabel = (value?: string) =>
   value
-    ? new Date(value).toLocaleTimeString("en-US", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
+    ? new Date(value).toLocaleString("en-US", {
         timeZone: "America/Denver",
-      })
-    : "Not observed";
-const stateLabel = (state: string) => state.replaceAll("_", " ");
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      }) + " MT"
+    : "Waiting for an observation";
 
 function App() {
+  const [page, setPage] = useState<Page>(currentPage);
+  const [labTab, setLabTab] = useState("experiments");
+  const [riskTab, setRiskTab] = useState("limits");
   const [data, setData] = useState<Snapshot | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [accountSearch, setAccountSearch] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const update = () => {
+      setPage(currentPage());
+      setMenuOpen(false);
+      setSearchOpen(false);
+      if (location.hash === "#model-lab") setLabTab("models");
+      else if (location.hash === "#forward-learning") setLabTab("learning");
+      else if (location.hash === "#experiment-lab") setLabTab("experiments");
+      if (location.hash === "#live-readiness") setRiskTab("readiness");
+      window.scrollTo({ top: 0, behavior: "instant" });
+    };
+    update();
+    window.addEventListener("hashchange", update);
+    const keyboard = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInput.current?.focus();
+        setSearchOpen(true);
+      }
+      if (event.key === "Escape") {
+        setSearchOpen(false);
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener("keydown", keyboard);
+    return () => {
+      window.removeEventListener("hashchange", update);
+      window.removeEventListener("keydown", keyboard);
+    };
+  }, []);
   useEffect(() => {
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -85,7 +202,7 @@ function App() {
           ]),
           cache: "no-store",
         });
-        if (!response.ok) throw new Error("Local service unavailable");
+        if (!response.ok) throw new Error();
         const next = (await response.json()) as Snapshot;
         if (active) {
           setData(next);
@@ -97,7 +214,7 @@ function App() {
             "Dashboard disconnected. Displayed observations are historical until the local service reconnects.",
           );
       }
-      if (active) timer = setTimeout(load, 3000);
+      if (active) timer = setTimeout(load, document.hidden ? 10000 : 3000);
     };
     void load();
     return () => {
@@ -106,16 +223,39 @@ function App() {
       clearTimeout(timer);
     };
   }, []);
-
-  const runtimeState = networkError
-    ? "disconnected"
-    : !data ? "connecting"
-    : !data.paper?.enabled ? "not enabled"
-    : data.paper.error ? "needs attention"
-    : !data.paper.running ? "stopped"
-    : data.paper.stale ? "stale" : "running";
-
-  async function control() {
+  const paper = data?.paper?.enabled ? data.paper : undefined;
+  const unavailable =
+    !!networkError || !paper?.running || !!paper?.stale || !!paper?.error;
+  const worker = networkError
+    ? "Disconnected"
+    : !data
+      ? "Connecting"
+      : !paper
+        ? "Paper not enabled"
+        : paper.error
+          ? "Needs attention"
+          : !paper.running
+            ? "Stopped"
+            : paper.stale
+              ? "Stale"
+              : "Paper worker running";
+  const accountCount = Object.keys(paper?.accounts ?? {}).length;
+  const title = navigation.find((n) => n.id === page)?.label ?? "Markets";
+  const subtitle: Record<Page, string> = {
+    dashboard: "Your paper accounts, performance and research — in one place.",
+    accounts:
+      "Compare isolated accounts. Keep each balance, strategy and loss limit separate.",
+    "ai-lab": "Test an idea. Freeze the evidence. Learn from every outcome.",
+    strategies: "Understand the rules, the signals and why a strategy acted.",
+    orders: "Every position, pending order and retained account event.",
+    analytics: "Whole-account results, measured after modeled execution costs.",
+    risk: "Review account limits, retained losses and the path to a live decision.",
+    settings:
+      "Your local workspace, background collection and retained records.",
+    markets:
+      "Public market observations and the evidence behind paper decisions.",
+  };
+  async function collectorControl() {
     if (!data) return;
     setPending(true);
     setCommandError(null);
@@ -132,379 +272,509 @@ function App() {
       if (!response.ok) throw new Error();
       const result = (await response.json()) as { paused: boolean };
       setData((previous) =>
-        previous
-          ? {
-              ...previous,
-              paused: result.paused,
-              runtime_state: result.paused ? "paused" : "warming_up",
-            }
-          : previous,
+        previous ? { ...previous, paused: result.paused } : previous,
       );
     } catch {
       setCommandError(
-        "The collector did not confirm this action. Its state is unchanged until confirmed.",
+        "The collector did not confirm this action. Wait for refreshed status before retrying.",
       );
     } finally {
       setPending(false);
     }
   }
-
+  const matches = query.trim().toLowerCase();
+  const matchingPages = navigation.filter((n) =>
+    `${n.label} ${n.description}`.toLowerCase().includes(matches),
+  );
+  const matchingAccounts = Object.entries(paper?.accounts ?? {}).filter(
+    ([name, a]) =>
+      `${name} ${a.label ?? ""} ${a.version}`.toLowerCase().includes(matches),
+  );
+  function searchAccounts(value: string) {
+    setAccountSearch(value);
+    setSearchOpen(false);
+    location.hash = "accounts";
+  }
   return (
-    <div className="app-shell">
-      <a className="skip-link" href="#main">
+    <div className="app-shell q-workspace">
+      <a
+        className="skip-link"
+        href="#main"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById("main")?.focus();
+        }}
+      >
         Skip to content
       </a>
-      <aside className="sidebar">
-        <a className="brand" href="#overview">
-          <span className="brand-mark">
-            <BarChart3 size={23} />
-          </span>
+      {menuOpen && (
+        <button
+          className="nav-backdrop"
+          aria-label="Close navigation"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+      <aside className={`sidebar ${menuOpen ? "is-open" : ""}`}>
+        <a
+          className="brand"
+          href="#dashboard"
+          aria-label="QTrades AI dashboard"
+        >
+          <svg className="q-mark" viewBox="0 0 40 40" aria-hidden="true">
+            <defs>
+              <linearGradient id="q-gradient" x1="0" x2="1" y1="0" y2="1">
+                <stop stopColor="#3cdddb" />
+                <stop offset="1" stopColor="#466aff" />
+              </linearGradient>
+            </defs>
+            <circle
+              cx="19"
+              cy="18"
+              r="12"
+              fill="none"
+              stroke="url(#q-gradient)"
+              strokeWidth="6"
+            />
+            <path
+              d="m25 25 9 9"
+              stroke="#5984ff"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+          </svg>
           <span>
-            Trading<span className="brand-sub">RESEARCH PLATFORM</span>
+            QTrades <b>AI</b>
           </span>
         </a>
-        <div className="workspace-label">
-          LOCAL WORKSPACE <span>01</span>
-        </div>
+        <p className="workspace-label">LOCAL RESEARCH WORKSPACE</p>
         <nav aria-label="Main navigation">
-          <a className="nav-primary" href="#overview">
-            <Layers3 size={18} /> Overview <span className="nav-dot" />
-          </a>
-          <a href="#live-quotes">
-            <Activity size={18} /> Command station
-          </a>
-          <a href="#strategy-lab">
-            <Telescope size={18} /> Strategies &amp; learning
-          </a>
-          <a href="#experiment">
-            <FlaskConical size={18} /> $100 paper experiment
-          </a>
-          <a href="#options">
-            <Layers3 size={18} /> Options practice
-          </a>
-          <a href="#research">
-            <FlaskConical size={18} /> Research tiers
-          </a>
-          <a href="#experiment-lab"><FlaskConical size={18} /> Experiments</a>
-          <a href="#live-readiness"><ShieldCheck size={18} /> Live readiness</a>
-          <a href="#model-lab">
-            <Cpu size={18} /> Model trials
-          </a>
-          <a href="#operations">
-            <Radio size={18} /> Operations
-          </a>
-          <a href="#roadmap">
-            <Telescope size={18} /> Build roadmap
+          {navigation.map((n) => (
+            <a
+              key={n.id}
+              href={`#${n.id}`}
+              className={page === n.id ? "nav-primary" : ""}
+              aria-current={page === n.id ? "page" : undefined}
+              onClick={() => {
+                setMenuOpen(false);
+                if (n.id === "accounts") setAccountSearch("");
+              }}
+            >
+              <n.icon size={19} />
+              <span>{n.label}</span>
+              {n.id === "accounts" && (
+                <span className="nav-count">{accountCount || "—"}</span>
+              )}
+            </a>
+          ))}
+          <a
+            href="#markets"
+            onClick={() => setMenuOpen(false)}
+            className={page === "markets" ? "nav-primary" : ""}
+            aria-current={page === "markets" ? "page" : undefined}
+          >
+            <Activity size={19} />
+            <span>Markets</span>
           </a>
         </nav>
         <div className="sidebar-note">
-          <ShieldCheck size={21} />
-          <strong>Observe. Test. Understand.</strong>
-          <p>Build evidence before putting capital to work.</p>
-          <span>PAPER ENVIRONMENT</span>
+          <ShieldCheck size={24} />
+          <strong>
+            Paper today.
+            <br />
+            Evidence for tomorrow.
+          </strong>
+          <p>Separate accounts. Frozen research. Human approval.</p>
+          <a href="#risk" onClick={() => setMenuOpen(false)}>
+            View safeguards <ArrowRight size={14} />
+          </a>
         </div>
         <div className="sidebar-footer">
-          <span className="avatar">CR</span>
-          <div>
-            Chris Randall<small>Owner · Local workspace</small>
-          </div>
+          <span className="status-dot good" />
+          <span>
+            Local workspace<small>Paper only · Cash only</small>
+          </span>
+          <LockKeyhole size={14} />
         </div>
       </aside>
-      <main id="main">
+      <main id="main" tabIndex={-1}>
         <header className="topbar">
-          <div>
-            <span className="muted">Workspace</span>
-            <span className="slash">/</span>Overview
+          <button
+            className="mobile-nav"
+            aria-label={menuOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <X size={21} /> : <Menu size={21} />}
+          </button>
+          <div className="workspace-search">
+            <Search size={18} />
+            <input
+              ref={searchInput}
+              type="search"
+              placeholder="Search accounts, strategies or pages…"
+              aria-label="Search workspace"
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSearchOpen(true);
+              }}
+              onFocus={() => setSearchOpen(true)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && query.trim())
+                  searchAccounts(query.trim());
+              }}
+            />
+            <kbd>
+              <Command size={11} /> K
+            </kbd>
+            {searchOpen && (
+              <div
+                className="search-results"
+                aria-label="Workspace search results"
+              >
+                <div className="search-results-heading">
+                  {matches ? "Matching pages and accounts" : "Quick navigation"}
+                  <button
+                    type="button"
+                    aria-label="Close search"
+                    onClick={() => setSearchOpen(false)}
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+                {matchingPages.map((n) => (
+                  <a
+                    key={n.id}
+                    href={`#${n.id}`}
+                    onClick={() => setSearchOpen(false)}
+                  >
+                    <n.icon size={17} />
+                    <span>
+                      {n.label}
+                      <small>{n.description}</small>
+                    </span>
+                    <ChevronRight size={14} />
+                  </a>
+                ))}
+                {matches &&
+                  matchingAccounts.slice(0, 5).map(([name, a]) => (
+                    <button
+                      key={name}
+                      onClick={() => searchAccounts(a.label ?? name)}
+                    >
+                      <Wallet size={17} />
+                      <span>
+                        {a.label ?? name}
+                        <small>{a.version}</small>
+                      </span>
+                      <ChevronRight size={14} />
+                    </button>
+                  ))}
+                {matches && (
+                  <button
+                    className="search-all"
+                    onClick={() => searchAccounts(query.trim())}
+                  >
+                    Search all {accountCount} accounts <ArrowRight size={14} />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
           <div className="topbar-right">
-            <span className="pill paper">
-              <ShieldCheck size={13} /> PAPER ONLY
-            </span>
-            <span className="local-tag">
-              <LockKeyhole size={13} /> Local
+            <div className="worker-state">
+              <span className={`status-dot ${!unavailable ? "good" : ""}`} />
+              <span>
+                {worker}
+                <small>{timeLabel(data?.generated_at)}</small>
+              </span>
+            </div>
+            <span className="pill paper">PAPER ONLY</span>
+            <span className="operator-avatar" title="Local operator">
+              CR
             </span>
           </div>
         </header>
-        <div className="page" id="overview">
+        <div className="page" data-page={page}>
           <div className="page-heading">
             <div>
-              <p className="eyebrow">THE RESEARCH LAB · PAPER ONLY</p>
-              <h1>Observe. Trade. Learn.</h1>
-              <p className="subtitle">
-                Real market observations. Simulated capital. Every outcome
-                recorded.
+              <p className="eyebrow">
+                WORKSPACE <ChevronRight size={11} /> {title.toUpperCase()}
               </p>
+              <h1>{page === "accounts" ? "Accounts control center" : title}</h1>
+              <p className="subtitle">{subtitle[page]}</p>
             </div>
-            <a className="button secondary" href="/api/capture">
-              <ArrowDownToLine size={16} /> Export observations
-            </a>
+            <div className="heading-actions">
+              {page === "dashboard" && (
+                <a className="button secondary" href="#markets">
+                  <Activity size={16} /> Explore markets
+                </a>
+              )}
+              {(page === "accounts" || page === "risk") && paper && (
+                <GlobalEntryControl paper={paper} unavailable={unavailable} />
+              )}
+            </div>
           </div>
-
-          {(networkError || commandError || data?.storage_error) && (
+          {(networkError ||
+            commandError ||
+            data?.storage_error ||
+            paper?.error) && (
             <div className="error-banner" role="alert">
-              <CircleHelp size={19} />
-              <span>{networkError || commandError || data?.storage_error}</span>
+              <CircleHelp size={18} />
+              {networkError ||
+                commandError ||
+                data?.storage_error ||
+                paper?.error}
             </div>
           )}
-
-          <section className="status-strip" aria-label="Operating mode">
-            <span className="strip-icon">
-              <Eye size={20} />
-            </span>
-            <div>
-              <strong>
-                {data?.paper?.enabled
-                  ? "The $100 Tier 3 experiment is enabled."
-                  : "Public market research."}
-              </strong>
-              <p>
-                {data?.paper?.enabled
-                  ? "Algorithmic paper execution and a four-hour learning review. No real money or model calls."
-                  : "Collecting public market data. Start the authorized experiment to enable paper orders."}
-              </p>
+          {!data && (
+            <div className="connection-note" role="status">
+              Connecting to your local workspace…
             </div>
-            <span className="pill neutral">RESEARCH IN PROGRESS</span>
-          </section>
-
-          <section className="metrics-grid" aria-label="Workspace summary">
-            <article className="metric-card">
-              <div className="metric-label">
-                Paper worker <Radio size={17} />
-              </div>
-              <div className="metric-value">
-                <span
-                  className={
-                    "status-dot " +
-                    (runtimeState === "running" ? "good" : "")
-                  }
+          )}
+          {paper?.stale && !networkError && (
+            <div className="error-banner" role="alert">
+              The paper worker is stale. Current values are unconfirmed;
+              historical evidence stays available.
+            </div>
+          )}
+          {page === "dashboard" && (
+            <DashboardView paper={paper} unavailable={unavailable} />
+          )}
+          {page === "accounts" && (
+            <>
+              <AccountsView
+                paper={paper}
+                unavailable={unavailable}
+                initialSearch={accountSearch}
+              />
+              <details className="workspace-details">
+                <summary>Original Tier 3 trial and review history</summary>
+                <PaperPanel
+                  data={paper}
+                  disconnected={!!networkError}
+                  integrated={false}
                 />
-                <span className="state-title">{stateLabel(runtimeState)}</span>
+              </details>
+            </>
+          )}
+          {page === "ai-lab" && (
+            <>
+              <div className="workspace-tabs" aria-label="AI Lab views">
+                {[
+                  ["experiments", "Numerical research"],
+                  ["learning", "Forward learning"],
+                  ["models", "Local model trials"],
+                ].map(([id, label]) => (
+                  <button
+                    key={id}
+                    className={labTab === id ? "selected" : ""}
+                    aria-pressed={labTab === id}
+                    onClick={() => setLabTab(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-              <p>
-                Market feed and pricing in the command station
-              </p>
-            </article>
-            <article className="metric-card">
-              <div className="metric-label">
-                Trading capital <LockKeyhole size={17} />
-              </div>
-              <div className="metric-value">
-                {data?.paper?.enabled
-                  ? "$" + format(data.paper.accounts.primary.equity)
-                  : "Not allocated"}
-              </div>
-              <p>
-                {data?.paper?.enabled
-                  ? "Simulated USD · Tier 3"
-                  : "No account connected"}
-              </p>
-            </article>
-            <article className="metric-card">
-              <div className="metric-label">
-                Captured observations <Database size={17} />
-              </div>
-              <div className="metric-value">
-                {data ? data.capture.retained.toLocaleString() : "—"}
-                <span className="metric-unit">retained</span>
-              </div>
-              <p>Public responses, available for offline replay</p>
-            </article>
-            <article className="metric-card">
-              <div className="metric-label">
-                Research agents <Cpu size={17} />
-              </div>
-              <div className="metric-value">
-                Disabled
-                <span className="off-indicator" />
-              </div>
-              <p>Local model testing · <a href="#model-lab">View trials</a></p>
-            </article>
-          </section>
-
-          <MarketStation />
-          <PaperPanel data={data?.paper} disconnected={!!networkError} />
-          <ExperimentLab paper={data?.paper} />
-          <ReadinessPanel />
-          <ModelTrialsPanel />
-          <OptionsPanel data={data?.options} disconnected={!!networkError} />
-          <section id="research" className="research-section">
-            <div className="section-heading plain">
-              <div>
-                <p className="eyebrow">02 / RESEARCH</p>
-                <h2>Three questions worth testing.</h2>
-              </div>
-              <span className="subtle-note">
-                Tier 3 is the active paper experiment
-              </span>
-            </div>
-            <div className="tier-grid">
-              <article className="tier-card">
-                <div className="tier-top">
-                  <span className="tier-index">TIER 01</span>
-                  <Layers3 size={19} />
-                </div>
-                <h3>Systematic</h3>
-                <p>
-                  Stock and ETF strategies with a longer horizon and a benchmark
-                  to beat.
-                </p>
-                <div className="tier-target">
-                  Benchmark relative<small>Multi-year research objective</small>
-                </div>
-                <div className="tier-status">
-                  <Clock3 size={13} /> Awaiting broker & point-in-time data
-                </div>
-              </article>
-              <article className="tier-card">
-                <div className="tier-top">
-                  <span className="tier-index">TIER 02</span>
-                  <Activity size={19} />
-                </div>
-                <h3>Aggressive</h3>
-                <p>
-                  Selective breakout and continuation research, measured after
-                  costs.
-                </p>
-                <div className="tier-target">
-                  10–20% <span>/ week</span>
-                  <small>Research target · Attainability unknown</small>
-                </div>
-                <div className="tier-status">
-                  <Clock3 size={13} /> Not active in this experiment
-                </div>
-              </article>
-              <article className="tier-card">
-                <div className="tier-top">
-                  <span className="tier-index">TIER 03</span>
-                  <FlaskConical size={19} />
-                </div>
-                <h3>Experimental</h3>
-                <p>
-                  Short-horizon ideas where turnover must justify its costs and
-                  risks.
-                </p>
-                <div className="tier-target">
-                  $100 → $1,000
-                  <small>Repeatability target · Not a forecast</small>
-                </div>
-                <div className="tier-status">
-                  <Clock3 size={13} /> Continuous paper trial · Four-hour
-                  reviews
-                </div>
-              </article>
-            </div>
-          </section>
-
-          <div className="bottom-grid">
-            <section className="panel operations" id="operations">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">03 / OPERATE</p>
-                  <h2>Background REST capture</h2>
-                </div>
+              {labTab === "experiments" && <ExperimentLab paper={paper} />}
+              {labTab === "learning" && (
+                <LearningPanel
+                  data={paper?.learning}
+                  unavailable={unavailable}
+                />
+              )}
+              {labTab === "models" && <ModelTrialsPanel />}
+            </>
+          )}
+          {(page === "markets" || page === "strategies") && (
+            <MarketStation strategyOnly={page === "strategies"} />
+          )}
+          {page === "orders" && (
+            <OrdersView paper={paper} unavailable={unavailable} />
+          )}
+          {page === "analytics" && (
+            <>
+              <PerformanceChart paper={paper} unavailable={unavailable} />
+              <PaperEconomicsPanel
+                data={paper?.economics}
+                profiles={paper?.execution_profiles}
+                unavailable={unavailable}
+              />
+            </>
+          )}
+          {page === "risk" && (
+            <>
+              <div className="workspace-tabs" aria-label="Risk views">
                 <button
-                  className="button secondary small"
-                  disabled={!data || pending || !!networkError}
-                  onClick={() => void control()}
+                  className={riskTab === "limits" ? "selected" : ""}
+                  aria-pressed={riskTab === "limits"}
+                  onClick={() => setRiskTab("limits")}
                 >
-                  {data?.paused ? <Play size={14} /> : <Pause size={14} />}
-                  {pending
-                    ? "Confirming…"
-                    : data?.paused
-                      ? "Resume collection"
-                      : "Pause collection"}
+                  Account safeguards
+                </button>
+                <button
+                  className={riskTab === "readiness" ? "selected" : ""}
+                  aria-pressed={riskTab === "readiness"}
+                  onClick={() => setRiskTab("readiness")}
+                >
+                  Live readiness
                 </button>
               </div>
-              <p className="activity-note">
-                Pause is saved across restarts. Closing this dashboard does not
-                stop the local collector. This control affects the monitor only;
-                the paper engine has its own public feed and entry controls
-                above.
-              </p>
-              {(data?.retry_in_seconds ?? 0) > 0 && (
-                <div className="cooldown">
-                  Retry cooldown: {data?.retry_in_seconds}s remaining. No
-                  immediate retry loop.
-                </div>
+              {riskTab === "limits" ? (
+                <>
+                  <RiskOverview paper={paper} unavailable={unavailable} />
+                  <PaperRiskPanel
+                    accounts={paper?.accounts ?? {}}
+                    unavailable={unavailable}
+                  />
+                </>
+              ) : (
+                <ReadinessPanel />
               )}
-              <ol className="event-list">
-                {data?.events.map((event) => (
-                  <li key={event.id}>
-                    <span className="event-dot" />
-                    <p>{event.message}</p>
-                    <time dateTime={event.observed_at}>
-                      {timeLabel(event.observed_at)}
-                    </time>
-                  </li>
-                ))}
-              </ol>
-              {data?.events.length === 0 && (
-                <p className="empty-state">No collector events yet.</p>
-              )}
-              <div className="activity-footer">
-                Latest {data?.events.length ?? 0} of {data?.events_total ?? 0}{" "}
-                events · Denver time
+            </>
+          )}
+          {page === "settings" && (
+            <>
+              <div className="settings-grid">
+                <section className="workspace-card">
+                  <div className="card-heading">
+                    <h2>Background collection</h2>
+                    <span className="pill neutral">
+                      {data?.paused
+                        ? "Paused"
+                        : (data?.runtime_state?.replaceAll("_", " ") ??
+                          "Connecting")}
+                    </span>
+                  </div>
+                  <p>
+                    Public REST observations for export and offline replay. The
+                    paper engine uses its own feed and entry controls.
+                  </p>
+                  <dl className="summary-values">
+                    <div>
+                      <dt>Retained observations</dt>
+                      <dd>{data?.capture.retained.toLocaleString() ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Capture capacity</dt>
+                      <dd>{data?.capture.capacity.toLocaleString() ?? "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Expired observations</dt>
+                      <dd>{data?.capture.evicted.toLocaleString() ?? "—"}</dd>
+                    </div>
+                  </dl>
+                  <div className="heading-actions">
+                    <button
+                      className="button secondary"
+                      disabled={!data || pending || !!networkError}
+                      onClick={() => void collectorControl()}
+                    >
+                      {data?.paused ? <Play size={15} /> : <Pause size={15} />}
+                      {pending
+                        ? "Confirming…"
+                        : data?.paused
+                          ? "Resume collection"
+                          : "Pause collection"}
+                    </button>
+                    <a className="button primary" href="/api/capture">
+                      <ArrowDownToLine size={15} /> Export observations
+                    </a>
+                  </div>
+                  {!!data?.retry_in_seconds && (
+                    <p role="status">
+                      Retry cooldown: {data.retry_in_seconds}s remaining.
+                    </p>
+                  )}
+                  <p className="fine-print">
+                    Pause is saved across restarts. Closing this dashboard keeps
+                    the local worker running.
+                  </p>
+                </section>
+                <section className="workspace-card">
+                  <div className="card-heading">
+                    <h2>Workspace boundaries</h2>
+                    <LockKeyhole size={19} />
+                  </div>
+                  <div className="guardrail-list">
+                    <p>
+                      <ShieldCheck size={19} />
+                      <span>
+                        <strong>Paper only</strong>Simulated orders and separate
+                        hypothetical balances.
+                      </span>
+                    </p>
+                    <p>
+                      <Wallet size={19} />
+                      <span>
+                        <strong>Cash only</strong>No new margin, borrowing or
+                        automatic top-ups.
+                      </span>
+                    </p>
+                    <p>
+                      <BrainCircuit size={19} />
+                      <span>
+                        <strong>Research needs evidence</strong>Frozen results
+                        and explicit paper-role approval.
+                      </span>
+                    </p>
+                    <p>
+                      <LockKeyhole size={19} />
+                      <span>
+                        <strong>Local operation</strong>Public market feeds.
+                        Private records stay on this computer.
+                      </span>
+                    </p>
+                  </div>
+                  <a href="#live-readiness" className="text-link">
+                    Review live blockers <ArrowRight size={14} />
+                  </a>
+                </section>
               </div>
-            </section>
-            <section className="panel roadmap" id="roadmap">
-              <div className="section-heading">
-                <div>
-                  <p className="eyebrow">BUILDING WITH INTENT</p>
-                  <h2>One checkpoint at a time.</h2>
-                </div>
-              </div>
-              <ol className="roadmap-list">
-                <li className="current">
-                  <span>
-                    <Eye size={16} />
+              <section className="workspace-card">
+                <div className="card-heading">
+                  <h2>Collector activity</h2>
+                  <span className="subtle-note">
+                    Latest {data?.events.length ?? 0} of{" "}
+                    {data?.events_total ?? 0}
                   </span>
-                  <div>
-                    <strong>Public market monitor</strong>
-                    <p>Public observations, health, and offline replay.</p>
-                  </div>
-                  <span className="pill success">NOW</span>
-                </li>
-                <li>
-                  <span>2</span>
-                  <div>
-                    <strong>An honest paper account</strong>
-                    <p>Active $100 trial, fees, reservations, recovery.</p>
-                  </div>
-                </li>
-                <li>
-                  <span>3</span>
-                  <div>
-                    <strong>Frozen strategy experiments</strong>
-                    <p>Three forward candidates and four-hour reviews.</p>
-                  </div>
-                </li>
-                <li>
-                  <span>4</span>
-                  <div>
-                    <strong>Optional AI research</strong>
-                    <p>Bounded explanations and experiments, with approval.</p>
-                  </div>
-                </li>
-              </ol>
-              <div className="roadmap-boundary">
-                <Check size={15} /> Deterministic execution is the foundation.
-              </div>
-            </section>
-          </div>
+                </div>
+                <ol className="event-list">
+                  {data?.events.map((e) => (
+                    <li key={e.id}>
+                      <span className="event-dot" />
+                      <p>{e.message}</p>
+                      <time>{timeLabel(e.observed_at)}</time>
+                    </li>
+                  ))}
+                </ol>
+                {!data?.events.length && (
+                  <p className="empty-state">
+                    No collector activity has been recorded.
+                  </p>
+                )}
+              </section>
+              <details className="workspace-details">
+                <summary>Historical options practice</summary>
+                <p className="fine-print">
+                  Retained practice evidence is separate from the current
+                  cash-only spot research.
+                </p>
+                <OptionsPanel
+                  data={data?.options}
+                  disconnected={!!networkError}
+                />
+              </details>
+            </>
+          )}
           <footer className="page-footer">
             <span>
-              TRADING RESEARCH <span className="footer-dot">·</span> LOCAL
-              FOUNDATION
+              <LockKeyhole size={12} /> LOCAL WORKSPACE <span>·</span> PAPER
+              RESEARCH
             </span>
             <p>
-              Background REST capture: {data?.capture.retained ?? 0} /{" "}
-              {data?.capture.capacity ?? 2000} records.{" "}
-              {data?.capture.evicted ?? 0} older records expired. Export to
-              preserve a sample.
-            </p>
-            <p>
-              Background REST exports retain receipt times. The command station
-              shows the paper engine’s stream and exchange timestamps.
+              Observed {timeLabel(data?.generated_at)}. Paper results do not
+              establish live returns.
             </p>
           </footer>
         </div>
@@ -512,7 +782,6 @@ function App() {
     </div>
   );
 }
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <App />

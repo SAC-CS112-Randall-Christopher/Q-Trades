@@ -103,7 +103,7 @@ const ToolResult = memo(function ToolResult({ run }: { run: Run }) {
   return <div className="tool-result" role="status"><div className="tool-result-heading"><strong>{run.symbol.replace(/USD$/, " / USD")}</strong><span className={run.status === "completed" ? "station-positive" : "station-muted"}>{run.status}</span></div><p>{summary}</p><details><summary>Evidence / diagnostics</summary><pre>{JSON.stringify(run, null, 2)}</pre></details></div>;
 });
 
-export function MarketStation() {
+export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean }) {
   const section = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
   const [symbol, setSymbol] = useState("BTCUSD");
@@ -114,7 +114,7 @@ export function MarketStation() {
   const [latest, setLatest] = useState<Run | null>(null);
   const [busy, setBusy] = useState(false);
   const [toolError, setToolError] = useState<string | null>(null);
-  const livePoll = usePoll<Live>(`/api/station/live?symbol=${symbol}`, 1000, visible);
+  const livePoll = usePoll<Live>(`/api/station/live?symbol=${symbol}`, strategyOnly ? 10000 : 1000, visible);
   const detailPoll = usePoll<Detail>(`/api/station/detail?symbol=${symbol}`, 10000, visible);
   const toolsPoll = usePoll<ToolState>("/api/research/tools", 10000, visible);
   const live = livePoll.data?.selected_symbol === symbol ? livePoll.data : null;
@@ -156,7 +156,8 @@ export function MarketStation() {
   };
 
   return <section ref={section} id="live-quotes" className="market-station" aria-labelledby="station-title">
-    <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">Market command station</h2></div><span className="station-local"><Activity size={14} /> Local workspace</span></header>
+    <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">{strategyOnly ? "Strategy evidence" : "Market command station"}</h2></div>{strategyOnly ? <label>Market <select value={symbol} onChange={e => setSymbol(e.target.value)}>{[...new Set(["BTCUSD", "ETHUSD", ...(scanner?.selected ?? [])])].map(s => <option key={s}>{s}</option>)}</select></label> : <span className="station-local"><Activity size={14} /> Local workspace</span>}</header>
+    {!strategyOnly && <>
     <div className="station-workspace">
       <aside className="station-watchlist" aria-label="Market scanner">
         <div className="station-pane-title"><h3>Markets</h3><span>{scanner?.total ?? "—"} screened</span></div>
@@ -187,7 +188,8 @@ export function MarketStation() {
       <section className="station-tape" aria-label="Recent exchange trades"><div className="station-pane-title"><h3>Recent trades</h3><span>Exchange prints</span></div><div className="tape-labels"><span>Price</span><span>Quantity</span><span>Time</span></div>{live?.trades.slice(0, 8).map(t => <div className="tape-row" key={t.id}><span>{price(t.price)}</span><span>{number(t.quantity, 5)}</span><span>{time(t.exchange_ms)}</span></div>)}{!live?.trades.length && <p className="station-empty">No trades observed since this stream started. A quiet market can still update its quotes.</p>}{!!live?.trade_gaps && <p className="station-small">The observed tape has gaps.</p>}</section>
       <section className="station-events" aria-label="Recent paper activity"><div className="station-pane-title"><h3>Paper activity</h3><span>Primary account</span></div>{detail?.paper_events.slice(0, 5).map(event => <div className="station-event" key={event.id}><div><strong>{event.kind.replaceAll("_", " ")}</strong><time>{time(event.at * 1000)}</time></div><p>{event.body.reason ?? [event.body.side, event.body.quantity, event.body.price].filter(Boolean).join(" · ")}</p></div>)}{!detail?.paper_events.length && <p className="station-empty">No matching activity in the recent account window.</p>}<button className="station-text-button" type="button" disabled={busy || !detail} onClick={() => void runTool("outcome_review")}>Review outcomes <ChevronRight size={14} /></button></section>
     </div>
-    {detail?.experiments && <StrategyLab data={detail.experiments} symbol={symbol} unavailable={!!detailPoll.error || live?.running !== true || !!live?.error} />}
+    </>}
+    {strategyOnly && (detail?.experiments ? <StrategyLab data={detail.experiments} symbol={symbol} unavailable={!!detailPoll.error || live?.running !== true || !!live?.error} /> : <p className="station-empty">{detailPoll.error ?? "Waiting for recorded strategy evidence…"}</p>)}
     <section className="station-tools" aria-label="Research tools"><div className="station-pane-title"><h3><Wrench size={15} /> Research tools</h3><span>Read-only · saved results</span></div><div className="station-tool-buttons">{toolsPoll.data?.tools.map(tool => <button key={tool.id} type="button" disabled={busy || !detail} title={tool.purpose} onClick={() => void runTool(tool.id)}>{busy ? "Working…" : tool.name}</button>)}</div>{(toolError || toolsPoll.error || toolsPoll.data?.error) && <p className="station-inline-note" role="alert">{toolError || toolsPoll.error || toolsPoll.data?.error}</p>}{latest && <ToolResult run={latest} />}<div className="station-agents"><span><strong>Researcher · Trainer · Reviewer</strong> — awaiting model qualification</span><a href="#model-lab">View model trials <ChevronRight size={13} /></a></div><details className="station-receipts"><summary>Saved tool runs ({toolsPoll.data?.total ?? 0})</summary>{toolsPoll.data?.runs.map(run => <button key={run.id} type="button" onClick={() => void openRun(run.id)}>{time(run.started * 1000)} · {run.symbol} · {toolsPoll.data?.tools.find(t => t.id === run.tool)?.name ?? run.tool}<span>{run.status}</span></button>)}</details></section>
     <details className="station-diagnostics"><summary>Evidence / diagnostics</summary><p>Prices refresh about once a second; charts and decisions refresh every ten seconds. Screened markets do not all have active streams. Charts contain closed candles, including bootstrap history; exchange prints are an incomplete recent window.</p><pre>{JSON.stringify({ quote, scan_observed_at: scanner?.observed_at, details_observed_at: detail?.generated_at, trade_gaps: live?.trade_gaps, live_error: livePoll.error, detail_error: detailPoll.error }, null, 2)}</pre></details>
   </section>;

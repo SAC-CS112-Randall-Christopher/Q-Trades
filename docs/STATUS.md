@@ -1,5 +1,18 @@
 # Source status — September 29, 2026
 
+The reference UI is implemented on the audited stack. The full local PostgreSQL
+suite passed again: 382 tests, no skips, 78.53 seconds; lint, strict types and the
+production dashboard build passed. Actual synthetic browser workflows and native
+screenshots are retained in `reviews/reference-ui/`. Unknown confidence and missing
+history remain explicit; the interface grants no new financial authority.
+
+Chris authorized merging all outstanding Q-Trades PRs and relaunching the existing
+native paper application after checks. Exact-head hosted, final-main, merge and
+private installation/preservation evidence must be observed separately. Future
+prospective market acceptance remains pending; the live decision is not ready.
+
+## Audit source checkpoint before UI
+
 CP4–CP9 and the CP0–CP9 efficiency audit are complete as stacked draft PRs #7–#13.
 The audit's final implementation is 06ca527: local PostgreSQL suite 382 passed
 without skips, lint/types/dashboard build passed, seven synthetic normal-browser
