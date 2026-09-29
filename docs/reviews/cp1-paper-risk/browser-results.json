@@ -1,0 +1,151 @@
+{
+  "scope": "Actual compiled UI and API with in-memory synthetic account store and fixture market transitions; PostgreSQL/restart verified in separate tests. Not operating accounts or strategy-performance evidence.",
+  "checks": [
+    {
+      "name": "UI explicit policy adoption reaches actual API",
+      "passed": true
+    },
+    {
+      "name": "operator pause/resume cannot clear hard loss stop",
+      "passed": true
+    },
+    {
+      "name": "recovery through UI and API persists across page reload without funds or new risk budget",
+      "passed": true
+    },
+    {
+      "name": "injected response failure is visible and real retry saves recovery",
+      "passed": true
+    },
+    {
+      "name": "risk accounts at 1440px",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "name": "risk accounts at 360px",
+      "viewport": 360,
+      "document": 360
+    },
+    {
+      "name": "missing BTC and ETH cancellation visible without blocking healthy siblings",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "unexpectedHttpErrors": [],
+  "primary": {
+    "cash": "33.0235930365",
+    "funding": "100",
+    "risk_reference": "100"
+  },
+  "risk_events": [
+    {
+      "kind": "risk_policy_changed",
+      "account": "primary",
+      "body": {
+        "previous": "legacy-paper-review-v1",
+        "selected": "cash-spot-hard-stop-v1",
+        "risk_reference": "100",
+        "funding": "100",
+        "reason": "Operator selected hard stops and no top-ups; history retained."
+      }
+    },
+    {
+      "kind": "drawdown_stop",
+      "account": "primary",
+      "body": {
+        "stop_id": 1,
+        "risk_policy": "cash-spot-hard-stop-v1",
+        "equity": "64",
+        "risk_reference": "100"
+      }
+    },
+    {
+      "kind": "risk_recovered",
+      "account": "primary",
+      "body": {
+        "stop_id": 1,
+        "at": 1790695491.3895845,
+        "equity": "66",
+        "risk_reference": "100",
+        "reason": "Operator resumed above the original loss limit; no funds or budget added."
+      }
+    },
+    {
+      "kind": "drawdown_stop",
+      "account": "primary",
+      "body": {
+        "stop_id": 2,
+        "risk_policy": "cash-spot-hard-stop-v1",
+        "equity": "64",
+        "risk_reference": "100"
+      }
+    },
+    {
+      "kind": "risk_recovered",
+      "account": "primary",
+      "body": {
+        "stop_id": 2,
+        "at": 1790695497.7986515,
+        "equity": "66",
+        "risk_reference": "100",
+        "reason": "Operator resumed above the original loss limit; no funds or budget added."
+      }
+    },
+    {
+      "kind": "order_cancelled",
+      "account": "primary",
+      "body": {
+        "symbol": "ETHUSD",
+        "side": "buy",
+        "quantity": "0.26341",
+        "limit": "100.12",
+        "reserved": "26.3989818092",
+        "stop_distance": "1.5",
+        "planned_unit_risk": "1.740288",
+        "version": "breakout-v1",
+        "created_at": 1790695498.6311095,
+        "features": {
+          "eligible": true,
+          "bar_open_ms": 1,
+          "atr": "1",
+          "reason": "Test breakout",
+          "version": "breakout-v1"
+        },
+        "reason": "Portfolio valuation unavailable: BTCUSD: fresh price missing",
+        "risk_policy": "cash-spot-hard-stop-v1",
+        "book": {
+          "lastUpdateId": 3,
+          "bids": [
+            [
+              "100",
+              "100"
+            ]
+          ],
+          "asks": [
+            [
+              "100.02",
+              "100"
+            ]
+          ]
+        },
+        "model": "paper-rest-ioc-v1",
+        "observation": {
+          "source": null,
+          "observed": 1790695498.6311095,
+          "exchange_event_ms": null,
+          "event_age_ms": null,
+          "clock_uncertainty_ms": null,
+          "request_sent_at": null,
+          "round_trip_ms": null,
+          "raw_update": null,
+          "futures_context": null
+        }
+      }
+    }
+  ],
+  "implementation_commit": "0ac3105956808178c0a66ea77ade9e023bea4c1d",
+  "runtime_class": "TieredPaperRuntime"
+}

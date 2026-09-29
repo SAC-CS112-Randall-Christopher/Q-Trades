@@ -1,5 +1,6 @@
 """Deterministic cash-only simulator. Every mutation is committed with its evidence."""
 
+import math
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from typing import Any
 
@@ -13,6 +14,87 @@ PARTICIPATION = D("0.10")
 REVIEW_SECONDS = 4 * 3600
 SYMBOLS = ("BTCUSD", "ETHUSD")
 MODEL_VERSION = "paper-rest-ioc-v1"
+HARD_STOP_POLICY = "cash-spot-hard-stop-v1"
+LEGACY_POLICY = "legacy-paper-review-v1"
+
+
+def policy(a: dict[str, Any]) -> str:
+    # An absent field identifies pre-CP1 history; unknown explicit values fail closed.
+    return str(a.get("risk_policy", LEGACY_POLICY))
+
+
+def fresh_frame(frame: dict[str, Any] | None, now: float) -> bool:
+    if not frame:
+        return False
+    stamp = frame.get("observed")
+    return (
+        isinstance(stamp, (int, float))
+        and not isinstance(stamp, bool)
+        and math.isfinite(stamp)
+        and 0 <= now - stamp <= 5
+    )
+
+
+def recovery_reason(a: dict[str, Any], now: float) -> str | None:
+    if policy(a) != HARD_STOP_POLICY:
+        return "Recovery requires the explicit hard-stop policy."
+    if not a["drawdown_pause"]:
+        return "There is no hard drawdown stop to resume."
+    if not a["valuation_fresh"] or not fresh_frame({"observed": a.get("valuation_at")}, now):
+        return "Wait for a fresh, complete portfolio valuation."
+    if a["failure_pending"] or a["attempt"]["outcome"] == "failed":
+        return "This failed attempt stays stopped; no top-up or loss-budget reset is permitted."
+    if D(a["equity"]) <= D(a["risk_peak"]) * D("0.65"):
+        return "Equity must recover above the existing 35% loss limit; the reference is unchanged."
+    if a["daily_pause"]:
+        return "The daily loss pause still applies until the next UTC day."
+    if now < a["cooldown_until"]:
+        return "Wait for the existing entry cooldown."
+    return None
+
+
+def entry_reason(a: dict[str, Any], paused: bool, now: float) -> str | None:
+    if policy(a) not in {LEGACY_POLICY, HARD_STOP_POLICY}:
+        return "Unknown risk policy; entries require inspection."
+    if paused:
+        return "Operator paused entries; position exits remain enabled."
+    if not a["valuation_fresh"] or not fresh_frame({"observed": a.get("valuation_at")}, now):
+        issues = a.get("valuation_issues", {})
+        detail = "; ".join(f"{symbol}: {reason}" for symbol, reason in issues.items())
+        return "Portfolio valuation unavailable" + (": " + detail if detail else ".")
+    if a["failure_pending"]:
+        if a["attempt"]["outcome"] == "failed":
+            return "Attempt failed; history retained. No automatic top-up or restart."
+        return "Account below $5; managing remaining exits."
+    if a["drawdown_pause"]:
+        return (
+            "Hard drawdown stop; operator recovery required."
+            if policy(a) == HARD_STOP_POLICY
+            else "Historical drawdown pause; legacy scheduled review governs recovery."
+        )
+    if a["daily_pause"]:
+        return "Daily loss pause until the next UTC day."
+    if now < a["cooldown_until"]:
+        return "Entry cooldown is still active."
+    return None
+
+
+def risk_summary(a: dict[str, Any], paused: bool, now: float) -> dict[str, Any]:
+    reason = entry_reason(a, paused, now)
+    recovery = recovery_reason(a, now)
+    return {
+        "policy": policy(a),
+        "legacy": policy(a) == LEGACY_POLICY,
+        "blocked": reason is not None,
+        "reason": reason or "Entries permitted when the strategy and cash checks qualify.",
+        "valuation_issues": dict(a.get("valuation_issues", {})),
+        "stop_id": a.get("risk_stop_id", 0),
+        "recoverable": recovery is None and not paused,
+        "recovery_reason": ("Clear the operator pause first." if paused else recovery),
+        "last_recovery": a.get("risk_recovery"),
+        "risk_reference": a["risk_peak"],
+        "stop_equity": str(D(a["risk_peak"]) * D("0.65")),
+    }
 
 
 def observation_evidence(frame: dict[str, Any]) -> dict[str, Any]:
@@ -91,6 +173,9 @@ def walk_book(
 def account(version: str, now: float) -> dict[str, Any]:
     return {
         "version": version,
+        "risk_policy": HARD_STOP_POLICY,
+        "risk_stop_id": 0,
+        "risk_recovery": None,
         "cash": "100",
         "funding": "100",
         "fees": "0",
@@ -231,7 +316,11 @@ class PaperEngine:
             self.emit(
                 "initial_funding",
                 name,
-                {"amount": "100", "currency": "USD"},
+                {
+                    "amount": "100",
+                    "currency": "USD",
+                    "risk_policy": policy(self.state["accounts"][name]),
+                },
                 [
                     self.line("USD", "cash", D(100)),
                     self.line("USD", "fake_funding", D(-100)),
@@ -279,19 +368,27 @@ class PaperEngine:
 
     def value(self, a: dict[str, Any], frames: dict[str, dict[str, Any]]) -> bool:
         equity = D(a["cash"])
+        issues: dict[str, str] = {}
         for symbol, pos in a["positions"].items():
             frame = frames.get(symbol)
-            if not frame or self.now - frame["observed"] > 5:
-                a["valuation_fresh"] = False
-                return False
+            if not fresh_frame(frame, self.now):
+                issues[symbol] = "fresh price missing"
+                continue
+            assert frame is not None
             book: Book = frame["book"]
             rules = frame["rules"]
             qty = D(pos["quantity"])
             filled, gross = walk_book(book, "sell", qty, D(0), rules)
             if filled < qty or qty < rules["min_qty"] or gross < rules["min_notional"]:
-                a["valuation_fresh"] = False
-                return False  # No complete executable valuation for missing depth or dust.
+                issues[symbol] = "insufficient executable depth or quantity below venue minimum"
+                continue
             equity += gross * (1 - FEE)
+        a["valuation_issues"] = issues
+        a["valuation_fresh"] = not issues
+        if issues:
+            return False  # Keep the last complete value, never a misleading partial sum.
+        # A fresh tick cannot rejuvenate an older held-asset quote for recovery.
+        a["valuation_at"] = min([self.now, *(frames[s]["observed"] for s in a["positions"])])
         a["equity"] = str(equity)
         a["valuation_fresh"] = True
         a["risk_peak"] = str(max(D(a["risk_peak"]), equity))
@@ -299,8 +396,12 @@ class PaperEngine:
         peak = max(D(a["nav_peak"]), nav)
         a["nav_peak"] = str(peak)
         a["max_drawdown"] = str(max(D(a["max_drawdown"]), 1 - nav / peak))
-        if equity <= D(a["risk_peak"]) * D("0.65"):
+        if equity <= D(a["risk_peak"]) * D("0.65") and not a["drawdown_pause"]:
             a["drawdown_pause"] = True
+            a["risk_stop_id"] = a.get("risk_stop_id", 0) + 1
+            a["risk_stopped_at"] = self.now
+            a["risk_stopped_equity"] = a["equity"]
+            a["risk_stopped_reference"] = a["risk_peak"]
         if int(self.now // 86400) != a["day"]:
             a.update(
                 day=int(self.now // 86400),
@@ -312,19 +413,25 @@ class PaperEngine:
             a["daily_pause"] = True
         return True
 
-    def fill(self, name: str, a: dict[str, Any], symbol: str, frame: dict[str, Any]) -> None:
+    def fill(
+        self,
+        name: str,
+        a: dict[str, Any],
+        symbol: str,
+        frame: dict[str, Any],
+        frames: dict[str, dict[str, Any]],
+    ) -> None:
         order = a["pending"][symbol]
-        if self.now < order["created_at"] + 1 or frame["observed"] <= order["created_at"]:
+        if order["side"] == "buy":
+            # Revalue at acceptance with the complete observation set, not a cached flag.
+            self.value(a, frames)
+            reason = entry_reason(a, self.state["paused"], self.now)
+            if reason or not frame.get("entry_allowed", True):
+                self.cancel(name, a, symbol, reason or "Market metadata is stale; entries paused")
+                return
+        if not fresh_frame(frame, self.now):
             return
-        if order["side"] == "buy" and (
-            self.state["paused"]
-            or not frame.get("entry_allowed", True)
-            or a["daily_pause"]
-            or a["drawdown_pause"]
-            or a["failure_pending"]
-            or self.now < a["cooldown_until"]
-        ):
-            self.cancel(name, a, symbol, "Entry permission revoked")
+        if self.now < order["created_at"] + 1 or frame["observed"] <= order["created_at"]:
             return
         if self.now - order["created_at"] > 15:
             self.cancel(name, a, symbol, "IOC observation window expired; no retrospective fill")
@@ -460,14 +567,9 @@ class PaperEngine:
     ) -> str:
         if not frame.get("entry_allowed", True):
             return "Market metadata is stale; entries paused"
-        if (
-            self.state["paused"]
-            or a["drawdown_pause"]
-            or a["daily_pause"]
-            or self.now < a["cooldown_until"]
-            or a["failure_pending"]
-        ):
-            return "Entry pause or review cooldown"
+        reason = entry_reason(a, self.state["paused"], self.now)
+        if reason:
+            return reason
         if symbol in a["positions"] or symbol in a["pending"]:
             return "Position or pending order already exists"
         if self.now < a["cooldowns"].get(symbol, 0):
@@ -528,6 +630,7 @@ class PaperEngine:
             "created_at": self.now,
             "features": feature,
             "reason": "Closed-bar breakout",
+            "risk_policy": policy(a),
             "book": frame["raw"],
             "model": self.state["model"],
             "observation": observation_evidence(frame),
@@ -596,6 +699,23 @@ class PaperEngine:
     def failure_review(self, name: str, a: dict[str, Any]) -> None:
         equity = D(a["equity"])
         if not a["valuation_fresh"] or equity >= 5 or a["positions"] or a["pending"]:
+            return
+        if policy(a) != LEGACY_POLICY:
+            if a["attempt"]["outcome"] == "open":
+                a["attempt"].update(outcome="failed", ended_at=self.now)
+                a["attempt_failures"] += 1
+                self.emit("attempt_failed", name, dict(a["attempt"]))
+                self.emit(
+                    "failure_review",
+                    name,
+                    {
+                        "attempt": dict(a["attempt"]),
+                        "risk_policy": policy(a),
+                        "equity_before": a["equity"],
+                        "funding": a["funding"],
+                        "action": "Attempt ended; losses retained. No top-up or new loss budget.",
+                    },
+                )
             return
         recent = a["recent_trades"][-50:]
         reasons: dict[str, int] = {}
@@ -723,7 +843,12 @@ class PaperEngine:
             reason = "Challenger passed two forward windows; paper-only promotion while flat"
         risk_resumed = []
         for name, a in self.state["accounts"].items():
-            if a["drawdown_pause"] and a["valuation_fresh"] and not a["failure_pending"]:
+            if (
+                policy(a) == LEGACY_POLICY
+                and a["drawdown_pause"]
+                and a["valuation_fresh"]
+                and not a["failure_pending"]
+            ):
                 risk_resumed.append(
                     {
                         "account": name,
@@ -789,13 +914,18 @@ class PaperEngine:
         self.state["last_tick"] = self.now
         self.state["features"] = study
         for name, a in self.state["accounts"].items():
+            stop_before = a.get("risk_stop_id", 0)
             self.value(a, frames)
             for symbol in list(a["pending"]):
                 frame = frames.get(symbol)
+                reason = entry_reason(a, self.state["paused"], self.now)
+                if a["pending"][symbol]["side"] == "buy" and reason:
+                    self.cancel(name, a, symbol, reason)
+                    continue
                 if self.now - a["pending"][symbol]["created_at"] > 15:
                     self.cancel(name, a, symbol, "Expired across data gap or restart")
-                elif frame and self.now - frame["observed"] <= 5:
-                    self.fill(name, a, symbol, frame)
+                elif frame and fresh_frame(frame, self.now):
+                    self.fill(name, a, symbol, frame, frames)
             fresh = self.value(a, frames)
             if fresh and D(a["equity"]) < 5:
                 a["failure_pending"] = True
@@ -811,17 +941,28 @@ class PaperEngine:
                 )
             for symbol in list(a["positions"]):
                 frame = frames.get(symbol)
-                if frame and self.now - frame["observed"] <= 5:
+                if frame and fresh_frame(frame, self.now):
                     feature = study.get(symbol, {}).get(a["positions"][symbol]["version"], {})
                     self.exit_position(name, a, symbol, frame, feature)
             if a["failure_pending"]:
                 self.failure_review(name, a)
+            if a.get("risk_stop_id", 0) != stop_before:
+                self.emit(
+                    "drawdown_stop",
+                    name,
+                    {
+                        "stop_id": a["risk_stop_id"],
+                        "risk_policy": policy(a),
+                        "equity": a["risk_stopped_equity"],
+                        "risk_reference": a["risk_stopped_reference"],
+                    },
+                )
             if not fresh:
                 continue
             for symbol in a.get("symbols", SYMBOLS):
                 frame = frames.get(symbol)
                 feature = study.get(symbol, {}).get(a["version"])
-                if not frame or not feature or self.now - frame["observed"] > 5:
+                if not frame or not feature or not fresh_frame(frame, self.now):
                     continue
                 bar_id = feature.get("bar_open_ms")
                 if bar_id is None or a["last_decision"].get(symbol, {}).get("bar") == bar_id:
@@ -859,6 +1000,55 @@ class PaperEngine:
                     },
                 )
         self.assert_invariants()
+
+    def adopt_hard_stop(self, name: str) -> dict[str, Any]:
+        a = self.state["accounts"][name]
+        if policy(a) == HARD_STOP_POLICY:
+            return {"status": "already_applied"}
+        if policy(a) != LEGACY_POLICY:
+            raise ValueError("Unknown policy; no risk permission was changed.")
+        for symbol, order in list(a["pending"].items()):
+            if order["side"] == "buy":
+                self.cancel(name, a, symbol, "Operator adopted hard-stop policy; re-evaluate entry")
+        a["risk_policy"] = HARD_STOP_POLICY
+        if a["drawdown_pause"] and not a.get("risk_stop_id"):
+            a["risk_stop_id"] = 1
+            a["risk_stopped_at"] = self.now
+        self.emit(
+            "risk_policy_changed",
+            name,
+            {
+                "previous": LEGACY_POLICY,
+                "selected": HARD_STOP_POLICY,
+                "risk_reference": a["risk_peak"],
+                "funding": a["funding"],
+                "reason": "Operator selected hard stops and no top-ups; history retained.",
+            },
+        )
+        return {"status": "applied"}
+
+    def recover_hard_stop(self, name: str, stop_id: int) -> dict[str, Any]:
+        a = self.state["accounts"][name]
+        if stop_id < 1 or stop_id != a.get("risk_stop_id"):
+            raise ValueError("The stop changed; refresh the account before recovering.")
+        last = a.get("risk_recovery")
+        if not a["drawdown_pause"] and last and last["stop_id"] == stop_id:
+            return {"status": "already_applied", "stop_id": stop_id}
+        reason = recovery_reason(a, self.now)
+        if self.state["paused"]:
+            reason = "Clear the operator pause first; the loss limit is unchanged."
+        if reason:
+            raise ValueError(reason)
+        a["drawdown_pause"] = False
+        a["risk_recovery"] = {
+            "stop_id": stop_id,
+            "at": self.now,
+            "equity": a["equity"],
+            "risk_reference": a["risk_peak"],
+            "reason": "Operator resumed above the original loss limit; no funds or budget added.",
+        }
+        self.emit("risk_recovered", name, dict(a["risk_recovery"]))
+        return {"status": "recovered", "stop_id": stop_id}
 
     def assert_invariants(self) -> None:
         for a in self.state["accounts"].values():

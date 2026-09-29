@@ -204,6 +204,7 @@ def test_loss_review_replenishment_atomic_and_historically_reconciled(pg_store):
     def loss(engine):
         # Synthetic test fixture models a historical cash loss with both journal sides.
         a = engine.state["accounts"]["primary"]
+        a.pop("risk_policy")  # Historical replenishment policy, retained explicitly.
         a["cash"] = "4"
         engine.emit(
             "synthetic_test_loss",

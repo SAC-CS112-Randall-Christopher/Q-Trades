@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Any
 
 from trading.market import parse_book, parse_instruments
-from trading.paper_engine import SYMBOLS, PaperEngine, filters
+from trading.paper_engine import SYMBOLS, PaperEngine, filters, fresh_frame, risk_summary
 from trading.paper_store import PaperStore
 from trading.paper_strategy import VARIANTS, Bar, features, parse_bars
 from trading.venue import FeedError, PublicVenue
@@ -199,7 +199,20 @@ class PaperRuntime:
         for name, a in self.state["accounts"].items():
             accounts[name] = {k: v for k, v in a.items() if k != "recent_trades"}
             accounts[name]["net_pnl"] = str(Decimal(a["equity"]) - Decimal(a["funding"]))
-            accounts[name]["valuation_fresh"] = a["valuation_fresh"] and not stale
+            accounts[name]["valuation_fresh"] = (
+                a["valuation_fresh"]
+                and not stale
+                and fresh_frame({"observed": a.get("valuation_at")}, now)
+            )
+            risk = risk_summary(a, self.state["paused"], now)
+            if stale or self.error:
+                risk.update(
+                    blocked=True,
+                    recoverable=False,
+                    reason="Paper worker unavailable or stale; wait for fresh status.",
+                    recovery_reason="Wait for the paper worker to recover.",
+                )
+            accounts[name]["risk"] = risk
         return {
             "enabled": True,
             "mode": "paper",
@@ -248,3 +261,23 @@ class PaperRuntime:
                             engine.cancel(name, a, symbol, "Operator paused entries")
 
         self.state = self.store.transact(time.time(), apply)
+
+    def risk_control(self, name: str, action: str, stop_id: int) -> dict[str, Any]:
+        if not self.running or self.error or not 0 <= time.time() - self.state["last_tick"] <= 10:
+            raise ValueError("Paper worker unavailable or stale; wait for fresh status.")
+        result: dict[str, Any] = {}
+
+        def apply(engine: PaperEngine) -> None:
+            if action == "adopt_hard_stop":
+                result.update(engine.adopt_hard_stop(name))
+            elif action == "resume_hard_stop":
+                result.update(engine.recover_hard_stop(name, stop_id))
+            else:
+                raise ValueError("Unknown risk action.")
+
+        self.state = self.store.transact(time.time(), apply)
+        return {
+            **result,
+            "account": name,
+            "risk": risk_summary(self.state["accounts"][name], self.state["paused"], time.time()),
+        }

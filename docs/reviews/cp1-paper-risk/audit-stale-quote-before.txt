@@ -1,0 +1,20 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+_______ test_recovery_cannot_extend_the_age_of_the_underlying_held_quote _______
+
+    def test_recovery_cannot_extend_the_age_of_the_underlying_held_quote():
+        state = initial_state(START)
+        buy(state)
+        a = state["accounts"]["primary"]
+        # Hypothetical previously latched stop; inventory has recovered, but its quote is aging.
+        a.update(drawdown_pause=True, risk_stop_id=1)
+        PaperEngine(state, START + 6.9).tick({"BTCUSD": frame(START + 2, sequence=2)}, {})
+        assert risk_summary(a, False, START + 6.9)["recoverable"]
+>       with pytest.raises(ValueError, match="fresh"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE <class 'ValueError'>
+
+tests/test_paper_risk.py:249: Failed
+=========================== short test summary info ============================
+FAILED tests/test_paper_risk.py::test_recovery_cannot_extend_the_age_of_the_underlying_held_quote
+1 failed, 18 deselected in 0.07s

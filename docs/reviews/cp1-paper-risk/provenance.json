@@ -1,0 +1,16 @@
+{
+  "implementation_commit": "0ac3105956808178c0a66ea77ade9e023bea4c1d",
+  "base_commit": "d20dced2834d237b9421d6b3c3b26b08bb90256a",
+  "sha256": {
+    "src/trading/paper_engine.py": "0f7d7d6137a5eea23852254125baa40838e0a321dfba1af8786cbcb92f71263a",
+    "src/trading/paper_runtime.py": "17663acce10dfd8c2ae176cf046a5f1aace3e5179c0e5b23a54e3c5fa14e4739",
+    "src/trading/api.py": "8af8556bc725bcf19cd618ea21d366fff7059594c104d3fa9eb14e11b5b936f8",
+    "apps/web/src/PaperPanel.tsx": "153e2eae5e8193e58990996405f74eb3b5c8197dccfb80c61bb5125694f168c2",
+    "apps/web/src/PaperRiskPanel.tsx": "c3c0fd563c2e336b3bba0331a2941335809d77dbcdfc8bc831924897361a1d9c",
+    "apps/web/src/style.css": "425eab635121502723987400a409a7399274fb19a21cadac6171b472454fb11f",
+    "tests/test_paper_risk.py": "5f04abf41039745aaaa5e17e803176cfb3144f09ca23a22fc5ad8c240b035670",
+    "tests/test_paper_risk_store.py": "1ef99304d29875de3097a6e4b3d7a1167f8ba6c82ec64324798bede15fa76f45",
+    "docs/evidence/first-market-capture.json": "d1aa6e60f3b06a5545f7a2ba98fc0f33dec3da090e1546e06f0a6a222a6916d2"
+  },
+  "cp0_updater_unchanged": true
+}

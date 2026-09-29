@@ -1477,3 +1477,9 @@ h1 {
 .paper-diagnostics { margin: 20px 0; border: 1px solid var(--line, #d9dfd7); border-radius: 8px; }
 .paper-diagnostics > summary { cursor: pointer; padding: 15px 18px; font-size: 12px; color: var(--muted, #61706a); }
 .paper-diagnostics .feed-panel { border: 0; margin: 0; }
+
+.paper-risk { margin-block: 20px; }
+.risk-account { padding: 16px 0; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+.risk-account h4 { margin-bottom: 8px; }
+.risk-account p { margin-block: 8px; }
+.risk-account .button { max-width: 100%; white-space: normal; }

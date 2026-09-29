@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
+import psycopg
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
@@ -23,6 +24,7 @@ from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
 from trading.ownership import CollectorLock
+from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
 from trading.runtime import Monitor
 from trading.station import TOOLS, execute_tool, market_detail, market_live
@@ -35,6 +37,12 @@ from trading.venue import PublicVenue
 class Control(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     action: Literal["pause", "resume"]
+
+
+class RiskControl(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    action: Literal["adopt_hard_stop", "resume_hard_stop"]
+    stop_id: int = Field(default=0, ge=0)
 
 
 class ToolRequest(BaseModel):
@@ -107,19 +115,26 @@ def create_app(
                         paper_store, paper_venue, database.parent / "paper-stream.sqlite"
                     )
                     paper_task = asyncio.create_task(app.state.paper.run()) if background else None
-                    try:
-                        options_store = OptionsStore(load_dsn(paper_database))
-                        options_store.initialize(time.time())
-                        if not options_store.reconcile()["balanced"]:
-                            raise RuntimeError("Options journal reconciliation failed")
-                        app.state.options = OptionsRuntime(options_store)
-                        options_task = (
-                            asyncio.create_task(app.state.options.run()) if background else None
-                        )
-                    except Exception:
-                        app.state.options_error = (
-                            "Options account needs attention; spot trading continues"
-                        )
+                    # Fresh CP1 experiments are spot-only. Existing options history stays
+                    # under its original policy; no migration or new account is implied.
+                    legacy = policy(paper_store.read()["accounts"]["primary"]) == LEGACY_POLICY
+                    existing_options = paper_store.connection.execute(
+                        "SELECT to_regclass('options_paper.paper_state') AS relation"
+                    ).fetchone()
+                    if legacy or (existing_options and existing_options["relation"]):
+                        try:
+                            options_store = OptionsStore(load_dsn(paper_database))
+                            options_store.initialize(time.time())
+                            if not options_store.reconcile()["balanced"]:
+                                raise RuntimeError("Options journal reconciliation failed")
+                            app.state.options = OptionsRuntime(options_store)
+                            options_task = (
+                                asyncio.create_task(app.state.options.run()) if background else None
+                            )
+                        except Exception:
+                            app.state.options_error = (
+                                "Options account needs attention; spot trading continues"
+                            )
                 yield
             finally:
                 if tool_journal:
@@ -309,6 +324,32 @@ def create_app(
             raise HTTPException(409, "Paper experiment is not enabled")
         paper.set_paused(control.action == "pause")
         return {"paused": paper.state["paused"]}
+
+    @app.post("/api/paper/accounts/{account}/risk-control")
+    async def paper_risk_control(
+        account: str, control: RiskControl, request: Request
+    ) -> dict[str, Any]:
+        origin = request.headers.get("origin")
+        if request.headers.get("x-local-operator") != "1" or (
+            origin
+            and (
+                urlsplit(origin).scheme != "http"
+                or urlsplit(origin).netloc != request.headers.get("host")
+            )
+        ):
+            raise HTTPException(403, "Local operator request required")
+        paper: PaperRuntime | None = request.app.state.paper
+        if paper is None:
+            raise HTTPException(409, "Paper experiment is not enabled")
+        if account not in paper.state["accounts"]:
+            raise HTTPException(404, "Paper account not found")
+        try:
+            # The existing single writer transaction is the authority, not browser values.
+            return paper.risk_control(account, control.action, control.stop_id)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(503, "Risk control was not saved; refresh before retrying") from exc
 
     @app.get("/api/paper/journal")
     async def paper_journal(

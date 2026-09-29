@@ -44,4 +44,6 @@ jobs:
           if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Requires Windows PowerShell 5.1' }
           python -B -m pytest -q -p no:cacheprovider --tb=long `
             tests/test_simple_update.py tests/test_simple_health.py `
-            tests/test_windows_supervision.py
+            tests/test_windows_supervision.py tests/test_paper_engine.py `
+            tests/test_paper_risk.py tests/test_paper_risk_store.py `
+            tests/test_paper_runtime.py tests/test_api.py tests/test_paper_store.py

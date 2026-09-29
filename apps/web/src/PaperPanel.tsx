@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PaperRiskPanel, type RiskStatus } from "./PaperRiskPanel";
 import { FeedPanel, type FeedDetails } from "./FeedPanel";
 import { FuturesPanel, type FuturesSnapshot } from "./FuturesPanel";
 import {
@@ -20,6 +21,7 @@ type Position = {
 };
 type Decision = { symbol: string; at: number; reason: string; version: string };
 type Account = {
+  risk?: RiskStatus;
   cash: string;
   equity: string;
   funding: string;
@@ -114,6 +116,8 @@ function eventDescription(event: Event) {
   if (event.kind === "replenishment")
     return `Added ${money(String(b.amount))} after failure review · lifetime fake funding ${money(String(b.total_funding))}`;
   if (event.kind === "failure_review") return String(b.action);
+  if (event.kind === "drawdown_stop") return `Drawdown stop at ${money(String(b.equity))}; risk reference ${money(String(b.risk_reference))}`;
+  if (event.kind === "risk_policy_changed" || event.kind === "risk_recovered") return String(b.reason);
   if (event.kind === "attempt_won")
     return "$100 → $1,000 target reached in this attempt";
   if (event.kind === "attempt_failed")
@@ -140,6 +144,7 @@ export function PaperPanel({
   const latest = data.reviews.at(-1);
   const halted =
     data.paused ||
+    a.risk?.blocked ||
     a.daily_pause ||
     a.drawdown_pause ||
     a.failure_pending ||
@@ -287,10 +292,11 @@ export function PaperPanel({
           {pending
             ? "Confirming…"
             : data.paused
-              ? "Resume paper entries"
+              ? "Clear operator pause"
               : "Pause paper entries"}
         </button>
       </div>
+      <PaperRiskPanel accounts={data.accounts} unavailable={stale || !data.running || !!data.error} />
       <div className="learning-grid">
         <article className="learning-card">
           <Clock3 size={20} />
@@ -308,8 +314,9 @@ export function PaperPanel({
               : "Collecting the first forward outcomes. No review or strategy success claimed yet."}
           </p>
           <p className="fine-print">
-            Replenishment triggers an immediate failure review. Risk limits stay
-            fixed.
+            {a.risk?.legacy
+              ? "Historical review and replenishment rules apply to this account."
+              : "Scheduled review cannot lift a hard stop or add funds. Recovery retains the original loss limit."}
           </p>
         </article>
         <article className="learning-card">
@@ -392,7 +399,7 @@ export function PaperPanel({
                   <th>Equity</th>
                   <th>Net P&L</th>
                   <th>Closed trades</th>
-                  <th>Refills</th>
+                  <th>Refills</th><th>Entry status</th>
                 </tr>
               </thead>
               <tbody>
@@ -404,7 +411,7 @@ export function PaperPanel({
                       <td>{money(s.equity)}</td>
                       <td>{money(s.net_pnl)}</td>
                       <td>{s.closed}</td>
-                      <td>{s.replenishments}</td>
+                      <td>{s.replenishments}</td><td>{s.risk?.reason ?? "Risk status unavailable"}</td>
                     </tr>
                   ))}
               </tbody>
@@ -439,7 +446,9 @@ export function PaperPanel({
       </div>
       <div className="paper-policy">
         <strong>
-          Replenish only below $5 → review the failure → restore to $100.
+          {a.risk?.legacy
+            ? "Historical policy: below-$5 failure review may restore paper funding to $100."
+            : "Hard-stop policy: preserve losses, do not refill accounts, and retain the original loss limit."}
         </strong>
         <p>
           Equity includes owned positions. All earlier losses remain visible.{" "}

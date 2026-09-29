@@ -115,6 +115,8 @@ def test_partial_fills_cancel_remainder_and_do_not_reconsume_same_book():
 
 def test_replenishment_strict_threshold_review_first_and_losses_retained():
     state = initial_state(START)
+    for saved in state["accounts"].values():
+        saved.pop("risk_policy")  # Historical pre-CP1 policy; not the new default.
     a = state["accounts"]["primary"]
     a.update(cash="5", equity="5")
     engine = PaperEngine(state, START + 1)
