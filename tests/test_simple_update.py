@@ -60,7 +60,9 @@ function npm {
         $dist=Join-Path $Source 'apps/web/dist'
         New-Item -ItemType Directory -Path $dist -Force|Out-Null
         [IO.File]::WriteAllText((Join-Path $dist 'index.html'),'compiled fixture')
-        if($Scenario -eq 'changed_head'){git -C $Source commit --allow-empty -m 'concurrent change'|Out-Null}
+        if($Scenario -eq 'changed_head'){
+            git -C $Source commit --allow-empty -m 'concurrent change'|Out-Null
+        }
     }
 }
 function robocopy {
