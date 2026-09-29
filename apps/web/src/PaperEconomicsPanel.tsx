@@ -116,7 +116,7 @@ export function PaperEconomicsPanel({ data, profiles = [], unavailable }: {
         <th>Account</th><th>Trading return</th><th>After operating allocation</th><th>Exposure after allocation</th><th>Matched rank</th>
       </tr></thead><tbody>{Object.entries(window.scores).map(([name, row]) => <tr key={name}>
         <td>{name}<small>{row.execution_profile}</small></td><td>{percent(row.return)}</td><td>{percent(row.total_return)}</td>
-        <td>{percent(row.exposure_total_return)}</td><td>{row.rank ?? "Not ranked"}<small>{row.reasons.join("; ")}</small></td>
+        <td>{percent(row.exposure_total_return)}</td><td>{row.rank ?? "Not ranked"}{row.reasons.length > 0 && <details><summary>Why not ranked?</summary><small>{row.reasons.join("; ")}</small></details>}</td>
       </tr>)}</tbody></table></div>
       <p className="fine-print">Ranks use returns after operating allocation, only within identical original-capital, cumulative-funding, fee-profile, risk-policy and operating-allocation groups. Different groups cannot be ranked against each other. Counterfactual account results must not be summed into a realizable portfolio.</p>
     </> : <p>Waiting for prospective account observations. Old completed-trade averages are not used to reconstruct missing equity windows.</p>}
