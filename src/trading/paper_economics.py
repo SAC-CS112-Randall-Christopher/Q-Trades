@@ -59,14 +59,19 @@ def sample(a: dict[str, Any], now: float) -> dict[str, Any]:
     }
 
 
-def new_benchmark(capital: str, profile: str, now: float) -> dict[str, Any]:
+def new_benchmark(
+    capital: str,
+    profile: str,
+    now: float,
+    symbols: tuple[str, ...] = BENCHMARK_SYMBOLS,
+) -> dict[str, Any]:
     return {
         "capital": capital,
         "cash": capital,
         "execution_profile": profile,
         "start": now,
         "fees": "0",
-        "legs": {s: {"status": "waiting"} for s in BENCHMARK_SYMBOLS},
+        "legs": {s: {"status": "waiting"} for s in symbols},
         "equity": capital,
         "fresh": True,
         "coverage": True,
@@ -94,7 +99,8 @@ def benchmark_tick(b: dict[str, Any], frames: dict[str, Any], now: float) -> lis
             if leg["status"] == "waiting":
                 limit = floor_step(book.asks[0][0] * D("1.001"), rules["tick"])
                 qty = floor_step(
-                    min(D(b["capital"]) / 2 / (limit * (1 + fee)), rules["max_qty"]), rules["step"]
+                    min(D(b["capital"]) / len(b["legs"]) / (limit * (1 + fee)), rules["max_qty"]),
+                    rules["step"],
                 )
                 if qty < rules["min_qty"] or qty * limit < rules["min_notional"]:
                     leg["status"] = "cash: below minimum"
@@ -179,9 +185,12 @@ def begin(state: dict[str, Any], now: float) -> dict[str, Any]:
     for name, a in state["accounts"].items():
         s = sample(a, now)
         key = f"{s['execution_profile']}:{s['equity']}"
+        symbols = tuple(a.get("benchmark_symbols", BENCHMARK_SYMBOLS))
+        if symbols != BENCHMARK_SYMBOLS:
+            key += ":" + ",".join(symbols)
         if s["fresh"] and D(s["equity"]) > 0:
             window["benchmarks"].setdefault(
-                key, new_benchmark(s["equity"], s["execution_profile"], now)
+                key, new_benchmark(s["equity"], s["execution_profile"], now, symbols)
             )
         window["accounts"][name] = {
             "first": s,
@@ -283,6 +292,7 @@ def scores(window: dict[str, Any], end: float, *, complete: bool) -> dict[str, A
             "cash_return": "0",
             "exposure_return": str(bench_return) if bench_return is not None else None,
             "benchmark_status": {s: v["status"] for s, v in bench["legs"].items()} if bench else {},
+            "benchmark_symbols": list(bench["legs"]) if bench else [],
             "max_drawdown": row["drawdown"],
             "trades": last["closed"] - first["closed"],
             "wins": last["wins"] - first["wins"],
@@ -290,6 +300,7 @@ def scores(window: dict[str, Any], end: float, *, complete: bool) -> dict[str, A
             "funding_basis": first["funding"],
             "starting_capital": first["starting_capital"],
             "execution_profile": first["execution_profile"],
+            "strategy_version": first["strategy_version"],
             "risk_policy": first["risk_policy"],
             "operating_daily_usd": daily,
             "cohort": (

@@ -69,6 +69,20 @@ class ForwardAdmission(BaseModel):
     operating_daily_usd: str | None = Field(default=None, pattern=r"^\d{1,4}(\.\d{1,6})?$")
 
 
+class LearningReport(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,48}$")
+    candidate: str = Field(pattern=r"^forward-[a-z0-9]{24}$")
+
+
+class LearningRole(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    action: Literal["designate", "rollback"]
+    expected_version: int = Field(ge=0)
+    report_id: str = Field(default="", max_length=48)
+    report_sha256: str = Field(default="", max_length=64)
+
+
 class ToolRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     tool: str = Field(min_length=1, max_length=64)
@@ -584,6 +598,45 @@ def create_app(
             raise HTTPException(
                 503, "Account control not confirmed; refresh before retrying"
             ) from exc
+
+    @app.post("/api/paper/learning/control/{candidate}")
+    async def matched_forward_control(request: Request, candidate: str) -> dict[str, Any]:
+        lab_operator(request)
+        paper = campaign_operator(request)
+        try:
+            return paper.forward_control(candidate)
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/paper/learning/reports")
+    async def forward_learning_report(request: Request, spec: LearningReport) -> dict[str, Any]:
+        lab = lab_operator(request)
+        paper = campaign_operator(request)
+        try:
+            return paper.learning_report(spec.request_id, spec.candidate, lab.registry)
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/paper/learning/role")
+    async def forward_learning_role(request: Request, spec: LearningRole) -> dict[str, Any]:
+        lab_operator(request)
+        paper = campaign_operator(request)
+        try:
+            return paper.learning_role(
+                spec.action, spec.expected_version, spec.report_id, spec.report_sha256
+            )
+        except (ValueError, KeyError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/paper/learning/reports/{request_id}")
+    async def forward_learning_export(request: Request, request_id: str) -> dict[str, Any]:
+        paper: PaperRuntime | None = request.app.state.paper
+        result = (
+            paper.state.get("learning", {}).get("reports", {}).get(request_id) if paper else None
+        )
+        if result is None:
+            raise HTTPException(404, "Learning report not found")
+        return dict(result)
 
     @app.get("/api/paper/journal")
     async def paper_journal(

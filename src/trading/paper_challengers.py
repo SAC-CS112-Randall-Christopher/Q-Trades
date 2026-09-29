@@ -48,6 +48,7 @@ def admit(
         label=FAMILIES[artifact["family"]]["name"] + " · exploratory",
         campaign_id="forward-research",
         symbols=["BTCUSD"],
+        benchmark_symbols=["BTCUSD"],
         admitted_at=engine.now,
         operating_daily_usd=operating_daily_usd,
         entries_paused=False,

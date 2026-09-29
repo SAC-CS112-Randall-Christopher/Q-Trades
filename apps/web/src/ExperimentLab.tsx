@@ -164,11 +164,11 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
       <button type="button" disabled={busy || !["acquiring", "queued", "running"].includes(detail.status)}
         onClick={() => void post(`/api/lab/experiments/${encodeURIComponent(detail.request_id)}/cancel`).catch(e => setError(String(e)))}>Cancel remaining work</button>
     </article>}
-    {Object.entries(paper?.accounts ?? {}).filter(([,a]) => a.campaign_id === "forward-research").map(([accountId, a]) => <article className="lab-result" key={accountId}>
+    {Object.entries(paper?.accounts ?? {}).filter(([,a]) => ["forward-research","forward-control"].includes(a.campaign_id ?? "")).map(([accountId, a]) => <article className="lab-result" key={accountId}>
       <h3>{a.label ?? accountId}</h3><p>Equity ${a.equity}; funding ${a.funding}; fees ${a.fees}; retained net ${a.net_pnl}.</p>
       <p>{a.risk?.reason ?? "Waiting for eligible frozen signals"}. {a.fault?.reason}</p>
       <button type="button" disabled={!paper?.running || paper.stale || busy}
-        onClick={() => void post(`/api/paper/accounts/${accountId}/control`, { action: a.entries_paused ? "resume" : "pause", expected_version: a.control_version ?? 0 }).catch(e => setError(String(e)))}>{a.entries_paused ? "Resume exploratory entries" : "Pause exploratory entries"}</button>
+        onClick={() => void post(`/api/paper/accounts/${accountId}/control`, { action: a.entries_paused ? "resume" : "pause", expected_version: a.control_version ?? 0 }).catch(e => setError(String(e)))}>{a.entries_paused ? "Resume " : "Pause "}{a.campaign_id==="forward-control" ? "matched control entries" : "exploratory entries"}</button>
       {a.fault && <button type="button" onClick={() => void post(`/api/paper/accounts/${accountId}/control`, {action:"recover",expected_version:a.control_version ?? 0}).catch(e=>setError(String(e)))}>Recover exploratory processing</button>}
       <PaperCampaignJournal account={accountId} />
     </article>)}
