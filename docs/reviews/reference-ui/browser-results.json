@@ -1,0 +1,120 @@
+{
+  "date": "2026-09-29",
+  "environment": "Disposable synthetic PostgreSQL schema and numerical registry; no operating accounts modified",
+  "checks": [
+    {
+      "name": "Fresh dashboard renders actual six-account balances and unqualified evidence",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Account selection focuses retained details and isolates the selected journal",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Account pause disables follow-up until refreshed control version",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Campaign launch retains six original accounts plus ten isolated paper accounts",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Completed three-family synthetic receipt retains rejection, artifact hashes and export",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Exploratory candidate and separate matched control use two places; synthetic zero-block comparison remains No promotion and approval disabled",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "18 actual accounts paginate 10/8, page size 20; research filter isolates 2; search selects the $50 campaign account",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Journal funding expansion shows Cash 50 USD and Hypothetical funding -50 USD; next page begins after the earlier retained events",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Global entry pause/resume waits for refreshed status; readiness remains source-dated Not ready with export",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Settings renders collection controls, export, retained activity and historical options access; strategies preserves rule evidence and saved read-only research tools",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Model trials keep evaluation-only, missing current trials and disabled research agents explicit",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Stopped-worker status warns that current values are unconfirmed and disables new entry controls",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Workspace search filters Accounts to primary; the resulting table contains one matching account",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Expanded account funding shows $50 cash, balanced hypothetical funding, and 100-event paging",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "4H range selection persists; selecting the $50 campaign account shows its actual current equity and explicitly waits for comparable checkpoints",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Responsive 390px and 768px CSS-width frames render the actual accounts page with collapsed navigation, two-column cards and a scrolling table",
+      "passed": true,
+      "scope": "Native visual inspection only; frame wrapper, not physical-device or mobile-menu interaction proof"
+    },
+    {
+      "name": "Final loaded UI exposes Queued work and the correct retained experiment count after rebuilding assets",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    },
+    {
+      "name": "Service disconnect retains readable historical accounts, warns that observations are historical and disables entry controls",
+      "passed": true,
+      "scope": "Normal browser UI observation"
+    }
+  ],
+  "early_probe_results": [
+    {
+      "check": "Selected $50 account history opens oldest-first funding and pages beyond 100 retained events",
+      "status": "FAIL"
+    },
+    {
+      "check": "Chart changes range using retained equity checkpoints; unknown operating costs stay Not available",
+      "status": "FAIL"
+    },
+    {
+      "check": "Workspace search primary opens Accounts and its selected account details",
+      "status": "FAIL"
+    },
+    {
+      "check": "Chart 4H selection and $50 campaign equity render from retained checkpoints, with unknown operating allocation explicit",
+      "status": "FAIL"
+    }
+  ],
+  "probe_corrections": "Expanded collapsed financial lines and used settled renders; workspace search filters matching accounts. A newly funded account without comparable economics windows displays its balance and waits for chart evidence.",
+  "responsive_limit": "390/768 CSS-pixel iframe layouts; top-document locator could not interact with framed menu, so no physical-device/menu-interaction proof.",
+  "visual_repairs": [
+    "Legacy table header palette",
+    "Sidebar card compression"
+  ]
+}

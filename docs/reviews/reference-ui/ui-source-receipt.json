@@ -1,0 +1,17 @@
+{
+  "source_files": {
+    "apps/web/src/main.tsx": "8cb72f79ebcc512122a5a8357b3e10f78c8e9a3e662f6898bb6ce9fa414a9fee",
+    "apps/web/src/WorkspaceViews.tsx": "11f3d3eb83de37d25dd955ae804ca82b1b9726733377410e35760becac0e7ebf",
+    "apps/web/src/theme.css": "c351a2354a11b375cc2f18a3101ca603cddbb8b59a3a72cebeee2ceb90174882",
+    "apps/web/src/ExperimentLab.tsx": "a51de0cbb62523ad4a541b4d756b94f81e243cf4c692d82f37c50f3047ace0ae",
+    "apps/web/src/MarketStation.tsx": "47b451d68dc06ecf0a1f4e40e960b45df67ffc0bde26c4d1a7d0265e3635e292",
+    "apps/web/src/PaperPanel.tsx": "7f579e2de76b60c22a9c07743790fc58bbaf04bcf159c12a69e1085f3cda4a76",
+    "apps/web/index.html": "0d818e8b10f031e79e7b393bf980c6d6e729f3ed2c40246a6570b46d44ce127c",
+    ".github/workflows/windows-native.yml": "0cc7f435b20d56c392a19bd2e068c1b21de6c619ae425649d569862ae4b3e519"
+  },
+  "build_html": "<!doctype html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <meta name=\"theme-color\" content=\"#080f19\" />\n    <meta\n      name=\"description\"\n      content=\"Local paper-only market research. Deterministic by design.\"\n    />\n    <title>QTrades AI \u00c2\u00b7 Paper Research</title>\n    <script type=\"module\" crossorigin src=\"/assets/index-DrhQlzZN.js\"></script>\n    <link rel=\"stylesheet\" crossorigin href=\"/assets/index-D2xqNDQl.css\">\n  </head>\n  <body>\n    <div id=\"root\"></div>\n\n  </body>\n</html>\n",
+  "local_suite": "382 passed; no skips; 78.53 seconds",
+  "lint": "passed",
+  "mypy": "47 source files passed",
+  "verification_data": "synthetic_qa; disposable PostgreSQL schema and local numerical registry"
+}

@@ -9,6 +9,7 @@ on:
       - 'tests/**'
       - 'pyproject.toml'
       - 'requirements-lock.txt'
+      - 'apps/web/**'
   workflow_dispatch:
 
 permissions:
@@ -52,3 +53,9 @@ jobs:
             tests/test_experiment_registry.py tests/test_numerical_candidates.py `
             tests/test_research_campaigns.py tests/test_paper_learning.py `
             tests/test_lab_resilience.py tests/test_live_readiness.py tests/test_efficiency_contracts.py
+      - name: Install pinned dashboard dependencies
+        working-directory: apps/web
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Type-check and build dashboard
+        working-directory: apps/web
+        run: npm run build
