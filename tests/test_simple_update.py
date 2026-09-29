@@ -54,6 +54,7 @@ function git {
 }
 function npm {
     $global:operations.Add('build')
+    & $env:ComSpec /d /c 'echo native-build-output & echo native-build-warning 1>&2'
     $global:LASTEXITCODE=0
     if($Scenario -eq 'build_failure'){$global:LASTEXITCODE=1;return}
     if($args -contains 'build'){
@@ -70,12 +71,16 @@ function robocopy {
         throw 'Test copy escaped disposable directories'
     }
     $global:operations.Add('copy')
+    if($Scenario -eq 'copy_failure' -and $args -contains '/MIR'){
+        $global:LASTEXITCODE=8;return
+    }
     & $roboExe @args
 }
 Set-Item -LiteralPath ('Function:\'+$python) -Value {
     $global:LASTEXITCODE=0
     if($args -contains 'pip'){
         $global:operations.Add('pip')
+        'native-dependency-output'
         if($Scenario -eq 'dependency_failure'){$global:LASTEXITCODE=1}
     }else{
         $global:operations.Add('health')
@@ -83,7 +88,7 @@ Set-Item -LiteralPath ('Function:\'+$python) -Value {
         '{"fixture":true}'
     }
 }
-& (Join-Path $Source 'scripts/Update-QTrades.ps1')
+& (Join-Path $Source 'scripts/Update-QTrades.ps1') -LogDirectory (Join-Path $Source 'logs')
 $code=$LASTEXITCODE
 @{exit_code=$code;operations=@($global:operations.ToArray());running=$global:running;
   enabled=$global:enabled}|ConvertTo-Json|Set-Content $Report
@@ -95,6 +100,9 @@ $code=$LASTEXITCODE
     "scenario",
     [
         "success",
+        "known_previous",
+        "log_failure",
+        "copy_failure",
         "dirty",
         "diverged",
         "missing_main",
@@ -113,7 +121,7 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     git(source, "init", "-b", "main")
     git(source, "config", "user.name", "Isolated test")
     git(source, "config", "user.email", "test@example.invalid")
-    (source / ".gitignore").write_text("apps/web/dist/\napps/web/node_modules/\n")
+    (source / ".gitignore").write_text("apps/web/dist/\napps/web/node_modules/\n*.log\n")
     for relative in (
         "src/trading/api.py",
         "src/stale.py",
@@ -159,6 +167,7 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     exe = runtime / ".venv/Scripts/python.exe"
     exe.parent.mkdir(parents=True)
     exe.write_text("Never executed: PowerShell mocks this command")
+    (source / "src/added.py").write_text("newly added fixture")
     (source / "src/trading/api.py").write_text("new fixture")
     (source / "src/stale.py").unlink()
     if scenario == "missing_main":
@@ -178,6 +187,14 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
         (source / "local-only.txt").write_text("preserve this commit")
         git(source, "add", ".")
         git(source, "commit", "-m", "local work")
+    logs = source / "logs"
+    if scenario == "log_failure":
+        logs.write_text("do not overwrite this existing file")
+    else:
+        logs.mkdir()
+        (logs / "previous-update.log").write_text("retained earlier log")
+    if scenario == "known_previous":
+        (runtime / "data/installed-commit.txt").write_text(old)
     before = git(source, "rev-parse", "HEAD")
     driver, report = tmp_path / "driver.ps1", tmp_path / "result.json"
     driver.write_text(DRIVER)
@@ -200,7 +217,43 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     outcome = json.loads(report.read_text(encoding="utf-8-sig"))
     ops = outcome["operations"]
     assert all((runtime / p).read_bytes() == b for p, b in protected.items())
-    if scenario == "success":
+    success = scenario in {"success", "known_previous"}
+    if scenario == "log_failure":
+        assert logs.read_text() == "do not overwrite this existing file"
+        assert not ops, outcome
+    else:
+        log_files = list(logs.glob("update-*.log"))
+        assert len(log_files) == 1, result.stdout + result.stderr
+        assert (logs / "previous-update.log").read_text() == "retained earlier log"
+        transcript = log_files[0].read_text(encoding="utf-8-sig")
+        expected = "SUCCESS" if success else "FAILED"
+        assert f"RESULT: {expected}" in transcript, transcript
+        assert "Finished:" in transcript and "duration:" in transcript
+        assert "Source checkout:" in transcript and "Last stage:" in transcript
+        assert "Saved update log:" in result.stdout
+        if not success:
+            assert "FAILED AT:" in transcript and "RESULT: SUCCESS" not in transcript
+        if "build" in ops:
+            assert "native-build-output" in transcript and "native-build-warning" in transcript
+        if "pip" in ops:
+            assert "native-dependency-output" in transcript
+        if success:
+            assert f"Target main commit: {target}" in transcript
+            previous = old if scenario == "known_previous" else "unknown"
+            assert f"Previous installed commit: {previous}" in transcript
+            assert "api.py" in transcript and "stale.py" in transcript and "added.py" in transcript
+            assert "Health attempt 1: exit=0" in transcript
+            assert "Install Python dependencies" in transcript
+            assert "Restart the existing application" in transcript
+            assert "Source backup:" in transcript
+            if scenario == "known_previous":
+                assert "A\tsrc/added.py" in transcript
+                assert "D\tsrc/stale.py" in transcript
+                assert "M\tsrc/trading/api.py" in transcript
+        if scenario != "dirty":
+            # Logs must not themselves make an otherwise clean source checkout dirty.
+            assert "logs" not in git(source, "status", "--porcelain")
+    if success:
         assert outcome["exit_code"] == 0, result.stdout + result.stderr
         assert (runtime / "src/trading/api.py").read_text() == "new fixture"
         assert not (runtime / "src/stale.py").exists()

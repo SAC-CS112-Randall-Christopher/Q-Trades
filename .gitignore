@@ -26,3 +26,6 @@ data/
 *.p12
 *.zip
 *.bundle
+
+# Manual update diagnostics stay on the workstation
+/logs/

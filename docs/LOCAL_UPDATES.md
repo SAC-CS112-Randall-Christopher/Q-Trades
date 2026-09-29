@@ -34,6 +34,27 @@ credentials stay in place. No task action, task principal, desktop executable,
 financial rule, account approval or risk profile is rewritten by the updater.
 Do not start a code-editing or frozen qualification job during a manual update.
 
+## Saved update logs
+
+Every run saves a new text transcript to `C:\Projects\Q-Trades\logs`, creating the
+folder when needed. Names use `update-YYYYMMDD-HHMMSS-mmm-<unique-id>.log`; earlier
+logs are never overwritten. `Update Q-Trades.cmd` is unchanged. The updater has
+an optional `-LogDirectory` override for another development location or tests.
+
+The log records timed stages, previous installed-marker and target-main commits,
+tracked code additions/modifications/deletions when the old commit is known, actual
+file-copy output, dependency/build messages and exit codes, backup location, each
+health attempt, and a final SUCCESS or FAILED with duration. An unknown previous
+version stays unknown. The Git difference is labeled as a comparison, not proof
+that each file was installed; the copy and final health results supply that evidence.
+An interrupted process may leave an incomplete log, not a success receipt.
+
+Logs are local diagnostics and may include machine paths or private details from
+external dependency tools; inspect them before sharing. The existing `*.log` ignore
+rule and explicit `/logs/` rule keep them out of normal Git staging. If the log cannot
+be created, the updater stops before touching the application. Logging does not
+add new services, financial checks or deployment permissions.
+
 ## Failure and retry
 
 Download/build/backup failure: the operating code stays unchanged. A service that
