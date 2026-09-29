@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 
 type Mark = {
+  campaign_id?: string | null; label?: string;
   equity: string; cash: string; available_cash: string; reserved: string; funding: string;
   net_pnl: string | null; realized: string; unrealized: string | null; fees: string;
   fresh: boolean; flat: boolean; settings_version: number; execution_profile: string;
@@ -81,7 +82,7 @@ export function PaperEconomicsPanel({ data, profiles = [], unavailable }: {
     <div className="economics-heading"><div><p className="eyebrow">ACCOUNT RESULTS, NOT WINNING-TRADE AVERAGES</p>
       <h3>Whole-account economics</h3></div>
       <label>Account<select value={account} onChange={e => { setAccount(e.target.value); setError(null); setMessage(null); }}>
-        {Object.keys(data?.accounts ?? { primary: null }).map(name => <option key={name}>{name}</option>)}
+        {Object.keys(data?.accounts ?? { primary: null }).map(name => <option key={name} value={name}>{data?.accounts[name]?.label ?? name}</option>)}
       </select></label></div>
     {!data && <p>Account economics are not available yet. Waiting for the paper worker.</p>}
     {unavailable && <p className="error-banner" role="alert">Paper worker disconnected or stale. Current values are not confirmed; completed windows remain historical.</p>}
@@ -115,23 +116,26 @@ export function PaperEconomicsPanel({ data, profiles = [], unavailable }: {
       <div className="table-scroll"><table className="market-table economics-table"><thead><tr>
         <th>Account</th><th>Trading return</th><th>After operating allocation</th><th>Exposure after allocation</th><th>Matched rank</th>
       </tr></thead><tbody>{Object.entries(window.scores).map(([name, row]) => <tr key={name}>
-        <td>{name}<small>{row.execution_profile}</small></td><td>{percent(row.return)}</td><td>{percent(row.total_return)}</td>
+        <td>{data?.accounts[name]?.label ?? name}<small>{row.execution_profile}</small></td><td>{percent(row.return)}</td><td>{percent(row.total_return)}</td>
         <td>{percent(row.exposure_total_return)}</td><td>{row.rank ?? "Not ranked"}{row.reasons.length > 0 && <details><summary>Why not ranked?</summary><small>{row.reasons.join("; ")}</small></details>}</td>
       </tr>)}</tbody></table></div>
       <p className="fine-print">Ranks use returns after operating allocation, only within identical original-capital, cumulative-funding, fee-profile, risk-policy and operating-allocation groups. Different groups cannot be ranked against each other. Counterfactual account results must not be summed into a realizable portfolio.</p>
     </> : <p>Waiting for prospective account observations. Old completed-trade averages are not used to reconstruct missing equity windows.</p>}
     {mark && <details className="economics-settings"><summary>Execution and operating-cost assumptions</summary>
       <form onSubmit={e => void save(e)}>
+        {mark.campaign_id && <p>Campaign strategy and cost assumptions were frozen at launch.</p>}
+        <fieldset disabled={!!mark.campaign_id}>
         <label>Execution fee scenario<select value={profile} onChange={e => setProfile(e.target.value)}>
           {profiles.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
         </select></label>
         <label>Estimated operating USD per day<input value={daily} onChange={e => setDaily(e.target.value)}
           placeholder="Unknown — leave blank" type="number" min="0" max="10000" step="0.000001" /></label>
+        </fieldset>
         <p className="fine-print">{data?.operating_basis}. Enter 0 only as an explicit zero-cost scenario. Unspecified is unknown, not free. This allocation is subtracted once in reporting, never from paper cash.</p>
         {assumption && <p className="fine-print">{assumption.fill_policy}. Delay: {assumption.latency_seconds}s; observation window: {assumption.expiry_seconds}s. {assumption.precision}. {assumption.settlement}. {assumption.limitations} {assumption.checked_at ? `Public schedule checked ${assumption.checked_at}; account commissions and eligibility are not verified.` : "Original research assumption retained as fee stress."}</p>}
         {blockedProfile && <p>Changing the execution profile requires this account to be flat with no pending orders. Position exits remain enabled.</p>}
-        <button type="submit" className="button secondary small" disabled={pending || unavailable || blockedProfile}>
-          {pending ? "Saving…" : "Save future cost assumptions"}</button>
+        {!mark.campaign_id && <button type="submit" className="button secondary small" disabled={pending || unavailable || blockedProfile}>
+          {pending ? "Saving…" : "Save future cost assumptions"}</button>}
         {error && <p className="error-banner" role="alert">{error}</p>}
         {message && <p role="status">{message}</p>}
       </form></details>}

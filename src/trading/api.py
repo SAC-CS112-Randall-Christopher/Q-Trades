@@ -24,6 +24,7 @@ from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
 from trading.ownership import CollectorLock
+from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
 from trading.runtime import Monitor
@@ -49,6 +50,12 @@ class EconomicsControl(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     execution_profile: str = Field(min_length=1, max_length=80)
     operating_daily_usd: str | None = Field(default=None, pattern=r"^\d{1,5}(\.\d{1,6})?$")
+    expected_version: int = Field(ge=0)
+
+
+class AccountControl(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    action: Literal["pause", "resume", "recover"]
     expected_version: int = Field(ge=0)
 
 
@@ -390,14 +397,60 @@ def create_app(
                 503, "Cost assumptions were not saved; refresh before retrying"
             ) from exc
 
+    def campaign_operator(request: Request) -> PaperRuntime:
+        origin = request.headers.get("origin")
+        if request.headers.get("x-local-operator") != "1" or (
+            origin
+            and (
+                urlsplit(origin).scheme != "http"
+                or urlsplit(origin).netloc != request.headers.get("host")
+            )
+        ):
+            raise HTTPException(403, "Local operator request required")
+        paper: PaperRuntime | None = request.app.state.paper
+        if paper is None:
+            raise HTTPException(409, "Paper experiment is not enabled")
+        return paper
+
+    @app.post("/api/paper/campaigns")
+    async def paper_campaign(spec: CampaignSpec, request: Request) -> dict[str, Any]:
+        paper = campaign_operator(request)
+        try:
+            return paper.campaign_create(spec)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(503, "Launch not confirmed; retry the same request") from exc
+
+    @app.post("/api/paper/accounts/{account}/control")
+    async def paper_account_control(
+        account: str, control: AccountControl, request: Request
+    ) -> dict[str, Any]:
+        paper = campaign_operator(request)
+        if account not in paper.state["accounts"]:
+            raise HTTPException(404, "Paper account not found")
+        try:
+            return paper.account_control(account, control.action, control.expected_version)
+        except (ValueError, ArithmeticError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Account control not confirmed; refresh before retrying"
+            ) from exc
+
     @app.get("/api/paper/journal")
     async def paper_journal(
-        request: Request, after: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=1000)
+        request: Request,
+        after: int = Query(0, ge=0),
+        limit: int = Query(100, ge=1, le=1000),
+        account: str | None = Query(None, max_length=100),
     ) -> dict[str, Any]:
         paper: PaperRuntime | None = request.app.state.paper
         if paper is None:
             raise HTTPException(409, "Paper experiment is not enabled")
-        return paper.store.export(after, limit)
+        if account is not None and account not in paper.state["accounts"]:
+            raise HTTPException(404, "Paper account not found")
+        return paper.store.export(after, limit, account)
 
     @app.post("/api/collector")
     async def collector(control: Control, request: Request) -> dict[str, bool]:

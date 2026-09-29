@@ -1,0 +1,36 @@
+{
+  "base_commit": "d88ef0022eeab9b59796813807a5beaf49065c7c",
+  "source_sha256": {
+    "src/trading/paper_campaigns.py": "35e20d8e753b494c32bf38042c53cf9d4522587361e1bb1359dd936c44043c98",
+    "src/trading/paper_engine.py": "9962e7ba5fee02254ebad2a8843dac92206a50051ef9782cb0b558b50dad97b1",
+    "src/trading/paper_runtime.py": "ed1e43aed948e043c56a94f7c3f3c45a81282b66d8f40c115bc64fb04a60e588",
+    "src/trading/tiered_runtime.py": "8a9894e9037affb0cf52514f183e993c57bb44b95a6a6513105221338427acb9",
+    "src/trading/paper_store.py": "2ff7d3d0f7f0ad10fc63af800d7edda8364a9b92d04a25ebb1a24fc59c668ee4",
+    "src/trading/paper_economics.py": "044b870164b2be4212bf689950fa9fce9377781eea2240fac711b0f67f6ac61e",
+    "src/trading/api.py": "85990c866d772c7e1803c3453c7a8433ec159c5e2fbbc306e88a9ff729eca96d",
+    "apps/web/src/PaperCampaignPanel.tsx": "8dfa7190588e3d6e9500be328bfbdbab421ec5013b74d979f60a6b48f139bb6d",
+    "apps/web/src/PaperCampaignJournal.tsx": "fd0c4d5a4d358cda751f12223b33c3a464924874861ff958cb1aaec485bffe82",
+    "apps/web/src/PaperPanel.tsx": "2fd6551050ccca71f34184d041abed20fbc88ca65866965b67b8f3e4992ce5b9",
+    "apps/web/src/PaperEconomicsPanel.tsx": "264d249db9b11311e10be349de416bd6caabfc7e84121100cad84395fe518306",
+    "apps/web/src/style.css": "bf2b6f9b89f3a2a7f42779155ec1c4b0aafbf03eac4ede6920a7b9348f0e77de",
+    "tests/test_paper_campaigns.py": "e870b320790188852bbce3d60e870677c0979668f2ed6a9bed08ce2dc4026314",
+    "tests/test_campaign_store.py": "0f34b22c1b9d4285bfc301cdd3c59ab6d1e6bdf0b813c0f1a25a91e3b35ee062",
+    "tests/test_options.py": "d8ae27feda6124be9db175d2fd2049a8b1656880ccd01371ac0aa525ca86b7c4",
+    "scripts/verify_cp3.py": "f44312a96bdfcb43dee8c13df4e61b256d3b9bb0494a1b9c0ce0b83f43379771"
+  },
+  "preserved_files": {
+    "Update Q-Trades.cmd": true,
+    "scripts/Update-QTrades.ps1": true,
+    "scripts/PaperStartupIdentity.ps1": true,
+    "scripts/qtrades_health.py": true,
+    "src/trading/options_engine.py": true,
+    "src/trading/options_runtime.py": true,
+    "src/trading/options_store.py": true
+  },
+  "test_result": "329 passed, zero skips",
+  "browser_checks": 13,
+  "financial_database": "Separate loopback QA PostgreSQL, generated schemas only",
+  "merge": false,
+  "deployment": false,
+  "inference_calls": 0
+}

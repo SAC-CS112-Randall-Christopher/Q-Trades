@@ -12,6 +12,7 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 from psycopg import sql
+from test_paper_store import pg_store as _pg_store
 
 from trading.api import create_app
 from trading.config import Settings
@@ -20,11 +21,12 @@ from trading.options_engine import OptionsEngine, initial_state, reserved
 from trading.options_policy import NY, SOURCE, quote_valid
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
-from trading.paper_store import PaperStore, load_dsn
+from trading.paper_store import load_dsn
 from trading.venue import FeedError
 
 NOW = datetime(2026, 9, 27, tzinfo=UTC).timestamp()
 SYMBOL = "AAPL260619C00110000"
+spot_store = _pg_store
 
 
 def quote(day="2026-06-01", price="0.01", **changes):
@@ -288,9 +290,9 @@ def options_store():
             admin.execute(sql.SQL("DROP SCHEMA {} CASCADE").format(sql.Identifier(schema)))
 
 
-def test_postgres_cash_inventory_restart_idempotency_and_spot_isolation(options_store):
+def test_postgres_cash_inventory_restart_idempotency_and_spot_isolation(options_store, spot_store):
     store, dsn, schema = options_store
-    spot = PaperStore(dsn)
+    spot, _ = spot_store
     try:
         before = spot.read()["accounts"]["primary"]
         store.transact(NOW, lambda e: e.state.update(history=warmed()["history"]))

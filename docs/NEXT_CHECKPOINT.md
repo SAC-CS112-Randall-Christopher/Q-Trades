@@ -1,3 +1,25 @@
+# Next: CP4 protected experiment registry
+
+CP3 implements one ten-account campaign through the normal Paper screen, with
+separate funding, reservations, inventory, costs, loss controls and readable paged
+history. It extends the existing engine and PostgreSQL writer, sharing market
+observations. Read [the contract](CP3_PAPER_CAMPAIGNS.md) and
+[the implementation review](reviews/cp3-paper-campaigns/README.md).
+
+The implementation has local engine/API/database, full-suite, browser and bounded
+one-versus-ten synthetic load evidence. It remains a draft stacked on CP2; no native
+installation or live/profitability/independent-discovery claim follows from this.
+The original trial, CP0 updater, model qualification and account histories remain
+separate. Merge/deployment still require their existing authorization.
+
+CP4 is the roadmap's durable protected-experiment registry and consumed-window
+rules. Complete that bounded research workflow rather than multiplying accounts,
+relaxing risk or introducing a second ledger.
+
+---
+
+## Historical pre-CP3 handoff
+
 # Next: CP3 concurrent paper accounts
 
 CP2 adds whole-account windows, explicit cost scenarios, cash/exposure controls,

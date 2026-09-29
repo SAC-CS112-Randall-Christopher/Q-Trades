@@ -182,14 +182,15 @@ class PaperStore:
             ).fetchall()
         )
 
-    def export(self, after: int, limit: int) -> dict[str, Any]:
+    def export(self, after: int, limit: int, account: str | None = None) -> dict[str, Any]:
         rows = list(
             self.connection.execute(
                 "SELECT e.*, COALESCE((SELECT jsonb_agg(jsonb_build_object("
                 "'asset',j.asset,'bucket',j.bucket,'amount',j.amount::text) ORDER BY j.line_no) "
                 "FROM paper_journal j WHERE j.event_id=e.id),'[]'::jsonb) AS journal "
-                "FROM paper_events e WHERE e.id > %s ORDER BY e.id LIMIT %s",
-                (after, limit + 1),
+                "FROM paper_events e WHERE e.id > %s "
+                "AND (%s::text IS NULL OR e.account=%s) ORDER BY e.id LIMIT %s",
+                (after, account, account, limit + 1),
             ).fetchall()
         )
         has_more = len(rows) > limit

@@ -1,0 +1,78 @@
+........F.FF..F..                                                        [100%]
+================================== FAILURES ===================================
+_________ test_distinct_labels_exact_count_and_unknown_operating_cost _________
+
+    def test_distinct_labels_exact_count_and_unknown_operating_cost():
+        payload = spec().model_dump()
+        payload["accounts"][0]["operating_daily_usd"] = None
+>       assert CampaignSpec.model_validate(payload).accounts[0].operating_daily_usd is None
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CampaignSpec
+E       accounts.0.operating_daily_usd
+E         Input should be a valid string [type=string_type, input_value=None, input_type=NoneType]
+E           For further information visit https://errors.pydantic.dev/2.13/v/string_type
+
+tests\test_paper_campaigns.py:80: ValidationError
+____ test_individual_and_global_entry_pauses_release_only_buy_reservations ____
+
+    def test_individual_and_global_entry_pauses_release_only_buy_reservations():
+        state, names, _ = campaign_state()
+        advance(state, 0, studies=study())
+        e = PaperEngine(state, START)
+        control_account(e, names[0], "pause", 0, {})
+        assert not state["accounts"][names[0]]["pending"]
+        assert all(state["accounts"][n]["pending"] for n in names[1:])
+>       assert "this account" in risk_summary(state["accounts"][names[0]], False, START)["reason"]
+E       AssertionError: assert 'this account' in 'Operator paused entries; position exits remain enabled.'
+
+tests\test_paper_campaigns.py:122: AssertionError
+___ test_rolled_back_account_failure_retains_balances_and_healthy_siblings ____
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000016335BFCA40>
+
+    def test_rolled_back_account_failure_retains_balances_and_healthy_siblings(monkeypatch):
+        state, names, _ = campaign_state()
+        advance(state, 0, studies=study())
+        before = copy.deepcopy(state["accounts"][names[0]])
+        original = PaperEngine.tick_account
+
+        def fail_after_fill(e, name, a, frames, features):
+            original(e, name, a, frames, features)
+            if name == names[0]:
+                raise ValueError("synthetic account-step failure")
+
+        with monkeypatch.context() as m:
+            m.setattr(PaperEngine, "tick_account", fail_after_fill)
+            e = advance(state, 2, sequence=2)
+        a = state["accounts"][names[0]]
+        assert a["cash"] == before["cash"] and a["pending"] == before["pending"]
+        assert not a["positions"] and a["fault"]["code"] == "ValueError"
+        assert not any(x["kind"] == "fill" and x["account"] == names[0] for x in e.events)
+        assert all(state["accounts"][n]["positions"] for n in names[1:])
+        risk = risk_summary(a, False, START + 2)
+>       assert "processing" in risk["reason"] and not risk["recoverable"]
+E       AssertionError: assert ('processing' in 'Operator paused entries; position exits remain enabled.')
+
+tests\test_paper_campaigns.py:157: AssertionError
+___ test_reordered_and_conflicting_books_cannot_reprice_economics_controls ____
+
+    def test_reordered_and_conflicting_books_cannot_reprice_economics_controls():
+        state, _, _ = campaign_state()
+        for offset, sequence in [(0, 10), (2, 11)]:
+            PaperEngine(state, START + offset).tick(paired_frames(START + offset, sequence), {})
+        control = next(iter(state["economics"]["active"]["benchmarks"].values()))
+        equity = control["equity"]
+        PaperEngine(state, START + 3).tick(paired_frames(START + 3, 9, "50"), {})
+>       assert control["equity"] == equity and not control["fresh"]
+E       AssertionError: assert ('49.9004220880' == '99.7305640660'
+E
+E         - 99.7305640660
+E         + 49.9004220880)
+
+tests\test_paper_campaigns.py:194: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_paper_campaigns.py::test_distinct_labels_exact_count_and_unknown_operating_cost
+FAILED tests/test_paper_campaigns.py::test_individual_and_global_entry_pauses_release_only_buy_reservations
+FAILED tests/test_paper_campaigns.py::test_rolled_back_account_failure_retains_balances_and_healthy_siblings
+FAILED tests/test_paper_campaigns.py::test_reordered_and_conflicting_books_cannot_reprice_economics_controls
+4 failed, 13 passed in 0.60s
