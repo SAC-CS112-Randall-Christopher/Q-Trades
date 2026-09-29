@@ -3,11 +3,11 @@
     {
       "name": "actual_main_check",
       "result": {
-        "running_commit": "24464451818b8ffc4d5280142e268e4d02c9e85c",
-        "running_source_dirty": true,
+        "running_commit": "a6125f3d2fad7ba6b98b594bbff1427b0b3cb88e",
+        "running_source_dirty": false,
         "running_source_kind": "checkout",
         "main_commit": "a7506186ce52503181dc4c53d9a90d9e2e78481b",
-        "checked_at": 1790644440.410024,
+        "checked_at": 1790645208.2661722,
         "phase": "no_release",
         "same_commit": false,
         "message": "Main does not contain the application release files yet.",

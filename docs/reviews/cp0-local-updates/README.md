@@ -49,10 +49,22 @@ The fixture now explicitly supplies healthy disk capacity, and a separate below-
 case proves the production guard still rejects optional tools without altering
 account state. No resource limit was relaxed to make the test pass.
 
-The source-start identity shown in the initial browser receipt is the imported
-commit plus **local modifications**, exactly as reported before the new code was
-committed. It is not a claim that the imported commit alone contains this feature.
-The browser test verifies the new compiled panel and staged code, not native deployment.
+The final browser rerun used a clean code commit
+`a6125f3d2fad7ba6b98b594bbff1427b0b3cb88e` after restarting only the disposable
+loopback test server. Its receipt confirms the exact startup identity and unchanged
+GitHub main. The final screenshots include the phone-spacing correction and explicit
+Denver timestamp. Earlier precommit captures remain in Git history.
+
+A full **real release-preparation rehearsal** also passed at that code commit:
+a disposable local bare repository represented merged main, then the default builder
+cloned the exact code, created its own venv, installed pinned dependencies and the
+application wheel, ran pip check, installed locked npm dependencies without lifecycle
+scripts, built TypeScript/Vite, smoke-imported the API and verified unchanged source
+and web asset hashes. The retained synthetic runtime sentinel was unchanged.
+See `release-preparation.json`. This exercised the actual builder, not the fake
+builder used by isolated unit tests. It was **not** a GitHub merge, a Windows run,
+an operating account update or native activation. No production origin override
+is exposed by the CLI; the local test remote existed only inside this rehearsal.
 
 All operating accounts, financial journals, frozen research evidence, model services
 and Windows worktrees were left untouched. CP1's pending regression fixtures are
