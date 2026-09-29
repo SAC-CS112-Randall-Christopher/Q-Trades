@@ -76,6 +76,7 @@ def busy_worker(seconds, output):
 
 
 def setup(engine, count):
+    engine.state["evidence_kind"] = "synthetic_qa"
     engine.universe_experiment(["BTCUSD", "ETHUSD"])
     configs = [
         {
@@ -113,6 +114,10 @@ def benchmark(output, soak=False):
         "cpu_scope": "Parent and fixed fit child separately; host includes all other work",
         "gpu": "No GPU calls; numerical path is CPU-only",
         "authority": "Synthetic QA only; paid $0; no market/24x7 inference",
+        "membership_scope": (
+            "Twenty is the full retained synthetic account set. One/ten are generated "
+            "projection subsets for capacity comparison; no operating history is edited."
+        ),
     }
     receipt = {
         "contract": contract,

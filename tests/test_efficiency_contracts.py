@@ -121,6 +121,21 @@ def test_approval_verifies_full_receipt_instead_of_trusting_projection():
     )
 
 
+def test_changed_summary_cannot_turn_an_immutable_rejection_into_authority():
+    engine, name, _ = candidate_state()
+    receipt = retain_report(
+        engine, "rejection-report-0001", comparison(engine.state, name, [], engine.now, START)
+    )
+    assert receipt["decision"] == "no_promotion"
+    engine.state["learning"]["reports"][receipt["request_id"]]["decision"] = (
+        "eligible_for_paper_designation"
+    )
+    before = copy.deepcopy(engine.state)
+    with pytest.raises(ValueError, match="immutable report does not permit"):
+        designate(engine, receipt["request_id"], receipt["sha256"], 0, receipt)
+    assert engine.state == before and engine.state["learning"]["incumbent"] == "primary"
+
+
 @pytest.mark.parametrize(
     "field,value",
     [

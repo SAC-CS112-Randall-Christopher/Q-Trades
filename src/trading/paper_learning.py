@@ -362,6 +362,8 @@ def designate(
     if receipt is None:
         raise ValueError("Immutable report unavailable; no paper designation")
     report = verify_report(receipt, report_id, sha256)
+    if report["decision"] != "eligible_for_paper_designation":
+        raise ValueError("This immutable report does not permit paper designation")
     if report.get("compared_incumbent") != learning["incumbent"]:
         raise ValueError("Report compared a different incumbent role")
     if engine.now - report["created_at"] > 86400:
