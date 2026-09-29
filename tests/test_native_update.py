@@ -121,7 +121,8 @@ try {
         ConvertTo-Json -Depth 10 -Compress
 } catch {
     @{ok=$false;calls=@($global:calls.ToArray());error=$_.Exception.Message;
-      stack=$_.ScriptStackTrace} | ConvertTo-Json -Depth 10 -Compress
+      stack=$_.ScriptStackTrace;exception=$_.Exception.ToString()} |
+        ConvertTo-Json -Depth 10 -Compress
 }
 """
 
@@ -150,13 +151,13 @@ def run(tmp_path, scenario="normal", action="stop"):
 
 def test_inspection_never_changes_task_or_processes(tmp_path):
     result = run(tmp_path, action="inspect")
-    assert result["ok"], result
+    assert result["ok"], json.dumps(result, indent=2)
     assert result["output"]["owned"] and not result["calls"]
 
 
 def test_stop_only_retains_and_terminates_verified_handles(tmp_path):
     result = run(tmp_path)
-    assert result["ok"], result
+    assert result["ok"], json.dumps(result, indent=2)
     assert result["calls"] == ["disable", "stop-task", "kill-42", "kill-41", "kill-32", "kill-31"]
 
 
@@ -172,7 +173,7 @@ def test_foreign_or_reused_processes_are_preserved_before_any_mutation(tmp_path,
 @pytest.mark.parametrize("action", ["configure_target", "configure_previous"])
 def test_configure_preserves_native_task_identity(tmp_path, action):
     result = run(tmp_path, action=action)
-    assert result["ok"], result
+    assert result["ok"], json.dumps(result, indent=2)
     assert result["calls"] == ["configure"]
 
 
@@ -183,11 +184,11 @@ def test_reconfiguration_refuses_an_enabled_task(tmp_path):
 
 def test_start_only_enables_and_starts_the_selected_task(tmp_path):
     result = run(tmp_path, action="start")
-    assert result["ok"], result
+    assert result["ok"], json.dumps(result, indent=2)
     assert result["calls"] == ["enable", "start-task"]
 
 
 def test_recovery_after_task_already_stopped_does_not_stop_a_nonexistent_instance(tmp_path):
     result = run(tmp_path, "already_stopped", "stop")
-    assert result["ok"], result
+    assert result["ok"], json.dumps(result, indent=2)
     assert result["calls"] == ["disable"]
