@@ -1,3 +1,10 @@
+# Paper risk and recovery
+
+CP1 adds account-level blocked reasons, explicit hard-stop policy adoption and
+recovery without adding funds or resetting the risk reference. See
+[CP1 behavior and compatibility](docs/CP1_PAPER_RISK.md). This source implementation
+is not a claim that the running Windows installation was updated.
+
 # Local updates
 
 After the import and CP0 are merged, double-click **Update Q-Trades.cmd** in the

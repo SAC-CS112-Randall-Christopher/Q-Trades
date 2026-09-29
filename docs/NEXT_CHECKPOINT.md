@@ -1,3 +1,21 @@
+# Next: CP2 economics; CP1 implementation audit and CP0 installation remain distinct
+
+CP1's risk fixes, account-scoped policy adoption, recovery API and normal UI are
+implemented in the CP1 branch. See [the behavior and boundaries](CP1_PAPER_RISK.md)
+and the CP1 review evidence. Preserve earlier policies and all account history.
+
+Next product work is CP2's whole-account return comparisons, open positions,
+consistent cost profiles and benchmarks. Do not claim those evaluation defects
+were corrected by CP1. No new model dependency belongs in the trading loop.
+
+CP0 still requires approved merges and the actual first workstation update. Its
+simple batch script and C:\Projects\Q-Trades\logs location are unchanged by CP1.
+No merge, native update, account policy change or live trading was performed here.
+
+---
+
+## Historical pre-CP1 work order
+
 # Next: finish the simple CP0 update, then CP1
 
 The source import is draft PR #2. PR #3 has been simplified at Chris's request:

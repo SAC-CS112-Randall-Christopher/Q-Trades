@@ -1,3 +1,12 @@
+# CP1 implemented; audit evidence and CP2 are next
+
+Read docs/CP1_PAPER_RISK.md. New spot accounts use latched hard stops without
+replenishment; unversioned existing accounts keep an explicitly labeled historical
+policy until the operator opts in. Do not reset an existing account or its loss
+reference to demonstrate recovery. Preserve the simple CP0 updater and log path.
+Unmerged, tested code is not an installed application. Continue in bounded draft
+checkpoints, with an explicit post-implementation audit and honest verification.
+
 # Current work order: a simple manual updater, then CP1
 
 Chris's September 29 correction supersedes the earlier managed-installer design.
