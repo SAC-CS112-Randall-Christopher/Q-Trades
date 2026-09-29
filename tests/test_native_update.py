@@ -26,6 +26,9 @@ $global:qtest_code=$runtime
 $global:qtest_listening=$Operation -eq 'stop' -or $Operation -eq 'inspect'
 $global:qtest_enabled=$global:qtest_listening
 $global:qtest_taskState=if ($global:qtest_listening) {'Running'} else {'Disabled'}
+if($Scenario -eq 'already_stopped'){
+    $global:qtest_listening=$false;$global:qtest_enabled=$false;$global:qtest_taskState='Disabled'
+}
 $global:calls=[Collections.Generic.List[string]]::new()
 $env:SystemRoot=Join-Path $PSScriptRoot 'Windows'
 $hostExe=Join-Path $runtime '.venv\Scripts\pythonw.exe'
@@ -182,3 +185,9 @@ def test_start_only_enables_and_starts_the_selected_task(tmp_path):
     result = run(tmp_path, action="start")
     assert result["ok"], result
     assert result["calls"] == ["enable", "start-task"]
+
+
+def test_recovery_after_task_already_stopped_does_not_stop_a_nonexistent_instance(tmp_path):
+    result = run(tmp_path, "already_stopped", "stop")
+    assert result["ok"], result
+    assert result["calls"] == ["disable"]

@@ -49,15 +49,15 @@ verified through the actual desktop application.
 
 ## Executed evidence
 
-**Final full suite at e629720: 334 passed, six native-Windows skips, one existing
-Starlette TestClient warning, 46.28 seconds.** See `activation-pytest.txt`.
+**Final full suite including the stopped-instance recovery follow-up: 335 passed,
+six native-Windows skips, one existing Starlette TestClient warning, 45.02 seconds.** See `activation-pytest.txt`.
 Ruff, strict mypy for 38 source modules, Python compilation, TypeScript and Vite
 production build passed. The earlier 282/325/331/334 totals overlap; never add them.
 
 New coverage includes 26 activation/recovery orchestration cases using real
 throwaway Git repositories and simulated native operations; ten read-only
-PostgreSQL/API startup-checkpoint cases; eleven actual PowerShell-driver cases
-with mocked OS responses; four actual desktop copy/restore cases using synthetic
+PostgreSQL/API startup-checkpoint cases; twelve actual PowerShell-driver cases
+with mocked OS responses (including an already stopped task); four actual desktop copy/restore cases using synthetic
 executables in temporary directories; and one main-recheck preservation test.
 No synthetic executable is run. Windows task commands are mocked and the test
 supervisor mutex uses a unique name, never the operating mutex.
@@ -112,3 +112,13 @@ Primary implementation references checked September 28, 2026:
 - https://learn.microsoft.com/en-us/powershell/module/scheduledtasks/set-scheduledtask
 - https://www.postgresql.org/docs/current/transaction-iso.html
 - https://docs.python.org/3/library/subprocess.html
+
+### Final stopped-instance recovery check
+
+The native stop step now asks Task Scheduler to stop an instance only when its
+verified task is actually Running. Recovery can resume with an already disabled,
+stopped task without requiring a nonexistent instance to accept another stop.
+Verified surviving process handles are still checked/terminated when present.
+The extra actual-script/mock-OS case passes with only the idempotent disable action.
+The final full suite above includes it; prior build/browser receipts retain their
+exact earlier source identities because those paths did not change.

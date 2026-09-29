@@ -134,7 +134,11 @@ function Stop-VerifiedInstallation {
             $handles.Add($process)
         }
         Disable-ScheduledTask -TaskName $taskName -TaskPath '\' | Out-Null
-        Stop-ScheduledTask -TaskName $taskName -TaskPath '\' | Out-Null
+        # Recovery may resume after the task already stopped. Do not require an
+        # already absent task instance to accept another stop request.
+        if ((Get-OwnedTask).State -eq 'Running') {
+            Stop-ScheduledTask -TaskName $taskName -TaskPath '\' | Out-Null
+        }
         for ($i=$handles.Count-1; $i -ge 0; $i--) {
             $process = $handles[$i]
             if (-not $process.HasExited) {
