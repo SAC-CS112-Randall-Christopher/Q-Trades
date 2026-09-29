@@ -58,7 +58,7 @@ def create_app(
         marker = database.parent / "installed-commit.txt"
         code_commit = marker.read_text().strip() if marker.stat().st_size <= 48 else ""
         code_commit = code_commit if re.fullmatch(r"[0-9a-f]{40}", code_commit) else None
-    except OSError:
+    except (OSError, UnicodeError):
         code_commit = None
     model_trials = ModelTrials(
         research_evidence

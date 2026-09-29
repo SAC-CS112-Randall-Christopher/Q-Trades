@@ -36,7 +36,12 @@ $copyStarted = $false
 $mutex = $null
 $held = $false
 $backup = $null
+$updateMutex = $null
+$updateHeld = $false
 try {
+    $updateMutex = New-Object Threading.Mutex($false, 'Local\QTradesManualUpdate')
+    try { $updateHeld = $updateMutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $updateHeld = $true }
+    if (-not $updateHeld) { throw 'Another Q-Trades update is running.' }
     $task = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
     if (@($task.Actions).Count -ne 1) { throw 'Unexpected task actions; no update applied.' }
     $runtime = (Resolve-Path -LiteralPath $task.Actions[0].WorkingDirectory).Path
@@ -72,6 +77,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Dashboard build failed; the running app is unchanged.' }
     if (-not (Test-Path -LiteralPath (Join-Path $source 'apps/web/dist/index.html'))) { throw 'Dashboard build is missing.' }
     if (Git-Read status --porcelain --untracked-files=normal) { throw 'Build changed source; preserve and review it.' }
+    if ((Git-Read rev-parse HEAD) -ne $commit) { throw 'Source commit changed during the build; no application update applied.' }
     # Back up source only. Runtime data and experiment evidence never enter this copy.
     $backup = Join-Path $runtime ('data/update-backups/' + (Get-Date -Format 'yyyyMMdd-HHmmss-ffff'))
     New-Item -ItemType Directory -Path $backup -Force | Out-Null
@@ -125,6 +131,8 @@ try {
     }
     exit 1
 } finally {
+    if ($updateHeld) { $updateMutex.ReleaseMutex() }
+    if ($null -ne $updateMutex) { $updateMutex.Dispose() }
     if ($held) { $mutex.ReleaseMutex() }
     if ($null -ne $mutex) { $mutex.Dispose() }
 }

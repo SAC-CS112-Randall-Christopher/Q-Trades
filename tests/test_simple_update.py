@@ -60,6 +60,7 @@ function npm {
         $dist=Join-Path $Source 'apps/web/dist'
         New-Item -ItemType Directory -Path $dist -Force|Out-Null
         [IO.File]::WriteAllText((Join-Path $dist 'index.html'),'compiled fixture')
+        if($Scenario -eq 'changed_head'){git -C $Source commit --allow-empty -m 'concurrent change'|Out-Null}
     }
 }
 function robocopy {
@@ -97,6 +98,7 @@ $code=$LASTEXITCODE
         "missing_main",
         "wrong_remote",
         "foreign_task",
+        "changed_head",
         "build_failure",
         "stop_failure",
         "dependency_failure",
@@ -129,6 +131,9 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
         # The actual supervisor mutex is never acquired by a test.
         text = text.replace(
             "Local\\TradingResearchPaper20260927", "Local\\QTradesTest" + tmp_path.name
+        )
+        text = text.replace(
+            "Local\\QTradesManualUpdate", "Local\\QTradesUpdaterTest" + tmp_path.name
         )
         (source / "scripts" / name).write_text(text)
     git(source, "add", ".")
