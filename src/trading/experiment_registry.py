@@ -33,6 +33,7 @@ class ExperimentPlan(BaseModel):
     mechanism: str = Field(min_length=12, max_length=1000)
     falsification: str = Field(min_length=12, max_length=1000)
     feature: Literal["momentum_1", "momentum_5", "volatility_5", "spread_bps"] = "momentum_5"
+    experiment_mode: Literal["quote_ridge", "distinct_families"] = "quote_ridge"
     horizon_minutes: Literal[5, 15, 60] = 5
     as_of: float
     test_start: float
@@ -41,6 +42,8 @@ class ExperimentPlan(BaseModel):
 
     @model_validator(mode="after")
     def boundaries(self) -> Self:
+        if self.experiment_mode == "distinct_families" and self.horizon_minutes != 60:
+            raise ValueError("The common family group reserves the longest 60-minute horizon")
         if not all(math.isfinite(v) for v in (self.as_of, self.test_start, self.test_end)):
             raise ValueError("Evaluation timestamps must be finite")
         if not 0 < self.test_start < self.test_end <= self.as_of:
@@ -90,6 +93,10 @@ class ExperimentRegistry:
                 BEGIN SELECT RAISE(ABORT, 'Evaluation plans are frozen'); END;
             CREATE TRIGGER IF NOT EXISTS immutable_experiment_delete BEFORE DELETE ON experiments
                 BEGIN SELECT RAISE(ABORT, 'Experiment history is permanent'); END;
+            CREATE TRIGGER IF NOT EXISTS immutable_frozen_payload BEFORE UPDATE ON experiments
+                WHEN (OLD.snapshot IS NOT NULL AND NEW.snapshot IS NOT OLD.snapshot)
+                OR (OLD.result IS NOT NULL AND NEW.result IS NOT OLD.result)
+                BEGIN SELECT RAISE(ABORT, 'Frozen inputs and results are permanent'); END;
             CREATE TRIGGER IF NOT EXISTS immutable_event_update BEFORE UPDATE ON experiment_events
                 BEGIN SELECT RAISE(ABORT, 'Experiment events are permanent'); END;
             CREATE TRIGGER IF NOT EXISTS immutable_event_delete BEFORE DELETE ON experiment_events

@@ -61,6 +61,13 @@ class AccountControl(BaseModel):
     expected_version: int = Field(ge=0)
 
 
+class ForwardAdmission(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    family: Literal["slow_trend", "volatility_breakout", "range_reversion"]
+    starting_cash: Literal["50", "100"]
+    operating_daily_usd: str | None = Field(default=None, pattern=r"^\d{1,4}(\.\d{1,6})?$")
+
+
 class ToolRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     tool: str = Field(min_length=1, max_length=64)
@@ -309,6 +316,28 @@ def create_app(
             raise HTTPException(404, "Experiment not found")
         lab.registry.cancel(request_id)
         return {"status": lab.registry.status(request_id)}
+
+    @app.post("/api/lab/experiments/{request_id}/forward")
+    async def research_forward(request_id: str, admission: ForwardAdmission,
+                               request: Request) -> dict[str, Any]:
+        lab = lab_operator(request)
+        paper = campaign_operator(request)
+        experiment = lab.registry.get(request_id)
+        if not experiment or experiment["status"] != "completed" or not experiment["result"]:
+            raise HTTPException(409, "A completed fitted result is required")
+        candidate = next((c for c in experiment["result"].get("candidate_group", [])
+                          if c["family"] == admission.family), None)
+        if not candidate or not candidate.get("artifact"):
+            raise HTTPException(409, "This family has no frozen fitted artifact")
+        try:
+            return paper.forward_admit(request_id, candidate["artifact"], admission.starting_cash,
+                                       admission.operating_daily_usd)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Admission unconfirmed; retry the same artifact and funding"
+            ) from exc
 
     @app.get("/api/station/live")
     async def station_live(

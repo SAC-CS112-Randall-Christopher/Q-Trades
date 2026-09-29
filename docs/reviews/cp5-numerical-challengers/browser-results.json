@@ -1,0 +1,30 @@
+{
+  "fixture": "Explicit synthetic quotes/books in disposable database; no forward profit evidence",
+  "checks": [
+    {
+      "name": "Three frozen families on common protected window",
+      "passed": true
+    },
+    {
+      "name": "Synthetic result remains unqualified",
+      "passed": true
+    },
+    {
+      "name": "Own $50 funding retained after duplicate admission",
+      "passed": true
+    },
+    {
+      "name": "Pause and resume retained in permanent account history",
+      "passed": true
+    },
+    {
+      "name": "Reload preserves one funding and controls",
+      "passed": true
+    },
+    {
+      "name": "Each family exposes actual train and test counts",
+      "passed": true
+    }
+  ],
+  "initial_assertion": "One journal check expected the wrong event name; actual retained forward account funded was inspected and corrected."
+}

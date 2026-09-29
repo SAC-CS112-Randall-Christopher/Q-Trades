@@ -673,7 +673,8 @@ class PaperEngine:
             "version": a["version"],
             "created_at": self.now,
             "features": feature,
-            "reason": "Closed-bar breakout",
+            "reason": ("Frozen numerical signal" if a.get("numerical_artifact")
+                       else "Closed-bar breakout"),
             "risk_policy": policy(a),
             "execution_profile": profile.id,
             "fee_asset": "USD",
@@ -713,9 +714,11 @@ class PaperEngine:
             reason = "Account below $5: failure liquidation"
         elif bid <= D(pos["stop"]):
             reason = "ATR stop" if not pos["one_r"] else "Trailing stop"
-        elif elapsed >= 2700:
-            reason = "45-minute maximum hold"
-        elif elapsed >= 600 and not pos["one_r"]:
+        elif elapsed >= a.get("numerical_artifact", {}).get("maximum_hold_seconds", 2700):
+            reason = ("Frozen maximum hold" if a.get("numerical_artifact")
+                      else "45-minute maximum hold")
+        elif (elapsed >= a.get("numerical_artifact", {}).get("progress_seconds", 600)
+              and not pos["one_r"]):
             reason = "No 1R progress after ten minutes"
         if not reason:
             return

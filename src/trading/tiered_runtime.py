@@ -111,6 +111,7 @@ class TieredPaperRuntime(PaperRuntime):
             if feature.get("bar_open_ms", 0) + 60000 < self.ready_at * 1000:
                 feature.update(eligible=False, reason="Bootstrap only; awaiting new closed bar")
         self.study[symbol] = result
+        self.numerical_study(now, self.study)
         self.stream.changed.set()
 
     def closed_stream_candle(self, symbol: str, observation: dict[str, Any]) -> None:
