@@ -44,3 +44,10 @@ long-duration reliability, native installation or profitability follows from thi
 The operating trial, original funding, model runtimes and CP0 updater are untouched.
 Public Git receipts contain synthetic QA and development checks only. No merge or
 deployment occurred. CP5 distinct mechanisms and forward adapters remain next.
+
+The first hosted Windows run 36634095897 retained **1 failed / 119 passed / 28
+database skips**: its clean checkout lacked the editable package installation used
+locally, so the numerical child could not import its registered module. The child
+now receives only this evaluator's resolved source/package directory as its Python
+search path (and disables user-site imports). No caller path or credential is used.
+The repaired hosted run is a separate receipt, not a relabeling of this failed run.

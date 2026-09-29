@@ -56,6 +56,10 @@ class ExperimentLab:
             for k, v in os.environ.items()
             if k.upper() in {"SYSTEMROOT", "WINDIR", "TEMP", "TMP", "PATH", "PYTHONPATH"}
         }
+        # Works in both an installed application and a clean source checkout.
+        # Do not inherit an arbitrary caller-controlled module search path.
+        env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1])
+        env["PYTHONNOUSERSITE"] = "1"
         flags = (
             (subprocess.CREATE_NO_WINDOW | subprocess.IDLE_PRIORITY_CLASS) if os.name == "nt" else 0
         )
