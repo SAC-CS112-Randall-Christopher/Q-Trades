@@ -674,8 +674,9 @@ class PaperEngine:
             "version": a["version"],
             "created_at": self.now,
             "features": feature,
-            "reason": ("Frozen numerical signal" if a.get("numerical_artifact")
-                       else "Closed-bar breakout"),
+            "reason": (
+                "Frozen numerical signal" if a.get("numerical_artifact") else "Closed-bar breakout"
+            ),
             "risk_policy": policy(a),
             "execution_profile": profile.id,
             "fee_asset": "USD",
@@ -710,16 +711,32 @@ class PaperEngine:
         if pos["one_r"] and "atr" in feature:
             pos["stop"] = str(max(D(pos["stop"]), bid - D(feature["atr"])))
         elapsed = self.now - pos["opened_at"]
+        artifact = a.get("numerical_artifact")
+        invalid_artifact = False
+        maximum_hold, progress_seconds = 2700, 600
+        if artifact:
+            from trading.numerical_candidates import validate_artifact
+
+            try:
+                validate_artifact(artifact)
+                maximum_hold, progress_seconds = (
+                    artifact["maximum_hold_seconds"],
+                    artifact["progress_seconds"],
+                )
+            except (ValueError, KeyError, TypeError, ArithmeticError):
+                invalid_artifact = True
         reason = ""
         if a["failure_pending"]:
             reason = "Account below $5: failure liquidation"
         elif bid <= D(pos["stop"]):
             reason = "ATR stop" if not pos["one_r"] else "Trailing stop"
-        elif elapsed >= a.get("numerical_artifact", {}).get("maximum_hold_seconds", 2700):
-            reason = ("Frozen maximum hold" if a.get("numerical_artifact")
-                      else "45-minute maximum hold")
-        elif (elapsed >= a.get("numerical_artifact", {}).get("progress_seconds", 600)
-              and not pos["one_r"]):
+        elif invalid_artifact:
+            reason = "Invalid frozen numerical artifact; risk reduction"
+        elif elapsed >= maximum_hold:
+            reason = (
+                "Frozen maximum hold" if a.get("numerical_artifact") else "45-minute maximum hold"
+            )
+        elif elapsed >= progress_seconds and not pos["one_r"]:
             reason = "No 1R progress after ten minutes"
         if not reason:
             return

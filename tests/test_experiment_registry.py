@@ -159,6 +159,9 @@ def test_snapshot_hash_and_availability_are_checked_before_fitting(tmp_path):
     registry.inputs("experiment-one", shifted_inputs())
     job = registry.claim()
     assert job
+    payload = registry.get("experiment-one", inputs=True)
+    assert payload
+    job = dict(payload, plan=json.dumps(payload["plan"]), snapshot=json.dumps(payload["snapshot"]))
     changed = dict(job, snapshot=json.dumps({"rows": [], "manifest": {}}))
     with pytest.raises(ValueError, match="fingerprint"):
         evaluate(changed)

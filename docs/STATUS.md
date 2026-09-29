@@ -1,4 +1,21 @@
-# Project status — September 28, 2026
+# Source status — September 29, 2026
+
+CP4–CP9 and the CP0–CP9 efficiency audit are complete as stacked draft PRs #7–#13.
+The audit's final implementation is 06ca527: local PostgreSQL suite 382 passed
+without skips, lint/types/dashboard build passed, seven synthetic normal-browser
+checks passed, and hosted run 36642583198 passed (158 tests, 32 database skips).
+All six final capacity cases and the five-minute twenty-account busy soak passed.
+Retained measurements and limits: `reviews/cp0-cp9-efficiency-audit/README.md`.
+
+Next authorized source work is the UI inspired by `C:\Projects\Q-Trades UI Inspo`.
+These drafts have not been merged or installed. The original trial, manual updater
+and advisory/GIS runtimes were not changed. This source work does not refresh the
+historical operational snapshot below. Subsequent real-market evidence remains
+pending; CP9's live-readiness packet concludes not ready.
+
+---
+
+# Historical operational status — September 28, 2026
 
 Latest operational check: **16:25 Denver**. The paper worker remains running, fresh,
 unpaused and reconciled (read-only audit revision 161826). Primary equity is still

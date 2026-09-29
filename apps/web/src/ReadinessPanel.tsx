@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-type Packet = {version:string;sources_checked_on:string;facts_sha256:string;facts:string[];
+type Packet = {version:string;sources_checked_on:string;generated_at:number;facts_sha256:string;facts:string[];
   blockers:string[];remaining_engineering:string[];sources:{title:string;url:string}[];
   economics:{capital_usd:string;published_fee_only_round_trip_usd:string;
     legacy_fee_only_round_trip_usd:string;two_bp_each_side_price_proxy_usd:string;
@@ -26,11 +26,11 @@ export function ReadinessPanel() {
     <p>Paper accounts are separate hypothetical experiments. A future $50 or $100 budget would be total settled capital, not funding for every paper portfolio.</p>
     {error && <p role="alert">{error}</p>}
     {data && <>
-      <p>Sources checked {data.sources_checked_on}. Current paper evidence: {data.current_paper_evidence.evidence_kind}; {data.current_paper_evidence.retained_report_count} retained reports. Research role: {data.current_paper_evidence.research_incumbent}.</p>
+      <p>Sources checked {data.sources_checked_on}. Paper evidence as of {new Date(data.generated_at*1000).toLocaleString()}: {data.current_paper_evidence.evidence_kind}; {data.current_paper_evidence.retained_report_count} retained reports. Research role: {data.current_paper_evidence.research_incumbent}.</p>
       <h3>What still blocks a separate live decision</h3><ul>{data.blockers.map(v=><li key={v}>{v}</li>)}</ul>
       <h3>Small-account cost scenarios</h3>
-      <table><caption>Illustrative full-capital round trip at unchanged price</caption><thead><tr><th>Total capital</th><th>Published fee scenario</th><th>Legacy fee stress</th><th>Price adversity proxy</th><th>$1/month example</th></tr></thead>
-        <tbody>{data.economics.map(v=><tr key={v.capital_usd}><td>${v.capital_usd}</td><td>{dollars(v.published_fee_only_round_trip_usd)}</td><td>{dollars(v.legacy_fee_only_round_trip_usd)}</td><td>{dollars(v.two_bp_each_side_price_proxy_usd)}</td><td>{v.illustrative_one_usd_monthly_operating_percent}% of capital</td></tr>)}</tbody></table>
+      <div className="readiness-table"><table><caption>Illustrative full-capital round trip at unchanged price</caption><thead><tr><th>Total capital</th><th>Published fee scenario</th><th>Legacy fee stress</th><th>Price adversity proxy</th><th>$1/month example</th></tr></thead>
+        <tbody>{data.economics.map(v=><tr key={v.capital_usd}><td>${v.capital_usd}</td><td>{dollars(v.published_fee_only_round_trip_usd)}</td><td>{dollars(v.legacy_fee_only_round_trip_usd)}</td><td>{dollars(v.two_bp_each_side_price_proxy_usd)}</td><td>{v.illustrative_one_usd_monthly_operating_percent}% of capital</td></tr>)}</tbody></table></div>
       <p>{data.economics_limits}</p><p>{data.risk_envelope.limits}</p>
       <details><summary>Source facts and remaining engineering</summary><ul>{data.facts.map(v=><li key={v}>{v}</li>)}</ul><ol>{data.remaining_engineering.map(v=><li key={v}>{v}</li>)}</ol>
         <p>{data.sources.map((s,i)=><span key={s.url}>{i>0 ? " · " : ""}<a href={s.url} target="_blank" rel="noreferrer">{s.title}</a></span>)}</p>

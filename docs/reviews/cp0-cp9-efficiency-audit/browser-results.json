@@ -1,0 +1,34 @@
+{
+  "scope": "normal UI and synthetic disposable database; no operating trial change",
+  "checks": [
+    {
+      "name": "Fresh empty-campaign dashboard recovers after null-guard correction",
+      "passed": true
+    },
+    {
+      "name": "Frozen completed experiment and full receipt export",
+      "passed": true
+    },
+    {
+      "name": "Separate candidate and matched control retained",
+      "passed": true
+    },
+    {
+      "name": "Compact no-promotion report renders counts, reasons and export",
+      "passed": true
+    },
+    {
+      "name": "Approval remains disabled",
+      "passed": true
+    },
+    {
+      "name": "Stale follow-up action disabled until refreshed control version",
+      "passed": true
+    },
+    {
+      "name": "Read-only readiness refresh sees new retained report",
+      "passed": true
+    }
+  ],
+  "first_failure": "New waiting-control guard rendered a blank dashboard without a campaign; corrected explicit null guard and rechecked fresh navigation."
+}

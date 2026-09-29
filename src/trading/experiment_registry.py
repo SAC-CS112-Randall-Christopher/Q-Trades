@@ -102,6 +102,20 @@ class ExperimentRegistry:
             CREATE TRIGGER IF NOT EXISTS immutable_event_delete BEFORE DELETE ON experiment_events
                 BEGIN SELECT RAISE(ABORT, 'Experiment events are permanent'); END;
         """)
+        columns = {r["name"] for r in self.db.execute("PRAGMA table_info(experiments)")}
+        if "manifest" not in columns:
+            # One-time projection of immutable inputs; never reserialize their payload.
+            with self.transaction():
+                self.db.execute("ALTER TABLE experiments ADD COLUMN manifest TEXT")
+                self.db.execute(
+                    "UPDATE experiments SET manifest=json_extract(snapshot,'$.manifest') "
+                    "WHERE snapshot IS NOT NULL"
+                )
+        self.db.executescript("""
+            CREATE TRIGGER IF NOT EXISTS immutable_input_manifest BEFORE UPDATE ON experiments
+                WHEN OLD.manifest IS NOT NULL AND NEW.manifest IS NOT OLD.manifest
+                BEGIN SELECT RAISE(ABORT, 'Frozen input manifest is permanent'); END;
+        """)
         with self.transaction():
             self.db.execute(
                 "INSERT OR IGNORE INTO evidence_windows VALUES ('retained-preflight',0,?,?)",
@@ -187,10 +201,11 @@ class ExperimentRegistry:
             return
         with self.transaction():
             changed = self.db.execute(
-                "UPDATE experiments SET snapshot=?,snapshot_sha256=?,status='queued',"
+                "UPDATE experiments SET snapshot=?,snapshot_sha256=?,"
+                "manifest=json_extract(?,'$.manifest'),status='queued',"
                 "progress='Inputs frozen; waiting for worker' "
                 "WHERE request_id=? AND status='acquiring'",
-                (encoded, fingerprint(snapshot), request_id),
+                (encoded, fingerprint(snapshot), encoded, request_id),
             ).rowcount
             if changed:
                 self.event(request_id, "inputs_frozen", {"snapshot_sha256": fingerprint(snapshot)})
@@ -243,7 +258,8 @@ class ExperimentRegistry:
             ).fetchone():
                 return None
             row = self.db.execute(
-                "SELECT * FROM experiments WHERE status='queued' ORDER BY seq LIMIT 1"
+                "SELECT request_id,attempt FROM experiments "
+                "WHERE status='queued' ORDER BY seq LIMIT 1"
             ).fetchone()
             if not row:
                 return None
@@ -303,18 +319,22 @@ class ExperimentRegistry:
 
     def get(self, request_id: str, *, inputs: bool = False) -> dict[str, Any] | None:
         with self.lock:
+            fields = (
+                "*"
+                if inputs
+                else (
+                    "seq,request_id,plan,plan_sha256,code_sha256,created,finished,status,"
+                    "snapshot_sha256,result,result_sha256,reason,attempt,lease_until,progress,manifest"
+                )
+            )
             row = self.db.execute(
-                "SELECT * FROM experiments WHERE request_id=?", (request_id,)
+                f"SELECT {fields} FROM experiments WHERE request_id=?", (request_id,)
             ).fetchone()
             if not row:
                 return None
             value = dict(row)
-            for field in ("plan", "result", "snapshot"):
+            for field in ("plan", "result", "manifest", *(["snapshot"] if inputs else [])):
                 value[field] = json.loads(value[field]) if value[field] else None
-            value["manifest"] = value["snapshot"].get("manifest") if value["snapshot"] else None
-            if not inputs:
-                value.pop("snapshot")
-                value.pop("lease")
             value["events"] = [
                 dict(r)
                 for r in self.db.execute(

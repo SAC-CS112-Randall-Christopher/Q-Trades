@@ -1,0 +1,47 @@
+{
+  "contract": {
+    "registry_reads": 30,
+    "financial_transactions": 24,
+    "accounts": 20,
+    "retained_reports": 32,
+    "discarded_windows_per_report": 512,
+    "input": "Synthetic bounded maximum-history projection and 12,000-row frozen input",
+    "authority": "Software efficiency only; no profitability or market timing claim"
+  },
+  "declared_at": 1790722103.4509435,
+  "source_commit": "59ecea9fa00feba6e4e61c9f9d5fc4dd5c88602d",
+  "driver_sha256": "13f382ad3829bf7a6f86467685d526e5cf870f4b55e4ff92b126e4b048753477",
+  "implementation_sha256": {
+    "src\\trading\\experiment_registry.py": "bbfba3df0e3116d5581f9f698412b4b20852337f2db6bfafcc63b2f63818d88b",
+    "src\\trading\\paper_learning.py": "925844af2129a45a813282ab9362abbd8802fad4fac02368adbdac690b7a6357",
+    "src\\trading\\paper_store.py": "54dc06dd4140ffdeff0c9250bf62958b868a64640e39971a64e058765f2d4bcd"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.10",
+  "registry": {
+    "input_bytes": 7033881,
+    "get_ms": {
+      "mean": 7.645173332033058,
+      "p95": 9.219800005666912,
+      "p99": 9.53699997626245,
+      "max": 9.593800059519708
+    },
+    "single_read_allocation_peak_bytes": 5471
+  },
+  "large_history_financial_state": {
+    "state_bytes": 39836,
+    "commit_ms": {
+      "mean": 5.257445833800982,
+      "p95": 6.2206999864429235,
+      "p99": 6.2827999936416745,
+      "max": 6.827800069004297
+    },
+    "reconciliation": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 26
+    }
+  },
+  "finished_at": 1790722104.8373873
+}

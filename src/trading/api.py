@@ -638,11 +638,12 @@ def create_app(
             raise HTTPException(409, str(exc)) from exc
 
     @app.get("/api/paper/learning/reports/{request_id}")
-    async def forward_learning_export(request: Request, request_id: str) -> dict[str, Any]:
+    def forward_learning_export(request: Request, request_id: str) -> dict[str, Any]:
         paper: PaperRuntime | None = request.app.state.paper
-        result = (
-            paper.state.get("learning", {}).get("reports", {}).get(request_id) if paper else None
-        )
+        try:
+            result = paper.retained_learning_report(request_id) if paper else None
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
         if result is None:
             raise HTTPException(404, "Learning report not found")
         return dict(result)

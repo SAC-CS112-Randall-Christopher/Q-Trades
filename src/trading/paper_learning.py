@@ -277,23 +277,66 @@ def comparison(
     }
 
 
+def report_summary(receipt: dict[str, Any]) -> dict[str, Any]:
+    """Small projection only; the original hashed receipt stays in the journal."""
+    if receipt.get("storage") == "immutable-journal-v1":
+        return copy.deepcopy(receipt)
+    omitted = {
+        "daily_blocks",
+        "discarded_windows",
+        "source_event_ids",
+        "candidate_configuration",
+        "policy",
+    }
+    return {
+        **{k: copy.deepcopy(v) for k, v in receipt.items() if k not in omitted},
+        "storage": "immutable-journal-v1",
+        "daily_block_count": len(receipt.get("daily_blocks", [])),
+        "discarded_window_count": len(receipt.get("discarded_windows", [])),
+        "source_event_count": len(receipt.get("source_event_ids", [])),
+    }
+
+
+def verify_report(receipt: dict[str, Any], request_id: str, sha256: str) -> dict[str, Any]:
+    if (
+        receipt.get("request_id") != request_id
+        or receipt.get("sha256") != sha256
+        or fingerprint({k: v for k, v in receipt.items() if k != "sha256"}) != sha256
+    ):
+        raise ValueError("Immutable report fingerprint mismatch; no authority granted")
+    return receipt
+
+
 def retain_report(engine: "PaperEngine", request_id: str, report: dict[str, Any]) -> dict[str, Any]:
     learning = engine.state.setdefault(
         "learning", {"incumbent": "primary", "role_version": 0, "reports": {}, "promotions": []}
     )
     if request_id in learning["reports"]:
-        return dict(learning["reports"][request_id])
+        old = learning["reports"][request_id]
+        for event in reversed(engine.events):
+            if (
+                event["kind"] == "learning_report_retained"
+                and event["body"].get("request_id") == request_id
+            ):
+                return verify_report(event["body"], request_id, old["sha256"])
+        if old.get("storage") != "immutable-journal-v1":
+            return verify_report(old, request_id, old["sha256"])
+        raise ValueError("Load the retained report from its immutable journal for a retry")
     if len(learning["reports"]) >= 32:
         raise ValueError("32 reports retained; export history before a reviewed capacity extension")
     receipt = dict(report, request_id=request_id)
     receipt["sha256"] = fingerprint(receipt)
-    learning["reports"][request_id] = receipt
+    learning["reports"][request_id] = report_summary(receipt)
     engine.emit("learning_report_retained", "system", copy.deepcopy(receipt))
     return receipt
 
 
 def designate(
-    engine: "PaperEngine", report_id: str, sha256: str, expected_version: int
+    engine: "PaperEngine",
+    report_id: str,
+    sha256: str,
+    expected_version: int,
+    receipt: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     learning = engine.state["learning"]
     command = {"report_id": report_id, "sha256": sha256, "expected_version": expected_version}
@@ -304,6 +347,23 @@ def designate(
     report = learning["reports"][report_id]
     if report["sha256"] != sha256 or report["decision"] != "eligible_for_paper_designation":
         raise ValueError("This report does not permit paper designation")
+    if receipt is None:
+        receipt = next(
+            (
+                e["body"]
+                for e in reversed(engine.events)
+                if e["kind"] == "learning_report_retained"
+                and e["body"].get("request_id") == report_id
+            ),
+            None,
+        )
+        if receipt is None and report.get("storage") != "immutable-journal-v1":
+            receipt = report
+    if receipt is None:
+        raise ValueError("Immutable report unavailable; no paper designation")
+    report = verify_report(receipt, report_id, sha256)
+    if report["decision"] != "eligible_for_paper_designation":
+        raise ValueError("This immutable report does not permit paper designation")
     if report.get("compared_incumbent") != learning["incumbent"]:
         raise ValueError("Report compared a different incumbent role")
     if engine.now - report["created_at"] > 86400:
@@ -364,7 +424,7 @@ def snapshot(state: dict[str, Any]) -> dict[str, Any]:
         "incumbent": learning.get("incumbent", "primary"),
         "role_version": learning.get("role_version", 0),
         "policy": POLICY,
-        "reports": list(learning.get("reports", {}).values())[-10:],
+        "reports": [report_summary(r) for r in list(learning.get("reports", {}).values())[-10:]],
         "promotions": learning.get("promotions", []),
         "accounts": [
             {

@@ -235,7 +235,9 @@ def validate_artifact(artifact: dict[str, Any]) -> None:
     body = {k: v for k, v in artifact.items() if k != "sha256"}
     if fingerprint(body) != artifact.get("sha256") or artifact.get("version") != VERSION:
         raise ValueError("Frozen artifact fingerprint/version mismatch")
-    family = artifact["family"]
+    family = artifact.get("family")
+    if not isinstance(family, str):
+        raise ValueError("Unregistered numerical artifact")
     config = FAMILIES.get(family)
     if (
         config is None
@@ -243,9 +245,27 @@ def validate_artifact(artifact: dict[str, Any]) -> None:
         or artifact.get("lookback") != config["lookback"]
     ):
         raise ValueError("Unregistered numerical artifact")
+    fixed = {
+        "horizon_minutes": config["horizon_minutes"],
+        "ridge_penalty": 1.0,
+        "input_version": "observed-minute-mid-v1",
+        "fees_per_side": str(FEE),
+        "slippage_per_side": str(SLIPPAGE),
+        "risk_envelope": "existing-cash-only-hard-stop-v1",
+        "entry_prediction_bps": 0.0,
+        "stop_atr": "1.5",
+        "progress_seconds": 600,
+        "maximum_hold_seconds": min(3600, config["horizon_minutes"] * 60),
+    }
+    if any(type(artifact.get(k)) is not type(v) or artifact.get(k) != v for k, v in fixed.items()):
+        raise ValueError("Frozen numerical timing, cost or risk contract changed")
     if (
-        not all(math.isfinite(artifact[k]) for k in ("mean", "scale", "intercept", "weight"))
+        not all(
+            type(artifact.get(k)) in (int, float) and math.isfinite(artifact[k])
+            for k in ("mean", "scale", "intercept", "weight", "train_end")
+        )
         or artifact["scale"] <= 0
+        or artifact["train_end"] <= 0
     ):
         raise ValueError("Numerical artifact is unavailable")
 

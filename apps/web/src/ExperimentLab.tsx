@@ -50,30 +50,45 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
   });
   useEffect(() => {
     let live = true;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
-        const response = await fetch(`/api/lab?before=${before}`, { signal: AbortSignal.timeout(6000) });
+        const response = await fetch(`/api/lab?before=${before}`, { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]) });
         if (!response.ok) throw new Error("Research registry unavailable; paper operation is separate.");
         const data = await response.json() as Lab;
         if (live) { setLab(data); setStart(current => current || localDate(data.protected_through + 3660)); }
       } catch (e) { if (live) setError(e instanceof Error ? e.message : "Research unavailable"); }
+      if (live) timer = setTimeout(() => void poll(), 5000);
     };
-    void poll(); const timer = setInterval(() => void poll(), 5000);
-    return () => { live = false; clearInterval(timer); };
+    void poll();
+    return () => { live = false; controller.abort(); clearTimeout(timer); };
   }, [before]);
   useEffect(() => {
     if (!selected) { setDetail(null); return; }
+    setDetail(null);
     let live = true;
+    let terminalSeen = false;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
-      const response = await fetch(`/api/lab/experiments/${encodeURIComponent(selected)}`,
-        { signal: AbortSignal.timeout(6000) });
-      if (!response.ok) throw new Error("Experiment result unavailable");
-      const value = await response.json() as Result;
-      if (live) setDetail(value);
+      try {
+        const response = await fetch(`/api/lab/experiments/${encodeURIComponent(selected)}`,
+          { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]) });
+        if (!response.ok) throw new Error("Experiment result unavailable");
+        const value = await response.json() as Result;
+        if (!live) return;
+        setDetail(value);
+        const terminal = ["completed", "failed", "cancelled", "rejected"].includes(value.status);
+        // One final short read captures the supervisor's resource receipt.
+        if (!terminal || !terminalSeen) timer = setTimeout(() => void poll(), terminal ? 500 : 5000);
+        terminalSeen = terminal;
+      } catch (e) {
+        if (live) { setError(String(e)); timer = setTimeout(() => void poll(), 5000); }
+      }
     };
-    void poll().catch(e => setError(String(e)));
-    const timer = setInterval(() => void poll().catch(e => setError(String(e))), 5000);
-    return () => { live = false; clearInterval(timer); };
+    void poll();
+    return () => { live = false; controller.abort(); clearTimeout(timer); };
   }, [selected]);
   async function post(url: string, body?: unknown) {
     const response = await fetch(url, { method: "POST", signal: AbortSignal.timeout(10000),

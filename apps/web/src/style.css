@@ -1538,3 +1538,9 @@ h1 {
 .lab-result { border-top: 1px solid #c9d2c7; padding-top: 14px; overflow-wrap: anywhere; }
 .lab-result dl > div { display: flex; justify-content: space-between; gap: 15px; border-bottom: 1px solid #dce2d7; padding: 8px 0; }
 .lab-status { background: #eef2e8; padding: 12px; }
+/* Source-dated small-account costs stay readable at the normal viewport. */
+.readiness-table { overflow-x: auto; margin: 1rem 0; }
+.readiness-table table { width: 100%; border-collapse: collapse; text-align: left; }
+.readiness-table caption { text-align: left; padding: .75rem 0; }
+.readiness-table th, .readiness-table td { padding: .75rem; border-bottom: 1px solid #d7dfd9; }
+.readiness-table th { font-weight: 600; }

@@ -357,7 +357,10 @@ class PaperRuntime:
         if old:
             if old["candidate"] != candidate:
                 raise ValueError("Report retry names a different candidate")
-            return dict(old, status="already_applied")
+            retained = self.retained_learning_report(request_id)
+            if retained is None:
+                raise ValueError("Retained report journal unavailable")
+            return dict(retained, status="already_applied")
         now = time.time()
         history = self.store.forward_windows(now)
         protected = registry.snapshot()["protected_through"]
@@ -396,6 +399,18 @@ class PaperRuntime:
         )
         return result
 
+    def retained_learning_report(self, request_id: str) -> dict[str, Any] | None:
+        reference = self.state.get("learning", {}).get("reports", {}).get(request_id)
+        if not reference:
+            return None
+        # Export runs in a worker thread. Never share its query/transaction with
+        # the exclusive financial writer's connection.
+        reader = PaperStore(self.store.connection.info.dsn)
+        try:
+            return reader.learning_report(request_id, reference["sha256"])
+        finally:
+            reader.close()
+
     def learning_role(
         self, action: str, version: int, report_id: str = "", sha: str = ""
     ) -> dict[str, Any]:
@@ -403,10 +418,11 @@ class PaperRuntime:
 
         self.require_healthy_control()
         result: dict[str, Any] = {}
+        receipt = self.retained_learning_report(report_id) if action == "designate" else None
         self.state = self.store.transact(
             time.time(),
             lambda e: result.update(
-                designate(e, report_id, sha, version)
+                designate(e, report_id, sha, version, receipt)
                 if action == "designate"
                 else rollback(e, version)
             ),

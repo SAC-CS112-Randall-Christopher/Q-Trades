@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 type Report = {request_id:string;sha256:string;candidate:string;control:string|null;
-  decision:string;reasons:string[];created_at:number;daily_blocks:unknown[];matched_windows:number;
+  decision:string;reasons:string[];created_at:number;daily_blocks?:unknown[];daily_block_count?:number;matched_windows:number;
   evidence_kind:string;uncertainty:string[];artifact_sha256:string;
   attribution:{symbols:string[];regime:string;fees:string}};
 export type Learning = {incumbent:string;role_version:number;
@@ -51,7 +51,7 @@ export function LearningPanel({data,unavailable}:{data?:Learning;unavailable:boo
       <p>Inspection consumes this information, including an insufficient or negative result. Control funding is separate hypothetical capital and uses a remaining account place.</p>
     </>}
     {data?.reports.map(r=><article className="lab-result" key={r.request_id}><h4>{r.decision==="no_promotion" ? "No promotion" : "Eligible for explicit paper-role approval"}</h4>
-      <p>{new Date(r.created_at*1000).toLocaleString()} · {r.evidence_kind} · {r.daily_blocks.length} complete daily blocks / {r.matched_windows} matched windows.</p>
+      <p>{new Date(r.created_at*1000).toLocaleString()} · {r.evidence_kind} · {r.daily_block_count ?? r.daily_blocks?.length ?? 0} complete daily blocks / {r.matched_windows} matched windows.</p>
       {r.reasons.map(reason=><p key={reason}>{reason}</p>)}
       <p>Frozen artifact {r.artifact_sha256}. Instruments: {r.attribution.symbols?.join(", ")}. Regime: {r.attribution.regime}.</p>
       {r.uncertainty.map(note=><p key={note}>{note}</p>)}

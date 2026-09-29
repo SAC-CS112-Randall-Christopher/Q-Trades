@@ -23,6 +23,8 @@ CREATE TABLE IF NOT EXISTS paper_events (
 );
 CREATE INDEX IF NOT EXISTS paper_events_recent ON paper_events(account, id DESC);
 CREATE INDEX IF NOT EXISTS paper_events_kind ON paper_events(kind, id DESC);
+CREATE INDEX IF NOT EXISTS paper_learning_report ON paper_events ((body->>'request_id'))
+WHERE kind='learning_report_retained';
 CREATE TABLE IF NOT EXISTS paper_journal (
   event_id bigint NOT NULL REFERENCES paper_events(id), line_no integer NOT NULL,
   account text NOT NULL, asset text NOT NULL, bucket text NOT NULL, amount numeric NOT NULL,
@@ -124,6 +126,16 @@ class PaperStore:
             if state.get("schema") != 1:
                 raise RuntimeError("Unsupported paper state version")
             engine = PaperEngine(state, now)
+            # Older projections duplicated complete receipts. Verify their immutable
+            # journal before compacting; hashes and financial accounts are unchanged.
+            from trading.paper_learning import report_summary
+
+            for request_id, receipt in state.get("learning", {}).get("reports", {}).items():
+                if receipt.get("storage") != "immutable-journal-v1":
+                    retained = self.learning_report(request_id, receipt["sha256"])
+                    if retained is None:
+                        raise ValueError("Retained report journal missing; projection not changed")
+                    state["learning"]["reports"][request_id] = report_summary(retained)
             work(engine)
             engine.assert_invariants()
             revision = row["revision"] + 1
@@ -141,6 +153,20 @@ class PaperStore:
         if not row:
             raise RuntimeError("Missing paper account")
         return {**row["body"], "revision": row["revision"]}
+
+    def learning_report(self, request_id: str, sha256: str) -> dict[str, Any] | None:
+        from trading.paper_learning import verify_report
+
+        rows = self.connection.execute(
+            "SELECT body FROM paper_events WHERE kind='learning_report_retained' "
+            "AND body->>'request_id'=%s ORDER BY id LIMIT 2",
+            (request_id,),
+        ).fetchall()
+        if not rows:
+            return None
+        if len(rows) != 1:
+            raise ValueError("Duplicate retained report journal; no authority granted")
+        return verify_report(rows[0]["body"], request_id, sha256)
 
     def bars(
         self,

@@ -1,0 +1,498 @@
+{
+  "contract": {
+    "seconds_per_case": 30,
+    "ticks_per_second": 4,
+    "accounts": [
+      1,
+      10,
+      20
+    ],
+    "research": [
+      "idle",
+      "busy"
+    ],
+    "slos": {
+      "commit_p95_ms": 100,
+      "commit_p99_ms": 250,
+      "commit_max_ms": 2000,
+      "queue_lag_p99_ms": 250,
+      "queue_peak": 2,
+      "parent_rss_mib": 512,
+      "parent_rss_growth_mib": 64,
+      "child_rss_mib": 256,
+      "parent_cpu_one_core_percent": 50,
+      "journal_balanced": true
+    },
+    "input": "Shared synthetic executable BTC/ETH books; accelerated signals",
+    "cpu_scope": "Parent and fixed fit child separately; host includes all other work",
+    "gpu": "No GPU calls; numerical path is CPU-only",
+    "authority": "Synthetic QA only; paid $0; no market/24x7 inference",
+    "membership_scope": "Twenty is the full retained synthetic account set. One/ten are generated projection subsets for capacity comparison; no operating history is edited."
+  },
+  "declared_at": 1790722690.625526,
+  "host": "MAIN",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.10",
+  "logical_processors": 12,
+  "source_commit": "06ca5271aaf9986e114df1637c97098805910009",
+  "source_dirty": false,
+  "source_sha256": {
+    "scripts\\verify_lab.py": "4ab7f3a1c026fcb2c18ad40aefc1d435c3c13a5cc6836e949f0fc1d76c8caee8",
+    "scripts\\verify_cp3.py": "0f3bfaa39392379246abe4ff7c337e0c6cd04f2957a2b91c06f2db0c9dc97734",
+    "scripts\\lab_fixtures.py": "97a16c5f6c67b127f3ca9363479d7e2e8decbcdd545ad1ff36491f076be5858e",
+    "src\\trading\\__init__.py": "773d75fece1af6176cc1c96f38dae00efb549bc716a4ea542e3539978fee5c73",
+    "src\\trading\\__main__.py": "b019fc4ba3fb516b4e74d23acb6cef4df75f7e8f02ae35a2a3527a4ac97b616e",
+    "src\\trading\\api.py": "2d954e7dd30339eb279d0ac416b9e52e4d9d895652adc4ed78a86682b26764c6",
+    "src\\trading\\config.py": "05249f744e90fd5d82b5f7a0d0f29b0a8469ddb84aff0366792287de979feda9",
+    "src\\trading\\engine_diagnostics.py": "153315de8f8f03bc5c87826d13585d8a5ce17e104163d8e6c7738e3bffd4f211",
+    "src\\trading\\execution_profiles.py": "174c42d8c99ec247d63070eeea7f721bf1dc7e0d8b8956a74b4a84b5f8fa1ad8",
+    "src\\trading\\experiment_lab.py": "7883a244d6b275bee93c93c7a67ca5c5c6c0d6e9d8642caf074bc949f6484187",
+    "src\\trading\\experiment_registry.py": "bbfba3df0e3116d5581f9f698412b4b20852337f2db6bfafcc63b2f63818d88b",
+    "src\\trading\\experiment_worker.py": "4fc47a2b5cd3125ff0413e0e8535f123888f3c0915d87a8bbc9a8265ad01dca2",
+    "src\\trading\\futures_context.py": "3db5e6290fe877253892b8fe1ad96d7dcba0d543e64fb2c34d29a59bbbb8ddbc",
+    "src\\trading\\live_quotes.py": "e9e49ba7f1b28eec3080abe40cfca7402717932026f5fd8ce905eda1b6d236ab",
+    "src\\trading\\live_readiness.py": "feff6ab0f2e959900749c6a8d3eb397a4afd2e7a041bc9809ebeed194305e993",
+    "src\\trading\\market.py": "b59434c3e0f6458d4b41a23fbe90c0ecad689b29b9788b50ccd85c904d8817a5",
+    "src\\trading\\model_trials.py": "f2d46503a7aaf94fdd1deb4a3d5b6e7d9da85bb6e7db2d4696f93b28e67fe7ca",
+    "src\\trading\\numerical_candidates.py": "0c107721df19775df077ff0cdda042f31f651f96e0b3309d401fd4dc324ed194",
+    "src\\trading\\numerical_resources.py": "596d8fd903120fcfc73fed7b56a123959bfcb92721d91517de27eb7904fceb3e",
+    "src\\trading\\options_data.py": "a69d96774c719badfe6948838ed2061cfeae2a648196089957e294f843c9bb4b",
+    "src\\trading\\options_engine.py": "e50b55b3669dc0673736e06949b175b0fd6ccadcfb83ac92f857230778e5782d",
+    "src\\trading\\options_policy.py": "80ac3ff14d65769e2da9ec01e1441fa6975717859fd2fc06770442c9d9fdfde3",
+    "src\\trading\\options_runtime.py": "acfac894f1b7fe97ae4498099617e213f20409977ecb627e4900c546c036896f",
+    "src\\trading\\options_store.py": "6fc27a04e921610cbb2f26d9d95c8265f5952b88ad52b7ca1bd242ad6ac8284b",
+    "src\\trading\\ownership.py": "76e48e2ff67096a8d255e87a04580e110a4ec7e020048b532d978bf91da4a034",
+    "src\\trading\\paper_campaigns.py": "bac7a893d6745eba260ef6173b8f0d9b6b16d0ba8f1ec9d9180e73bf1010d0f7",
+    "src\\trading\\paper_challengers.py": "227f7fd380fceee60874c4b661f86db24696ca6f10feb9fb4b10272d22d00a90",
+    "src\\trading\\paper_economics.py": "6117e2cb4415b055d15f5d124ed4356ef7a188064b4e64c7decbca08d6a74538",
+    "src\\trading\\paper_engine.py": "62ae2f4338a79ebb8e23838f32aa29775c131d1fc3a8cb1db8dbd26993c6dd56",
+    "src\\trading\\paper_learning.py": "8fabff84ebdc53f1994da085202312e70e59df868efa620852af187c7bb05bce",
+    "src\\trading\\paper_runtime.py": "d4aa8b8118235947ebb9e8761c122f264e6002358c0e64b78d405f1cd2a61f0f",
+    "src\\trading\\paper_store.py": "54dc06dd4140ffdeff0c9250bf62958b868a64640e39971a64e058765f2d4bcd",
+    "src\\trading\\paper_strategy.py": "1cb33e54b9691ad317700027c99d0ee964a07c2b0cb4e757d55e399da2064ddf",
+    "src\\trading\\replay.py": "e5e3a52155fc25d934b1b11f363931a2e1b398c5189550fcbfca38f3733763cd",
+    "src\\trading\\research_campaigns.py": "df16a59a9365ad8d30e5acae62ceafeefbfb61d0c09e8ce8004fd7ae55023feb",
+    "src\\trading\\research_data.py": "05aee7f22a03f53394a776d9daaccd392e1db801d46b15a252611b739d8b96d7",
+    "src\\trading\\research_experiment.py": "4e1349a63554feeb452280a30175c948126a74e27b688b46813ba76ec75425fc",
+    "src\\trading\\research_inference.py": "19108c896cf6e4a64c7182b708ec9525fd4d0df1734821d781fc051714c1f32f",
+    "src\\trading\\research_protocol.py": "e148cee164dfb1518d72c361b4046892afdac9cfe2e33d133392bb5175b5b9f9",
+    "src\\trading\\research_resources.py": "8d58d805d16898e5977b02441394c2dbd558270ebe60defa86ce4a327214934a",
+    "src\\trading\\runtime.py": "9b1e69bae8b71a720b85029ce36b41e21dea960d7a14fb988484739ecf002439",
+    "src\\trading\\station.py": "1d810a9390f898205e4e66529bc7370534483a8ed139de15dfaad7dc81a2e96d",
+    "src\\trading\\storage.py": "9e1465d9c5a8e5f738df97873caa970d6a0e247155e7f17473f9dcb5b8654753",
+    "src\\trading\\stream_book.py": "2cac1d229b03eecdad626abebf3488c2b9d58600648d0a2d80f53fcb50a35227",
+    "src\\trading\\stream_capture.py": "c1a8a169304836a45cd43dbd116cd159b30b65aa3801675838488a3fe2a9350d",
+    "src\\trading\\stream_feed.py": "53ec5cf73a8f2321caae8c6a58320a0bef7e542d352073de3404dcab49bcaf0f",
+    "src\\trading\\tiered_runtime.py": "abcfdde0e6199631202b0f3c17fb4298f7fc552c1d454eb5d932cb94156d4024",
+    "src\\trading\\tool_journal.py": "5f34ce1495e375650e6a576195a497f204773e6bfd089b4f0228d1a5dd171423",
+    "src\\trading\\universe.py": "78dadcfbd0772cbb8a8b02409613b1fc4642251cbf61bb5e69370a29295964e7",
+    "src\\trading\\venue.py": "03cc675031ada65b424e53aeebd5d1b599687a6aee88e8666d0c425e68d8393d"
+  },
+  "cases": [
+    {
+      "accounts": 1,
+      "research": "idle",
+      "ticks": 120,
+      "elapsed_seconds": 29.75777210004162,
+      "parent_cpu_seconds": 0.015625,
+      "parent_cpu_one_core_percent": 0.05250729102794005,
+      "parent_rss_mib": {
+        "mean": 61.34521484375,
+        "p95": 61.390625,
+        "p99": 61.390625,
+        "max": 61.390625
+      },
+      "parent_rss_growth_mib": 0.1796875,
+      "commit_ms": {
+        "mean": 4.139329992661563,
+        "p95": 6.522900075651705,
+        "p99": 10.016700020059943,
+        "max": 11.934699956327677
+      },
+      "decision_ms": {
+        "mean": 0.38963082479313016,
+        "p95": 0.6345999427139759,
+        "p99": 0.7299999706447124,
+        "max": 0.8679000893607736
+      },
+      "queue_lag_ms": {
+        "mean": 0.20556499754699567,
+        "p95": 0.30399998649954796,
+        "p99": 0.33270008862018585,
+        "max": 0.3426999319344759
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 2.2110333278154335,
+        "p95": 2.5136000476777554,
+        "p99": 2.5136000476777554,
+        "max": 2.904199995100498
+      },
+      "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
+      "child": null,
+      "child_supervised_pid": null,
+      "storage_growth_bytes": {
+        "database_bytes": 406908,
+        "candles": 0,
+        "events": 21,
+        "journal_lines": 16,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 40960
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 29.45604131110236,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 1,
+      "research": "busy",
+      "ticks": 120,
+      "elapsed_seconds": 31.549944000085816,
+      "parent_cpu_seconds": 0.0,
+      "parent_cpu_one_core_percent": 0.0,
+      "parent_rss_mib": {
+        "mean": 61.73037109375,
+        "p95": 61.87109375,
+        "p99": 61.87109375,
+        "max": 61.87109375
+      },
+      "parent_rss_growth_mib": 0.24609375,
+      "commit_ms": {
+        "mean": 3.4262375003891066,
+        "p95": 5.607599974609911,
+        "p99": 7.465899921953678,
+        "max": 13.291699928231537
+      },
+      "decision_ms": {
+        "mean": 0.311425007142437,
+        "p95": 0.5522000137716532,
+        "p99": 0.5645999917760491,
+        "max": 0.6334000499919057
+      },
+      "queue_lag_ms": {
+        "mean": 0.1690391645145913,
+        "p95": 0.2747999969869852,
+        "p99": 0.29420002829283476,
+        "max": 0.5842000246047974
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 1.8998333252966404,
+        "p95": 2.6305000064894557,
+        "p99": 2.6305000064894557,
+        "max": 2.6934000197798014
+      },
+      "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
+      "child": {
+        "fits": 351,
+        "cpu_seconds": 27.375,
+        "wall_seconds": 30.203000000095926,
+        "peak_rss_mib": 58.19140625,
+        "paid_usd": "0",
+        "worker_identity": {
+          "pid": 47900,
+          "processors_allowed": 2,
+          "priority_class": 64
+        }
+      },
+      "child_supervised_pid": 47900,
+      "storage_growth_bytes": {
+        "database_bytes": 565248,
+        "candles": 0,
+        "events": 22,
+        "journal_lines": 16,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 40960
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 41.545953530601295,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "research": "idle",
+      "ticks": 120,
+      "elapsed_seconds": 29.778725199983455,
+      "parent_cpu_seconds": 0.25,
+      "parent_cpu_one_core_percent": 0.8395255281113878,
+      "parent_rss_mib": {
+        "mean": 62.16845703125,
+        "p95": 62.19921875,
+        "p99": 62.19921875,
+        "max": 62.19921875
+      },
+      "parent_rss_growth_mib": 0.234375,
+      "commit_ms": {
+        "mean": 11.82232499801709,
+        "p95": 18.255900009535253,
+        "p99": 24.74730007816106,
+        "max": 32.984400051645935
+      },
+      "decision_ms": {
+        "mean": 3.288236659136601,
+        "p95": 6.081400089897215,
+        "p99": 7.689999998547137,
+        "max": 8.002799935638905
+      },
+      "queue_lag_ms": {
+        "mean": 0.22374750309002897,
+        "p95": 0.34550006967037916,
+        "p99": 0.4157000221312046,
+        "max": 0.9667999111115932
+      },
+      "queue_peak": 0,
+      "ui_state_read_ms": {
+        "mean": 4.45148329405735,
+        "p95": 5.283499951474369,
+        "p99": 5.283499951474369,
+        "max": 7.117399945855141
+      },
+      "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
+      "child": null,
+      "child_supervised_pid": null,
+      "storage_growth_bytes": {
+        "database_bytes": 619900,
+        "candles": 0,
+        "events": 192,
+        "journal_lines": 160,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 204800
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 29.96062992125984,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "research": "busy",
+      "ticks": 120,
+      "elapsed_seconds": 31.463059699977748,
+      "parent_cpu_seconds": 1.046875,
+      "parent_cpu_one_core_percent": 3.327314666731985,
+      "parent_rss_mib": {
+        "mean": 62.45836588541667,
+        "p95": 62.55078125,
+        "p99": 62.55078125,
+        "max": 62.55078125
+      },
+      "parent_rss_growth_mib": 0.17578125,
+      "commit_ms": {
+        "mean": 11.730097499093972,
+        "p95": 18.700400018133223,
+        "p99": 28.054700000211596,
+        "max": 53.646599990315735
+      },
+      "decision_ms": {
+        "mean": 3.223111663828604,
+        "p95": 6.61250005941838,
+        "p99": 7.416600012220442,
+        "max": 7.794999983161688
+      },
+      "queue_lag_ms": {
+        "mean": 0.20033251009105393,
+        "p95": 0.2910998882725835,
+        "p99": 0.32430002465844154,
+        "max": 0.3837000112980604
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 2.624316664878279,
+        "p95": 2.5106000248342752,
+        "p99": 2.5106000248342752,
+        "max": 3.752899938262999
+      },
+      "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
+      "child": {
+        "fits": 375,
+        "cpu_seconds": 28.71875,
+        "wall_seconds": 30.04700000002049,
+        "peak_rss_mib": 58.19140625,
+        "paid_usd": "0",
+        "worker_identity": {
+          "pid": 16216,
+          "processors_allowed": 2,
+          "priority_class": 64
+        }
+      },
+      "child_supervised_pid": 16216,
+      "storage_growth_bytes": {
+        "database_bytes": 619900,
+        "candles": 0,
+        "events": 202,
+        "journal_lines": 160,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 204800
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 35.446495075726226,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "research": "idle",
+      "ticks": 120,
+      "elapsed_seconds": 29.785686500021257,
+      "parent_cpu_seconds": 1.40625,
+      "parent_cpu_one_core_percent": 4.721227425793917,
+      "parent_rss_mib": {
+        "mean": 63.14329427083333,
+        "p95": 63.171875,
+        "p99": 63.171875,
+        "max": 63.171875
+      },
+      "parent_rss_growth_mib": 0.49609375,
+      "commit_ms": {
+        "mean": 19.939488331632067,
+        "p95": 31.815299997106194,
+        "p99": 50.75829999987036,
+        "max": 77.6546000270173
+      },
+      "decision_ms": {
+        "mean": 5.516017500970823,
+        "p95": 9.654599940404296,
+        "p99": 10.296599939465523,
+        "max": 11.145500000566244
+      },
+      "queue_lag_ms": {
+        "mean": 0.3066141769522801,
+        "p95": 0.33920002169907093,
+        "p99": 0.3845000173896551,
+        "max": 10.66139992326498
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 7.762849990588923,
+        "p95": 10.197499999776483,
+        "p99": 10.197499999776483,
+        "max": 12.533799977973104
+      },
+      "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
+      "child": null,
+      "child_supervised_pid": null,
+      "storage_growth_bytes": {
+        "database_bytes": 1384448,
+        "candles": 0,
+        "events": 382,
+        "journal_lines": 320,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 360448
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 30.822696275572653,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "research": "busy",
+      "ticks": 120,
+      "elapsed_seconds": 31.536667400039732,
+      "parent_cpu_seconds": 1.71875,
+      "parent_cpu_one_core_percent": 5.450005158115834,
+      "parent_rss_mib": {
+        "mean": 63.277734375,
+        "p95": 63.30078125,
+        "p99": 63.30078125,
+        "max": 63.30078125
+      },
+      "parent_rss_growth_mib": 0.109375,
+      "commit_ms": {
+        "mean": 20.08777499916808,
+        "p95": 41.550899972207844,
+        "p99": 46.67389998212457,
+        "max": 84.7235000692308
+      },
+      "decision_ms": {
+        "mean": 5.888352504310508,
+        "p95": 9.576900047250092,
+        "p99": 10.763199999928474,
+        "max": 14.637199928984046
+      },
+      "queue_lag_ms": {
+        "mean": 0.19888083528106412,
+        "p95": 0.2960000419989228,
+        "p99": 0.3203999949619174,
+        "max": 0.3922999603673816
+      },
+      "queue_peak": 1,
+      "ui_state_read_ms": {
+        "mean": 8.307333337143064,
+        "p95": 9.874499985016882,
+        "p99": 9.874499985016882,
+        "max": 11.711300001479685
+      },
+      "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
+      "child": {
+        "fits": 384,
+        "cpu_seconds": 28.890625,
+        "wall_seconds": 30.15700000000652,
+        "peak_rss_mib": 57.90234375,
+        "paid_usd": "0",
+        "worker_identity": {
+          "pid": 7056,
+          "processors_allowed": 2,
+          "priority_class": 64
+        }
+      },
+      "child_supervised_pid": 7056,
+      "storage_growth_bytes": {
+        "database_bytes": 1185148,
+        "candles": 0,
+        "events": 402,
+        "journal_lines": 320,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 385024
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "host_cpu_percent": 34.96780584447746,
+      "paper_connections": 2,
+      "market_connections": 0,
+      "paid_usd": "0",
+      "passed": true
+    }
+  ]
+}
