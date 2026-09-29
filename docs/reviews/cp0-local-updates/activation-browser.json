@@ -1,0 +1,63 @@
+{
+  "checks": [
+    {
+      "name": "actual_main_check",
+      "result": {
+        "activation_phase": "not_activated",
+        "last_activation_verified_at": null,
+        "active_release_matches": false,
+        "running_commit": "77fd2bcbe57885f10202da689ea64af8c16aeab3",
+        "running_source_dirty": false,
+        "running_source_kind": "checkout",
+        "main_commit": "a7506186ce52503181dc4c53d9a90d9e2e78481b",
+        "checked_at": 1790654906.430423,
+        "phase": "no_release",
+        "same_commit": false,
+        "message": "Main does not contain the application release files yet.",
+        "activation": "manual",
+        "automatic_activation": false
+      }
+    },
+    {
+      "name": "viewport_1440",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "name": "viewport_360",
+      "viewport": 360,
+      "document": 360
+    },
+    {
+      "name": "unavailable_version_read",
+      "passed": true
+    },
+    {
+      "name": "periodic_read_recovery",
+      "passed": true
+    },
+    {
+      "name": "check_failure_visible",
+      "passed": true
+    },
+    {
+      "name": "synthetic_saved_verified_receipt_rendered_by_real_api",
+      "passed": true
+    },
+    {
+      "name": "recovery_layout_1440",
+      "viewport": 1440,
+      "document": 1440,
+      "synthetic_state": true
+    },
+    {
+      "name": "recovery_layout_360",
+      "viewport": 360,
+      "document": 360,
+      "synthetic_state": true
+    }
+  ],
+  "errors": [],
+  "blocked": [],
+  "scope": "Isolated local application, no paper worker, injected HTTP failures labeled; not the Windows installation"
+}
