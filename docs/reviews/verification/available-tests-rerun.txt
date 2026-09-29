@@ -1,0 +1,7 @@
+........................................................................ [ 51%]
+................................................................sssss    [100%]
+=========================== short test summary info ============================
+SKIPPED [2] tests/test_windows_supervision.py:10: Windows runtime stop guard
+SKIPPED [2] tests/test_windows_supervision.py:65: Windows console lifetime contract
+SKIPPED [1] tests/test_windows_supervision.py:101: Windows process ownership contract
+136 passed, 5 skipped in 0.42s

@@ -1,0 +1,32 @@
+{
+  "source": "docs/evidence/numeric-preflight-20260928T113855Z.json",
+  "identical_replay_result": true,
+  "repeat_with_consumed_test_end": {
+    "version": "quote-ridge-v1",
+    "dataset_sha256": "1c820802a48a22a4a04e045d2eabd3dae88dce5db3083dd5b5da8363ed01ed8b",
+    "feature": "momentum_5",
+    "horizon_minutes": 5,
+    "symbol": "BTCUSD",
+    "samples": 634,
+    "excluded": {
+      "warmup": 5,
+      "label_gap": 7,
+      "feature_gap": 25,
+      "unmatured": 3
+    },
+    "cost_version": "quote-cost-v1-0.10pct-per-side-2bps-adverse",
+    "limitations": [
+      "Historical observed quote labels; no simulated fills or account returns.",
+      "Minute samples cannot establish intraminute execution or queue position.",
+      "Overlapping labels and a short market history limit independent evidence.",
+      "One fixed ridge coefficient penalty; no hyperparameter search or primary promotion."
+    ],
+    "train_samples": 634,
+    "test_samples": 0,
+    "split_at": 1790595540.9180105,
+    "status": "insufficient_data",
+    "reason": "Need 200 training and 50 new purged test examples"
+  },
+  "independent_validation": false,
+  "financial_writes": false
+}

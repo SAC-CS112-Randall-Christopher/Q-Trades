@@ -1,0 +1,37 @@
+{
+  "at": "2026-09-28T10:25:48.174020+00:00",
+  "creation_disk_delta_bytes": 4096,
+  "loaded": {
+    "models": [
+      {
+        "name": "trading-research-ministral3-8b-text:q4km-v1",
+        "model": "trading-research-ministral3-8b-text:q4km-v1",
+        "size": 5863699905,
+        "digest": "d2158820e07fe3d4cddd5910889b92d549feb9942f5d2edbc5ec30b06b1f5502",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "mistral3",
+          "families": [
+            "mistral3"
+          ],
+          "parameter_size": "8.5B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-28T04:26:48.1578505-06:00",
+        "size_vram": 5863699905,
+        "context_length": 6144
+      }
+    ]
+  },
+  "paper": {
+    "running": true,
+    "stale": false,
+    "error": null,
+    "performance": {
+      "average_cpu_percent_of_machine": 2.43,
+      "engine_p95_ms": 63.0,
+      "commit_p95_ms": 62.0
+    }
+  }
+}

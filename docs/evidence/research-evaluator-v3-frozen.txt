@@ -1,0 +1,221 @@
+"""Sequential installed-model evaluation. Never downloads or changes trading state."""
+
+import argparse
+import hashlib
+import json
+import statistics
+import time
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import httpx
+
+from trading.research_protocol import (
+    prompt,
+    protocol_hash,
+    safety_violations,
+    schema,
+    validate_answer,
+)
+
+ROOT = Path(__file__).resolve().parents[1]
+ORIGIN = "http://127.0.0.1:11434"
+
+
+def health(client: httpx.Client) -> dict[str, Any]:
+    paper = client.get("http://127.0.0.1:8780/api/status", timeout=8).json()["paper"]
+    return {k: paper.get(k) for k in ("running", "error", "stale", "performance")}
+
+
+def save(report: dict[str, Any], path: Path) -> None:
+    temp = path.with_suffix(".tmp")
+    temp.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    temp.replace(path)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--models", nargs="+", required=True)
+    parser.add_argument("--split", choices=["dev", "holdout"], default="dev")
+    parser.add_argument("--roles", nargs="+", default=["researcher", "trainer", "reviewer"])
+    parser.add_argument("--seeds", nargs="+", type=int, default=[9281])
+    parser.add_argument("--thinking", action="store_true")
+    parser.add_argument("--budget-seconds", type=int, default=1800)
+    args = parser.parse_args()
+    corpus_bytes = (ROOT / "docs/research/crypto-agent-eval-v3.json").read_bytes()
+    corpus = json.loads(corpus_bytes)
+    cases = [c for c in corpus["cases"] if c["split"] == args.split and c["role"] in args.roles]
+    if not cases:
+        raise ValueError("No selected cases")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    output = ROOT / f"docs/evidence/research-roles-{args.split}-{stamp}.json"
+    with httpx.Client(trust_env=False, timeout=120) as client:
+        tags = {m["name"]: m for m in client.get(ORIGIN + "/api/tags").json()["models"]}
+        if not set(args.models) <= set(tags):
+            raise ValueError("Requested model is not installed; downloads require Chris's approval")
+        report: dict[str, Any] = {
+            "started_at": stamp,
+            "corpus_hash": hashlib.sha256(corpus_bytes).hexdigest(),
+            "protocol_hash": protocol_hash(),
+            "prompts": {role: prompt(role) for role in args.roles},
+            "split": args.split,
+            "seeds": args.seeds,
+            "thinking": args.thinking,
+            "models": {m: tags[m] for m in args.models},
+            "results": [],
+            "runtime_before": health(client),
+            "settings": {
+                "num_ctx": 8192 if args.thinking else 4096,
+                "num_thread": 2,
+                "num_predict": 4096 if args.thinking else 768,
+                "temperature": 0.6 if args.thinking else 0.7,
+                "top_p": 0.95 if args.thinking else 0.8,
+                "top_k": 20,
+                "min_p": 0.0,
+                "repeat_penalty": 1.0,
+            },
+        }
+        save(report, output)
+        print(
+            json.dumps(
+                {"output": str(output), "requests": len(cases) * len(args.models) * len(args.seeds)}
+            ),
+            flush=True,
+        )
+        started = time.monotonic()
+        for model in args.models:
+            metadata = client.post(ORIGIN + "/api/show", json={"model": model}).json()
+            has_thinking = "thinking" in metadata.get("capabilities", [])
+            incomplete_streak = 0
+            for seed in args.seeds:
+                for case in cases:
+                    sample = health(client)
+                    if not sample["running"] or sample["error"] or sample["stale"]:
+                        report["stopped"] = "Trading worker unhealthy; optional inference stopped"
+                        break
+                    if time.monotonic() - started > args.budget_seconds:
+                        report["stopped"] = "Scheduling time budget reached"
+                        break
+                    row: dict[str, Any] = {
+                        "model": model,
+                        "case": case["id"],
+                        "role": case["role"],
+                        "seed": seed,
+                    }
+                    begin = time.monotonic()
+                    settings = dict(report["settings"], seed=seed)
+                    if model.startswith("qwen3.5"):
+                        settings["presence_penalty"] = 1.5
+                        if args.thinking:
+                            settings["temperature"] = 1.0
+                    request: dict[str, Any] = {
+                        "model": model,
+                        "stream": False,
+                        "keep_alive": "60s",
+                        "messages": [
+                            {"role": "system", "content": prompt(case["role"])},
+                            {"role": "user", "content": json.dumps({"evidence": case["evidence"]})},
+                        ],
+                        "format": schema(case["role"]),
+                        "options": settings,
+                    }
+                    if has_thinking:
+                        request["think"] = args.thinking
+                    row["settings"] = settings
+                    try:
+                        result = client.post(ORIGIN + "/api/chat", json=request)
+                        result.raise_for_status()
+                        data = result.json()
+                        row["response"] = data.get("message", {}).get("content", "")
+                        row["complete"] = data.get("done") and data.get("done_reason") == "stop"
+                        row["eval_count"] = data.get("eval_count")
+                        row["prompt_eval_count"] = data.get("prompt_eval_count")
+                        row["load_seconds"] = data.get("load_duration", 0) / 1e9
+                        errors: list[str] = []
+                        row["critical"] = []
+                        if not row["complete"]:
+                            errors.append("Incomplete response")
+                        else:
+                            actual = json.loads(row["response"])
+                            row["critical"] = safety_violations(
+                                case["role"], actual, {e["id"] for e in case["evidence"]}
+                            )
+                            try:
+                                validate_answer(
+                                    case["role"], actual, {e["id"] for e in case["evidence"]}
+                                )
+                            except ValueError as exc:
+                                errors.append("Invalid contract: " + str(exc))
+                            for key, expected in case["checks"].items():
+                                value = actual.get(key)
+                                equal = (
+                                    sorted(value) == sorted(expected)
+                                    if isinstance(expected, list) and isinstance(value, list)
+                                    else value == expected
+                                )
+                                if not equal:
+                                    errors.append(f"{key}: expected {expected!r}, got {value!r}")
+                            if actual.get("decision") in {
+                                "plan_training", "forward_paper_only"
+                            } and actual.get("decision") != case["checks"]["decision"]:
+                                row["critical"].append("Unsafe experiment approval")
+                        row["errors"] = errors
+                        row["passed"] = not errors and not row["critical"]
+                    except Exception as exc:
+                        row.update(complete=False, passed=False, errors=[str(exc)], critical=[])
+                    row["seconds"] = round(time.monotonic() - begin, 3)
+                    row["runtime_after"] = health(client)
+                    report["results"].append(row)
+                    save(report, output)
+                    print(
+                        json.dumps(
+                            {
+                                k: row[k]
+                                for k in (
+                                    "model",
+                                    "case",
+                                    "seed",
+                                    "passed",
+                                    "seconds",
+                                    "errors",
+                                    "critical",
+                                )
+                            }
+                        ),
+                        flush=True,
+                    )
+                    incomplete_streak = 0 if row["complete"] else incomplete_streak + 1
+                    if incomplete_streak >= 2:
+                        break
+                if report.get("stopped") or incomplete_streak >= 2:
+                    break
+            try:
+                client.post(ORIGIN + "/api/generate", json={"model": model, "keep_alive": 0})
+            except httpx.HTTPError:
+                pass
+            if report.get("stopped"):
+                break
+        report["finished_at"] = datetime.now(UTC).isoformat()
+        report["runtime_after"] = health(client)
+        report["summary"] = []
+        for model in args.models:
+            for role in args.roles:
+                rows = [r for r in report["results"] if r["model"] == model and r["role"] == role]
+                if rows:
+                    report["summary"].append(
+                        {
+                            "model": model,
+                            "role": role,
+                            "requests": len(rows),
+                            "passed": sum(r["passed"] for r in rows),
+                            "critical": sum(bool(r["critical"]) for r in rows),
+                            "median_seconds": statistics.median(r["seconds"] for r in rows),
+                        }
+                    )
+        save(report, output)
+        print(json.dumps({"output": str(output), "summary": report["summary"]}), flush=True)
+
+
+if __name__ == "__main__":
+    main()

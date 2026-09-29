@@ -1,0 +1,31 @@
+{
+  "recorded_at": "2026-09-28T16:33:35.637292+00:00",
+  "state": "needs_review",
+  "freeze": "docs/evidence/qualification-qwen14b-elastic-20260928T161443Z.json",
+  "freeze_sha256": "b0df125f70b1f090b22075a7525ea3608687ebbe44f874c4c798b149ae5f66fc",
+  "state_receipt": "data/qualification-qwen14b-elastic-20260928T161443Z.state.json",
+  "state_sha256": "cc92b0612ad000da0bef4d5683a58b25f5ed94a9a50329f3f749c7b138987073",
+  "evaluation_receipt": "docs/evidence/research-roles-dev-20260928T161547Z.json",
+  "evaluation_sha256": "b12587f2d0683a4c1366aa79aa4f85172f8ab992aad5793dde87a18b92c88a3d",
+  "summary": [
+    {
+      "model": "qwen3:14b",
+      "role": "researcher",
+      "requests": 1,
+      "passed": 0,
+      "critical": 0,
+      "median_seconds": 442.235
+    }
+  ],
+  "stopped": "Dedicated CPU runtime placement could not be verified",
+  "qualified": false,
+  "agents_enabled": false,
+  "completed_rows": 1,
+  "retained_failure": "First researcher development answer completed but failed the research contract; unavailable alternative features do not invalidate the supplied valid feature. Do not rerun this answer to seek a pass.",
+  "infrastructure_failure": "Both project PowerShell supervisors exited with 0xC000013A. Runtime heartbeat became stale and placement verification stopped evaluation. Source of the interruption is unknown.",
+  "untested_roles": [
+    "trainer",
+    "reviewer"
+  ],
+  "continuation_rule": "Preserve this failed researcher screen and test only previously untested roles in a separately frozen batch after supervision is restored."
+}

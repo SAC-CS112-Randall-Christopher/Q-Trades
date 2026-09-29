@@ -1,0 +1,14 @@
+{
+  "at": "2026-09-28T11:38:55.738449+00:00",
+  "run_id": "20260928T113855Z",
+  "version": "quote-ridge-v1",
+  "symbol": "BTCUSD",
+  "feature": "momentum_5",
+  "horizon_minutes": 5,
+  "as_of": 1790595535.738449,
+  "prior_test_end": 0,
+  "purpose": "One predeclared numerical tool implementation check on real recorded public quotes. No LLM role output, strategy/account mutation or claim of a profitable strategy.",
+  "source_sha256": "367a3ba3ebaf823da943183ec047ac60eeef44a211ef3045363523dd5fe93511",
+  "gate": "Use the existing fixed chronological purge, train-only preprocessing, >=200 training/>=50 fresh test samples and unchanged costs. Preserve an unfavorable result. No feature/horizon search on this test window.",
+  "future_evaluation_rule": "If a completed test is produced, its test_end is consumed and must seed the future research journal before enabling any harness. Replays of this same receipt are reproducibility checks, not fresh validation."
+}

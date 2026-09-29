@@ -1,0 +1,144 @@
+{
+  "checked_at": "2026-09-28T17:47:52.813841+00:00",
+  "freeze": "docs/evidence/qualification-qwen14b-resume-20260928T173007Z.json",
+  "frozen_sources_verified": true,
+  "queue": {
+    "state": "evaluating",
+    "pid": 19768,
+    "updated_at": "2026-09-28T17:47:47.657361+00:00",
+    "active_stage": "dev-trainer-reviewer",
+    "resource_wait": null,
+    "error": null
+  },
+  "evaluation": {
+    "receipt": "docs/evidence/research-roles-dev-20260928T173102Z.json",
+    "finished_at": null,
+    "stopped": null,
+    "active_request": {
+      "model": "qwen3:14b",
+      "case": "dev-reviewer-valid",
+      "role": "reviewer",
+      "seed": 9281,
+      "started_at": "2026-09-28T17:43:40.233090+00:00"
+    },
+    "resource_wait_used_seconds": 0.0,
+    "resource_waits": [],
+    "checks": [
+      {
+        "case": "dev-trainer-valid",
+        "role": "trainer",
+        "complete": true,
+        "reported_passed": true,
+        "recomputed_passed": true,
+        "critical": [],
+        "errors": [],
+        "placement_verified": true,
+        "seconds": 297.172,
+        "rationale": "The proposal satisfies all methodological requirements: the feature momentum_5 is available at decision time (no future_feature leakage), all forward labels have matured (no_forward_evidence), splits use chronological ordering with a 60-minute purge (exceeding the 5-minute forecast horizon, avoiding correlated_samples and preprocessing_leakage), preprocessing fits training only, and candidate/control arms share identical costs (no unequal_costs). Sample count (800) exceeds the minimum requirement (300). Test block remains untouched (no test_reuse). No missing data or insufficient samples."
+      },
+      {
+        "case": "dev-trainer-future",
+        "role": "trainer",
+        "complete": true,
+        "reported_passed": true,
+        "recomputed_passed": true,
+        "critical": [],
+        "errors": [],
+        "placement_verified": true,
+        "seconds": 290.516,
+        "rationale": "The feature momentum_5 uses close[t+5] at decision time t, which is a future price not available at the time of decision. This constitutes future_feature leakage, as the model would rely on data that does not exist when making predictions. The forecast horizon (5 minutes) does not justify this usage since the feature itself is not available at decision time."
+      },
+      {
+        "case": "dev-trainer-missing",
+        "role": "trainer",
+        "complete": true,
+        "reported_passed": true,
+        "recomputed_passed": true,
+        "critical": [],
+        "errors": [],
+        "placement_verified": true,
+        "seconds": 247.781,
+        "rationale": "The proposed experiment requires forward outcomes (labels) for training, but these are not yet available as per evidence E0007. While the sample-count minimum would otherwise be met, the absence of required labels constitutes a missing_data issue. Without matured labels, the experiment cannot proceed, necessitating data collection before training."
+      },
+      {
+        "case": "dev-trainer-costs",
+        "role": "trainer",
+        "complete": true,
+        "reported_passed": true,
+        "recomputed_passed": true,
+        "critical": [],
+        "errors": [],
+        "placement_verified": true,
+        "seconds": 218.844,
+        "rationale": "The experiment proposal uses different cost assumptions for the candidate (zero costs) and control (pays fees and slippage), violating the requirement for identical costs between arms. This creates a methodological defect under 'unequal_costs'. All other conditions are satisfied: the feature is available at decision time, labels are matured, sample count exceeds the minimum, splits are chronological with adequate purging, and preprocessing is confined to training data. The test block is not reused for parameter selection."
+      }
+    ]
+  },
+  "prefix_identical": true,
+  "original_source_unchanged": true,
+  "paper": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "research_constrained": false,
+    "performance": {
+      "average_cpu_percent_of_machine": 1.89,
+      "engine_p95_ms": 47.0,
+      "commit_p95_ms": 32.0
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 123999
+    }
+  },
+  "primary": {
+    "equity": "97.6400730146000000000",
+    "closed": 18,
+    "fees": "1.7297109854000000000",
+    "net_pnl": "-2.3599269854000000000",
+    "funding": "100",
+    "replenishments": 0,
+    "attempt": {
+      "number": 1,
+      "outcome": "open",
+      "started_at": 1790550318.7589083
+    }
+  },
+  "resources": {
+    "profile": "trading-cpu-elastic-six-threads-v1",
+    "inference_threads": 6,
+    "observed_at": "2026-09-28T17:47:52.812833+00:00",
+    "server": {
+      "pid": 22284,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    },
+    "worker": {
+      "pid": 38796,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    }
+  },
+  "resource_profile_verified": true,
+  "model_residency": {
+    "trading": [
+      {
+        "name": "qwen3:14b",
+        "digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+        "size_vram": 0
+      }
+    ],
+    "arcgis": [
+      {
+        "name": "qwen3:8b",
+        "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+        "size_vram": 6463915294
+      }
+    ]
+  },
+  "qualification": "Development results only; no completed holdout or qualified role. Resident ArcGIS models do not prove an active request or response latency."
+}

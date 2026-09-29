@@ -1,0 +1,56 @@
+{
+  "At": "2026-09-28T12:06:13.9312369Z",
+  "Task": "TradingResearch-Paper-20260927",
+  "State": "Running",
+  "LastRunTime": "2026-09-27T17:05:12-06:00",
+  "LastTaskResult": 267009,
+  "MissedRuns": 0,
+  "Actions": {
+    "Execute": "powershell.exe",
+    "Arguments": "-NoProfile -NonInteractive -WindowStyle Hidden -File \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-PaperExperiment.ps1\"",
+    "WorkingDirectory": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project"
+  },
+  "Processes": [
+    {
+      "ProcessId": 21356,
+      "ParentProcessId": 31816,
+      "Name": "python.exe",
+      "CommandLine": "\"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\python.exe\" -m trading serve --experiment "
+    },
+    {
+      "ProcessId": 16744,
+      "ParentProcessId": 21356,
+      "Name": "python.exe",
+      "CommandLine": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" -m trading serve --experiment "
+    },
+    {
+      "ProcessId": 45116,
+      "ParentProcessId": 51488,
+      "Name": "python.exe",
+      "CommandLine": "\"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\python.exe\" data/qualification-followup-20260928.py"
+    },
+    {
+      "ProcessId": 53736,
+      "ParentProcessId": 45116,
+      "Name": "python.exe",
+      "CommandLine": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" data/qualification-followup-20260928.py"
+    },
+    {
+      "ProcessId": 12964,
+      "ParentProcessId": 53736,
+      "Name": "python.exe",
+      "CommandLine": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\python.exe C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\evaluate_research_roles.py --models qwen3.5:9b --roles researcher --thinking --split holdout --seeds 92811 92812 92813 --stop-disqualified-role --request-timeout-seconds 300 --budget-seconds 7200"
+    },
+    {
+      "ProcessId": 13408,
+      "ParentProcessId": 12964,
+      "Name": "python.exe",
+      "CommandLine": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\evaluate_research_roles.py --models qwen3.5:9b --roles researcher --thinking --split holdout --seeds 92811 92812 92813 --stop-disqualified-role --request-timeout-seconds 300 --budget-seconds 7200"
+    }
+  ],
+  "Listener": {
+    "LocalAddress": "127.0.0.1",
+    "LocalPort": 8780,
+    "OwningProcess": 16744
+  }
+}

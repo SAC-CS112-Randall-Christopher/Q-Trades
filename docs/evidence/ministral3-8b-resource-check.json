@@ -1,0 +1,37 @@
+{
+  "at": "2026-09-28T10:15:30.427374+00:00",
+  "loaded": {
+    "models": [
+      {
+        "name": "hf.co/mistralai/Ministral-3-8B-Reasoning-2512-GGUF:Q4_K_M",
+        "model": "hf.co/mistralai/Ministral-3-8B-Reasoning-2512-GGUF:Q4_K_M",
+        "size": 6568919693,
+        "digest": "2b654ed98a09be0346a2a07c12b077714a8b5eca06abbe1b90291909822718a5",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "mistral3",
+          "families": [
+            "mistral3"
+          ],
+          "parameter_size": "8.49B",
+          "quantization_level": "unknown"
+        },
+        "expires_at": "2026-09-28T04:16:17.4570561-06:00",
+        "size_vram": 5542877592,
+        "context_length": 8192
+      }
+    ]
+  },
+  "paper": {
+    "running": true,
+    "stale": false,
+    "error": null,
+    "performance": {
+      "average_cpu_percent_of_machine": 2.43,
+      "engine_p95_ms": 47.0,
+      "commit_p95_ms": 47.0
+    }
+  },
+  "free_gib": 19.79
+}

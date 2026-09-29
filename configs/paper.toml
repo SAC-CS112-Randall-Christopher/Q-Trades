@@ -1,0 +1,15 @@
+schema_version = 1
+mode = "paper"
+live_enabled = false
+ai_enabled = false
+ai_daily_budget_usd = "0.00"
+# Watchlist only. Observation is not approval to trade these instruments.
+monitored_symbols = ["BTCUSD", "ETHUSD", "BTCUSDT", "ETHUSDT"]
+approved_symbols = []
+poll_seconds = 15
+request_timeout_seconds = 8
+stale_after_seconds = 45
+metadata_refresh_seconds = 300
+depth_levels = 20
+# Rolling public observations only; never use this policy for financial records.
+retained_observations = 2000

@@ -1,0 +1,8 @@
+{
+  "at": "2026-09-28T11:17:58.7855277Z",
+  "reason": "Load read-only model trials dashboard",
+  "supervisor": 31816,
+  "launcher": 49912,
+  "child": 7652,
+  "previous_journal": "model-lab-journal-before-20260928.json"
+}

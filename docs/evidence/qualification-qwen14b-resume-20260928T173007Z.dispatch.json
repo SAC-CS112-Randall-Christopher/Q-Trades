@@ -1,0 +1,87 @@
+{
+  "observed_at": "2026-09-28T17:31:29.584612+00:00",
+  "queue": {
+    "state": "evaluating",
+    "pid": 19768,
+    "updated_at": "2026-09-28T17:31:16.807538+00:00",
+    "active_stage": "dev-trainer-reviewer",
+    "reason": null,
+    "error": null,
+    "resource_wait": null,
+    "stages": [
+      {
+        "stage": "dev-trainer-reviewer",
+        "started_at": "2026-09-28T17:31:01.772791+00:00",
+        "log": "data/qualification-qwen14b-resume-20260928T173007Z.dev-trainer-reviewer.log",
+        "pid": 39736
+      }
+    ]
+  },
+  "frozen_sources_verified": true,
+  "paper": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "research_constrained": false,
+    "performance": {
+      "average_cpu_percent_of_machine": 1.87,
+      "engine_p95_ms": 47.0,
+      "commit_p95_ms": 47.0
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 122001
+    }
+  },
+  "placement": [
+    {
+      "name": "qwen3:14b",
+      "digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+      "size_vram": 0
+    }
+  ],
+  "resources": {
+    "profile": "trading-cpu-elastic-six-threads-v1",
+    "inference_threads": 6,
+    "observed_at": "2026-09-28T17:31:30.211741+00:00",
+    "server": {
+      "pid": 22284,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    },
+    "worker": {
+      "pid": 38796,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    }
+  },
+  "resources_verified": true,
+  "evaluation": {
+    "receipt": "docs/evidence/research-roles-dev-20260928T173102Z.json",
+    "rows": 1,
+    "active_request": {
+      "model": "qwen3:14b",
+      "case": "dev-trainer-future",
+      "role": "trainer",
+      "seed": 9281,
+      "started_at": "2026-09-28T17:31:02.859206+00:00"
+    },
+    "waiting_for_resources": null,
+    "resumed_from": {
+      "receipt": "docs/evidence/research-roles-dev-20260928T164204Z.json",
+      "sha256": "bd5c71401be56a17f4d059cabf67a59bbdcc030be89fe38ad971bf88d7235dcd",
+      "recorded_responses": 1,
+      "runner_sha256": "504b1ff766fc38500908e4f7f16019994cf1aa984264938d07ae28112a12c52a",
+      "unresolved_request": null,
+      "continuation_policy": "resource-yield-v1",
+      "previous_stop": "Paper worker has constrained optional research; optional inference stopped",
+      "previous_finished_at": "2026-09-28T16:47:02.375878+00:00"
+    },
+    "prior_prefix_identical": true,
+    "prior_source_unchanged": true
+  }
+}

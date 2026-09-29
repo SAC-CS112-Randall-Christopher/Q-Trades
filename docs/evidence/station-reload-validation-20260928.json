@@ -1,0 +1,33 @@
+{
+  "verified_at": 1790604608.8065732,
+  "account_changes": {
+    "primary": {},
+    "breakout-v1": {},
+    "selective-v1": {},
+    "responsive-v1": {},
+    "universe-wide-v1": {},
+    "universe-control-v1": {}
+  },
+  "tool_receipts_preserved": true,
+  "options_account_preserved": true,
+  "performance": {
+    "/api/station/live?symbol=BTCUSD": {
+      "samples": 8,
+      "median_ms": 1.28,
+      "max_ms": 1.8,
+      "payload_bytes": 3333
+    },
+    "/api/station/detail?symbol=BTCUSD": {
+      "samples": 8,
+      "median_ms": 1.8,
+      "max_ms": 2.11,
+      "payload_bytes": 35547
+    },
+    "/api/research/tools": {
+      "samples": 8,
+      "median_ms": 1.37,
+      "max_ms": 2.48,
+      "payload_bytes": 1151
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "observed_at": "2026-09-28T17:49:19.7586370Z",
+  "listeners": [
+    {
+      "port": 11435,
+      "address": "127.0.0.1",
+      "pid": 22284,
+      "name": "ollama",
+      "priority": "Idle",
+      "started_at": "2026-09-28T16:33:44.2626798Z"
+    },
+    {
+      "port": 11434,
+      "address": "127.0.0.1",
+      "pid": 11844,
+      "name": "ollama",
+      "priority": "Normal",
+      "started_at": "2026-09-24T16:12:58.2242186Z"
+    },
+    {
+      "port": 8780,
+      "address": "127.0.0.1",
+      "pid": 55988,
+      "name": "python",
+      "priority": "BelowNormal",
+      "started_at": "2026-09-28T14:24:00.7505526Z"
+    }
+  ],
+  "tasks": [
+    {
+      "name": "TradingResearch-Models-20260928",
+      "state": "Running"
+    },
+    {
+      "name": "TradingResearch-Paper-20260927",
+      "state": "Running"
+    }
+  ]
+}

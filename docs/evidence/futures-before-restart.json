@@ -1,0 +1,1035 @@
+{
+  "at": 1790556805.4384563,
+  "state": {
+    "gaps": 4,
+    "model": "paper-tiered-feed-ioc-v2",
+    "paused": false,
+    "schema": 1,
+    "accounts": {
+      "primary": {
+        "day": 20724,
+        "cash": "99.7593799833000000000",
+        "fees": "0.1990161167000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 2,
+        "equity": "99.7593799833000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790550318.7589083
+        },
+        "funding": "100",
+        "pending": {},
+        "version": "breakout-v1",
+        "nav_peak": "1",
+        "realized": "-0.2406200167000000000",
+        "cooldowns": {
+          "BTCUSD": 1790554094.5905495,
+          "ETHUSD": 1790552802.6353507
+        },
+        "day_start": "99.7593799833000000000",
+        "last_exit": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.996960486322188449848024316"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0.0024627635470000000",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790556795.6625812,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "62.24419822055619786995077343",
+              "close": "84525.34000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "84600.92000000",
+              "eligible": false,
+              "ema20_5m": "84453.65014601207181225554605",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "2.645678529526789206100899492"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790556795.9203289,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "2.090679374793462357281413275",
+              "close": "2685.28000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "2689.11000000",
+              "eligible": false,
+              "ema20_5m": "2683.898133247069760588540259",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "1492.634146341463414634146341"
+            }
+          }
+        },
+        "recent_trades": [
+          {
+            "pnl": "-0.1235964650000000000",
+            "cost": "49.7425428500000000000",
+            "fees": "0.0993614650000000000",
+            "reason": "ATR stop",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "proceeds": "49.6189463850000000000",
+            "closed_at": 1790552202.6353507,
+            "opened_at": 1790552174.3832293,
+            "entry_features": {
+              "atr": "0.5326753499245162107429649553",
+              "close": "2686.42000000",
+              "reason": "Confirmed breakout",
+              "version": "breakout-v1",
+              "breakout": "2686.33000000",
+              "eligible": true,
+              "ema20_5m": "2679.995093722838699263428685",
+              "trend_up": true,
+              "bar_open_ms": 1790552100000,
+              "closed_bars": 600,
+              "volume_ratio": "9.756097560975609756097560976"
+            }
+          },
+          {
+            "pnl": "-0.1170235517000000000",
+            "cost": "49.8858463103000000000",
+            "fees": "0.0996546517000000000",
+            "reason": "Trailing stop",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "proceeds": "49.7688227586000000000",
+            "closed_at": 1790553494.5905495,
+            "opened_at": 1790553070.5264788,
+            "entry_features": {
+              "atr": "25.06198297720918446895459632",
+              "close": "84462.17000000",
+              "reason": "Confirmed breakout",
+              "version": "breakout-v1",
+              "breakout": "84438.10000000",
+              "eligible": true,
+              "ema20_5m": "84366.66918638945068324437359",
+              "trend_up": true,
+              "bar_open_ms": 1790553000000,
+              "closed_bars": 600,
+              "volume_ratio": "2.996960486322188449848024316"
+            }
+          }
+        ],
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "BTCUSD": 4600945492,
+          "ETHUSD": 3776820125
+        }
+      },
+      "breakout-v1": {
+        "day": 20724,
+        "cash": "99.7593799833000000000",
+        "fees": "0.1990161167000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 2,
+        "equity": "99.7593799833000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790550318.7589083
+        },
+        "funding": "100",
+        "pending": {},
+        "version": "breakout-v1",
+        "nav_peak": "1",
+        "realized": "-0.2406200167000000000",
+        "cooldowns": {
+          "BTCUSD": 1790554094.5905495,
+          "ETHUSD": 1790552802.6353507
+        },
+        "day_start": "99.7593799833000000000",
+        "last_exit": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.996960486322188449848024316"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0.0024627635470000000",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790556795.6625812,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "62.24419822055619786995077343",
+              "close": "84525.34000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "84600.92000000",
+              "eligible": false,
+              "ema20_5m": "84453.65014601207181225554605",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "2.645678529526789206100899492"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790556795.9203289,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "2.090679374793462357281413275",
+              "close": "2685.28000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "2689.11000000",
+              "eligible": false,
+              "ema20_5m": "2683.898133247069760588540259",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "1492.634146341463414634146341"
+            }
+          }
+        },
+        "recent_trades": [
+          {
+            "pnl": "-0.1235964650000000000",
+            "cost": "49.7425428500000000000",
+            "fees": "0.0993614650000000000",
+            "reason": "ATR stop",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "proceeds": "49.6189463850000000000",
+            "closed_at": 1790552202.6353507,
+            "opened_at": 1790552174.3832293,
+            "entry_features": {
+              "atr": "0.5326753499245162107429649553",
+              "close": "2686.42000000",
+              "reason": "Confirmed breakout",
+              "version": "breakout-v1",
+              "breakout": "2686.33000000",
+              "eligible": true,
+              "ema20_5m": "2679.995093722838699263428685",
+              "trend_up": true,
+              "bar_open_ms": 1790552100000,
+              "closed_bars": 600,
+              "volume_ratio": "9.756097560975609756097560976"
+            }
+          },
+          {
+            "pnl": "-0.1170235517000000000",
+            "cost": "49.8858463103000000000",
+            "fees": "0.0996546517000000000",
+            "reason": "Trailing stop",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "proceeds": "49.7688227586000000000",
+            "closed_at": 1790553494.5905495,
+            "opened_at": 1790553070.5264788,
+            "entry_features": {
+              "atr": "25.06198297720918446895459632",
+              "close": "84462.17000000",
+              "reason": "Confirmed breakout",
+              "version": "breakout-v1",
+              "breakout": "84438.10000000",
+              "eligible": true,
+              "ema20_5m": "84366.66918638945068324437359",
+              "trend_up": true,
+              "bar_open_ms": 1790553000000,
+              "closed_bars": 600,
+              "volume_ratio": "2.996960486322188449848024316"
+            }
+          }
+        ],
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "BTCUSD": 4600945492,
+          "ETHUSD": 3776820125
+        }
+      },
+      "selective-v1": {
+        "day": 20724,
+        "cash": "99.8829764483000000000",
+        "fees": "0.0996546517000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 1,
+        "equity": "99.8829764483000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790550318.7589083
+        },
+        "funding": "100",
+        "pending": {},
+        "version": "selective-v1",
+        "nav_peak": "1",
+        "realized": "-0.1170235517000000000",
+        "cooldowns": {
+          "BTCUSD": 1790554094.5905495
+        },
+        "day_start": "99.8829764483000000000",
+        "last_exit": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "selective-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "selective-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.822519083969465648854961832"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0.0012267988970000000",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790556795.6625812,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "BTCUSD",
+            "version": "selective-v1",
+            "features": {
+              "atr": "62.24419822055619786995077343",
+              "close": "84525.34000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "selective-v1",
+              "breakout": "84600.92000000",
+              "eligible": false,
+              "ema20_5m": "84453.65014601207181225554605",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "2.747766043866774979691307880"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790556795.9203289,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "ETHUSD",
+            "version": "selective-v1",
+            "features": {
+              "atr": "2.090679374793462357281413275",
+              "close": "2685.28000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "selective-v1",
+              "breakout": "2689.11000000",
+              "eligible": false,
+              "ema20_5m": "2683.898133247069760588540259",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "126.9668049792531120331950207"
+            }
+          }
+        },
+        "recent_trades": [
+          {
+            "pnl": "-0.1170235517000000000",
+            "cost": "49.8858463103000000000",
+            "fees": "0.0996546517000000000",
+            "reason": "Trailing stop",
+            "symbol": "BTCUSD",
+            "version": "selective-v1",
+            "proceeds": "49.7688227586000000000",
+            "closed_at": 1790553494.5905495,
+            "opened_at": 1790553070.5264788,
+            "entry_features": {
+              "atr": "25.06198297720918446895459632",
+              "close": "84462.17000000",
+              "reason": "Confirmed breakout",
+              "version": "selective-v1",
+              "breakout": "84438.10000000",
+              "eligible": true,
+              "ema20_5m": "84366.66918638945068324437359",
+              "trend_up": true,
+              "bar_open_ms": 1790553000000,
+              "closed_bars": 600,
+              "volume_ratio": "2.822519083969465648854961832"
+            }
+          }
+        ],
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "BTCUSD": 4600945492
+        }
+      },
+      "responsive-v1": {
+        "day": 20724,
+        "cash": "99.8829764483000000000",
+        "fees": "0.0996546517000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 1,
+        "equity": "99.8829764483000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790550318.7589083
+        },
+        "funding": "100",
+        "pending": {},
+        "version": "responsive-v1",
+        "nav_peak": "1",
+        "realized": "-0.1170235517000000000",
+        "cooldowns": {
+          "BTCUSD": 1790554094.5905495
+        },
+        "day_start": "99.8829764483000000000",
+        "last_exit": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "responsive-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "responsive-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "1.501522842639593908629441624"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0.0012267988970000000",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790556795.6625812,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "BTCUSD",
+            "version": "responsive-v1",
+            "features": {
+              "atr": "62.24419822055619786995077343",
+              "close": "84525.34000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "responsive-v1",
+              "breakout": "84600.92000000",
+              "eligible": false,
+              "ema20_5m": "84453.65014601207181225554605",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "2.550904977375565610859728507"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790556795.9203289,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "ETHUSD",
+            "version": "responsive-v1",
+            "features": {
+              "atr": "2.090679374793462357281413275",
+              "close": "2685.28000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "responsive-v1",
+              "breakout": "2689.11000000",
+              "eligible": false,
+              "ema20_5m": "2683.898133247069760588540259",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "126.9668049792531120331950207"
+            }
+          }
+        },
+        "recent_trades": [
+          {
+            "pnl": "-0.1170235517000000000",
+            "cost": "49.8858463103000000000",
+            "fees": "0.0996546517000000000",
+            "reason": "Trailing stop",
+            "symbol": "BTCUSD",
+            "version": "responsive-v1",
+            "proceeds": "49.7688227586000000000",
+            "closed_at": 1790553494.5905495,
+            "opened_at": 1790553070.5264788,
+            "entry_features": {
+              "atr": "25.06198297720918446895459632",
+              "close": "84462.17000000",
+              "reason": "Confirmed breakout",
+              "version": "responsive-v1",
+              "breakout": "84438.10000000",
+              "eligible": true,
+              "ema20_5m": "84366.66918638945068324437359",
+              "trend_up": true,
+              "bar_open_ms": 1790553000000,
+              "closed_bars": 600,
+              "volume_ratio": "1.501522842639593908629441624"
+            }
+          }
+        ],
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "BTCUSD": 4600945492
+        }
+      },
+      "universe-wide-v1": {
+        "day": 20724,
+        "cash": "99.7751734200000000000",
+        "fees": "0.0995665800000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 1,
+        "equity": "99.7751734200000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790554772.306844
+        },
+        "funding": "100",
+        "pending": {},
+        "symbols": [
+          "ADAUSD",
+          "BTCUSD",
+          "ETHUSD",
+          "HYPEUSD",
+          "SOLUSD",
+          "SUIUSD"
+        ],
+        "version": "breakout-v1",
+        "nav_peak": "1",
+        "realized": "-0.2248265800000000000",
+        "cooldowns": {
+          "SUIUSD": 1790555805.9070613
+        },
+        "day_start": "100",
+        "last_exit": {
+          "pnl": "-0.2248265800000000000",
+          "cost": "49.8957659200000000000",
+          "fees": "0.0995665800000000000",
+          "reason": "ATR stop",
+          "symbol": "SUIUSD",
+          "version": "breakout-v1",
+          "proceeds": "49.6709393400000000000",
+          "closed_at": 1790555205.9070613,
+          "opened_at": 1790555187.345325,
+          "entry_features": {
+            "atr": "0.001884641223564432321205977448",
+            "close": "1.28700000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "1.28690000",
+            "eligible": true,
+            "ema20_5m": "1.268146172759344594204880142",
+            "trend_up": true,
+            "bar_open_ms": 1790555100000,
+            "closed_bars": 600,
+            "volume_ratio": "4.863593603010348071495766698"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "99.5665800000000000",
+        "max_drawdown": "0.0025447690000000000",
+        "last_decision": {
+          "ADAUSD": {
+            "at": 1790556796.6866224,
+            "bar": 1790556720000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "ADAUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.0004178336724659079319959310039",
+              "close": "0.25654000",
+              "reason": "No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "0.25770000",
+              "eligible": false,
+              "ema20_5m": "0.2549140315225507639917808842",
+              "trend_up": true,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "2.110833333333333333333333333"
+            }
+          },
+          "BTCUSD": {
+            "at": 1790556795.6625812,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "62.24419822055619786995077343",
+              "close": "84525.34000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "84600.92000000",
+              "eligible": false,
+              "ema20_5m": "84453.65014601207181225554605",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "2.645678529526789206100899492"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790556795.9203289,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "2.090679374793462357281413275",
+              "close": "2685.28000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "2689.11000000",
+              "eligible": false,
+              "ema20_5m": "2683.898133247069760588540259",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "1492.634146341463414634146341"
+            }
+          },
+          "SOLUSD": {
+            "at": 1790556796.6866224,
+            "bar": 1790556720000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "SOLUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.088725215966615192079423564",
+              "close": "122.38000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+              "version": "breakout-v1",
+              "breakout": "122.45000000",
+              "eligible": false,
+              "ema20_5m": "122.0150781119188505591234134",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          },
+          "SUIUSD": {
+            "at": 1790556796.6705258,
+            "bar": 1790556720000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "SUIUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.002594355693523642397202160351",
+              "close": "1.28130000",
+              "reason": "No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "1.28480000",
+              "eligible": false,
+              "ema20_5m": "1.271466494570051413798734157",
+              "trend_up": true,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "40.54545454545454545454545455"
+            }
+          },
+          "DOGEUSD": {
+            "at": 1790555656.8024993,
+            "bar": 1790555580000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "DOGEUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.0001067008091193171459092583544",
+              "close": "0.09700000",
+              "reason": "No closed-bar breakout; Volume confirmation absent",
+              "version": "breakout-v1",
+              "breakout": "0.09763000",
+              "eligible": false,
+              "ema20_5m": "0.09674204431039499700569740429",
+              "trend_up": true,
+              "bar_open_ms": 1790555580000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          },
+          "HYPEUSD": {
+            "at": 1790556796.6866224,
+            "bar": 1790556720000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "HYPEUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.07724613208151181432742912529",
+              "close": "91.13000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+              "version": "breakout-v1",
+              "breakout": "91.13000000",
+              "eligible": false,
+              "ema20_5m": "91.39720523440523869230930157",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          }
+        },
+        "recent_trades": [
+          {
+            "pnl": "-0.2248265800000000000",
+            "cost": "49.8957659200000000000",
+            "fees": "0.0995665800000000000",
+            "reason": "ATR stop",
+            "symbol": "SUIUSD",
+            "version": "breakout-v1",
+            "proceeds": "49.6709393400000000000",
+            "closed_at": 1790555205.9070613,
+            "opened_at": 1790555187.345325,
+            "entry_features": {
+              "atr": "0.001884641223564432321205977448",
+              "close": "1.28700000",
+              "reason": "Confirmed breakout",
+              "version": "breakout-v1",
+              "breakout": "1.28690000",
+              "eligible": true,
+              "ema20_5m": "1.268146172759344594204880142",
+              "trend_up": true,
+              "bar_open_ms": 1790555100000,
+              "closed_bars": 600,
+              "volume_ratio": "4.863593603010348071495766698"
+            }
+          }
+        ],
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "SUIUSD": 129286447
+        }
+      },
+      "universe-control-v1": {
+        "day": 20724,
+        "cash": "100",
+        "fees": "0",
+        "wins": 0,
+        "units": "100",
+        "closed": 0,
+        "equity": "100",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790554772.306844
+        },
+        "funding": "100",
+        "pending": {},
+        "symbols": [
+          "BTCUSD",
+          "ETHUSD"
+        ],
+        "version": "breakout-v1",
+        "nav_peak": "1",
+        "realized": "0",
+        "cooldowns": {},
+        "day_start": "100",
+        "last_exit": null,
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790556795.6625812,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "62.24419822055619786995077343",
+              "close": "84525.34000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "84600.92000000",
+              "eligible": false,
+              "ema20_5m": "84453.65014601207181225554605",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "2.645678529526789206100899492"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790556795.9203289,
+            "bar": 1790556720000,
+            "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "2.090679374793462357281413275",
+              "close": "2685.28000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+              "version": "breakout-v1",
+              "breakout": "2689.11000000",
+              "eligible": false,
+              "ema20_5m": "2683.898133247069760588540259",
+              "trend_up": false,
+              "bar_open_ms": 1790556720000,
+              "closed_bars": 600,
+              "volume_ratio": "1492.634146341463414634146341"
+            }
+          }
+        },
+        "recent_trades": [],
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {}
+      }
+    },
+    "features": {
+      "BTCUSD": {
+        "breakout-v1": {
+          "atr": "62.24419822055619786995077343",
+          "close": "84525.34000000",
+          "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+          "version": "breakout-v1",
+          "breakout": "84600.92000000",
+          "eligible": false,
+          "ema20_5m": "84453.65014601207181225554605",
+          "trend_up": false,
+          "bar_open_ms": 1790556720000,
+          "closed_bars": 600,
+          "volume_ratio": "2.645678529526789206100899492"
+        },
+        "selective-v1": {
+          "atr": "62.24419822055619786995077343",
+          "close": "84525.34000000",
+          "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+          "version": "selective-v1",
+          "breakout": "84600.92000000",
+          "eligible": false,
+          "ema20_5m": "84453.65014601207181225554605",
+          "trend_up": false,
+          "bar_open_ms": 1790556720000,
+          "closed_bars": 600,
+          "volume_ratio": "2.747766043866774979691307880"
+        },
+        "responsive-v1": {
+          "atr": "62.24419822055619786995077343",
+          "close": "84525.34000000",
+          "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+          "version": "responsive-v1",
+          "breakout": "84600.92000000",
+          "eligible": false,
+          "ema20_5m": "84453.65014601207181225554605",
+          "trend_up": false,
+          "bar_open_ms": 1790556720000,
+          "closed_bars": 600,
+          "volume_ratio": "2.550904977375565610859728507"
+        }
+      },
+      "ETHUSD": {
+        "breakout-v1": {
+          "atr": "2.090679374793462357281413275",
+          "close": "2685.28000000",
+          "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+          "version": "breakout-v1",
+          "breakout": "2689.11000000",
+          "eligible": false,
+          "ema20_5m": "2683.898133247069760588540259",
+          "trend_up": false,
+          "bar_open_ms": 1790556720000,
+          "closed_bars": 600,
+          "volume_ratio": "1492.634146341463414634146341"
+        },
+        "selective-v1": {
+          "atr": "2.090679374793462357281413275",
+          "close": "2685.28000000",
+          "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+          "version": "selective-v1",
+          "breakout": "2689.11000000",
+          "eligible": false,
+          "ema20_5m": "2683.898133247069760588540259",
+          "trend_up": false,
+          "bar_open_ms": 1790556720000,
+          "closed_bars": 600,
+          "volume_ratio": "126.9668049792531120331950207"
+        },
+        "responsive-v1": {
+          "atr": "2.090679374793462357281413275",
+          "close": "2685.28000000",
+          "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+          "version": "responsive-v1",
+          "breakout": "2689.11000000",
+          "eligible": false,
+          "ema20_5m": "2683.898133247069760588540259",
+          "trend_up": false,
+          "bar_open_ms": 1790556720000,
+          "closed_bars": 600,
+          "volume_ratio": "126.9668049792531120331950207"
+        }
+      }
+    },
+    "last_tick": 1790556804.227769,
+    "last_error": null,
+    "started_at": 1790550318.7589083,
+    "study_bars": 8407,
+    "last_review": 1790550318.7589083,
+    "next_review": 1790564718.7589083,
+    "review_count": 0,
+    "book_sequences": {
+      "ADAUSD": [
+        1535866659,
+        "20c6202361b571b95cc179b6fb6d51e840cb53ef6327071e8f80d5fe100ae240"
+      ],
+      "BTCUSD": [
+        4601025798,
+        "34f695abfbccbd86650829c9636b66b18a369f50873fdeabafda453d3a202c21"
+      ],
+      "ETHUSD": [
+        3776970756,
+        "945bdfc400eb4959a269b907117531e546915d57546410c21d4a7b54f94d948b"
+      ],
+      "SOLUSD": [
+        2289384022,
+        "d5278377b831cdddcb592584c5ad8ccd122154cac4b6d47d5ca82c62d8ef3352"
+      ],
+      "SUIUSD": [
+        129357363,
+        "a3da2bcdb6ec7fe625d54d5f8d14fef1a3545758db4f289f67a32efd2cfb52f8"
+      ],
+      "DOGEUSD": [
+        1078307738,
+        "f7165d765bd17c56815c163ca3778de7497c0064a47de0a612805250878696d2"
+      ],
+      "HYPEUSD": [
+        138394612,
+        "ee641434bc10e6cfea4a7a785ac03d435b944e20c6afa9b7f38b6613e7910b39"
+      ]
+    },
+    "last_promotion": 1790550318.7589083,
+    "review_history": [],
+    "promotion_count": 0,
+    "last_snapshot_minute": 29842613,
+    "revision": 4582
+  },
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 4582
+  }
+}

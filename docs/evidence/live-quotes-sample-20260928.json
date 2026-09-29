@@ -1,0 +1,266 @@
+[
+  {
+    "request_ms": 419.13,
+    "bytes": 788,
+    "snapshot": {
+      "enabled": true,
+      "running": true,
+      "error": null,
+      "generated_at": 1790602558.6723938,
+      "display_refresh_ms": 1000,
+      "markets": [
+        {
+          "symbol": "BTCUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "83446.42000000",
+          "ask": "83446.65000000",
+          "book_update_id": 4601801895,
+          "observed_at": 1790602558.6393652,
+          "exchange_event_ms": 1790602558657,
+          "received_age_ms": 31.0,
+          "valid_for_ms": 583.8347168583423,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        },
+        {
+          "symbol": "ETHUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "2682.67000000",
+          "ask": "2682.75000000",
+          "book_update_id": 3778322779,
+          "observed_at": 1790602558.6504428,
+          "exchange_event_ms": 1790602558668,
+          "received_age_ms": 15.0,
+          "valid_for_ms": 599.7570800846443,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        }
+      ],
+      "omitted_markets": 0
+    }
+  },
+  {
+    "request_ms": 317.36,
+    "bytes": 788,
+    "snapshot": {
+      "enabled": true,
+      "running": true,
+      "error": null,
+      "generated_at": 1790602559.9906292,
+      "display_refresh_ms": 1000,
+      "markets": [
+        {
+          "symbol": "BTCUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "83439.67000000",
+          "ask": "83443.35000000",
+          "book_update_id": 4601801979,
+          "observed_at": 1790602559.9386804,
+          "exchange_event_ms": 1790602559957,
+          "received_age_ms": 62.0,
+          "valid_for_ms": 553.5195313524455,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        },
+        {
+          "symbol": "ETHUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "2682.07000000",
+          "ask": "2682.17000000",
+          "book_update_id": 3778322904,
+          "observed_at": 1790602559.9406824,
+          "exchange_event_ms": 1790602559958,
+          "received_age_ms": 62.0,
+          "valid_for_ms": 552.5175782274455,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        }
+      ],
+      "omitted_markets": 0
+    }
+  },
+  {
+    "request_ms": 330.78,
+    "bytes": 785,
+    "snapshot": {
+      "enabled": true,
+      "running": true,
+      "error": null,
+      "generated_at": 1790602561.3218226,
+      "display_refresh_ms": 1000,
+      "markets": [
+        {
+          "symbol": "BTCUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "83435.50000000",
+          "ask": "83435.59000000",
+          "book_update_id": 4601802051,
+          "observed_at": 1790602561.24273,
+          "exchange_event_ms": 1790602561260,
+          "received_age_ms": 79.0,
+          "valid_for_ms": 535.4699706966057,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        },
+        {
+          "symbol": "ETHUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "2681.65000000",
+          "ask": "2681.79000000",
+          "book_update_id": 3778323003,
+          "observed_at": 1790602561.243732,
+          "exchange_event_ms": 1790602561260,
+          "received_age_ms": 79.0,
+          "valid_for_ms": 534.4680175716057,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        }
+      ],
+      "omitted_markets": 0
+    }
+  },
+  {
+    "request_ms": 315.14,
+    "bytes": 787,
+    "snapshot": {
+      "enabled": true,
+      "running": true,
+      "error": null,
+      "generated_at": 1790602562.6369472,
+      "display_refresh_ms": 1000,
+      "markets": [
+        {
+          "symbol": "BTCUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "83435.33000000",
+          "ask": "83435.58000000",
+          "book_update_id": 4601802074,
+          "observed_at": 1790602562.5392365,
+          "exchange_event_ms": 1790602562558,
+          "received_age_ms": 94.0,
+          "valid_for_ms": 521.9633788857609,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        },
+        {
+          "symbol": "ETHUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "2681.23000000",
+          "ask": "2681.31000000",
+          "book_update_id": 3778323093,
+          "observed_at": 1790602562.557768,
+          "exchange_event_ms": 1790602562559,
+          "received_age_ms": 78.0,
+          "valid_for_ms": 520.4318848066032,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        }
+      ],
+      "omitted_markets": 0
+    }
+  },
+  {
+    "request_ms": 315.35,
+    "bytes": 788,
+    "snapshot": {
+      "enabled": true,
+      "running": true,
+      "error": null,
+      "generated_at": 1790602563.953532,
+      "display_refresh_ms": 1000,
+      "markets": [
+        {
+          "symbol": "BTCUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "83425.71000000",
+          "ask": "83425.74000000",
+          "book_update_id": 4601802168,
+          "observed_at": 1790602563.7384942,
+          "exchange_event_ms": 1790602563757,
+          "received_age_ms": 219.0,
+          "valid_for_ms": 396.7058105263859,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        },
+        {
+          "symbol": "ETHUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "2681.29000000",
+          "ask": "2681.48000000",
+          "book_update_id": 3778323225,
+          "observed_at": 1790602563.9401715,
+          "exchange_event_ms": 1790602563958,
+          "received_age_ms": 16.0,
+          "valid_for_ms": 599.0285645285621,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        }
+      ],
+      "omitted_markets": 0
+    }
+  },
+  {
+    "request_ms": 357.74,
+    "bytes": 786,
+    "snapshot": {
+      "enabled": true,
+      "running": true,
+      "error": null,
+      "generated_at": 1790602565.310902,
+      "display_refresh_ms": 1000,
+      "markets": [
+        {
+          "symbol": "BTCUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "83425.71000000",
+          "ask": "83425.74000000",
+          "book_update_id": 4601802194,
+          "observed_at": 1790602565.238847,
+          "exchange_event_ms": 1790602565257,
+          "received_age_ms": 63.0,
+          "valid_for_ms": 552.3530272822827,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        },
+        {
+          "symbol": "ETHUSD",
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "reason": null,
+          "bid": "2681.29000000",
+          "ask": "2681.47000000",
+          "book_update_id": 3778323264,
+          "observed_at": 1790602565.2408476,
+          "exchange_event_ms": 1790602565259,
+          "received_age_ms": 63.0,
+          "valid_for_ms": 552.3522948604077,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0
+        }
+      ],
+      "omitted_markets": 0
+    }
+  }
+]

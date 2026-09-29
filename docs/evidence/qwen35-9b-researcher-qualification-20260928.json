@@ -1,0 +1,9 @@
+{
+  "qualified": false,
+  "model": "qwen3.5:9b",
+  "role": "researcher",
+  "status": "incomplete_or_disqualified",
+  "reason": "Need 12 withheld scenarios under three seeds, with no missing/duplicate rows",
+  "receipt": "docs\\evidence\\research-roles-holdout-20260928T115506Z.json",
+  "receipt_sha256": "bdc937c0fc4b0929d3d95b6b58a67aec5bd308ca205e5806918eb69a8ec2e0f8"
+}

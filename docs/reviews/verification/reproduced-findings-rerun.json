@@ -1,0 +1,38 @@
+{
+  "drawdown_review_rearm": {
+    "before": {
+      "pause": true,
+      "risk_peak": "100",
+      "max_drawdown": "0.36"
+    },
+    "after": {
+      "pause": false,
+      "risk_peak": "64",
+      "max_drawdown": "0.36",
+      "cooldown_until": 1800015000.0
+    }
+  },
+  "buy_with_unvalued_existing_inventory": {
+    "intent_reason": "Paper entry reserved; waiting for a later book",
+    "before_positions": [
+      "BTCUSD"
+    ],
+    "after_positions": [
+      "BTCUSD",
+      "ETHUSD"
+    ],
+    "valuation_fresh": false,
+    "fills": [
+      {
+        "side": "buy",
+        "symbol": "ETHUSD"
+      }
+    ]
+  },
+  "holdout_guard_requires_caller_state": {
+    "first_status": "completed",
+    "different_feature_same_data_default_status": "completed",
+    "explicit_consumed_boundary_status": "insufficient_data"
+  },
+  "qualification": "Synthetic fixtures establish program behavior only, not trading performance."
+}

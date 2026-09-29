@@ -1,0 +1,50 @@
+{
+  "at": "2026-09-28T11:20:04.273424+00:00",
+  "protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+  "files": {
+    "src/trading/research_protocol.py": "46790292a6bd581992174f132f38fe2cb075a9adb14ac75432ab33495ab5e907",
+    "src/trading/research_inference.py": "7eef1b4abc2b1536f43b025379e436335017af92aa1af5bfca9c5226354f0bd7",
+    "scripts/evaluate_research_roles.py": "3a1bae40fa1ba4b6329e33f2e45905668be32da63625109e19deed8035430929",
+    "scripts/qualify_research_role.py": "1d3918e495cf4c0878e9384c89c85bc9dc5e5e604411a22577df0bd7ceb793d8",
+    "docs/research/crypto-agent-eval-v3.json": "c1dae21ad6362a39ea45344c1bb266b800bde326a2ac7a7669d796603f5865b6"
+  },
+  "planned_profiles": [
+    {
+      "model": "qwen3:8b",
+      "role": "reviewer",
+      "thinking": true,
+      "prompt_profile": "role-contract-only",
+      "request_timeout_seconds": 120,
+      "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+      "effective_protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+      "dev_receipt": "docs/evidence/research-roles-dev-20260928T093721Z.json"
+    },
+    {
+      "model": "trading-research-ministral3-8b-text:q4km-v1",
+      "role": "trainer",
+      "thinking": true,
+      "prompt_profile": "ministral-official-reasoning-prefix-v1",
+      "request_timeout_seconds": 120,
+      "digest": "d2158820e07fe3d4cddd5910889b92d549feb9942f5d2edbc5ec30b06b1f5502",
+      "effective_protocol_hash": "b02120ba9da321b119e97382cfc4047d4f2bd3f44eb167c73ca19a9c169997c5",
+      "dev_receipt": "docs/evidence/research-roles-dev-20260928T102522Z.json"
+    },
+    {
+      "model": "qwen3.5:9b",
+      "role": "researcher",
+      "thinking": true,
+      "prompt_profile": "role-contract-only",
+      "request_timeout_seconds": 300,
+      "digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+      "effective_protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+      "dev_receipt": "docs/evidence/research-roles-dev-20260928T105435Z.json"
+    }
+  ],
+  "seeds": [
+    92811,
+    92812,
+    92813
+  ],
+  "stop_disqualified_role": true,
+  "note": "Supplemental freeze after adding explicit request timeouts and timeout identity checks. Base role prompts and the v3 oracle are unchanged. The Qwen9B researcher profile uses 300 seconds after a development-only timing comparison. No held-out results from these role/profile combinations exist at freeze. Gates unchanged: >=34/36, no critical violations, healthy worker; incomplete runs cannot qualify. Repeated seeds and shared tasks are correlated. This is only a bounded advisory screen."
+}

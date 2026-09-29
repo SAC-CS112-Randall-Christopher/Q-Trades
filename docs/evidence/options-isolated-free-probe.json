@@ -1,0 +1,53 @@
+{
+  "checked_at": "2026-09-28T01:47:08.005151+00:00",
+  "mode": "isolated actual free historical data; not a live trial",
+  "sessions": [
+    {
+      "day": "2026-05-19",
+      "contracts": 58,
+      "decision": "Historical underlying warmup incomplete"
+    },
+    {
+      "day": "2026-05-20",
+      "contracts": 60,
+      "decision": "Historical underlying warmup incomplete"
+    },
+    {
+      "day": "2026-05-21",
+      "contracts": 60,
+      "decision": "Historical underlying warmup incomplete"
+    }
+  ],
+  "single_contract_lookup": {
+    "symbol": "AAPL260603C00200000",
+    "valid": true,
+    "sha256": "783245f6f8ead1d6cf46c229e906b0250adb0eb7449482566218a8ea98da18f6"
+  },
+  "request_count": 6,
+  "accounts": {
+    "primary": {
+      "cash": "100",
+      "funding": "100",
+      "closed": 0,
+      "replenishments": 0
+    },
+    "options-momentum-v1": {
+      "cash": "100",
+      "funding": "100",
+      "closed": 0,
+      "replenishments": 0
+    },
+    "options-selective-v1": {
+      "cash": "100",
+      "funding": "100",
+      "closed": 0,
+      "replenishments": 0
+    }
+  },
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 10
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "qualified": false,
+  "status": "disqualified_incomplete_coverage",
+  "qualifier_rejection": "Need 12 withheld scenarios under three seeds, with no missing/duplicate rows",
+  "at": "2026-09-28T12:00:49.997425+00:00",
+  "model": "trading-research-ministral3-8b-text:q4km-v1",
+  "role": "trainer",
+  "completed_requests": 16,
+  "recomputed_passed": 13,
+  "critical": [],
+  "failures": [
+    {
+      "case": "holdout-trainer-pending_labels",
+      "seed": 92811,
+      "failed_fields": [
+        "decision",
+        "issues"
+      ]
+    },
+    {
+      "case": "holdout-trainer-two_defects",
+      "seed": 92811,
+      "failed_fields": [
+        "issues"
+      ]
+    },
+    {
+      "case": "holdout-trainer-pending_labels",
+      "seed": 92812,
+      "failed_fields": [
+        "decision",
+        "issues"
+      ]
+    }
+  ],
+  "median_seconds": 66.875,
+  "maximum_possible_passes": 33,
+  "receipt": "docs\\evidence\\research-roles-holdout-20260928T113553Z.json",
+  "receipt_sha256": "51469011d32bfcb7213d004d3ba61c883c04fba9df1a402f44a26da768529993",
+  "disqualified_roles": [
+    {
+      "model": "trading-research-ministral3-8b-text:q4km-v1",
+      "role": "trainer",
+      "completed_requests": 16,
+      "failures": 3,
+      "maximum_possible_passes": 33,
+      "reason": "Cannot reach 34/36"
+    }
+  ],
+  "limitation": "Stopped after three failures; unrun cases unknown. Synthetic contract checks are not broad reliability or trading evidence."
+}

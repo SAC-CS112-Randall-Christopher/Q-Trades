@@ -1,0 +1,303 @@
+{
+  "at": 1790560611.1492252,
+  "health": {
+    "service": "running",
+    "mode": "paper",
+    "feed": "monitoring",
+    "paper": "running",
+    "options": "running"
+  },
+  "options": {
+    "enabled": true,
+    "running": true,
+    "error": null,
+    "paused": false,
+    "mode": "Historical end-of-day replay",
+    "source": "Market Data free AAPL historical demo",
+    "monthly_data_cost": "0",
+    "market_day": "2026-05-26",
+    "sessions": 5,
+    "contracts_studied": 356,
+    "next_review": 1790574745.75651,
+    "review_count": 0,
+    "reviews": [],
+    "promotions": 0,
+    "accounts": {
+      "primary": {
+        "cash": "100",
+        "fees": "0",
+        "peak": "100",
+        "wins": 0,
+        "closed": 0,
+        "equity": "100",
+        "trades": [],
+        "attempt": 1,
+        "funding": "100",
+        "pending": {},
+        "version": "options-momentum-v1",
+        "realized": "0",
+        "positions": {},
+        "risk_peak": "100",
+        "unsettled": [],
+        "risk_pause": false,
+        "attempt_wins": 0,
+        "max_drawdown": "0",
+        "last_decision": "Historical underlying warmup incomplete",
+        "replenishments": 0,
+        "attempt_outcome": "open",
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "cooldown_sessions": 0,
+        "net_pnl": "0",
+        "available_cash": "100",
+        "unsettled_cash": "0",
+        "risk_budget": "2.500"
+      },
+      "options-momentum-v1": {
+        "cash": "100",
+        "fees": "0",
+        "peak": "100",
+        "wins": 0,
+        "closed": 0,
+        "equity": "100",
+        "trades": [],
+        "attempt": 1,
+        "funding": "100",
+        "pending": {},
+        "version": "options-momentum-v1",
+        "realized": "0",
+        "positions": {},
+        "risk_peak": "100",
+        "unsettled": [],
+        "risk_pause": false,
+        "attempt_wins": 0,
+        "max_drawdown": "0",
+        "last_decision": "Historical underlying warmup incomplete",
+        "replenishments": 0,
+        "attempt_outcome": "open",
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "cooldown_sessions": 0,
+        "net_pnl": "0",
+        "available_cash": "100",
+        "unsettled_cash": "0",
+        "risk_budget": "2.500"
+      },
+      "options-selective-v1": {
+        "cash": "100",
+        "fees": "0",
+        "peak": "100",
+        "wins": 0,
+        "closed": 0,
+        "equity": "100",
+        "trades": [],
+        "attempt": 1,
+        "funding": "100",
+        "pending": {},
+        "version": "options-selective-v1",
+        "realized": "0",
+        "positions": {},
+        "risk_peak": "100",
+        "unsettled": [],
+        "risk_pause": false,
+        "attempt_wins": 0,
+        "max_drawdown": "0",
+        "last_decision": "Historical underlying warmup incomplete",
+        "replenishments": 0,
+        "attempt_outcome": "open",
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "cooldown_sessions": 0,
+        "net_pnl": "0",
+        "available_cash": "100",
+        "unsettled_cash": "0",
+        "risk_budget": "2.500"
+      }
+    },
+    "feed_status": "Studying actual historical end-of-day quotes; not a live feed",
+    "last_study": {
+      "day": "2026-05-26",
+      "contracts": 42,
+      "features": {
+        "options-momentum-v1": {
+          "eligible": false,
+          "reason": "Historical underlying warmup incomplete"
+        },
+        "options-selective-v1": {
+          "eligible": false,
+          "reason": "Historical underlying warmup incomplete"
+        }
+      },
+      "primary_decision": "Historical underlying warmup incomplete",
+      "greeks": "Historical Greeks/IV absent; no fabricated estimates",
+      "source": "marketdata-free-aapl-eod"
+    },
+    "rejections": {},
+    "data_gaps": 0,
+    "request_budget": {
+      "day": "2026-09-28",
+      "used": 6,
+      "limit": 60
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 12
+    },
+    "events": [
+      {
+        "id": 1,
+        "at": 1790560345.75651,
+        "kind": "initial_funding",
+        "body": {
+          "mode": "historical_eod_replay",
+          "amount": "100",
+          "currency": "USD"
+        }
+      }
+    ],
+    "limitations": [
+      "Historical AAPL only; no live or intraday execution evidence",
+      "No historical Greeks/IV; adjusted deliverables are excluded",
+      "$0.50/contract/side and 100-share multiplier are model assumptions",
+      "Later-session bid/ask fills; 10% size cap; only settled cash can fund entries",
+      "Unresolved expiry freezes the position; no unaffordable stock exercise",
+      "Correlated replay/shadow outcomes do not establish majority live success"
+    ]
+  },
+  "spot_primary": {
+    "day": 20724,
+    "cash": "99.7593799833000000000",
+    "fees": "0.1990161167000000000",
+    "wins": 0,
+    "units": "100",
+    "closed": 2,
+    "equity": "99.7593799833000000000",
+    "attempt": {
+      "number": 1,
+      "outcome": "open",
+      "started_at": 1790550318.7589083
+    },
+    "funding": "100",
+    "pending": {},
+    "version": "breakout-v1",
+    "nav_peak": "1",
+    "realized": "-0.2406200167000000000",
+    "cooldowns": {
+      "BTCUSD": 1790554094.5905495,
+      "ETHUSD": 1790552802.6353507
+    },
+    "day_start": "99.7593799833000000000",
+    "last_exit": {
+      "pnl": "-0.1170235517000000000",
+      "cost": "49.8858463103000000000",
+      "fees": "0.0996546517000000000",
+      "reason": "Trailing stop",
+      "symbol": "BTCUSD",
+      "version": "breakout-v1",
+      "proceeds": "49.7688227586000000000",
+      "closed_at": 1790553494.5905495,
+      "opened_at": 1790553070.5264788,
+      "entry_features": {
+        "atr": "25.06198297720918446895459632",
+        "close": "84462.17000000",
+        "reason": "Confirmed breakout",
+        "version": "breakout-v1",
+        "breakout": "84438.10000000",
+        "eligible": true,
+        "ema20_5m": "84366.66918638945068324437359",
+        "trend_up": true,
+        "bar_open_ms": 1790553000000,
+        "closed_bars": 600,
+        "volume_ratio": "2.996960486322188449848024316"
+      }
+    },
+    "positions": {},
+    "risk_peak": "100",
+    "daily_pause": false,
+    "attempt_wins": 0,
+    "day_turnover": "0",
+    "max_drawdown": "0.0024627635470000000",
+    "last_decision": {
+      "BTCUSD": {
+        "at": 1790560575.4066353,
+        "bar": 1790560500000,
+        "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+        "symbol": "BTCUSD",
+        "version": "breakout-v1",
+        "features": {
+          "atr": "52.58104184419509666781412839",
+          "close": "83762.62000000",
+          "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+          "version": "breakout-v1",
+          "breakout": "83907.33000000",
+          "eligible": false,
+          "ema20_5m": "84086.75155415583009649638277",
+          "trend_up": false,
+          "bar_open_ms": 1790560500000,
+          "closed_bars": 600,
+          "volume_ratio": "0.2275925359437136739063933925"
+        }
+      },
+      "ETHUSD": {
+        "at": 1790560575.5928595,
+        "bar": 1790560500000,
+        "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "features": {
+          "atr": "2.165274188646840452176977105",
+          "close": "2660.00000000",
+          "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+          "version": "breakout-v1",
+          "breakout": "2666.58000000",
+          "eligible": false,
+          "ema20_5m": "2672.340908675848803844764295",
+          "trend_up": false,
+          "bar_open_ms": 1790560500000,
+          "closed_bars": 600,
+          "volume_ratio": "0.2500440839358137894551225533"
+        }
+      }
+    },
+    "cooldown_until": 0,
+    "drawdown_pause": false,
+    "replenishments": 0,
+    "failure_pending": false,
+    "valuation_fresh": true,
+    "attempt_failures": 0,
+    "last_fill_sequence": {
+      "BTCUSD": 4600945492,
+      "ETHUSD": 3776820125
+    },
+    "net_pnl": "-0.2406200167000000000"
+  },
+  "spot_journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 10678
+  },
+  "options_journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 12
+  },
+  "options_event_kinds": [
+    {
+      "kind": "historical_session",
+      "n": 5
+    },
+    {
+      "kind": "initial_funding",
+      "n": 3
+    },
+    {
+      "kind": "research_calendar",
+      "n": 1
+    }
+  ],
+  "options_event_body_bytes": 72911
+}

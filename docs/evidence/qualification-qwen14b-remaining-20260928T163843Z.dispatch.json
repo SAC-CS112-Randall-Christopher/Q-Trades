@@ -1,0 +1,60 @@
+{
+  "observed_at": "2026-09-28T16:43:50.867240+00:00",
+  "frozen_sources_verified": true,
+  "resources": {
+    "profile": "trading-cpu-elastic-six-threads-v1",
+    "inference_threads": 6,
+    "observed_at": "2026-09-28T16:43:50.866168+00:00",
+    "server": {
+      "pid": 22284,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    },
+    "worker": {
+      "pid": 26732,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    }
+  },
+  "elastic_resources_valid": true,
+  "placement": {
+    "models": [
+      {
+        "name": "qwen3:14b",
+        "model": "qwen3:14b",
+        "size": 10927608954,
+        "digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen3",
+          "families": [
+            "qwen3"
+          ],
+          "parameter_size": "14.8B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-28T10:44:50.8591021-06:00",
+        "size_vram": 0,
+        "context_length": 8192
+      }
+    ]
+  },
+  "qualification": {
+    "state": "evaluating",
+    "updated_at": "2026-09-28T16:43:49.096197+00:00",
+    "pid": 30356,
+    "reason": null,
+    "error": null,
+    "stages": [
+      {
+        "stage": "dev-trainer-reviewer",
+        "started_at": "2026-09-28T16:42:04.050543+00:00",
+        "log": "data/qualification-qwen14b-remaining-20260928T163843Z.dev-trainer-reviewer.log",
+        "pid": 33452
+      }
+    ]
+  }
+}

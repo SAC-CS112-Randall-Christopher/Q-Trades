@@ -1,0 +1,32 @@
+{
+  "qualified": false,
+  "model": "qwen3.5:4b",
+  "role": "researcher",
+  "thinking": false,
+  "model_digest": "2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd",
+  "passed": 33,
+  "responses": 36,
+  "distinct_scenarios": 12,
+  "critical": [],
+  "invalid_outputs": 1,
+  "health_errors": 0,
+  "median_seconds": 7.914,
+  "receipt": "docs\\evidence\\research-roles-holdout-20260928T103758Z.json",
+  "receipt_sha256": "03e25590ae359b7444ca993e2dc19513002c7984b83dd06137c71e4ea3d01eb1",
+  "protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+  "prompt_profile": "role-contract-only",
+  "effective_protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+  "settings": {
+    "num_ctx": 4096,
+    "num_thread": 2,
+    "num_predict": 768,
+    "temperature": 0.7,
+    "top_p": 0.8,
+    "top_k": 20,
+    "min_p": 0.0,
+    "repeat_penalty": 1.0,
+    "seed": 92811,
+    "presence_penalty": 1.5
+  },
+  "scope": "Bounded advisory workflow; not trading skill or arbitrary research reliability"
+}

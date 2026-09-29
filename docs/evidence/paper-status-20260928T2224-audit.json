@@ -1,0 +1,515 @@
+{
+  "observed_at": "2026-09-28T22:25:07.518230+00:00",
+  "revision": 161826,
+  "last_exit": 1790621722.3148515,
+  "window_end": 1790634307.3681245,
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 161826
+  },
+  "decision_counts": [
+    {
+      "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+      "n": 258,
+      "first_at": 1790622301.0213375,
+      "last_at": 1790634300.814555
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+      "n": 63,
+      "first_at": 1790622360.3142555,
+      "last_at": 1790633761.2226887
+    },
+    {
+      "reason": "No closed-bar breakout; Volume confirmation absent",
+      "n": 41,
+      "first_at": 1790621760.9307663,
+      "last_at": 1790630641.245189
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; Volume confirmation absent",
+      "n": 23,
+      "first_at": 1790625180.5434995,
+      "last_at": 1790634121.2756832
+    },
+    {
+      "reason": "Ten-minute symbol cooldown",
+      "n": 10,
+      "first_at": 1790621760.8804662,
+      "last_at": 1790622301.0213375
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed",
+      "n": 6,
+      "first_at": 1790625901.1137204,
+      "last_at": 1790633880.3360312
+    },
+    {
+      "reason": "Market metadata is stale; entries paused",
+      "n": 6,
+      "first_at": 1790622780.1521354,
+      "last_at": 1790633700.7814016
+    },
+    {
+      "reason": "No closed-bar breakout",
+      "n": 6,
+      "first_at": 1790626621.2047615,
+      "last_at": 1790630521.1627948
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; Volume confirmation absent; Breakout already extended",
+      "n": 4,
+      "first_at": 1790625901.1137204,
+      "last_at": 1790629260.9171758
+    },
+    {
+      "reason": "Volume confirmation absent",
+      "n": 2,
+      "first_at": 1790629501.0836747,
+      "last_at": 1790629561.31008
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; Breakout already extended",
+      "n": 1,
+      "first_at": 1790629260.9171758,
+      "last_at": 1790629260.9171758
+    }
+  ],
+  "event_counts": [
+    {
+      "account": "system",
+      "kind": "feed_status",
+      "n": 24566
+    },
+    {
+      "account": "system",
+      "kind": "universe_scan",
+      "n": 206
+    },
+    {
+      "account": "system",
+      "kind": "feed_tiers",
+      "n": 69
+    },
+    {
+      "account": "universe-wide-v1",
+      "kind": "universe_membership",
+      "n": 56
+    },
+    {
+      "account": "universe-wide-v1",
+      "kind": "fill",
+      "n": 4
+    },
+    {
+      "account": "universe-wide-v1",
+      "kind": "order_intent",
+      "n": 4
+    },
+    {
+      "account": "selective-v1",
+      "kind": "fill",
+      "n": 2
+    },
+    {
+      "account": "universe-wide-v1",
+      "kind": "trade_closed",
+      "n": 2
+    },
+    {
+      "account": "selective-v1",
+      "kind": "order_intent",
+      "n": 2
+    },
+    {
+      "account": "selective-v1",
+      "kind": "trade_closed",
+      "n": 1
+    },
+    {
+      "account": "primary",
+      "kind": "scheduled_review",
+      "n": 1
+    }
+  ],
+  "recent_trades": [
+    {
+      "at": 1790627045.893955,
+      "account": "universe-wide-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.2256018800000000000",
+        "cost": "48.1338057200000000000",
+        "fees": "0.0960418800000000000",
+        "reason": "ATR stop",
+        "symbol": "LINKUSD",
+        "version": "breakout-v1",
+        "proceeds": "47.9082038400000000000",
+        "closed_at": 1790627045.893955,
+        "opened_at": 1790627042.1829708,
+        "entry_features": {
+          "atr": "0.02369401686348361475750869159",
+          "close": "15.25200000",
+          "reason": "Confirmed breakout",
+          "version": "breakout-v1",
+          "breakout": "15.23500000",
+          "eligible": true,
+          "ema20_5m": "15.13921727107406927113211582",
+          "trend_up": true,
+          "bar_open_ms": 1790626980000,
+          "closed_bars": 600,
+          "volume_ratio": "9.044776119402985074626865672"
+        }
+      }
+    },
+    {
+      "at": 1790622033.6239483,
+      "account": "universe-wide-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1974431200000000000",
+        "cost": "48.2603321200000000000",
+        "fees": "0.0963231200000000000",
+        "reason": "ATR stop",
+        "symbol": "LINKUSD",
+        "version": "breakout-v1",
+        "proceeds": "48.0628890000000000000",
+        "closed_at": 1790622033.6239483,
+        "opened_at": 1790622006.710902,
+        "entry_features": {
+          "atr": "0.01927153818634648458347527292",
+          "close": "15.27900000",
+          "reason": "Confirmed breakout",
+          "version": "breakout-v1",
+          "breakout": "15.27600000",
+          "eligible": true,
+          "ema20_5m": "15.15251345314670755391666221",
+          "trend_up": true,
+          "bar_open_ms": 1790621880000,
+          "closed_bars": 600,
+          "volume_ratio": "10.96962025316455696202531646"
+        }
+      }
+    },
+    {
+      "at": 1790621805.3125894,
+      "account": "selective-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1208382714000000000",
+        "cost": "48.7732665420000000000",
+        "fees": "0.0974256714000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "selective-v1",
+        "proceeds": "48.6524282706000000000",
+        "closed_at": 1790621805.3125894,
+        "opened_at": 1790621762.0169253,
+        "entry_features": {
+          "atr": "15.78545451678728161919376773",
+          "close": "83996.25000000",
+          "reason": "Confirmed breakout",
+          "version": "selective-v1",
+          "breakout": "83994.03000000",
+          "eligible": true,
+          "ema20_5m": "83854.56223572669097436729275",
+          "trend_up": true,
+          "bar_open_ms": 1790621700000,
+          "closed_bars": 600,
+          "volume_ratio": "2.75"
+        }
+      }
+    },
+    {
+      "at": 1790621722.3148515,
+      "account": "universe-control-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1303196744000000000",
+        "cost": "48.7750134872000000000",
+        "fees": "0.0974196744000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "breakout-v1",
+        "proceeds": "48.6446938128000000000",
+        "closed_at": 1790621722.3148515,
+        "opened_at": 1790621701.5136862,
+        "entry_features": {
+          "atr": "16.80510486423245712786762537",
+          "close": "83994.03000000",
+          "reason": "Confirmed breakout",
+          "version": "breakout-v1",
+          "breakout": "83984.39000000",
+          "eligible": true,
+          "ema20_5m": "83854.56301188915475581477452",
+          "trend_up": true,
+          "bar_open_ms": 1790621640000,
+          "closed_bars": 600,
+          "volume_ratio": "23.57575757575757575757575758"
+        }
+      }
+    },
+    {
+      "at": 1790621722.3148515,
+      "account": "universe-wide-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1280392584000000000",
+        "cost": "47.9340649788000000000",
+        "fees": "0.0957400584000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "breakout-v1",
+        "proceeds": "47.8060257204000000000",
+        "closed_at": 1790621722.3148515,
+        "opened_at": 1790621701.5136862,
+        "entry_features": {
+          "atr": "16.80510486423245712786762537",
+          "close": "83994.03000000",
+          "reason": "Confirmed breakout",
+          "version": "breakout-v1",
+          "breakout": "83984.39000000",
+          "eligible": true,
+          "ema20_5m": "83854.56301188915475581477452",
+          "trend_up": true,
+          "bar_open_ms": 1790621640000,
+          "closed_bars": 600,
+          "volume_ratio": "23.57575757575757575757575758"
+        }
+      }
+    },
+    {
+      "at": 1790621722.3148515,
+      "account": "responsive-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1280392584000000000",
+        "cost": "47.9340649788000000000",
+        "fees": "0.0957400584000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "responsive-v1",
+        "proceeds": "47.8060257204000000000",
+        "closed_at": 1790621722.3148515,
+        "opened_at": 1790621701.5136862,
+        "entry_features": {
+          "atr": "16.80510486423245712786762537",
+          "close": "83994.03000000",
+          "reason": "Confirmed breakout",
+          "version": "responsive-v1",
+          "breakout": "83984.39000000",
+          "eligible": true,
+          "ema20_5m": "83854.56301188915475581477452",
+          "trend_up": true,
+          "bar_open_ms": 1790621640000,
+          "closed_bars": 600,
+          "volume_ratio": "18.52380952380952380952380952"
+        }
+      }
+    },
+    {
+      "at": 1790621722.3148515,
+      "account": "breakout-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1303196744000000000",
+        "cost": "48.7750134872000000000",
+        "fees": "0.0974196744000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "breakout-v1",
+        "proceeds": "48.6446938128000000000",
+        "closed_at": 1790621722.3148515,
+        "opened_at": 1790621701.5136862,
+        "entry_features": {
+          "atr": "16.80510486423245712786762537",
+          "close": "83994.03000000",
+          "reason": "Confirmed breakout",
+          "version": "breakout-v1",
+          "breakout": "83984.39000000",
+          "eligible": true,
+          "ema20_5m": "83854.56301188915475581477452",
+          "trend_up": true,
+          "bar_open_ms": 1790621640000,
+          "closed_bars": 600,
+          "volume_ratio": "23.57575757575757575757575758"
+        }
+      }
+    },
+    {
+      "at": 1790621722.3148515,
+      "account": "primary",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1303196744000000000",
+        "cost": "48.7750134872000000000",
+        "fees": "0.0974196744000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "breakout-v1",
+        "proceeds": "48.6446938128000000000",
+        "closed_at": 1790621722.3148515,
+        "opened_at": 1790621701.5136862,
+        "entry_features": {
+          "atr": "16.80510486423245712786762537",
+          "close": "83994.03000000",
+          "reason": "Confirmed breakout",
+          "version": "breakout-v1",
+          "breakout": "83984.39000000",
+          "eligible": true,
+          "ema20_5m": "83854.56301188915475581477452",
+          "trend_up": true,
+          "bar_open_ms": 1790621640000,
+          "closed_bars": 600,
+          "volume_ratio": "23.57575757575757575757575758"
+        }
+      }
+    },
+    {
+      "at": 1790615727.9290483,
+      "account": "universe-control-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1849078228000000000",
+        "cost": "48.9096089482000000000",
+        "fees": "0.0976342228000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "breakout-v1",
+        "proceeds": "48.7247011254000000000",
+        "closed_at": 1790615727.9290483,
+        "opened_at": 1790615701.3546958,
+        "entry_features": {
+          "atr": "73.1067203186543594501143915",
+          "close": "84219.76000000",
+          "reason": "Confirmed breakout",
+          "version": "breakout-v1",
+          "breakout": "84130.73000000",
+          "eligible": true,
+          "ema20_5m": "83609.68129338409357535298151",
+          "trend_up": true,
+          "bar_open_ms": 1790615640000,
+          "closed_bars": 600,
+          "volume_ratio": "5.765306122448979591836734694"
+        }
+      }
+    },
+    {
+      "at": 1790615727.9290483,
+      "account": "universe-wide-v1",
+      "kind": "trade_closed",
+      "body": {
+        "pnl": "-0.1815484778000000000",
+        "cost": "48.0662559377000000000",
+        "fees": "0.0959508778000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "breakout-v1",
+        "proceeds": "47.8847074599000000000",
+        "closed_at": 1790615727.9290483,
+        "opened_at": 1790615701.3546958,
+        "entry_features": {
+          "atr": "73.1067203186543594501143915",
+          "close": "84219.76000000",
+          "reason": "Confirmed breakout",
+          "version": "breakout-v1",
+          "breakout": "84130.73000000",
+          "eligible": true,
+          "ema20_5m": "83609.68129338409357535298151",
+          "trend_up": true,
+          "bar_open_ms": 1790615640000,
+          "closed_bars": 600,
+          "volume_ratio": "5.765306122448979591836734694"
+        }
+      }
+    }
+  ],
+  "bounded_idle_read_probe_ms": [
+    {
+      "at": 1790634307.584689,
+      "read": 4.399,
+      "recent": 7.013,
+      "reconcile": 6.856,
+      "storage_usage": 18.374
+    },
+    {
+      "at": 1790634308.1242466,
+      "read": 4.627,
+      "recent": 9.466,
+      "reconcile": 9.034,
+      "storage_usage": 21.113
+    },
+    {
+      "at": 1790634308.672722,
+      "read": 4.517,
+      "recent": 8.606,
+      "reconcile": 8.933,
+      "storage_usage": 17.741
+    },
+    {
+      "at": 1790634309.2167537,
+      "read": 7.049,
+      "recent": 13.702,
+      "reconcile": 10.594,
+      "storage_usage": 17.258
+    },
+    {
+      "at": 1790634309.7712884,
+      "read": 7.934,
+      "recent": 11.681,
+      "reconcile": 15.938,
+      "storage_usage": 26.223
+    },
+    {
+      "at": 1790634310.341148,
+      "read": 11.786,
+      "recent": 18.03,
+      "reconcile": 10.898,
+      "storage_usage": 21.744
+    },
+    {
+      "at": 1790634310.9097314,
+      "read": 5.09,
+      "recent": 8.886,
+      "reconcile": 8.802,
+      "storage_usage": 17.203
+    },
+    {
+      "at": 1790634311.4550667,
+      "read": 9.709,
+      "recent": 13.505,
+      "reconcile": 10.834,
+      "storage_usage": 20.401
+    },
+    {
+      "at": 1790634312.0154128,
+      "read": 12.995,
+      "recent": 15.241,
+      "reconcile": 11.417,
+      "storage_usage": 17.049
+    },
+    {
+      "at": 1790634312.577733,
+      "read": 7.763,
+      "recent": 7.832,
+      "reconcile": 10.12,
+      "storage_usage": 18.713
+    },
+    {
+      "at": 1790634313.1261692,
+      "read": 6.385,
+      "recent": 10.165,
+      "reconcile": 7.874,
+      "storage_usage": 19.047
+    },
+    {
+      "at": 1790634313.6738381,
+      "read": 3.733,
+      "recent": 10.261,
+      "reconcile": 7.223,
+      "storage_usage": 16.299
+    }
+  ]
+}

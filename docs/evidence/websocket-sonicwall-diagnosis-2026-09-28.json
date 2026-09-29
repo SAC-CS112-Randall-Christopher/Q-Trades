@@ -1,0 +1,104 @@
+{
+  "observed_at": "2026-09-28T08:13:16.768831+00:00",
+  "scope": "Read-only public connectivity; no trading process or account mutations",
+  "dns": {
+    "host": "stream.binance.us",
+    "addresses": [
+      "35.73.15.38",
+      "52.69.13.128"
+    ]
+  },
+  "dns_addresses_truncated": false,
+  "tcp_tls": [
+    {
+      "address": "35.73.15.38",
+      "port": 9443,
+      "stage": "tcp",
+      "error": "TimeoutError",
+      "detail": "",
+      "elapsed_ms": 5016.0
+    },
+    {
+      "address": "35.73.15.38",
+      "port": 443,
+      "stage": "tcp",
+      "error": "TimeoutError",
+      "detail": "",
+      "elapsed_ms": 5000.0
+    },
+    {
+      "address": "52.69.13.128",
+      "port": 9443,
+      "stage": "tcp",
+      "error": "TimeoutError",
+      "detail": "",
+      "elapsed_ms": 5000.0
+    },
+    {
+      "address": "52.69.13.128",
+      "port": 443,
+      "stage": "tcp",
+      "error": "TimeoutError",
+      "detail": "",
+      "elapsed_ms": 5000.0
+    }
+  ],
+  "websockets": [
+    {
+      "uri": "wss://stream.binance.us:9443/stream?streams=btcusd@depth@100ms/btcusd@trade",
+      "stage": "opening_handshake",
+      "error": "TimeoutError",
+      "detail": "timed out during opening handshake",
+      "elapsed_ms": 8016.0
+    },
+    {
+      "uri": "wss://stream.binance.us:443/stream?streams=btcusd@depth@100ms/btcusd@trade",
+      "stage": "opening_handshake",
+      "error": "TimeoutError",
+      "detail": "timed out during opening handshake",
+      "elapsed_ms": 8016.0
+    },
+    {
+      "uri": "wss://ws-api.binance.us:443/ws-api/v3",
+      "stage": "opening_handshake",
+      "error": "TimeoutError",
+      "detail": "timed out during opening handshake",
+      "elapsed_ms": 8016.0
+    },
+    {
+      "uri": "wss://ws.kraken.com/v2",
+      "stage": "received_message",
+      "handshake_ms": 2109.0,
+      "received_at": "2026-09-28T08:13:10.869972+00:00",
+      "message": {
+        "stream": null,
+        "channel": "status",
+        "status": null,
+        "event": null,
+        "symbol": null,
+        "exchange_event_ms": null,
+        "update_id": null
+      },
+      "elapsed_ms": 2250.0
+    }
+  ],
+  "rest": {
+    "url": "https://api.binance.us/api/v3/time",
+    "status": 200,
+    "server_time": 1790583190016
+  },
+  "http_block_page_probe": {
+    "url": "http://stream.binance.us/",
+    "status": 403,
+    "visible_text_excerpt": "Web Site Blocked Network Security Appliance This site has been blocked by the network administrator. Block reason: Gateway GEO-IP Filter Alert IP address: 52.69.13.128 Connection initiated towards country: Japan",
+    "reported_block_reason": "Gateway GEO-IP Filter Alert",
+    "reported_country": "Japan"
+  },
+  "limitations": [
+    "Timeouts do not identify which network hop or endpoint drops traffic.",
+    "A successful handshake alone does not prove sequence-valid, timely market data.",
+    "Port 443 is an alternate-port probe, not a configured market-feed replacement.",
+    "The Kraken probe is a connectivity control, not Binance.US market data.",
+    "An HTTP block page is untrusted diagnostic evidence, not a TLS-authenticated response."
+  ]
+}

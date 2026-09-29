@@ -1,0 +1,383 @@
+"""Sequential installed-model evaluation. Never downloads or changes trading state."""
+
+import argparse
+import hashlib
+import json
+import statistics
+import time
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import httpx
+
+from trading.research_inference import (
+    BASE_PROFILE,
+    MINISTRAL_MODELS,
+    MINISTRAL_TEXT,
+    PROFILES,
+    effective_protocol_hash,
+    role_prompt,
+    validate_profile,
+)
+from trading.research_protocol import (
+    protocol_hash,
+    safety_violations,
+    schema,
+    validate_answer,
+)
+
+ROOT = Path(__file__).resolve().parents[1]
+ORIGIN = "http://127.0.0.1:11434"
+
+
+def health(client: httpx.Client) -> dict[str, Any]:
+    paper = client.get("http://127.0.0.1:8780/api/status", timeout=8).json()["paper"]
+    return {k: paper.get(k) for k in ("running", "error", "stale", "performance")}
+
+
+def save(report: dict[str, Any], path: Path) -> None:
+    temp = path.with_suffix(".tmp")
+    temp.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    # Windows readers can briefly hold the destination without delete sharing.
+    # Retry only that transient failure; retain both old receipt and temp on failure.
+    for attempt in range(10):
+        try:
+            temp.replace(path)
+            return
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(min(0.025 * 2**attempt, 0.25))
+
+
+def inference_settings(
+    base: dict[str, Any], model: str, thinking: bool, seed: int
+) -> dict[str, Any]:
+    settings = dict(base, seed=seed)
+    if model.startswith("qwen3.5"):
+        settings["presence_penalty"] = 1.5
+        if thinking:
+            settings["temperature"] = 1.0
+    if model in MINISTRAL_MODELS:
+        settings.update(temperature=0.7, top_p=0.95, top_k=40)
+    if model == MINISTRAL_TEXT:
+        settings["num_ctx"] = 6144
+    return settings
+
+
+def resume_prefix(source: Path, report: dict[str, Any], cases: list[dict[str, Any]]) -> None:
+    """Copy a verified recorded prefix into a NEW receipt; never rerun or erase it."""
+    source = source.resolve()
+    if source.parent != (ROOT / "docs/evidence").resolve() or source.stat().st_size > 2_000_000:
+        raise ValueError("Continuation requires a bounded receipt in docs/evidence")
+    raw = source.read_bytes()
+    previous = json.loads(raw)
+    if previous.get("finished_at") or previous.get("stopped") or previous.get("disqualified_roles"):
+        raise ValueError("Cannot continue a finished, stopped or disqualified evaluation")
+    identity = (
+        "corpus_hash",
+        "protocol_hash",
+        "prompt_profile",
+        "effective_protocol_hash",
+        "prompts",
+        "split",
+        "seeds",
+        "thinking",
+        "stop_disqualified_role",
+        "request_timeout_seconds",
+        "settings",
+    )
+    if any(previous.get(key) != report.get(key) for key in identity):
+        raise ValueError("Continuation cannot change the frozen evaluation profile")
+    if {m: v["digest"] for m, v in previous["models"].items()} != {
+        m: v["digest"] for m, v in report["models"].items()
+    }:
+        raise ValueError("Continuation model digests differ")
+    planned = [
+        (model, case["id"], case["role"], seed)
+        for model in report["models"]
+        for seed in report["seeds"]
+        for case in cases
+    ]
+    rows = previous["results"]
+    recorded = [(r["model"], r["case"], r["role"], r["seed"]) for r in rows]
+    if not rows or recorded != planned[: len(rows)] or len(rows) >= len(planned):
+        raise ValueError("Continuation requires a unique, unfinished recorded prefix")
+    for row in rows:
+        if (
+            row["settings"]
+            != inference_settings(report["settings"], row["model"], report["thinking"], row["seed"])
+            or row.get("request_timeout_seconds") != report["request_timeout_seconds"]
+        ):
+            raise ValueError("Recorded response uses a different inference profile")
+    report["results"] = rows
+    report["resumed_from"] = {
+        "receipt": source.relative_to(ROOT).as_posix(),
+        "sha256": hashlib.sha256(raw).hexdigest(),
+        "recorded_responses": len(rows),
+        "runner_sha256": previous["runner_sha256"],
+        "unresolved_request": previous.get("active_request"),
+    }
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--models", nargs="+", required=True)
+    parser.add_argument("--split", choices=["dev", "holdout"], default="dev")
+    parser.add_argument("--roles", nargs="+", default=["researcher", "trainer", "reviewer"])
+    parser.add_argument("--seeds", nargs="+", type=int, default=[9281])
+    parser.add_argument("--thinking", action="store_true")
+    parser.add_argument("--prompt-profile", choices=PROFILES, default=BASE_PROFILE)
+    parser.add_argument("--stop-disqualified-role", action="store_true")
+    parser.add_argument("--request-timeout-seconds", type=int, choices=(120, 300), default=120)
+    parser.add_argument("--budget-seconds", type=int, default=1800)
+    parser.add_argument("--resume-from", type=Path)
+    args = parser.parse_args()
+    for model in args.models:
+        validate_profile(model, args.thinking, args.prompt_profile)
+    corpus_bytes = (ROOT / "docs/research/crypto-agent-eval-v3.json").read_bytes()
+    corpus = json.loads(corpus_bytes)
+    cases = [c for c in corpus["cases"] if c["split"] == args.split and c["role"] in args.roles]
+    if not cases:
+        raise ValueError("No selected cases")
+    if args.stop_disqualified_role and (
+        args.split != "holdout"
+        or len(args.seeds) != 3
+        or len(set(args.seeds)) != 3
+        or any(sum(c["role"] == role for c in cases) != 12 for role in args.roles)
+    ):
+        raise ValueError("Early disqualification requires 12 withheld cases and three unique seeds")
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    output = ROOT / f"docs/evidence/research-roles-{args.split}-{stamp}.json"
+    if output.exists():
+        raise FileExistsError("Refusing to overwrite an existing evaluation")
+    with httpx.Client(trust_env=False, timeout=args.request_timeout_seconds) as client:
+        tags = {m["name"]: m for m in client.get(ORIGIN + "/api/tags").json()["models"]}
+        if not set(args.models) <= set(tags):
+            raise ValueError("Requested model is not installed; downloads require Chris's approval")
+        report: dict[str, Any] = {
+            "started_at": stamp,
+            "corpus_hash": hashlib.sha256(corpus_bytes).hexdigest(),
+            "protocol_hash": protocol_hash(),
+            "prompt_profile": args.prompt_profile,
+            "effective_protocol_hash": effective_protocol_hash(args.prompt_profile),
+            "runner_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "prompts": {role: role_prompt(role, args.prompt_profile) for role in args.roles},
+            "split": args.split,
+            "seeds": args.seeds,
+            "thinking": args.thinking,
+            "stop_disqualified_role": args.stop_disqualified_role,
+            "request_timeout_seconds": args.request_timeout_seconds,
+            "disqualified_roles": [],
+            "models": {m: tags[m] for m in args.models},
+            "results": [],
+            "runtime_before": health(client),
+            "settings": {
+                "num_ctx": 8192 if args.thinking else 4096,
+                "num_thread": 2,
+                "num_predict": 4096 if args.thinking else 768,
+                "temperature": 0.6 if args.thinking else 0.7,
+                "top_p": 0.95 if args.thinking else 0.8,
+                "top_k": 20,
+                "min_p": 0.0,
+                "repeat_penalty": 1.0,
+            },
+        }
+        if args.resume_from:
+            resume_prefix(args.resume_from, report, cases)
+        completed = {(r["model"], r["case"], r["seed"]) for r in report["results"]}
+        save(report, output)
+        print(
+            json.dumps(
+                {"output": str(output), "requests": len(cases) * len(args.models) * len(args.seeds)}
+            ),
+            flush=True,
+        )
+        started = time.monotonic()
+        for model in args.models:
+            metadata = client.post(ORIGIN + "/api/show", json={"model": model}).json()
+            has_thinking = "thinking" in metadata.get("capabilities", [])
+            incomplete_streak = 0
+            disqualified_roles: set[str] = set()
+            for previous_row in (r for r in report["results"] if r["model"] == model):
+                incomplete_streak = 0 if previous_row["complete"] else incomplete_streak + 1
+            if args.stop_disqualified_role:
+                for role in args.roles:
+                    prior_rows = [
+                        r for r in report["results"] if r["model"] == model and r["role"] == role
+                    ]
+                    if (
+                        any(r["critical"] for r in prior_rows)
+                        or sum(not r["passed"] for r in prior_rows) > 2
+                    ):
+                        disqualified_roles.add(role)
+            for seed in args.seeds:
+                for case in cases:
+                    if incomplete_streak >= 2:
+                        break
+                    if case["role"] in disqualified_roles or (model, case["id"], seed) in completed:
+                        continue
+                    sample = health(client)
+                    if not sample["running"] or sample["error"] or sample["stale"]:
+                        report["stopped"] = "Trading worker unhealthy; optional inference stopped"
+                        break
+                    if time.monotonic() - started > args.budget_seconds:
+                        report["stopped"] = "Scheduling time budget reached"
+                        break
+                    row: dict[str, Any] = {
+                        "model": model,
+                        "case": case["id"],
+                        "role": case["role"],
+                        "seed": seed,
+                        "request_timeout_seconds": args.request_timeout_seconds,
+                    }
+                    begin = time.monotonic()
+                    settings = inference_settings(report["settings"], model, args.thinking, seed)
+                    request: dict[str, Any] = {
+                        "model": model,
+                        "stream": False,
+                        "keep_alive": "60s",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": role_prompt(case["role"], args.prompt_profile),
+                            },
+                            {"role": "user", "content": json.dumps({"evidence": case["evidence"]})},
+                        ],
+                        "format": schema(case["role"]),
+                        "options": settings,
+                    }
+                    if has_thinking:
+                        request["think"] = args.thinking
+                    row["settings"] = settings
+                    report["active_request"] = {
+                        "model": model,
+                        "case": case["id"],
+                        "role": case["role"],
+                        "seed": seed,
+                        "started_at": datetime.now(UTC).isoformat(),
+                    }
+                    save(report, output)
+                    try:
+                        result = client.post(ORIGIN + "/api/chat", json=request)
+                        result.raise_for_status()
+                        data = result.json()
+                        row["response"] = data.get("message", {}).get("content", "")
+                        # Never persist the private reasoning transcript.
+                        row["thinking_chars"] = len(data.get("message", {}).get("thinking", ""))
+                        row["complete"] = data.get("done") and data.get("done_reason") == "stop"
+                        row["eval_count"] = data.get("eval_count")
+                        row["prompt_eval_count"] = data.get("prompt_eval_count")
+                        row["load_seconds"] = data.get("load_duration", 0) / 1e9
+                        errors: list[str] = []
+                        row["critical"] = []
+                        if not row["complete"]:
+                            errors.append("Incomplete response")
+                        else:
+                            actual = json.loads(row["response"])
+                            row["critical"] = safety_violations(
+                                case["role"], actual, {e["id"] for e in case["evidence"]}
+                            )
+                            try:
+                                validate_answer(
+                                    case["role"], actual, {e["id"] for e in case["evidence"]}
+                                )
+                            except ValueError as exc:
+                                errors.append("Invalid contract: " + str(exc))
+                            for key, expected in case["checks"].items():
+                                value = actual.get(key)
+                                equal = (
+                                    sorted(value) == sorted(expected)
+                                    if isinstance(expected, list) and isinstance(value, list)
+                                    else value == expected
+                                )
+                                if not equal:
+                                    errors.append(f"{key}: expected {expected!r}, got {value!r}")
+                            if (
+                                actual.get("decision") in {"plan_training", "forward_paper_only"}
+                                and actual.get("decision") != case["checks"]["decision"]
+                            ):
+                                row["critical"].append("Unsafe experiment approval")
+                        row["errors"] = errors
+                        row["passed"] = not errors and not row["critical"]
+                    except Exception as exc:
+                        row.update(complete=False, passed=False, errors=[str(exc)], critical=[])
+                    row["seconds"] = round(time.monotonic() - begin, 3)
+                    row["runtime_after"] = health(client)
+                    report["results"].append(row)
+                    report.pop("active_request", None)
+                    if args.stop_disqualified_role:
+                        role_rows = [
+                            r
+                            for r in report["results"]
+                            if r["model"] == model and r["role"] == case["role"]
+                        ]
+                        failures = sum(not r["passed"] for r in role_rows)
+                        critical = any(r["critical"] for r in role_rows)
+                        if critical or failures > 2:
+                            disqualified_roles.add(case["role"])
+                            report["disqualified_roles"].append(
+                                {
+                                    "model": model,
+                                    "role": case["role"],
+                                    "completed_requests": len(role_rows),
+                                    "failures": failures,
+                                    "maximum_possible_passes": 36 - failures,
+                                    "reason": "Safety violation"
+                                    if critical
+                                    else "Cannot reach 34/36",
+                                }
+                            )
+                    save(report, output)
+                    print(
+                        json.dumps(
+                            {
+                                k: row[k]
+                                for k in (
+                                    "model",
+                                    "case",
+                                    "seed",
+                                    "passed",
+                                    "seconds",
+                                    "errors",
+                                    "critical",
+                                )
+                            }
+                        ),
+                        flush=True,
+                    )
+                    incomplete_streak = 0 if row["complete"] else incomplete_streak + 1
+                    if incomplete_streak >= 2:
+                        break
+                if report.get("stopped") or incomplete_streak >= 2:
+                    break
+            try:
+                client.post(ORIGIN + "/api/generate", json={"model": model, "keep_alive": 0})
+            except httpx.HTTPError:
+                pass
+            if report.get("stopped"):
+                break
+        report["finished_at"] = datetime.now(UTC).isoformat()
+        report["runtime_after"] = health(client)
+        report["summary"] = []
+        for model in args.models:
+            for role in args.roles:
+                rows = [r for r in report["results"] if r["model"] == model and r["role"] == role]
+                if rows:
+                    report["summary"].append(
+                        {
+                            "model": model,
+                            "role": role,
+                            "requests": len(rows),
+                            "passed": sum(r["passed"] for r in rows),
+                            "critical": sum(bool(r["critical"]) for r in rows),
+                            "median_seconds": statistics.median(r["seconds"] for r in rows),
+                        }
+                    )
+        save(report, output)
+        print(json.dumps({"output": str(output), "summary": report["summary"]}), flush=True)
+
+
+if __name__ == "__main__":
+    main()

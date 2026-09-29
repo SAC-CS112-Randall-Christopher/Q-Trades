@@ -1,0 +1,97 @@
+{
+  "at": 1790556641.9494715,
+  "error": null,
+  "running": true,
+  "futures": {
+    "enabled": true,
+    "version": "kraken-futures-context-v1",
+    "source": "Kraken public linear perpetuals",
+    "role": "Observation and research only; no futures execution or signal changes",
+    "poll_seconds": 60,
+    "stale_seconds": 150,
+    "coverage": "One venue sample; no liquidation feed, dated/CME futures or options chain",
+    "error": null,
+    "markets": {
+      "BTCUSD": {
+        "status": "observed",
+        "spot_symbol": "BTCUSD",
+        "contract": "PF_XBTUSD",
+        "base": "BTC",
+        "observed_at": 1790556626.8333485,
+        "server_at": 1790556626.864,
+        "round_trip_ms": 141.0,
+        "mark_price": "84505.45279771947",
+        "index_price": "84505.22",
+        "premium_bps": "0.027548324170980206903190000",
+        "open_interest_base": "2151.241100000000",
+        "open_interest_change_pct": null,
+        "change_interval_seconds": null,
+        "funding_usd_per_base_hour": "0.394386525705763514",
+        "predicted_funding_usd_per_base_hour": "0.495212294442638502",
+        "funding_est_bps_hour": "0.04667007857097626797492509930",
+        "funding_direction": "longs pay",
+        "last_trade_at": "2026-09-28T00:50:26.723111Z",
+        "raw_sha256": "e29e111463634b3303fcd64a07a857c4fdb7fe4f16898bc65aac04f28ddba73f",
+        "metadata_sha256": "aa5d2ca4341610d59ba150397070e71a29f97aacc6b493dacdc54890e5869a86",
+        "instrument": {
+          "symbol": "PF_XBTUSD",
+          "base": "BTC",
+          "quote": "USD",
+          "type": "flexible_futures",
+          "contractSize": 1,
+          "tradeable": true,
+          "isExpired": false,
+          "tradfi": false
+        },
+        "capture_id": "68664705e81e479691183a9012676c48",
+        "age_seconds": 15.1
+      },
+      "ETHUSD": {
+        "status": "observed",
+        "spot_symbol": "ETHUSD",
+        "contract": "PF_ETHUSD",
+        "base": "ETH",
+        "observed_at": 1790556626.8909113,
+        "server_at": 1790556626.917,
+        "round_trip_ms": 204.0,
+        "mark_price": "2686.26934194734",
+        "index_price": "2686.28",
+        "premium_bps": "-0.0396758813675417305716460000",
+        "open_interest_base": "25803.65200000000",
+        "open_interest_change_pct": null,
+        "change_interval_seconds": null,
+        "funding_usd_per_base_hour": "0.0184081347265",
+        "predicted_funding_usd_per_base_hour": "0.010332903225250895",
+        "funding_est_bps_hour": "0.06852649286932114299328439329",
+        "funding_direction": "longs pay",
+        "last_trade_at": "2026-09-28T00:50:23.728245Z",
+        "raw_sha256": "7b88ba2cd01b4d3ffd8d775f02ce0b15a2d51137b4265b83ebef296d7fb1dfbf",
+        "metadata_sha256": "aa5d2ca4341610d59ba150397070e71a29f97aacc6b493dacdc54890e5869a86",
+        "instrument": {
+          "symbol": "PF_ETHUSD",
+          "base": "ETH",
+          "quote": "USD",
+          "type": "flexible_futures",
+          "contractSize": 1,
+          "tradeable": true,
+          "isExpired": false,
+          "tradfi": false
+        },
+        "capture_id": "68664705e81e479691183a9012676c48",
+        "age_seconds": 15.0
+      }
+    }
+  },
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 18
+  },
+  "context_events": 1,
+  "performance": {
+    "average_cpu_percent_of_machine": 0.8,
+    "engine_p95_ms": 31.0,
+    "commit_p95_ms": 31.0
+  }
+}

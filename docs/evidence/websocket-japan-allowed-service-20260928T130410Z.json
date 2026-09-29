@@ -1,0 +1,57 @@
+{
+  "at": "2026-09-28T13:04:10.844773+00:00",
+  "running": true,
+  "error": null,
+  "stale": false,
+  "feed_errors": {
+    "SOLUSD": "REST fallback round trip exceeded one second",
+    "HBARUSD": "REST fallback round trip exceeded one second"
+  },
+  "feed": {
+    "transport": "Public WebSocket",
+    "clock_offset_ms": 81.27,
+    "clock_uncertainty_ms": 62.5,
+    "capture_dropped": 0,
+    "markets": {
+      "BTCUSD": {
+        "interval_ms": 100,
+        "fresh": false,
+        "received_age_ms": 657.0,
+        "exchange_event_ms": null,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 87,
+        "trade_gaps": 0,
+        "interval_p50_ms": null,
+        "event_age_p95_ms": null,
+        "error": "Stream unavailable: TimeoutError",
+        "source": "binance.us-rest-fallback",
+        "usable": true,
+        "round_trip_ms": 140.0
+      },
+      "ETHUSD": {
+        "interval_ms": 100,
+        "fresh": false,
+        "received_age_ms": 454.0,
+        "exchange_event_ms": null,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 87,
+        "trade_gaps": 0,
+        "interval_p50_ms": null,
+        "event_age_p95_ms": null,
+        "error": "Stream unavailable: TimeoutError",
+        "source": "binance.us-rest-fallback",
+        "usable": true,
+        "round_trip_ms": 140.0
+      }
+    }
+  },
+  "gaps": 8,
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 81037
+  }
+}

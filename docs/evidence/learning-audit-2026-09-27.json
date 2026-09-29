@@ -1,0 +1,245 @@
+{
+  "observed_at": "2026-09-28T02:57:09.209953+00:00",
+  "ai": {
+    "enabled": false,
+    "daily_budget_usd": "0.00"
+  },
+  "paper": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "review_count": 0,
+    "promotions": 0,
+    "bars_studied": 11615,
+    "gaps": 6,
+    "performance": {
+      "average_cpu_percent_of_machine": 2.54,
+      "engine_p95_ms": 32.0,
+      "commit_p95_ms": 32.0
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 16843
+    },
+    "accounts": {
+      "primary": {
+        "version": "breakout-v1",
+        "equity": "99.7593799833000000000",
+        "cash": "99.7593799833000000000",
+        "funding": "100",
+        "net_pnl": "-0.2406200167000000000",
+        "fees": "0.1990161167000000000",
+        "closed": 2,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0.0024627635470000000"
+      },
+      "breakout-v1": {
+        "version": "breakout-v1",
+        "equity": "99.7593799833000000000",
+        "cash": "99.7593799833000000000",
+        "funding": "100",
+        "net_pnl": "-0.2406200167000000000",
+        "fees": "0.1990161167000000000",
+        "closed": 2,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0.0024627635470000000"
+      },
+      "selective-v1": {
+        "version": "selective-v1",
+        "equity": "99.8829764483000000000",
+        "cash": "99.8829764483000000000",
+        "funding": "100",
+        "net_pnl": "-0.1170235517000000000",
+        "fees": "0.0996546517000000000",
+        "closed": 1,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0.0012267988970000000"
+      },
+      "responsive-v1": {
+        "version": "responsive-v1",
+        "equity": "99.8829764483000000000",
+        "cash": "99.8829764483000000000",
+        "funding": "100",
+        "net_pnl": "-0.1170235517000000000",
+        "fees": "0.0996546517000000000",
+        "closed": 1,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0.0012267988970000000"
+      },
+      "universe-wide-v1": {
+        "version": "breakout-v1",
+        "equity": "99.7751734200000000000",
+        "cash": "99.7751734200000000000",
+        "funding": "100",
+        "net_pnl": "-0.2248265800000000000",
+        "fees": "0.0995665800000000000",
+        "closed": 1,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0.0025447690000000000"
+      },
+      "universe-control-v1": {
+        "version": "breakout-v1",
+        "equity": "100",
+        "cash": "100",
+        "funding": "100",
+        "net_pnl": "0",
+        "fees": "0",
+        "closed": 0,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0"
+      }
+    },
+    "next_review_denver": "2026-09-27T21:05:18.758908-06:00",
+    "feed": {
+      "BTCUSD": {
+        "source": "binance.us-rest-fallback",
+        "usable": true,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 62,
+        "exchange_event_ms": null
+      },
+      "ETHUSD": {
+        "source": "binance.us-rest-fallback",
+        "usable": true,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 62,
+        "exchange_event_ms": null
+      },
+      "SUIUSD": {
+        "source": "unavailable",
+        "usable": false,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 61,
+        "exchange_event_ms": null
+      },
+      "HYPEUSD": {
+        "source": "binance.us-rest-fallback",
+        "usable": true,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 61,
+        "exchange_event_ms": null
+      },
+      "HBARUSD": {
+        "source": "unavailable",
+        "usable": false,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 21,
+        "exchange_event_ms": null
+      },
+      "DOGEUSD": {
+        "source": "unavailable",
+        "usable": false,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 57,
+        "exchange_event_ms": null
+      }
+    }
+  },
+  "options": {
+    "running": true,
+    "error": "Daily free-data request budget reached; resumes after UTC midnight",
+    "sessions": 59,
+    "contracts_studied": 5072,
+    "market_day": "2026-08-12",
+    "review_count": 0,
+    "promotions": 0,
+    "feed_status": "Daily free-data request budget reached; resumes after UTC midnight",
+    "request_budget": {
+      "day": "2026-09-28",
+      "used": 60,
+      "limit": 60
+    },
+    "rejections": {
+      "Less than ten displayed contracts": 475,
+      "Volume/open-interest screen not met": 416,
+      "Spread/liquidation quote does not qualify": 985,
+      "Full premium plus fees exceeds the 2.5% risk/settled-cash budget": 89
+    },
+    "data_gaps": 1,
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 120
+    },
+    "accounts": {
+      "primary": {
+        "version": "options-momentum-v1",
+        "equity": "100",
+        "cash": "100",
+        "funding": "100",
+        "net_pnl": "0",
+        "fees": "0",
+        "closed": 0,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0",
+        "risk_budget": "2.500"
+      },
+      "options-momentum-v1": {
+        "version": "options-momentum-v1",
+        "equity": "100",
+        "cash": "100",
+        "funding": "100",
+        "net_pnl": "0",
+        "fees": "0",
+        "closed": 0,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0",
+        "risk_budget": "2.500"
+      },
+      "options-selective-v1": {
+        "version": "options-selective-v1",
+        "equity": "100",
+        "cash": "100",
+        "funding": "100",
+        "net_pnl": "0",
+        "fees": "0",
+        "closed": 0,
+        "wins": 0,
+        "attempt_wins": 0,
+        "attempt_failures": 0,
+        "replenishments": 0,
+        "max_drawdown": "0",
+        "risk_budget": "2.500"
+      }
+    },
+    "next_review_denver": "2026-09-27T23:52:25.756510-06:00"
+  },
+  "caveats": [
+    "Read-only application status snapshot; not an independent database reconciliation run.",
+    "Bar and contract-observation counts are not independent training labels or completed trades.",
+    "Focused tests verify mechanics only; profitability and successful adaptation remain unproven."
+  ]
+}

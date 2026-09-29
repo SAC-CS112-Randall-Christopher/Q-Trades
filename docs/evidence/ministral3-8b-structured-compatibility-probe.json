@@ -1,0 +1,46 @@
+{
+  "at": "2026-09-28T10:13:46.704688+00:00",
+  "request": {
+    "model": "hf.co/mistralai/Ministral-3-8B-Reasoning-2512-GGUF:Q4_K_M",
+    "stream": false,
+    "keep_alive": "60s",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Calculate 17 multiplied by 23. Return only a JSON object with an integer product field as the final answer. Schema: {\"type\": \"object\", \"properties\": {\"product\": {\"type\": \"integer\"}}, \"required\": [\"product\"], \"additionalProperties\": false}"
+      }
+    ],
+    "options": {
+      "num_ctx": 8192,
+      "num_predict": 1024,
+      "num_thread": 2,
+      "temperature": 0.7,
+      "top_p": 0.95,
+      "top_k": 40,
+      "seed": 9281
+    },
+    "format": {
+      "type": "object",
+      "properties": {
+        "product": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "product"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "done": true,
+  "done_reason": "stop",
+  "thinking_chars": 924,
+  "content_chars": 20,
+  "content_has_reasoning_tags": false,
+  "eval_count": 320,
+  "load_seconds": 0.0063506,
+  "final_json": {
+    "product": 391
+  },
+  "seconds": 27.359
+}

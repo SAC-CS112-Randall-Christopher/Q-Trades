@@ -1,0 +1,4024 @@
+{
+  "schema_version": 1,
+  "source": "binance_us_public_rest",
+  "evidence_type": "observed_public_data_not_strategy_performance",
+  "retention": {
+    "retained": 21,
+    "oldest": "2026-09-27T21:50:28.476802+00:00",
+    "newest": "2026-09-27T21:51:33.431999+00:00",
+    "total": 21,
+    "evicted": 0,
+    "capacity": 2000,
+    "payload_byte_budget": 16000000
+  },
+  "configurations": {
+    "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c": {
+      "schema_version": 1,
+      "mode": "paper",
+      "live_enabled": false,
+      "ai_enabled": false,
+      "ai_daily_budget_usd": "0.00",
+      "monitored_symbols": [
+        "BTCUSD",
+        "ETHUSD",
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "approved_symbols": [],
+      "poll_seconds": 15,
+      "request_timeout_seconds": 8,
+      "stale_after_seconds": 45,
+      "metadata_refresh_seconds": 300,
+      "depth_levels": 20,
+      "retained_observations": 2000
+    }
+  },
+  "observations": [
+    {
+      "id": 1,
+      "kind": "instruments",
+      "symbol": null,
+      "observed_at": "2026-09-27T21:50:28.476802+00:00",
+      "payload": {
+        "timezone": "UTC",
+        "serverTime": 1790545828479,
+        "rateLimits": [
+          {
+            "rateLimitType": "REQUEST_WEIGHT",
+            "interval": "MINUTE",
+            "intervalNum": 1,
+            "limit": 6000
+          },
+          {
+            "rateLimitType": "ORDERS",
+            "interval": "SECOND",
+            "intervalNum": 10,
+            "limit": 100
+          },
+          {
+            "rateLimitType": "ORDERS",
+            "interval": "DAY",
+            "intervalNum": 1,
+            "limit": 200000
+          },
+          {
+            "rateLimitType": "RAW_REQUESTS",
+            "interval": "MINUTE",
+            "intervalNum": 5,
+            "limit": 300000
+          }
+        ],
+        "exchangeFilters": [],
+        "symbols": [
+          {
+            "symbol": "BTCUSDT",
+            "status": "TRADING",
+            "baseAsset": "BTC",
+            "baseAssetPrecision": 8,
+            "quoteAsset": "USDT",
+            "quotePrecision": 8,
+            "quoteAssetPrecision": 8,
+            "baseCommissionPrecision": 8,
+            "quoteCommissionPrecision": 8,
+            "orderTypes": [
+              "LIMIT",
+              "LIMIT_MAKER",
+              "MARKET",
+              "STOP_LOSS",
+              "STOP_LOSS_LIMIT",
+              "TAKE_PROFIT",
+              "TAKE_PROFIT_LIMIT"
+            ],
+            "icebergAllowed": true,
+            "ocoAllowed": true,
+            "otoAllowed": true,
+            "opoAllowed": true,
+            "quoteOrderQtyMarketAllowed": true,
+            "allowTrailingStop": true,
+            "cancelReplaceAllowed": true,
+            "amendAllowed": true,
+            "pegInstructionsAllowed": true,
+            "isSpotTradingAllowed": true,
+            "isMarginTradingAllowed": false,
+            "filters": [
+              {
+                "filterType": "PRICE_FILTER",
+                "minPrice": "0.01000000",
+                "maxPrice": "1000000.00000000",
+                "tickSize": "0.01000000"
+              },
+              {
+                "filterType": "PERCENT_PRICE",
+                "multiplierUp": "5",
+                "multiplierDown": "0.2",
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "LOT_SIZE",
+                "minQty": "0.00001000",
+                "maxQty": "9000.00000000",
+                "stepSize": "0.00001000"
+              },
+              {
+                "filterType": "MIN_NOTIONAL",
+                "minNotional": "1.00000000",
+                "applyToMarket": true,
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "ICEBERG_PARTS",
+                "limit": 10
+              },
+              {
+                "filterType": "MARKET_LOT_SIZE",
+                "minQty": "0.00000000",
+                "maxQty": "10.92994037",
+                "stepSize": "0.00000000"
+              },
+              {
+                "filterType": "TRAILING_DELTA",
+                "minTrailingAboveDelta": 10,
+                "maxTrailingAboveDelta": 2000,
+                "minTrailingBelowDelta": 10,
+                "maxTrailingBelowDelta": 2000
+              },
+              {
+                "filterType": "PERCENT_PRICE_BY_SIDE",
+                "bidMultiplierUp": "5",
+                "bidMultiplierDown": "0.2",
+                "askMultiplierUp": "5",
+                "askMultiplierDown": "0.2",
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDERS",
+                "maxNumOrders": 200
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_LISTS",
+                "maxNumOrderLists": 20
+              },
+              {
+                "filterType": "MAX_NUM_ALGO_ORDERS",
+                "maxNumAlgoOrders": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_AMENDS",
+                "maxNumOrderAmends": 10
+              }
+            ],
+            "permissions": [],
+            "permissionSets": [
+              [
+                "SPOT"
+              ]
+            ],
+            "defaultSelfTradePreventionMode": "EXPIRE_MAKER",
+            "allowedSelfTradePreventionModes": [
+              "EXPIRE_TAKER",
+              "EXPIRE_MAKER",
+              "EXPIRE_BOTH",
+              "DECREMENT",
+              "TRANSFER"
+            ]
+          },
+          {
+            "symbol": "ETHUSDT",
+            "status": "TRADING",
+            "baseAsset": "ETH",
+            "baseAssetPrecision": 8,
+            "quoteAsset": "USDT",
+            "quotePrecision": 8,
+            "quoteAssetPrecision": 8,
+            "baseCommissionPrecision": 8,
+            "quoteCommissionPrecision": 8,
+            "orderTypes": [
+              "LIMIT",
+              "LIMIT_MAKER",
+              "MARKET",
+              "STOP_LOSS",
+              "STOP_LOSS_LIMIT",
+              "TAKE_PROFIT",
+              "TAKE_PROFIT_LIMIT"
+            ],
+            "icebergAllowed": true,
+            "ocoAllowed": true,
+            "otoAllowed": true,
+            "opoAllowed": true,
+            "quoteOrderQtyMarketAllowed": true,
+            "allowTrailingStop": true,
+            "cancelReplaceAllowed": true,
+            "amendAllowed": true,
+            "pegInstructionsAllowed": true,
+            "isSpotTradingAllowed": true,
+            "isMarginTradingAllowed": false,
+            "filters": [
+              {
+                "filterType": "PRICE_FILTER",
+                "minPrice": "0.01000000",
+                "maxPrice": "1000000.00000000",
+                "tickSize": "0.01000000"
+              },
+              {
+                "filterType": "PERCENT_PRICE",
+                "multiplierUp": "5",
+                "multiplierDown": "0.2",
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "LOT_SIZE",
+                "minQty": "0.00010000",
+                "maxQty": "9000.00000000",
+                "stepSize": "0.00010000"
+              },
+              {
+                "filterType": "MIN_NOTIONAL",
+                "minNotional": "1.00000000",
+                "applyToMarket": true,
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "ICEBERG_PARTS",
+                "limit": 10
+              },
+              {
+                "filterType": "MARKET_LOT_SIZE",
+                "minQty": "0.00000000",
+                "maxQty": "254.67216333",
+                "stepSize": "0.00000000"
+              },
+              {
+                "filterType": "TRAILING_DELTA",
+                "minTrailingAboveDelta": 10,
+                "maxTrailingAboveDelta": 2000,
+                "minTrailingBelowDelta": 10,
+                "maxTrailingBelowDelta": 2000
+              },
+              {
+                "filterType": "PERCENT_PRICE_BY_SIDE",
+                "bidMultiplierUp": "5",
+                "bidMultiplierDown": "0.2",
+                "askMultiplierUp": "5",
+                "askMultiplierDown": "0.2",
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDERS",
+                "maxNumOrders": 200
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_LISTS",
+                "maxNumOrderLists": 20
+              },
+              {
+                "filterType": "MAX_NUM_ALGO_ORDERS",
+                "maxNumAlgoOrders": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_AMENDS",
+                "maxNumOrderAmends": 10
+              }
+            ],
+            "permissions": [],
+            "permissionSets": [
+              [
+                "SPOT"
+              ]
+            ],
+            "defaultSelfTradePreventionMode": "EXPIRE_MAKER",
+            "allowedSelfTradePreventionModes": [
+              "EXPIRE_TAKER",
+              "EXPIRE_MAKER",
+              "EXPIRE_BOTH",
+              "DECREMENT",
+              "TRANSFER"
+            ]
+          },
+          {
+            "symbol": "BTCUSD",
+            "status": "TRADING",
+            "baseAsset": "BTC",
+            "baseAssetPrecision": 8,
+            "quoteAsset": "USD",
+            "quotePrecision": 8,
+            "quoteAssetPrecision": 8,
+            "baseCommissionPrecision": 8,
+            "quoteCommissionPrecision": 8,
+            "orderTypes": [
+              "LIMIT",
+              "LIMIT_MAKER",
+              "MARKET",
+              "STOP_LOSS",
+              "STOP_LOSS_LIMIT",
+              "TAKE_PROFIT",
+              "TAKE_PROFIT_LIMIT"
+            ],
+            "icebergAllowed": true,
+            "ocoAllowed": true,
+            "otoAllowed": true,
+            "opoAllowed": true,
+            "quoteOrderQtyMarketAllowed": true,
+            "allowTrailingStop": true,
+            "cancelReplaceAllowed": true,
+            "amendAllowed": true,
+            "pegInstructionsAllowed": true,
+            "isSpotTradingAllowed": true,
+            "isMarginTradingAllowed": false,
+            "filters": [
+              {
+                "filterType": "PRICE_FILTER",
+                "minPrice": "0.01000000",
+                "maxPrice": "1000000.00000000",
+                "tickSize": "0.01000000"
+              },
+              {
+                "filterType": "PERCENT_PRICE",
+                "multiplierUp": "5",
+                "multiplierDown": "0.2",
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "LOT_SIZE",
+                "minQty": "0.00001000",
+                "maxQty": "9000.00000000",
+                "stepSize": "0.00001000"
+              },
+              {
+                "filterType": "MIN_NOTIONAL",
+                "minNotional": "1.00000000",
+                "applyToMarket": true,
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "ICEBERG_PARTS",
+                "limit": 10
+              },
+              {
+                "filterType": "MARKET_LOT_SIZE",
+                "minQty": "0.00000000",
+                "maxQty": "10.25581291",
+                "stepSize": "0.00000000"
+              },
+              {
+                "filterType": "TRAILING_DELTA",
+                "minTrailingAboveDelta": 10,
+                "maxTrailingAboveDelta": 2000,
+                "minTrailingBelowDelta": 10,
+                "maxTrailingBelowDelta": 2000
+              },
+              {
+                "filterType": "PERCENT_PRICE_BY_SIDE",
+                "bidMultiplierUp": "5",
+                "bidMultiplierDown": "0.2",
+                "askMultiplierUp": "5",
+                "askMultiplierDown": "0.2",
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDERS",
+                "maxNumOrders": 200
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_LISTS",
+                "maxNumOrderLists": 20
+              },
+              {
+                "filterType": "MAX_NUM_ALGO_ORDERS",
+                "maxNumAlgoOrders": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_AMENDS",
+                "maxNumOrderAmends": 10
+              }
+            ],
+            "permissions": [],
+            "permissionSets": [
+              [
+                "SPOT"
+              ]
+            ],
+            "defaultSelfTradePreventionMode": "EXPIRE_MAKER",
+            "allowedSelfTradePreventionModes": [
+              "EXPIRE_TAKER",
+              "EXPIRE_MAKER",
+              "EXPIRE_BOTH",
+              "DECREMENT",
+              "TRANSFER"
+            ]
+          },
+          {
+            "symbol": "ETHUSD",
+            "status": "TRADING",
+            "baseAsset": "ETH",
+            "baseAssetPrecision": 8,
+            "quoteAsset": "USD",
+            "quotePrecision": 8,
+            "quoteAssetPrecision": 8,
+            "baseCommissionPrecision": 8,
+            "quoteCommissionPrecision": 8,
+            "orderTypes": [
+              "LIMIT",
+              "LIMIT_MAKER",
+              "MARKET",
+              "STOP_LOSS",
+              "STOP_LOSS_LIMIT",
+              "TAKE_PROFIT",
+              "TAKE_PROFIT_LIMIT"
+            ],
+            "icebergAllowed": true,
+            "ocoAllowed": true,
+            "otoAllowed": true,
+            "opoAllowed": true,
+            "quoteOrderQtyMarketAllowed": true,
+            "allowTrailingStop": true,
+            "cancelReplaceAllowed": true,
+            "amendAllowed": true,
+            "pegInstructionsAllowed": true,
+            "isSpotTradingAllowed": true,
+            "isMarginTradingAllowed": false,
+            "filters": [
+              {
+                "filterType": "PRICE_FILTER",
+                "minPrice": "0.01000000",
+                "maxPrice": "1000000.00000000",
+                "tickSize": "0.01000000"
+              },
+              {
+                "filterType": "PERCENT_PRICE",
+                "multiplierUp": "5",
+                "multiplierDown": "0.2",
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "LOT_SIZE",
+                "minQty": "0.00010000",
+                "maxQty": "9000.00000000",
+                "stepSize": "0.00010000"
+              },
+              {
+                "filterType": "MIN_NOTIONAL",
+                "minNotional": "1.00000000",
+                "applyToMarket": true,
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "ICEBERG_PARTS",
+                "limit": 10
+              },
+              {
+                "filterType": "MARKET_LOT_SIZE",
+                "minQty": "0.00000000",
+                "maxQty": "254.28404291",
+                "stepSize": "0.00000000"
+              },
+              {
+                "filterType": "TRAILING_DELTA",
+                "minTrailingAboveDelta": 10,
+                "maxTrailingAboveDelta": 2000,
+                "minTrailingBelowDelta": 10,
+                "maxTrailingBelowDelta": 2000
+              },
+              {
+                "filterType": "PERCENT_PRICE_BY_SIDE",
+                "bidMultiplierUp": "5",
+                "bidMultiplierDown": "0.2",
+                "askMultiplierUp": "5",
+                "askMultiplierDown": "0.2",
+                "avgPriceMins": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDERS",
+                "maxNumOrders": 200
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_LISTS",
+                "maxNumOrderLists": 20
+              },
+              {
+                "filterType": "MAX_NUM_ALGO_ORDERS",
+                "maxNumAlgoOrders": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_AMENDS",
+                "maxNumOrderAmends": 10
+              }
+            ],
+            "permissions": [],
+            "permissionSets": [
+              [
+                "SPOT"
+              ]
+            ],
+            "defaultSelfTradePreventionMode": "EXPIRE_MAKER",
+            "allowedSelfTradePreventionModes": [
+              "EXPIRE_TAKER",
+              "EXPIRE_MAKER",
+              "EXPIRE_BOTH",
+              "DECREMENT",
+              "TRANSFER"
+            ]
+          }
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 2,
+      "kind": "depth",
+      "symbol": "BTCUSD",
+      "observed_at": "2026-09-27T21:50:28.856796+00:00",
+      "payload": {
+        "lastUpdateId": 4600856616,
+        "bids": [
+          [
+            "84661.80000000",
+            "0.02362000"
+          ],
+          [
+            "84658.81000000",
+            "0.00247000"
+          ],
+          [
+            "84658.61000000",
+            "0.00246000"
+          ],
+          [
+            "84647.44000000",
+            "0.31181000"
+          ],
+          [
+            "84646.93000000",
+            "0.02663000"
+          ],
+          [
+            "84645.94000000",
+            "0.01181000"
+          ],
+          [
+            "84645.49000000",
+            "0.00307000"
+          ],
+          [
+            "84644.03000000",
+            "0.02663000"
+          ],
+          [
+            "84643.85000000",
+            "0.02625000"
+          ],
+          [
+            "84643.00000000",
+            "0.00013000"
+          ],
+          [
+            "84642.71000000",
+            "0.00064000"
+          ],
+          [
+            "84642.28000000",
+            "0.02421000"
+          ],
+          [
+            "84633.97000000",
+            "0.03261000"
+          ],
+          [
+            "84623.26000000",
+            "0.04724000"
+          ],
+          [
+            "84620.84000000",
+            "0.02663000"
+          ],
+          [
+            "84617.68000000",
+            "0.10025000"
+          ],
+          [
+            "84611.23000000",
+            "0.10202000"
+          ],
+          [
+            "84608.08000000",
+            "0.10094000"
+          ],
+          [
+            "84602.68000000",
+            "0.10147000"
+          ],
+          [
+            "84592.55000000",
+            "0.15412000"
+          ]
+        ],
+        "asks": [
+          [
+            "84661.89000000",
+            "0.00247000"
+          ],
+          [
+            "84667.26000000",
+            "0.03543000"
+          ],
+          [
+            "84669.26000000",
+            "0.02555000"
+          ],
+          [
+            "84675.31000000",
+            "0.64378000"
+          ],
+          [
+            "84675.32000000",
+            "0.00307000"
+          ],
+          [
+            "84676.23000000",
+            "0.02421000"
+          ],
+          [
+            "84678.15000000",
+            "0.02663000"
+          ],
+          [
+            "84680.24000000",
+            "0.01775000"
+          ],
+          [
+            "84683.05000000",
+            "0.01180000"
+          ],
+          [
+            "84687.60000000",
+            "0.02663000"
+          ],
+          [
+            "84690.31000000",
+            "0.03258000"
+          ],
+          [
+            "84694.66000000",
+            "0.02663000"
+          ],
+          [
+            "84704.39000000",
+            "0.10152000"
+          ],
+          [
+            "84707.15000000",
+            "0.10020000"
+          ],
+          [
+            "84709.55000000",
+            "0.10146000"
+          ],
+          [
+            "84712.34000000",
+            "0.10214000"
+          ],
+          [
+            "84715.27000000",
+            "0.14780000"
+          ],
+          [
+            "84720.03000000",
+            "0.00004000"
+          ],
+          [
+            "84726.35000000",
+            "0.00007000"
+          ],
+          [
+            "84728.75000000",
+            "0.13401000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 3,
+      "kind": "depth",
+      "symbol": "ETHUSD",
+      "observed_at": "2026-09-27T21:50:29.007354+00:00",
+      "payload": {
+        "lastUpdateId": 3776673512,
+        "bids": [
+          [
+            "2683.79000000",
+            "2.78440000"
+          ],
+          [
+            "2683.77000000",
+            "0.37260000"
+          ],
+          [
+            "2683.75000000",
+            "4.43650000"
+          ],
+          [
+            "2683.71000000",
+            "0.07430000"
+          ],
+          [
+            "2683.66000000",
+            "0.07430000"
+          ],
+          [
+            "2683.63000000",
+            "1.02840000"
+          ],
+          [
+            "2683.34000000",
+            "0.82020000"
+          ],
+          [
+            "2683.18000000",
+            "0.82020000"
+          ],
+          [
+            "2682.89000000",
+            "0.82020000"
+          ],
+          [
+            "2682.13000000",
+            "6.41280000"
+          ],
+          [
+            "2681.43000000",
+            "2.73410000"
+          ],
+          [
+            "2681.27000000",
+            "3.68240000"
+          ],
+          [
+            "2681.18000000",
+            "3.72960000"
+          ],
+          [
+            "2680.92000000",
+            "2.73410000"
+          ],
+          [
+            "2680.00000000",
+            "0.04000000"
+          ],
+          [
+            "2679.93000000",
+            "6.97830000"
+          ],
+          [
+            "2679.72000000",
+            "0.07300000"
+          ],
+          [
+            "2677.73000000",
+            "2.73410000"
+          ],
+          [
+            "2677.13000000",
+            "37.35320000"
+          ],
+          [
+            "2675.73000000",
+            "0.02000000"
+          ]
+        ],
+        "asks": [
+          [
+            "2683.80000000",
+            "0.00110000"
+          ],
+          [
+            "2684.59000000",
+            "0.07380000"
+          ],
+          [
+            "2684.61000000",
+            "0.76180000"
+          ],
+          [
+            "2684.65000000",
+            "0.07460000"
+          ],
+          [
+            "2684.69000000",
+            "0.74490000"
+          ],
+          [
+            "2684.93000000",
+            "0.77520000"
+          ],
+          [
+            "2685.01000000",
+            "0.09680000"
+          ],
+          [
+            "2685.07000000",
+            "2.10330000"
+          ],
+          [
+            "2685.21000000",
+            "0.82020000"
+          ],
+          [
+            "2685.24000000",
+            "0.37240000"
+          ],
+          [
+            "2685.26000000",
+            "0.82020000"
+          ],
+          [
+            "2685.44000000",
+            "1.02770000"
+          ],
+          [
+            "2685.46000000",
+            "0.54680000"
+          ],
+          [
+            "2685.54000000",
+            "0.82020000"
+          ],
+          [
+            "2686.33000000",
+            "0.00410000"
+          ],
+          [
+            "2686.94000000",
+            "6.40130000"
+          ],
+          [
+            "2687.67000000",
+            "3.72060000"
+          ],
+          [
+            "2687.99000000",
+            "7.50460000"
+          ],
+          [
+            "2688.68000000",
+            "2.73410000"
+          ],
+          [
+            "2689.18000000",
+            "2.73410000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 4,
+      "kind": "depth",
+      "symbol": "BTCUSDT",
+      "observed_at": "2026-09-27T21:50:29.156229+00:00",
+      "payload": {
+        "lastUpdateId": 3345473219,
+        "bids": [
+          [
+            "84672.23000000",
+            "0.00003000"
+          ],
+          [
+            "84671.72000000",
+            "0.02362000"
+          ],
+          [
+            "84671.71000000",
+            "0.00328000"
+          ],
+          [
+            "84671.52000000",
+            "0.00329000"
+          ],
+          [
+            "84671.40000000",
+            "0.00331000"
+          ],
+          [
+            "84661.65000000",
+            "0.03549000"
+          ],
+          [
+            "84657.79000000",
+            "0.03549000"
+          ],
+          [
+            "84657.69000000",
+            "0.02457000"
+          ],
+          [
+            "84657.67000000",
+            "0.00307000"
+          ],
+          [
+            "84655.55000000",
+            "0.02421000"
+          ],
+          [
+            "84653.81000000",
+            "0.20846000"
+          ],
+          [
+            "84652.20000000",
+            "0.02953000"
+          ],
+          [
+            "84651.53000000",
+            "0.21080000"
+          ],
+          [
+            "84648.67000000",
+            "0.21246000"
+          ],
+          [
+            "84645.97000000",
+            "0.36457000"
+          ],
+          [
+            "84645.96000000",
+            "0.03260000"
+          ],
+          [
+            "84645.76000000",
+            "0.21217000"
+          ],
+          [
+            "84643.73000000",
+            "0.02366000"
+          ],
+          [
+            "84642.95000000",
+            "0.20877000"
+          ],
+          [
+            "84639.34000000",
+            "0.21209000"
+          ]
+        ],
+        "asks": [
+          [
+            "84672.47000000",
+            "0.00327000"
+          ],
+          [
+            "84680.31000000",
+            "0.03543000"
+          ],
+          [
+            "84683.11000000",
+            "0.02456000"
+          ],
+          [
+            "84683.89000000",
+            "0.04000000"
+          ],
+          [
+            "84686.19000000",
+            "0.02952000"
+          ],
+          [
+            "84687.31000000",
+            "0.00307000"
+          ],
+          [
+            "84690.72000000",
+            "0.20888000"
+          ],
+          [
+            "84692.10000000",
+            "0.02421000"
+          ],
+          [
+            "84692.40000000",
+            "0.00002000"
+          ],
+          [
+            "84693.95000000",
+            "0.21166000"
+          ],
+          [
+            "84697.87000000",
+            "0.00789000"
+          ],
+          [
+            "84700.97000000",
+            "0.03549000"
+          ],
+          [
+            "84701.76000000",
+            "0.03549000"
+          ],
+          [
+            "84702.31000000",
+            "0.03258000"
+          ],
+          [
+            "84705.11000000",
+            "0.39517000"
+          ],
+          [
+            "84705.48000000",
+            "0.21030000"
+          ],
+          [
+            "84707.77000000",
+            "0.03549000"
+          ],
+          [
+            "84714.16000000",
+            "0.04724000"
+          ],
+          [
+            "84717.01000000",
+            "0.32501000"
+          ],
+          [
+            "84718.86000000",
+            "0.00118000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 5,
+      "kind": "depth",
+      "symbol": "ETHUSDT",
+      "observed_at": "2026-09-27T21:50:29.302881+00:00",
+      "payload": {
+        "lastUpdateId": 2979327562,
+        "bids": [
+          [
+            "2684.81000000",
+            "0.07390000"
+          ],
+          [
+            "2684.74000000",
+            "0.90000000"
+          ],
+          [
+            "2684.64000000",
+            "0.93140000"
+          ],
+          [
+            "2684.55000000",
+            "0.07420000"
+          ],
+          [
+            "2684.46000000",
+            "0.81030000"
+          ],
+          [
+            "2684.37000000",
+            "0.09680000"
+          ],
+          [
+            "2684.25000000",
+            "0.76180000"
+          ],
+          [
+            "2684.17000000",
+            "1.36680000"
+          ],
+          [
+            "2684.05000000",
+            "0.82010000"
+          ],
+          [
+            "2683.98000000",
+            "0.82010000"
+          ],
+          [
+            "2683.94000000",
+            "1.02830000"
+          ],
+          [
+            "2683.73000000",
+            "0.34080000"
+          ],
+          [
+            "2683.60000000",
+            "9.30980000"
+          ],
+          [
+            "2683.00000000",
+            "0.03720000"
+          ],
+          [
+            "2682.98000000",
+            "0.05600000"
+          ],
+          [
+            "2682.44000000",
+            "6.41200000"
+          ],
+          [
+            "2682.24000000",
+            "5.04560000"
+          ],
+          [
+            "2681.99000000",
+            "5.09940000"
+          ],
+          [
+            "2681.90000000",
+            "3.68240000"
+          ],
+          [
+            "2681.88000000",
+            "5.10650000"
+          ]
+        ],
+        "asks": [
+          [
+            "2684.93000000",
+            "0.07430000"
+          ],
+          [
+            "2684.95000000",
+            "0.07490000"
+          ],
+          [
+            "2685.01000000",
+            "0.76180000"
+          ],
+          [
+            "2685.28000000",
+            "0.81320000"
+          ],
+          [
+            "2685.32000000",
+            "0.09680000"
+          ],
+          [
+            "2685.42000000",
+            "0.93110000"
+          ],
+          [
+            "2685.44000000",
+            "0.79140000"
+          ],
+          [
+            "2685.68000000",
+            "0.03720000"
+          ],
+          [
+            "2685.75000000",
+            "1.02760000"
+          ],
+          [
+            "2685.77000000",
+            "0.82010000"
+          ],
+          [
+            "2685.99000000",
+            "5.57740000"
+          ],
+          [
+            "2686.00000000",
+            "0.05600000"
+          ],
+          [
+            "2686.04000000",
+            "0.82010000"
+          ],
+          [
+            "2686.27000000",
+            "0.82010000"
+          ],
+          [
+            "2686.82000000",
+            "0.00120000"
+          ],
+          [
+            "2687.25000000",
+            "6.40050000"
+          ],
+          [
+            "2687.28000000",
+            "3.68240000"
+          ],
+          [
+            "2687.50000000",
+            "6.45480000"
+          ],
+          [
+            "2687.59000000",
+            "2.79380000"
+          ],
+          [
+            "2687.60000000",
+            "6.46940000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 6,
+      "kind": "depth",
+      "symbol": "BTCUSD",
+      "observed_at": "2026-09-27T21:50:44.720045+00:00",
+      "payload": {
+        "lastUpdateId": 4600856652,
+        "bids": [
+          [
+            "84661.80000000",
+            "0.02362000"
+          ],
+          [
+            "84658.81000000",
+            "0.00247000"
+          ],
+          [
+            "84658.61000000",
+            "0.00246000"
+          ],
+          [
+            "84647.44000000",
+            "0.31181000"
+          ],
+          [
+            "84646.93000000",
+            "0.02663000"
+          ],
+          [
+            "84645.94000000",
+            "0.01181000"
+          ],
+          [
+            "84645.49000000",
+            "0.00307000"
+          ],
+          [
+            "84644.03000000",
+            "0.02663000"
+          ],
+          [
+            "84643.85000000",
+            "0.02625000"
+          ],
+          [
+            "84642.92000000",
+            "0.02421000"
+          ],
+          [
+            "84642.71000000",
+            "0.00064000"
+          ],
+          [
+            "84633.97000000",
+            "0.03261000"
+          ],
+          [
+            "84623.26000000",
+            "0.04724000"
+          ],
+          [
+            "84620.84000000",
+            "0.02663000"
+          ],
+          [
+            "84617.68000000",
+            "0.10025000"
+          ],
+          [
+            "84611.23000000",
+            "0.10202000"
+          ],
+          [
+            "84608.08000000",
+            "0.10094000"
+          ],
+          [
+            "84602.68000000",
+            "0.10147000"
+          ],
+          [
+            "84592.55000000",
+            "0.15412000"
+          ],
+          [
+            "84588.32000000",
+            "0.20333000"
+          ]
+        ],
+        "asks": [
+          [
+            "84661.89000000",
+            "0.00247000"
+          ],
+          [
+            "84664.81000000",
+            "0.03543000"
+          ],
+          [
+            "84669.26000000",
+            "0.02555000"
+          ],
+          [
+            "84675.31000000",
+            "0.64378000"
+          ],
+          [
+            "84675.32000000",
+            "0.00307000"
+          ],
+          [
+            "84676.81000000",
+            "0.02421000"
+          ],
+          [
+            "84678.15000000",
+            "0.02663000"
+          ],
+          [
+            "84680.24000000",
+            "0.01775000"
+          ],
+          [
+            "84683.05000000",
+            "0.01180000"
+          ],
+          [
+            "84687.60000000",
+            "0.02663000"
+          ],
+          [
+            "84690.31000000",
+            "0.03258000"
+          ],
+          [
+            "84694.66000000",
+            "0.02663000"
+          ],
+          [
+            "84704.39000000",
+            "0.10152000"
+          ],
+          [
+            "84707.15000000",
+            "0.10020000"
+          ],
+          [
+            "84709.55000000",
+            "0.10146000"
+          ],
+          [
+            "84712.34000000",
+            "0.10214000"
+          ],
+          [
+            "84715.27000000",
+            "0.14780000"
+          ],
+          [
+            "84720.03000000",
+            "0.00004000"
+          ],
+          [
+            "84726.35000000",
+            "0.00007000"
+          ],
+          [
+            "84728.75000000",
+            "0.13401000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 7,
+      "kind": "depth",
+      "symbol": "ETHUSD",
+      "observed_at": "2026-09-27T21:50:44.861232+00:00",
+      "payload": {
+        "lastUpdateId": 3776673690,
+        "bids": [
+          [
+            "2683.79000000",
+            "2.78440000"
+          ],
+          [
+            "2683.77000000",
+            "0.37260000"
+          ],
+          [
+            "2683.75000000",
+            "4.43650000"
+          ],
+          [
+            "2683.71000000",
+            "0.07430000"
+          ],
+          [
+            "2683.66000000",
+            "0.07430000"
+          ],
+          [
+            "2683.64000000",
+            "1.02840000"
+          ],
+          [
+            "2683.34000000",
+            "0.82020000"
+          ],
+          [
+            "2683.18000000",
+            "0.82020000"
+          ],
+          [
+            "2682.89000000",
+            "0.82020000"
+          ],
+          [
+            "2682.13000000",
+            "6.41280000"
+          ],
+          [
+            "2681.54000000",
+            "3.68240000"
+          ],
+          [
+            "2681.43000000",
+            "2.73410000"
+          ],
+          [
+            "2681.18000000",
+            "3.72960000"
+          ],
+          [
+            "2680.92000000",
+            "2.73410000"
+          ],
+          [
+            "2680.87000000",
+            "11.04720000"
+          ],
+          [
+            "2680.05000000",
+            "0.06050000"
+          ],
+          [
+            "2680.00000000",
+            "0.04000000"
+          ],
+          [
+            "2679.93000000",
+            "6.97830000"
+          ],
+          [
+            "2677.73000000",
+            "2.73410000"
+          ],
+          [
+            "2677.13000000",
+            "37.35320000"
+          ]
+        ],
+        "asks": [
+          [
+            "2683.80000000",
+            "0.00110000"
+          ],
+          [
+            "2684.61000000",
+            "0.74490000"
+          ],
+          [
+            "2684.73000000",
+            "0.07430000"
+          ],
+          [
+            "2684.79000000",
+            "0.07440000"
+          ],
+          [
+            "2684.80000000",
+            "0.76180000"
+          ],
+          [
+            "2684.93000000",
+            "1.11740000"
+          ],
+          [
+            "2684.97000000",
+            "0.78910000"
+          ],
+          [
+            "2685.07000000",
+            "2.10330000"
+          ],
+          [
+            "2685.15000000",
+            "0.09680000"
+          ],
+          [
+            "2685.29000000",
+            "0.37240000"
+          ],
+          [
+            "2685.44000000",
+            "1.02770000"
+          ],
+          [
+            "2685.55000000",
+            "0.54680000"
+          ],
+          [
+            "2685.58000000",
+            "0.82020000"
+          ],
+          [
+            "2685.71000000",
+            "0.82020000"
+          ],
+          [
+            "2686.08000000",
+            "0.82020000"
+          ],
+          [
+            "2686.33000000",
+            "0.00410000"
+          ],
+          [
+            "2686.92000000",
+            "3.68240000"
+          ],
+          [
+            "2686.94000000",
+            "6.40130000"
+          ],
+          [
+            "2687.59000000",
+            "11.04720000"
+          ],
+          [
+            "2687.67000000",
+            "3.72060000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 8,
+      "kind": "depth",
+      "symbol": "BTCUSDT",
+      "observed_at": "2026-09-27T21:50:45.007831+00:00",
+      "payload": {
+        "lastUpdateId": 3345473317,
+        "bids": [
+          [
+            "84671.72000000",
+            "0.02362000"
+          ],
+          [
+            "84671.71000000",
+            "0.00328000"
+          ],
+          [
+            "84671.52000000",
+            "0.00329000"
+          ],
+          [
+            "84671.40000000",
+            "0.00331000"
+          ],
+          [
+            "84661.79000000",
+            "0.02421000"
+          ],
+          [
+            "84661.65000000",
+            "0.03549000"
+          ],
+          [
+            "84657.79000000",
+            "0.03549000"
+          ],
+          [
+            "84657.69000000",
+            "0.02457000"
+          ],
+          [
+            "84657.67000000",
+            "0.00307000"
+          ],
+          [
+            "84653.81000000",
+            "0.20846000"
+          ],
+          [
+            "84652.20000000",
+            "0.02953000"
+          ],
+          [
+            "84651.53000000",
+            "0.21080000"
+          ],
+          [
+            "84648.67000000",
+            "0.21246000"
+          ],
+          [
+            "84645.97000000",
+            "0.36457000"
+          ],
+          [
+            "84645.96000000",
+            "0.03260000"
+          ],
+          [
+            "84645.76000000",
+            "0.21217000"
+          ],
+          [
+            "84643.73000000",
+            "0.02366000"
+          ],
+          [
+            "84642.95000000",
+            "0.20877000"
+          ],
+          [
+            "84639.34000000",
+            "0.21209000"
+          ],
+          [
+            "84636.78000000",
+            "0.20926000"
+          ]
+        ],
+        "asks": [
+          [
+            "84672.24000000",
+            "0.00329000"
+          ],
+          [
+            "84672.47000000",
+            "0.00328000"
+          ],
+          [
+            "84683.11000000",
+            "0.02456000"
+          ],
+          [
+            "84685.61000000",
+            "0.04000000"
+          ],
+          [
+            "84686.19000000",
+            "0.02952000"
+          ],
+          [
+            "84687.31000000",
+            "0.00307000"
+          ],
+          [
+            "84690.72000000",
+            "0.20888000"
+          ],
+          [
+            "84692.40000000",
+            "0.00002000"
+          ],
+          [
+            "84693.95000000",
+            "0.21166000"
+          ],
+          [
+            "84697.87000000",
+            "0.00789000"
+          ],
+          [
+            "84698.30000000",
+            "0.02421000"
+          ],
+          [
+            "84700.97000000",
+            "0.03549000"
+          ],
+          [
+            "84701.76000000",
+            "0.03549000"
+          ],
+          [
+            "84702.31000000",
+            "0.03258000"
+          ],
+          [
+            "84705.11000000",
+            "0.39517000"
+          ],
+          [
+            "84705.48000000",
+            "0.21030000"
+          ],
+          [
+            "84707.77000000",
+            "0.03549000"
+          ],
+          [
+            "84714.16000000",
+            "0.04724000"
+          ],
+          [
+            "84717.01000000",
+            "0.32501000"
+          ],
+          [
+            "84718.86000000",
+            "0.00118000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 9,
+      "kind": "depth",
+      "symbol": "ETHUSDT",
+      "observed_at": "2026-09-27T21:50:45.149888+00:00",
+      "payload": {
+        "lastUpdateId": 2979327785,
+        "bids": [
+          [
+            "2684.94000000",
+            "0.66550000"
+          ],
+          [
+            "2684.88000000",
+            "0.90000000"
+          ],
+          [
+            "2684.82000000",
+            "0.07440000"
+          ],
+          [
+            "2684.61000000",
+            "0.93140000"
+          ],
+          [
+            "2684.60000000",
+            "0.07430000"
+          ],
+          [
+            "2684.57000000",
+            "0.76180000"
+          ],
+          [
+            "2684.46000000",
+            "0.81940000"
+          ],
+          [
+            "2684.38000000",
+            "1.58670000"
+          ],
+          [
+            "2684.17000000",
+            "1.36680000"
+          ],
+          [
+            "2684.05000000",
+            "0.82010000"
+          ],
+          [
+            "2683.98000000",
+            "9.30540000"
+          ],
+          [
+            "2683.95000000",
+            "1.02830000"
+          ],
+          [
+            "2683.73000000",
+            "0.34080000"
+          ],
+          [
+            "2683.36000000",
+            "0.03720000"
+          ],
+          [
+            "2683.13000000",
+            "0.05600000"
+          ],
+          [
+            "2682.44000000",
+            "6.41200000"
+          ],
+          [
+            "2682.28000000",
+            "3.68240000"
+          ],
+          [
+            "2682.24000000",
+            "5.04560000"
+          ],
+          [
+            "2682.12000000",
+            "5.66100000"
+          ],
+          [
+            "2682.06000000",
+            "5.89520000"
+          ]
+        ],
+        "asks": [
+          [
+            "2685.00000000",
+            "0.07390000"
+          ],
+          [
+            "2685.04000000",
+            "0.07490000"
+          ],
+          [
+            "2685.28000000",
+            "0.77450000"
+          ],
+          [
+            "2685.33000000",
+            "0.85860000"
+          ],
+          [
+            "2685.35000000",
+            "1.11740000"
+          ],
+          [
+            "2685.51000000",
+            "0.93110000"
+          ],
+          [
+            "2685.76000000",
+            "1.02760000"
+          ],
+          [
+            "2685.93000000",
+            "0.79140000"
+          ],
+          [
+            "2685.99000000",
+            "5.57740000"
+          ],
+          [
+            "2686.05000000",
+            "0.85730000"
+          ],
+          [
+            "2686.18000000",
+            "0.82010000"
+          ],
+          [
+            "2686.29000000",
+            "0.05600000"
+          ],
+          [
+            "2686.55000000",
+            "0.82010000"
+          ],
+          [
+            "2687.10000000",
+            "0.00150000"
+          ],
+          [
+            "2687.25000000",
+            "6.40050000"
+          ],
+          [
+            "2687.50000000",
+            "5.10450000"
+          ],
+          [
+            "2687.56000000",
+            "2.79370000"
+          ],
+          [
+            "2687.57000000",
+            "5.07810000"
+          ],
+          [
+            "2687.61000000",
+            "5.05380000"
+          ],
+          [
+            "2687.64000000",
+            "5.06590000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 10,
+      "kind": "depth",
+      "symbol": "BTCUSD",
+      "observed_at": "2026-09-27T21:51:00.572757+00:00",
+      "payload": {
+        "lastUpdateId": 4600856700,
+        "bids": [
+          [
+            "84661.80000000",
+            "0.02362000"
+          ],
+          [
+            "84658.81000000",
+            "0.00247000"
+          ],
+          [
+            "84658.61000000",
+            "0.00246000"
+          ],
+          [
+            "84653.30000000",
+            "0.01181000"
+          ],
+          [
+            "84645.95000000",
+            "0.31115000"
+          ],
+          [
+            "84644.03000000",
+            "0.02663000"
+          ],
+          [
+            "84643.96000000",
+            "0.02421000"
+          ],
+          [
+            "84643.85000000",
+            "0.02625000"
+          ],
+          [
+            "84643.68000000",
+            "0.00307000"
+          ],
+          [
+            "84642.71000000",
+            "0.00064000"
+          ],
+          [
+            "84630.13000000",
+            "0.03261000"
+          ],
+          [
+            "84621.30000000",
+            "0.02663000"
+          ],
+          [
+            "84620.84000000",
+            "0.02663000"
+          ],
+          [
+            "84617.68000000",
+            "0.10025000"
+          ],
+          [
+            "84611.23000000",
+            "0.10202000"
+          ],
+          [
+            "84608.08000000",
+            "0.10094000"
+          ],
+          [
+            "84602.68000000",
+            "0.10147000"
+          ],
+          [
+            "84592.55000000",
+            "0.15412000"
+          ],
+          [
+            "84588.32000000",
+            "0.20333000"
+          ],
+          [
+            "84582.41000000",
+            "0.15829000"
+          ]
+        ],
+        "asks": [
+          [
+            "84661.89000000",
+            "0.00247000"
+          ],
+          [
+            "84668.76000000",
+            "0.03543000"
+          ],
+          [
+            "84669.26000000",
+            "0.02555000"
+          ],
+          [
+            "84673.32000000",
+            "0.00307000"
+          ],
+          [
+            "84675.31000000",
+            "0.64378000"
+          ],
+          [
+            "84677.78000000",
+            "0.02421000"
+          ],
+          [
+            "84678.15000000",
+            "0.02663000"
+          ],
+          [
+            "84680.24000000",
+            "0.01775000"
+          ],
+          [
+            "84686.86000000",
+            "0.03259000"
+          ],
+          [
+            "84687.60000000",
+            "0.02663000"
+          ],
+          [
+            "84689.87000000",
+            "0.01180000"
+          ],
+          [
+            "84694.66000000",
+            "0.02663000"
+          ],
+          [
+            "84704.39000000",
+            "0.10152000"
+          ],
+          [
+            "84707.15000000",
+            "0.10020000"
+          ],
+          [
+            "84709.55000000",
+            "0.10146000"
+          ],
+          [
+            "84712.34000000",
+            "0.10214000"
+          ],
+          [
+            "84715.27000000",
+            "0.14780000"
+          ],
+          [
+            "84720.03000000",
+            "0.00004000"
+          ],
+          [
+            "84726.35000000",
+            "0.00007000"
+          ],
+          [
+            "84728.75000000",
+            "0.13401000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 11,
+      "kind": "depth",
+      "symbol": "ETHUSD",
+      "observed_at": "2026-09-27T21:51:00.958384+00:00",
+      "payload": {
+        "lastUpdateId": 3776673900,
+        "bids": [
+          [
+            "2684.63000000",
+            "0.74490000"
+          ],
+          [
+            "2684.45000000",
+            "0.07410000"
+          ],
+          [
+            "2684.39000000",
+            "0.07420000"
+          ],
+          [
+            "2684.23000000",
+            "0.83240000"
+          ],
+          [
+            "2684.22000000",
+            "0.37250000"
+          ],
+          [
+            "2684.18000000",
+            "0.09680000"
+          ],
+          [
+            "2684.06000000",
+            "0.82020000"
+          ],
+          [
+            "2683.99000000",
+            "0.76180000"
+          ],
+          [
+            "2683.75000000",
+            "5.46490000"
+          ],
+          [
+            "2683.34000000",
+            "0.82020000"
+          ],
+          [
+            "2683.18000000",
+            "0.82020000"
+          ],
+          [
+            "2682.13000000",
+            "6.41280000"
+          ],
+          [
+            "2681.72000000",
+            "3.68240000"
+          ],
+          [
+            "2681.43000000",
+            "2.73410000"
+          ],
+          [
+            "2681.18000000",
+            "3.72960000"
+          ],
+          [
+            "2681.05000000",
+            "11.04720000"
+          ],
+          [
+            "2680.92000000",
+            "2.73410000"
+          ],
+          [
+            "2680.02000000",
+            "0.06060000"
+          ],
+          [
+            "2680.00000000",
+            "0.04000000"
+          ],
+          [
+            "2679.93000000",
+            "6.97830000"
+          ]
+        ],
+        "asks": [
+          [
+            "2684.72000000",
+            "0.74490000"
+          ],
+          [
+            "2684.73000000",
+            "0.07420000"
+          ],
+          [
+            "2684.75000000",
+            "0.76180000"
+          ],
+          [
+            "2684.77000000",
+            "0.07430000"
+          ],
+          [
+            "2685.06000000",
+            "0.76450000"
+          ],
+          [
+            "2685.07000000",
+            "2.10330000"
+          ],
+          [
+            "2685.15000000",
+            "0.09680000"
+          ],
+          [
+            "2685.39000000",
+            "0.37230000"
+          ],
+          [
+            "2685.56000000",
+            "1.02770000"
+          ],
+          [
+            "2685.78000000",
+            "1.48990000"
+          ],
+          [
+            "2686.33000000",
+            "0.00410000"
+          ],
+          [
+            "2686.84000000",
+            "0.82020000"
+          ],
+          [
+            "2686.94000000",
+            "6.40130000"
+          ],
+          [
+            "2687.10000000",
+            "3.68240000"
+          ],
+          [
+            "2687.17000000",
+            "0.82020000"
+          ],
+          [
+            "2687.31000000",
+            "0.82020000"
+          ],
+          [
+            "2687.67000000",
+            "3.72060000"
+          ],
+          [
+            "2687.77000000",
+            "11.04720000"
+          ],
+          [
+            "2687.99000000",
+            "7.50460000"
+          ],
+          [
+            "2688.68000000",
+            "2.73410000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 12,
+      "kind": "depth",
+      "symbol": "BTCUSDT",
+      "observed_at": "2026-09-27T21:51:01.102085+00:00",
+      "payload": {
+        "lastUpdateId": 3345473445,
+        "bids": [
+          [
+            "84671.73000000",
+            "0.04800000"
+          ],
+          [
+            "84671.72000000",
+            "0.02362000"
+          ],
+          [
+            "84671.56000000",
+            "0.00328000"
+          ],
+          [
+            "84671.37000000",
+            "0.00329000"
+          ],
+          [
+            "84671.25000000",
+            "0.00329000"
+          ],
+          [
+            "84668.00000000",
+            "0.02953000"
+          ],
+          [
+            "84664.30000000",
+            "0.02421000"
+          ],
+          [
+            "84657.79000000",
+            "0.03549000"
+          ],
+          [
+            "84655.67000000",
+            "0.00307000"
+          ],
+          [
+            "84653.69000000",
+            "0.02539000"
+          ],
+          [
+            "84651.53000000",
+            "0.21080000"
+          ],
+          [
+            "84648.67000000",
+            "0.21246000"
+          ],
+          [
+            "84645.97000000",
+            "0.36457000"
+          ],
+          [
+            "84645.76000000",
+            "0.21217000"
+          ],
+          [
+            "84643.73000000",
+            "0.02366000"
+          ],
+          [
+            "84642.95000000",
+            "0.20877000"
+          ],
+          [
+            "84642.12000000",
+            "0.03260000"
+          ],
+          [
+            "84639.34000000",
+            "0.21209000"
+          ],
+          [
+            "84636.78000000",
+            "0.20926000"
+          ],
+          [
+            "84636.25000000",
+            "0.03549000"
+          ]
+        ],
+        "asks": [
+          [
+            "84672.09000000",
+            "0.00329000"
+          ],
+          [
+            "84672.32000000",
+            "0.00203000"
+          ],
+          [
+            "84679.11000000",
+            "0.02414000"
+          ],
+          [
+            "84686.67000000",
+            "0.00307000"
+          ],
+          [
+            "84690.72000000",
+            "0.20888000"
+          ],
+          [
+            "84692.40000000",
+            "0.00002000"
+          ],
+          [
+            "84693.95000000",
+            "0.21166000"
+          ],
+          [
+            "84697.87000000",
+            "0.00789000"
+          ],
+          [
+            "84698.86000000",
+            "0.03258000"
+          ],
+          [
+            "84700.77000000",
+            "0.02421000"
+          ],
+          [
+            "84700.97000000",
+            "0.03549000"
+          ],
+          [
+            "84701.76000000",
+            "0.03549000"
+          ],
+          [
+            "84702.88000000",
+            "0.02952000"
+          ],
+          [
+            "84705.11000000",
+            "0.39517000"
+          ],
+          [
+            "84705.48000000",
+            "0.21030000"
+          ],
+          [
+            "84707.77000000",
+            "0.03549000"
+          ],
+          [
+            "84717.01000000",
+            "0.32501000"
+          ],
+          [
+            "84718.73000000",
+            "0.00118000"
+          ],
+          [
+            "84728.01000000",
+            "0.32709000"
+          ],
+          [
+            "84739.00000000",
+            "0.48804000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 13,
+      "kind": "depth",
+      "symbol": "ETHUSDT",
+      "observed_at": "2026-09-27T21:51:01.239129+00:00",
+      "payload": {
+        "lastUpdateId": 2979327943,
+        "bids": [
+          [
+            "2684.94000000",
+            "0.66550000"
+          ],
+          [
+            "2684.89000000",
+            "0.90000000"
+          ],
+          [
+            "2684.82000000",
+            "0.93130000"
+          ],
+          [
+            "2684.74000000",
+            "0.07380000"
+          ],
+          [
+            "2684.58000000",
+            "0.76320000"
+          ],
+          [
+            "2684.57000000",
+            "0.76180000"
+          ],
+          [
+            "2684.49000000",
+            "0.09680000"
+          ],
+          [
+            "2684.17000000",
+            "1.36680000"
+          ],
+          [
+            "2684.06000000",
+            "1.02820000"
+          ],
+          [
+            "2684.05000000",
+            "0.82010000"
+          ],
+          [
+            "2683.98000000",
+            "9.30540000"
+          ],
+          [
+            "2683.73000000",
+            "0.34080000"
+          ],
+          [
+            "2683.47000000",
+            "0.03720000"
+          ],
+          [
+            "2683.26000000",
+            "0.05600000"
+          ],
+          [
+            "2682.44000000",
+            "6.41200000"
+          ],
+          [
+            "2682.39000000",
+            "5.07690000"
+          ],
+          [
+            "2682.36000000",
+            "5.12190000"
+          ],
+          [
+            "2682.31000000",
+            "3.68240000"
+          ],
+          [
+            "2682.24000000",
+            "5.04560000"
+          ],
+          [
+            "2682.12000000",
+            "5.66100000"
+          ]
+        ],
+        "asks": [
+          [
+            "2685.04000000",
+            "0.07490000"
+          ],
+          [
+            "2685.33000000",
+            "0.76180000"
+          ],
+          [
+            "2685.40000000",
+            "0.80530000"
+          ],
+          [
+            "2685.44000000",
+            "0.09680000"
+          ],
+          [
+            "2685.74000000",
+            "0.93100000"
+          ],
+          [
+            "2685.87000000",
+            "1.02750000"
+          ],
+          [
+            "2685.93000000",
+            "0.79140000"
+          ],
+          [
+            "2685.99000000",
+            "5.57740000"
+          ],
+          [
+            "2686.16000000",
+            "0.03720000"
+          ],
+          [
+            "2686.31000000",
+            "0.05600000"
+          ],
+          [
+            "2687.10000000",
+            "0.00150000"
+          ],
+          [
+            "2687.25000000",
+            "6.40050000"
+          ],
+          [
+            "2687.62000000",
+            "0.82010000"
+          ],
+          [
+            "2687.64000000",
+            "5.06590000"
+          ],
+          [
+            "2687.68000000",
+            "6.50240000"
+          ],
+          [
+            "2687.69000000",
+            "3.68240000"
+          ],
+          [
+            "2687.77000000",
+            "3.61370000"
+          ],
+          [
+            "2687.78000000",
+            "6.55200000"
+          ],
+          [
+            "2687.86000000",
+            "6.49210000"
+          ],
+          [
+            "2687.90000000",
+            "3.72120000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 14,
+      "kind": "depth",
+      "symbol": "BTCUSD",
+      "observed_at": "2026-09-27T21:51:16.642748+00:00",
+      "payload": {
+        "lastUpdateId": 4600856825,
+        "bids": [
+          [
+            "84671.56000000",
+            "0.00247000"
+          ],
+          [
+            "84671.46000000",
+            "0.00247000"
+          ],
+          [
+            "84668.62000000",
+            "0.03543000"
+          ],
+          [
+            "84660.22000000",
+            "0.01181000"
+          ],
+          [
+            "84652.02000000",
+            "0.00307000"
+          ],
+          [
+            "84650.80000000",
+            "0.02663000"
+          ],
+          [
+            "84650.07000000",
+            "0.02421000"
+          ],
+          [
+            "84649.85000000",
+            "0.02663000"
+          ],
+          [
+            "84648.66000000",
+            "0.02567000"
+          ],
+          [
+            "84645.95000000",
+            "0.31115000"
+          ],
+          [
+            "84644.03000000",
+            "0.02663000"
+          ],
+          [
+            "84636.12000000",
+            "0.03261000"
+          ],
+          [
+            "84632.67000000",
+            "0.10157000"
+          ],
+          [
+            "84629.87000000",
+            "0.10179000"
+          ],
+          [
+            "84627.27000000",
+            "0.10098000"
+          ],
+          [
+            "84623.15000000",
+            "0.04724000"
+          ],
+          [
+            "84617.68000000",
+            "0.10025000"
+          ],
+          [
+            "84611.23000000",
+            "0.10202000"
+          ],
+          [
+            "84608.92000000",
+            "0.05905000"
+          ],
+          [
+            "84608.08000000",
+            "0.10094000"
+          ]
+        ],
+        "asks": [
+          [
+            "84672.44000000",
+            "0.03543000"
+          ],
+          [
+            "84672.45000000",
+            "0.00247000"
+          ],
+          [
+            "84672.50000000",
+            "0.00247000"
+          ],
+          [
+            "84674.09000000",
+            "0.02606000"
+          ],
+          [
+            "84675.30000000",
+            "0.19849000"
+          ],
+          [
+            "84678.15000000",
+            "0.02663000"
+          ],
+          [
+            "84680.24000000",
+            "0.01775000"
+          ],
+          [
+            "84681.66000000",
+            "0.00307000"
+          ],
+          [
+            "84683.84000000",
+            "0.02421000"
+          ],
+          [
+            "84687.60000000",
+            "0.02663000"
+          ],
+          [
+            "84694.66000000",
+            "0.02663000"
+          ],
+          [
+            "84695.21000000",
+            "0.03258000"
+          ],
+          [
+            "84697.22000000",
+            "0.01180000"
+          ],
+          [
+            "84717.34000000",
+            "0.10074000"
+          ],
+          [
+            "84720.03000000",
+            "0.00004000"
+          ],
+          [
+            "84726.35000000",
+            "0.00007000"
+          ],
+          [
+            "84728.75000000",
+            "0.13401000"
+          ],
+          [
+            "84733.02000000",
+            "0.08877000"
+          ],
+          [
+            "84738.37000000",
+            "0.14425000"
+          ],
+          [
+            "84742.62000000",
+            "0.20296000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 15,
+      "kind": "depth",
+      "symbol": "ETHUSD",
+      "observed_at": "2026-09-27T21:51:16.789805+00:00",
+      "payload": {
+        "lastUpdateId": 3776673991,
+        "bids": [
+          [
+            "2684.63000000",
+            "0.74490000"
+          ],
+          [
+            "2684.60000000",
+            "0.07410000"
+          ],
+          [
+            "2684.54000000",
+            "0.07390000"
+          ],
+          [
+            "2684.41000000",
+            "0.37250000"
+          ],
+          [
+            "2684.23000000",
+            "4.28470000"
+          ],
+          [
+            "2684.18000000",
+            "0.09680000"
+          ],
+          [
+            "2684.14000000",
+            "1.48990000"
+          ],
+          [
+            "2684.06000000",
+            "0.82020000"
+          ],
+          [
+            "2683.99000000",
+            "0.76180000"
+          ],
+          [
+            "2683.75000000",
+            "1.02840000"
+          ],
+          [
+            "2683.34000000",
+            "0.82020000"
+          ],
+          [
+            "2683.18000000",
+            "0.82020000"
+          ],
+          [
+            "2682.13000000",
+            "6.41280000"
+          ],
+          [
+            "2681.91000000",
+            "2.60730000"
+          ],
+          [
+            "2681.74000000",
+            "3.68240000"
+          ],
+          [
+            "2681.43000000",
+            "2.73410000"
+          ],
+          [
+            "2681.18000000",
+            "3.72960000"
+          ],
+          [
+            "2681.07000000",
+            "11.04720000"
+          ],
+          [
+            "2680.92000000",
+            "2.73410000"
+          ],
+          [
+            "2680.00000000",
+            "0.04000000"
+          ]
+        ],
+        "asks": [
+          [
+            "2684.75000000",
+            "0.76180000"
+          ],
+          [
+            "2684.79000000",
+            "0.07420000"
+          ],
+          [
+            "2684.85000000",
+            "0.07430000"
+          ],
+          [
+            "2684.95000000",
+            "1.11740000"
+          ],
+          [
+            "2685.05000000",
+            "6.05040000"
+          ],
+          [
+            "2685.06000000",
+            "0.76450000"
+          ],
+          [
+            "2685.15000000",
+            "0.09680000"
+          ],
+          [
+            "2685.40000000",
+            "0.37230000"
+          ],
+          [
+            "2685.50000000",
+            "1.48990000"
+          ],
+          [
+            "2685.56000000",
+            "1.02770000"
+          ],
+          [
+            "2685.58000000",
+            "0.82020000"
+          ],
+          [
+            "2685.74000000",
+            "0.54680000"
+          ],
+          [
+            "2685.88000000",
+            "0.82020000"
+          ],
+          [
+            "2686.24000000",
+            "0.82020000"
+          ],
+          [
+            "2686.33000000",
+            "0.00410000"
+          ],
+          [
+            "2686.94000000",
+            "6.40130000"
+          ],
+          [
+            "2687.12000000",
+            "3.68240000"
+          ],
+          [
+            "2687.67000000",
+            "3.72060000"
+          ],
+          [
+            "2687.79000000",
+            "11.04720000"
+          ],
+          [
+            "2687.99000000",
+            "7.50460000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 16,
+      "kind": "depth",
+      "symbol": "BTCUSDT",
+      "observed_at": "2026-09-27T21:51:16.927642+00:00",
+      "payload": {
+        "lastUpdateId": 3345473603,
+        "bids": [
+          [
+            "84679.00000000",
+            "0.04800000"
+          ],
+          [
+            "84678.26000000",
+            "0.03543000"
+          ],
+          [
+            "84678.25000000",
+            "0.00331000"
+          ],
+          [
+            "84678.06000000",
+            "0.00327000"
+          ],
+          [
+            "84677.94000000",
+            "0.00328000"
+          ],
+          [
+            "84668.00000000",
+            "0.02953000"
+          ],
+          [
+            "84665.53000000",
+            "0.02421000"
+          ],
+          [
+            "84664.96000000",
+            "0.03549000"
+          ],
+          [
+            "84664.01000000",
+            "0.00307000"
+          ],
+          [
+            "84662.51000000",
+            "0.03549000"
+          ],
+          [
+            "84659.67000000",
+            "0.02436000"
+          ],
+          [
+            "84658.04000000",
+            "0.20952000"
+          ],
+          [
+            "84657.79000000",
+            "0.03549000"
+          ],
+          [
+            "84651.53000000",
+            "0.21080000"
+          ],
+          [
+            "84648.67000000",
+            "0.21246000"
+          ],
+          [
+            "84648.11000000",
+            "0.03260000"
+          ],
+          [
+            "84645.97000000",
+            "0.36457000"
+          ],
+          [
+            "84645.76000000",
+            "0.21217000"
+          ],
+          [
+            "84643.73000000",
+            "0.02366000"
+          ],
+          [
+            "84642.95000000",
+            "0.20877000"
+          ]
+        ],
+        "asks": [
+          [
+            "84679.26000000",
+            "0.00658000"
+          ],
+          [
+            "84685.11000000",
+            "0.02475000"
+          ],
+          [
+            "84692.40000000",
+            "0.00002000"
+          ],
+          [
+            "84693.66000000",
+            "0.00306000"
+          ],
+          [
+            "84696.57000000",
+            "0.21074000"
+          ],
+          [
+            "84697.87000000",
+            "0.00789000"
+          ],
+          [
+            "84700.97000000",
+            "0.03549000"
+          ],
+          [
+            "84701.76000000",
+            "0.03549000"
+          ],
+          [
+            "84701.93000000",
+            "0.02421000"
+          ],
+          [
+            "84702.88000000",
+            "0.02952000"
+          ],
+          [
+            "84705.11000000",
+            "0.39517000"
+          ],
+          [
+            "84705.48000000",
+            "0.21030000"
+          ],
+          [
+            "84707.21000000",
+            "0.03258000"
+          ],
+          [
+            "84707.77000000",
+            "0.03549000"
+          ],
+          [
+            "84717.01000000",
+            "0.32501000"
+          ],
+          [
+            "84725.40000000",
+            "0.00118000"
+          ],
+          [
+            "84728.01000000",
+            "0.32709000"
+          ],
+          [
+            "84739.00000000",
+            "0.48804000"
+          ],
+          [
+            "84740.25000000",
+            "0.11832000"
+          ],
+          [
+            "84748.27000000",
+            "0.20295000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 17,
+      "kind": "depth",
+      "symbol": "ETHUSDT",
+      "observed_at": "2026-09-27T21:51:17.309489+00:00",
+      "payload": {
+        "lastUpdateId": 2979328006,
+        "bids": [
+          [
+            "2684.96000000",
+            "0.07420000"
+          ],
+          [
+            "2684.89000000",
+            "0.90000000"
+          ],
+          [
+            "2684.79000000",
+            "0.93130000"
+          ],
+          [
+            "2684.74000000",
+            "0.07380000"
+          ],
+          [
+            "2684.61000000",
+            "0.76180000"
+          ],
+          [
+            "2684.58000000",
+            "0.76320000"
+          ],
+          [
+            "2684.54000000",
+            "1.48990000"
+          ],
+          [
+            "2684.49000000",
+            "0.09680000"
+          ],
+          [
+            "2684.17000000",
+            "1.36680000"
+          ],
+          [
+            "2684.06000000",
+            "1.02820000"
+          ],
+          [
+            "2684.05000000",
+            "0.82010000"
+          ],
+          [
+            "2683.98000000",
+            "9.30540000"
+          ],
+          [
+            "2683.73000000",
+            "0.34080000"
+          ],
+          [
+            "2683.51000000",
+            "0.03720000"
+          ],
+          [
+            "2683.26000000",
+            "0.05600000"
+          ],
+          [
+            "2682.44000000",
+            "6.41200000"
+          ],
+          [
+            "2682.39000000",
+            "5.07690000"
+          ],
+          [
+            "2682.36000000",
+            "5.12190000"
+          ],
+          [
+            "2682.32000000",
+            "2.60730000"
+          ],
+          [
+            "2682.24000000",
+            "5.04560000"
+          ]
+        ],
+        "asks": [
+          [
+            "2685.07000000",
+            "0.74490000"
+          ],
+          [
+            "2685.08000000",
+            "0.07430000"
+          ],
+          [
+            "2685.10000000",
+            "0.07490000"
+          ],
+          [
+            "2685.37000000",
+            "1.87920000"
+          ],
+          [
+            "2685.40000000",
+            "0.80530000"
+          ],
+          [
+            "2685.44000000",
+            "0.09680000"
+          ],
+          [
+            "2685.54000000",
+            "0.93110000"
+          ],
+          [
+            "2685.87000000",
+            "1.02750000"
+          ],
+          [
+            "2685.92000000",
+            "1.48990000"
+          ],
+          [
+            "2685.93000000",
+            "0.79140000"
+          ],
+          [
+            "2685.99000000",
+            "5.57740000"
+          ],
+          [
+            "2686.04000000",
+            "0.82010000"
+          ],
+          [
+            "2686.19000000",
+            "0.03720000"
+          ],
+          [
+            "2686.31000000",
+            "0.05600000"
+          ],
+          [
+            "2686.34000000",
+            "0.82010000"
+          ],
+          [
+            "2686.70000000",
+            "0.82010000"
+          ],
+          [
+            "2687.10000000",
+            "0.00150000"
+          ],
+          [
+            "2687.25000000",
+            "6.40050000"
+          ],
+          [
+            "2687.58000000",
+            "3.68240000"
+          ],
+          [
+            "2687.64000000",
+            "5.06590000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 18,
+      "kind": "depth",
+      "symbol": "BTCUSD",
+      "observed_at": "2026-09-27T21:51:32.767657+00:00",
+      "payload": {
+        "lastUpdateId": 4600856843,
+        "bids": [
+          [
+            "84671.56000000",
+            "0.00247000"
+          ],
+          [
+            "84671.46000000",
+            "0.00247000"
+          ],
+          [
+            "84660.22000000",
+            "0.01181000"
+          ],
+          [
+            "84652.02000000",
+            "0.00307000"
+          ],
+          [
+            "84651.32000000",
+            "0.02421000"
+          ],
+          [
+            "84650.80000000",
+            "0.02663000"
+          ],
+          [
+            "84649.85000000",
+            "0.02663000"
+          ],
+          [
+            "84648.66000000",
+            "0.02567000"
+          ],
+          [
+            "84645.95000000",
+            "0.31115000"
+          ],
+          [
+            "84644.03000000",
+            "0.02663000"
+          ],
+          [
+            "84636.12000000",
+            "0.03261000"
+          ],
+          [
+            "84632.67000000",
+            "0.10157000"
+          ],
+          [
+            "84629.87000000",
+            "0.10179000"
+          ],
+          [
+            "84627.27000000",
+            "0.10098000"
+          ],
+          [
+            "84623.15000000",
+            "0.04724000"
+          ],
+          [
+            "84617.68000000",
+            "0.10025000"
+          ],
+          [
+            "84611.23000000",
+            "0.10202000"
+          ],
+          [
+            "84608.92000000",
+            "0.05905000"
+          ],
+          [
+            "84608.08000000",
+            "0.10094000"
+          ],
+          [
+            "84592.55000000",
+            "0.15412000"
+          ]
+        ],
+        "asks": [
+          [
+            "84672.45000000",
+            "0.00247000"
+          ],
+          [
+            "84672.50000000",
+            "0.00247000"
+          ],
+          [
+            "84674.09000000",
+            "0.02606000"
+          ],
+          [
+            "84674.65000000",
+            "0.03058000"
+          ],
+          [
+            "84675.30000000",
+            "0.19849000"
+          ],
+          [
+            "84678.15000000",
+            "0.02663000"
+          ],
+          [
+            "84680.24000000",
+            "0.01775000"
+          ],
+          [
+            "84681.66000000",
+            "0.00307000"
+          ],
+          [
+            "84685.02000000",
+            "0.02421000"
+          ],
+          [
+            "84687.60000000",
+            "0.02663000"
+          ],
+          [
+            "84694.66000000",
+            "0.02663000"
+          ],
+          [
+            "84695.21000000",
+            "0.03258000"
+          ],
+          [
+            "84697.22000000",
+            "0.01180000"
+          ],
+          [
+            "84717.34000000",
+            "0.10074000"
+          ],
+          [
+            "84720.03000000",
+            "0.00004000"
+          ],
+          [
+            "84726.35000000",
+            "0.00007000"
+          ],
+          [
+            "84728.75000000",
+            "0.13401000"
+          ],
+          [
+            "84733.02000000",
+            "0.08877000"
+          ],
+          [
+            "84738.37000000",
+            "0.14425000"
+          ],
+          [
+            "84742.62000000",
+            "0.20296000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 19,
+      "kind": "depth",
+      "symbol": "ETHUSD",
+      "observed_at": "2026-09-27T21:51:33.151554+00:00",
+      "payload": {
+        "lastUpdateId": 3776674070,
+        "bids": [
+          [
+            "2684.63000000",
+            "0.74490000"
+          ],
+          [
+            "2684.60000000",
+            "0.07410000"
+          ],
+          [
+            "2684.54000000",
+            "0.07390000"
+          ],
+          [
+            "2684.23000000",
+            "4.28470000"
+          ],
+          [
+            "2684.18000000",
+            "0.09680000"
+          ],
+          [
+            "2684.17000000",
+            "0.37250000"
+          ],
+          [
+            "2684.11000000",
+            "1.48990000"
+          ],
+          [
+            "2684.06000000",
+            "0.82020000"
+          ],
+          [
+            "2683.97000000",
+            "0.76180000"
+          ],
+          [
+            "2683.75000000",
+            "1.02840000"
+          ],
+          [
+            "2683.34000000",
+            "0.82020000"
+          ],
+          [
+            "2683.18000000",
+            "0.82020000"
+          ],
+          [
+            "2682.13000000",
+            "6.41280000"
+          ],
+          [
+            "2681.91000000",
+            "2.60730000"
+          ],
+          [
+            "2681.63000000",
+            "3.68240000"
+          ],
+          [
+            "2681.43000000",
+            "2.73410000"
+          ],
+          [
+            "2681.18000000",
+            "3.72960000"
+          ],
+          [
+            "2680.96000000",
+            "11.04720000"
+          ],
+          [
+            "2680.92000000",
+            "2.73410000"
+          ],
+          [
+            "2680.22000000",
+            "0.01110000"
+          ]
+        ],
+        "asks": [
+          [
+            "2684.66000000",
+            "0.74490000"
+          ],
+          [
+            "2684.74000000",
+            "0.76180000"
+          ],
+          [
+            "2684.79000000",
+            "0.07420000"
+          ],
+          [
+            "2684.85000000",
+            "0.07430000"
+          ],
+          [
+            "2685.05000000",
+            "6.05040000"
+          ],
+          [
+            "2685.06000000",
+            "0.76450000"
+          ],
+          [
+            "2685.15000000",
+            "0.09680000"
+          ],
+          [
+            "2685.33000000",
+            "0.37230000"
+          ],
+          [
+            "2685.56000000",
+            "1.02770000"
+          ],
+          [
+            "2686.06000000",
+            "0.82020000"
+          ],
+          [
+            "2686.33000000",
+            "0.00410000"
+          ],
+          [
+            "2686.36000000",
+            "0.82020000"
+          ],
+          [
+            "2686.52000000",
+            "0.54680000"
+          ],
+          [
+            "2686.69000000",
+            "0.82020000"
+          ],
+          [
+            "2686.94000000",
+            "6.40130000"
+          ],
+          [
+            "2687.01000000",
+            "3.68240000"
+          ],
+          [
+            "2687.67000000",
+            "3.72060000"
+          ],
+          [
+            "2687.68000000",
+            "11.04720000"
+          ],
+          [
+            "2687.99000000",
+            "7.50460000"
+          ],
+          [
+            "2688.68000000",
+            "2.73410000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 20,
+      "kind": "depth",
+      "symbol": "BTCUSDT",
+      "observed_at": "2026-09-27T21:51:33.293788+00:00",
+      "payload": {
+        "lastUpdateId": 3345473658,
+        "bids": [
+          [
+            "84679.00000000",
+            "0.04800000"
+          ],
+          [
+            "84678.26000000",
+            "0.03543000"
+          ],
+          [
+            "84678.25000000",
+            "0.00331000"
+          ],
+          [
+            "84678.06000000",
+            "0.00327000"
+          ],
+          [
+            "84677.94000000",
+            "0.00328000"
+          ],
+          [
+            "84668.00000000",
+            "0.02953000"
+          ],
+          [
+            "84664.96000000",
+            "0.03549000"
+          ],
+          [
+            "84664.01000000",
+            "0.00307000"
+          ],
+          [
+            "84662.66000000",
+            "0.02421000"
+          ],
+          [
+            "84662.51000000",
+            "0.03549000"
+          ],
+          [
+            "84659.67000000",
+            "0.02436000"
+          ],
+          [
+            "84658.04000000",
+            "0.20952000"
+          ],
+          [
+            "84657.79000000",
+            "0.03549000"
+          ],
+          [
+            "84651.53000000",
+            "0.21080000"
+          ],
+          [
+            "84648.67000000",
+            "0.21246000"
+          ],
+          [
+            "84648.11000000",
+            "0.03260000"
+          ],
+          [
+            "84645.97000000",
+            "0.36457000"
+          ],
+          [
+            "84645.76000000",
+            "0.21217000"
+          ],
+          [
+            "84643.73000000",
+            "0.02366000"
+          ],
+          [
+            "84642.95000000",
+            "0.20877000"
+          ]
+        ],
+        "asks": [
+          [
+            "84679.26000000",
+            "0.00657000"
+          ],
+          [
+            "84685.11000000",
+            "0.02475000"
+          ],
+          [
+            "84692.40000000",
+            "0.00002000"
+          ],
+          [
+            "84693.66000000",
+            "0.00306000"
+          ],
+          [
+            "84696.57000000",
+            "0.21074000"
+          ],
+          [
+            "84697.87000000",
+            "0.00789000"
+          ],
+          [
+            "84699.01000000",
+            "0.02421000"
+          ],
+          [
+            "84700.97000000",
+            "0.03549000"
+          ],
+          [
+            "84701.76000000",
+            "0.03549000"
+          ],
+          [
+            "84702.88000000",
+            "0.02952000"
+          ],
+          [
+            "84705.48000000",
+            "0.21030000"
+          ],
+          [
+            "84707.21000000",
+            "0.03258000"
+          ],
+          [
+            "84707.77000000",
+            "0.03549000"
+          ],
+          [
+            "84717.00000000",
+            "0.39512000"
+          ],
+          [
+            "84717.01000000",
+            "0.32501000"
+          ],
+          [
+            "84726.01000000",
+            "0.00118000"
+          ],
+          [
+            "84728.01000000",
+            "0.32709000"
+          ],
+          [
+            "84739.00000000",
+            "0.48804000"
+          ],
+          [
+            "84740.25000000",
+            "0.11832000"
+          ],
+          [
+            "84748.27000000",
+            "0.20295000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    },
+    {
+      "id": 21,
+      "kind": "depth",
+      "symbol": "ETHUSDT",
+      "observed_at": "2026-09-27T21:51:33.431999+00:00",
+      "payload": {
+        "lastUpdateId": 2979328086,
+        "bids": [
+          [
+            "2684.96000000",
+            "0.07420000"
+          ],
+          [
+            "2684.74000000",
+            "0.07380000"
+          ],
+          [
+            "2684.61000000",
+            "0.76180000"
+          ],
+          [
+            "2684.58000000",
+            "0.76320000"
+          ],
+          [
+            "2684.56000000",
+            "0.93140000"
+          ],
+          [
+            "2684.52000000",
+            "1.48990000"
+          ],
+          [
+            "2684.49000000",
+            "0.09680000"
+          ],
+          [
+            "2684.17000000",
+            "1.36680000"
+          ],
+          [
+            "2684.06000000",
+            "1.02820000"
+          ],
+          [
+            "2684.05000000",
+            "0.82010000"
+          ],
+          [
+            "2683.98000000",
+            "9.30540000"
+          ],
+          [
+            "2683.73000000",
+            "0.34080000"
+          ],
+          [
+            "2683.50000000",
+            "0.03720000"
+          ],
+          [
+            "2683.07000000",
+            "0.05600000"
+          ],
+          [
+            "2682.44000000",
+            "6.41200000"
+          ],
+          [
+            "2682.39000000",
+            "5.07690000"
+          ],
+          [
+            "2682.36000000",
+            "5.12190000"
+          ],
+          [
+            "2682.32000000",
+            "2.60730000"
+          ],
+          [
+            "2682.24000000",
+            "5.04560000"
+          ],
+          [
+            "2682.18000000",
+            "3.68240000"
+          ]
+        ],
+        "asks": [
+          [
+            "2685.07000000",
+            "0.74490000"
+          ],
+          [
+            "2685.08000000",
+            "0.07430000"
+          ],
+          [
+            "2685.10000000",
+            "0.07490000"
+          ],
+          [
+            "2685.38000000",
+            "0.76180000"
+          ],
+          [
+            "2685.40000000",
+            "0.80530000"
+          ],
+          [
+            "2685.44000000",
+            "1.02790000"
+          ],
+          [
+            "2685.87000000",
+            "1.02750000"
+          ],
+          [
+            "2685.93000000",
+            "0.79140000"
+          ],
+          [
+            "2685.98000000",
+            "9.30050000"
+          ],
+          [
+            "2686.19000000",
+            "0.03720000"
+          ],
+          [
+            "2686.45000000",
+            "0.05600000"
+          ],
+          [
+            "2686.70000000",
+            "0.82010000"
+          ],
+          [
+            "2687.10000000",
+            "0.00150000"
+          ],
+          [
+            "2687.25000000",
+            "6.40050000"
+          ],
+          [
+            "2687.56000000",
+            "3.68240000"
+          ],
+          [
+            "2687.64000000",
+            "5.06590000"
+          ],
+          [
+            "2687.68000000",
+            "6.50240000"
+          ],
+          [
+            "2687.76000000",
+            "2.79360000"
+          ],
+          [
+            "2687.78000000",
+            "6.55200000"
+          ],
+          [
+            "2687.86000000",
+            "6.49210000"
+          ]
+        ]
+      },
+      "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c"
+    }
+  ],
+  "events": [
+    {
+      "id": 1,
+      "observed_at": "2026-09-27T21:50:27.964109+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    },
+    {
+      "id": 2,
+      "observed_at": "2026-09-27T21:51:34.303259+00:00",
+      "message": "Collection paused by operator"
+    },
+    {
+      "id": 3,
+      "observed_at": "2026-09-27T21:55:21.751131+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    }
+  ],
+  "events_total": 3
+}

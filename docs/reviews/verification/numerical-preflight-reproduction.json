@@ -1,0 +1,52 @@
+{
+  "source_snapshot": "docs/evidence/numeric-preflight-20260928T113855Z.quotes.json",
+  "snapshot_file_sha256": "e9e30e6a36e9a23a5466b37f714a226c1350fd7164cd02f74281fd45598d0547",
+  "quote_rows": 674,
+  "same_result_as_retained_receipt": true,
+  "reproduced_result": {
+    "version": "quote-ridge-v1",
+    "dataset_sha256": "1c820802a48a22a4a04e045d2eabd3dae88dce5db3083dd5b5da8363ed01ed8b",
+    "feature": "momentum_5",
+    "horizon_minutes": 5,
+    "symbol": "BTCUSD",
+    "samples": 634,
+    "excluded": {
+      "warmup": 5,
+      "label_gap": 7,
+      "feature_gap": 25,
+      "unmatured": 3
+    },
+    "cost_version": "quote-cost-v1-0.10pct-per-side-2bps-adverse",
+    "limitations": [
+      "Historical observed quote labels; no simulated fills or account returns.",
+      "Minute samples cannot establish intraminute execution or queue position.",
+      "Overlapping labels and a short market history limit independent evidence.",
+      "One fixed ridge coefficient penalty; no hyperparameter search or primary promotion."
+    ],
+    "train_samples": 431,
+    "test_samples": 191,
+    "split_at": 1790583060.030501,
+    "status": "completed",
+    "test_start": 1790583060.030501,
+    "test_end": 1790595239.9180105,
+    "train_end": 1790582640.024993,
+    "model": {
+      "x_mean": -1.784656772805511,
+      "x_scale": 11.093649238595841,
+      "intercept": -25.655652535280765,
+      "weight": -2.048420848681204,
+      "ridge_penalty": 1.0
+    },
+    "metrics": {
+      "model_mse_bps_squared": "105.14125772",
+      "baseline_mse_bps_squared": "108.73830186",
+      "mse_improvement_percent": "3.307983",
+      "positive_predictions": 0,
+      "selected_mean_net_bps": null
+    },
+    "eligible_for_forward_review": false,
+    "primary_changed": false
+  },
+  "explicit_consumed_boundary_status": "insufficient_data",
+  "qualification": "Reproduction of an already examined dataset; not new independent evidence or a new prospective trial."
+}

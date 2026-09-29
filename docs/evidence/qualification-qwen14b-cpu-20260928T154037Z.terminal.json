@@ -1,0 +1,39 @@
+{
+  "receipt": "docs/evidence/research-roles-dev-20260928T154342Z.json",
+  "sha256": "647eb78527f8d13c8ff4d3fc7ea4226f12ea8465b4270c0467c6f2a203fe8108",
+  "outcome": "incomplete_cpu_development_screen",
+  "results": [
+    {
+      "role": "researcher",
+      "qualified": false,
+      "reason": "Need withheld evidence for the current role contract"
+    },
+    {
+      "role": "trainer",
+      "qualified": false,
+      "reason": "Need withheld evidence for the current role contract"
+    },
+    {
+      "role": "reviewer",
+      "qualified": false,
+      "reason": "Need withheld evidence for the current role contract"
+    }
+  ],
+  "attempts": [
+    {
+      "case": "dev-researcher-momentum_1",
+      "complete": false,
+      "passed": false,
+      "seconds": 600.015,
+      "errors": [
+        "timed out"
+      ]
+    }
+  ],
+  "stopped": "Paper worker has constrained optional research; optional inference stopped",
+  "untested_roles": [
+    "trainer",
+    "reviewer"
+  ],
+  "automatic_activation": false
+}

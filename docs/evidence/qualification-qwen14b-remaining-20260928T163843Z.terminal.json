@@ -1,0 +1,187 @@
+{
+  "recorded_at": "2026-09-28T17:02:12.152196+00:00",
+  "state": "needs_review",
+  "freeze": "docs/evidence/qualification-qwen14b-remaining-20260928T163843Z.json",
+  "freeze_sha256": "b404e7a2b563d40683ff175f3faa2b8fe02532923fb0200bc06d16a1a7f01da3",
+  "state_receipt": "data/qualification-qwen14b-remaining-20260928T163843Z.state.json",
+  "state_sha256": "d694e9975087de7c3ad4e46829f550b6aac9c155ab04e068e9359e6cb1ba4ad0",
+  "evaluation_receipt": "docs/evidence/research-roles-dev-20260928T164204Z.json",
+  "evaluation_sha256": "bd5c71401be56a17f4d059cabf67a59bbdcc030be89fe38ad971bf88d7235dcd",
+  "frozen_files_verified_before_followup_changes": true,
+  "qualifications": {
+    "trainer": {
+      "qualified": false,
+      "status": "incomplete_development_only",
+      "reason": "Need withheld evidence for the current role contract"
+    },
+    "reviewer": {
+      "qualified": false,
+      "status": "incomplete_development_only",
+      "reason": "Need withheld evidence for the current role contract"
+    }
+  },
+  "dev_cases_planned_per_role": 4,
+  "completed_dev_cases": {
+    "trainer": 1,
+    "reviewer": 0
+  },
+  "holdout_cases": {
+    "trainer": 0,
+    "reviewer": 0
+  },
+  "summary": [
+    {
+      "model": "qwen3:14b",
+      "role": "trainer",
+      "requests": 1,
+      "passed": 1,
+      "critical": 0,
+      "median_seconds": 297.172
+    }
+  ],
+  "stopped": "Paper worker has constrained optional research; optional inference stopped",
+  "rationale_review": {
+    "structured_case": "Decision plan_training, empty issue list and E0005 citation match the supplied valid-method scenario.",
+    "caveats": [
+      "The rationale labels matured outcome labels with no_forward_evidence, conflating target availability and prospective evidence.",
+      "The explanation loosely attributes prevention of preprocessing leakage and correlated samples to the purge; those controls have distinct purposes."
+    ],
+    "interpretation": "Keep the scored development pass unchanged, but do not treat this explanation as validated broad methodological competence."
+  },
+  "last_result_resources": {
+    "profile": "trading-cpu-elastic-six-threads-v1",
+    "inference_threads": 6,
+    "observed_at": "2026-09-28T16:47:02.347189+00:00",
+    "server": {
+      "pid": 22284,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    },
+    "worker": {
+      "pid": 26732,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    }
+  },
+  "last_result_paper_health": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "performance": {
+      "average_cpu_percent_of_machine": 1.84,
+      "engine_p95_ms": 47.0,
+      "commit_p95_ms": 32.0
+    },
+    "research_constrained": true,
+    "storage": {
+      "captured": 333589,
+      "pruned": 313589,
+      "retained": 20000,
+      "bytes": 24060138,
+      "max_bytes": 67108864,
+      "max_rows": 20000,
+      "physical_bytes": 83846624,
+      "raw_bytes_per_second": 16481.89,
+      "projected_uncapped_raw_gib_per_day": 1.326,
+      "disk_free_gib": 55.97,
+      "capture_error": null,
+      "capture_discarded": 0,
+      "postgres": {
+        "database_bytes": 79140543,
+        "candles": 16198,
+        "events": 96285,
+        "journal_lines": 1156,
+        "candle_table_bytes": 4521984,
+        "journal_table_bytes": 60538880
+      },
+      "raw_retention": "20,000 records / 64 MiB payload cap; older raw data pruned",
+      "permanent_retention": "Trades, decisions, reviews and candles retained",
+      "database": "Dedicated local PostgreSQL; raw capture in separate local SQLite"
+    }
+  },
+  "current_paper_health": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "research_constrained": false,
+    "performance": {
+      "average_cpu_percent_of_machine": 1.86,
+      "engine_p95_ms": 47.0,
+      "commit_p95_ms": 47.0
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 117927
+    }
+  },
+  "primary": {
+    "equity": "98.1657645230000000000",
+    "closed": 15,
+    "fees": "1.4567806770000000000",
+    "net_pnl": "-1.8342354770000000000",
+    "funding": "100",
+    "replenishments": 0,
+    "attempt": {
+      "number": 1,
+      "outcome": "open",
+      "started_at": 1790550318.7589083
+    }
+  },
+  "current_runtime": {
+    "profile": "trading-cpu-elastic-six-threads-v1",
+    "inference_threads": 6,
+    "observed_at": "2026-09-28T17:02:12.153956+00:00",
+    "server": {
+      "pid": 22284,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    }
+  },
+  "resident_models": [],
+  "hosts": {
+    "models": {
+      "host_pid": 22656,
+      "kind": "models",
+      "started_at": "2026-09-28T16:33:42.157802+00:00",
+      "host_has_console": false,
+      "child_creation_flags": "CREATE_NO_WINDOW",
+      "command": [
+        "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-ResearchRuntime.ps1",
+        "-RuntimeProfile",
+        "CpuElastic"
+      ],
+      "state": "running",
+      "supervisor_pid": 17092
+    },
+    "paper": {
+      "host_pid": 46140,
+      "kind": "paper",
+      "started_at": "2026-09-28T16:33:43.757381+00:00",
+      "host_has_console": false,
+      "child_creation_flags": "CREATE_NO_WINDOW",
+      "command": [
+        "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-PaperExperiment.ps1"
+      ],
+      "state": "running",
+      "supervisor_pid": 39568
+    }
+  },
+  "agents_enabled": false,
+  "automatic_activation": false,
+  "next_step": "Add bounded resource-yield recovery with immutable-prefix provenance, then finish only the seven unrun development cases before any holdout. Existing resume helper refuses stopped receipts, so do not edit or clear this stopped status to force continuation.",
+  "limitations": "No controlled concurrent ArcGIS response-time measurement; guard cause not isolated. Prior timeouts and failed researcher answer remain. No trading profitability inference.",
+  "numerical_consumed_test_end": 1790595239.9180105
+}
