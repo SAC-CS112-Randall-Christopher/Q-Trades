@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -13,6 +14,7 @@ from trading.experiment_registry import (
     fingerprint,
 )
 from trading.numerical_candidates import evaluate_families
+from trading.numerical_resources import constrain_child, own_limits
 from trading.research_experiment import run_experiment
 
 
@@ -77,11 +79,14 @@ def main() -> None:
     parser.add_argument("--request", required=True)
     parser.add_argument("--lease", required=True)
     args = parser.parse_args()
+    constrain_child(os.getpid())
     registry = ExperimentRegistry(args.registry)
     try:
         job = registry.get(args.request, inputs=True)
         if job is None or job["status"] != "running" or job["lease"] != args.lease:
             return
+        with registry.transaction():
+            registry.event(args.request, "worker_identity", own_limits())
         # Registry.get exposes parsed objects; the evaluator also verifies their canonical hashes.
         job["plan"] = json.dumps(job["plan"])
         job["snapshot"] = json.dumps(job["snapshot"])

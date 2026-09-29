@@ -1,0 +1,14 @@
+[
+  {
+    "executable": "C:\\Projects\\Q-Trades-cp3-campaigns\\.venv\\Scripts\\python.exe",
+    "supervised_pid": 30024,
+    "actual_pid": 46376,
+    "same_process": false
+  },
+  {
+    "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "supervised_pid": 53892,
+    "actual_pid": 53892,
+    "same_process": true
+  }
+]

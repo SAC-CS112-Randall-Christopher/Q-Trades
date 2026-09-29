@@ -1,0 +1,32 @@
+{
+  "fixture": "Generated synthetic PostgreSQL schema/database only",
+  "source_commit": "edc9ddb1a77b4bb25bae873a6dacac9faefc75de",
+  "started_at": 1790720040.4679914,
+  "checks": [
+    {
+      "name": "Exclusive writer rejects contention",
+      "passed": true
+    },
+    {
+      "name": "Actual committed child exit/restart cannot double-fund",
+      "passed": true,
+      "child_exit": 17
+    },
+    {
+      "name": "pg_dump/pg_restore retains exact state and journals",
+      "passed": true,
+      "state_sha256": "a68115537715d16053179d493f9d88bd26d1ddd2ea190cabc41258f9271c64e3",
+      "journal_sha256": "ad1f95004c5d231866e14e43eb4b42e12e7b188a1c095b044ec458f0ff1d2be9",
+      "backup_sha256": "78e14d2856f84ea4440393016cec12d23f9ca045dcbd5e5554dc622c22154c48",
+      "backup_bytes": 18132
+    }
+  ],
+  "reconciliation": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 4
+  },
+  "postgres_version": "17.2",
+  "finished_at": 1790720043.5970407
+}

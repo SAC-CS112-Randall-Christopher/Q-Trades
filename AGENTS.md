@@ -1,3 +1,12 @@
+# CP8 integrated acceptance
+
+Read docs/CP8_INTEGRATED_ACCEPTANCE.md and its receipt. Preserve finite predeclared
+SLO scopes, actual crash/backup checks and all failed evidence. Supervise the real
+Windows worker process, not a virtual-environment redirector. Source/database/UI
+and synthetic soak evidence do not authorize installation, 24/7 claims or live
+execution. Complete CP9's source-dated readiness packet and the CP0–CP9 efficiency
+audit; keep original trial, updater, models and private data intact.
+
 # CP7 forward learning
 
 Read docs/CP7_FORWARD_LEARNING.md. Reports inspect/consume forward information;
