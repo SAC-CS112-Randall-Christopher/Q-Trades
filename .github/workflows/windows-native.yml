@@ -45,4 +45,5 @@ jobs:
           python -B -m pytest -q -p no:cacheprovider --tb=long `
             tests/test_installation_inspector.py tests/test_managed_startup.py `
             tests/test_startup_identity.py tests/test_windows_supervision.py `
-            tests/test_native_update.py tests/test_update_desktop_files.py
+            tests/test_native_update.py tests/test_update_desktop_files.py `
+            tests/test_local_health.py

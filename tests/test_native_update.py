@@ -30,7 +30,8 @@ if($Scenario -eq 'already_stopped'){
     $global:qtest_listening=$false;$global:qtest_enabled=$false;$global:qtest_taskState='Disabled'
 }
 $global:calls=[Collections.Generic.List[string]]::new()
-$env:SystemRoot=Join-Path $PSScriptRoot 'Windows'
+$originalSystemRoot=$env:SystemRoot
+if (-not $originalSystemRoot) { throw 'Fixture requires an explicit SystemRoot' }
 $hostExe=Join-Path $runtime '.venv\Scripts\pythonw.exe'
 $paperExe=Join-Path $runtime '.venv\Scripts\python.exe'
 $shell=Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
@@ -117,7 +118,8 @@ Copy-Item (Join-Path $Scripts 'PaperStartupIdentity.ps1') $PSScriptRoot
 Copy-Item (Join-Path $Scripts 'PaperProcessOwnership.ps1') $PSScriptRoot
 try {
     $output=& $driver -Action $Operation -Request $request | ConvertFrom-Json
-    @{ok=$true;calls=@($global:calls.ToArray());output=$output;code=$global:qtest_code} |
+    @{ok=$true;calls=@($global:calls.ToArray());output=$output;code=$global:qtest_code;
+      system_root_preserved=($env:SystemRoot -ceq $originalSystemRoot)} |
         ConvertTo-Json -Depth 10 -Compress
 } catch {
     @{ok=$false;calls=@($global:calls.ToArray());error=$_.Exception.Message;
@@ -143,6 +145,7 @@ def run(tmp_path, scenario="normal", action="stop"):
         ],
         capture_output=True,
         text=True,
+        env={**os.environ, "SystemRoot": os.environ.get("SystemRoot", str(tmp_path / "Windows"))},
         timeout=30,
     )
     assert result.returncode == 0, result.stderr
@@ -153,6 +156,7 @@ def test_inspection_never_changes_task_or_processes(tmp_path):
     result = run(tmp_path, action="inspect")
     assert result["ok"], json.dumps(result, indent=2)
     assert result["output"]["owned"] and not result["calls"]
+    assert result["system_root_preserved"] is True
 
 
 def test_stop_only_retains_and_terminates_verified_handles(tmp_path):
@@ -162,12 +166,19 @@ def test_stop_only_retains_and_terminates_verified_handles(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "scenario",
-    ["foreign_task", "public_listener", "foreign_host", "foreign_worker", "reused_handle"],
+    "scenario,reason",
+    [
+        ("foreign_task", "Task identity changed"),
+        ("public_listener", "unexpected listener"),
+        ("foreign_host", "Host process identity changed"),
+        ("foreign_worker", "does not belong to the verified launcher"),
+        ("reused_handle", "A process ID was reused"),
+    ],
 )
-def test_foreign_or_reused_processes_are_preserved_before_any_mutation(tmp_path, scenario):
+def test_foreign_or_reused_processes_are_preserved_before_any_mutation(tmp_path, scenario, reason):
     result = run(tmp_path, scenario)
-    assert not result["ok"] and not result["calls"], result
+    assert not result["ok"] and not result["calls"], json.dumps(result, indent=2)
+    assert reason in result["error"], json.dumps(result, indent=2)
 
 
 @pytest.mark.parametrize("action", ["configure_target", "configure_previous"])
@@ -180,6 +191,7 @@ def test_configure_preserves_native_task_identity(tmp_path, action):
 def test_reconfiguration_refuses_an_enabled_task(tmp_path):
     result = run(tmp_path, "active_configure", "configure_target")
     assert not result["ok"] and not result["calls"]
+    assert "Task or listener is active" in result["error"], json.dumps(result, indent=2)
 
 
 def test_start_only_enables_and_starts_the_selected_task(tmp_path):

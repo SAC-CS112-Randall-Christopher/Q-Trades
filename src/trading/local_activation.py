@@ -109,6 +109,27 @@ def local_json(endpoint: str) -> dict[str, Any]:
     return value
 
 
+def paper_health_projection(status: dict[str, Any]) -> dict[str, Any]:
+    """Reduce case-sensitive exchange evidence to a small PowerShell-safe health object."""
+    paper = status.get("paper")
+    if not isinstance(paper, dict):
+        raise UpdateError("Paper status object is missing or invalid")
+    result: dict[str, Any] = {
+        key: paper.get(key) if type(paper.get(key)) is bool else None
+        for key in ("enabled", "running", "stale")
+    }
+    journal = paper.get("journal")
+    balanced = journal.get("balanced") if isinstance(journal, dict) else None
+    result["journal"] = {"balanced": balanced if type(balanced) is bool else None}
+    # Preserve unknown separately from null/no error. Never export raw exception text.
+    if "error" in paper:
+        if paper["error"] is None:
+            result["error"] = None
+        elif isinstance(paper["error"], str):
+            result["error"] = "Reported engine error" if paper["error"] else ""
+    return {"paper": result}
+
+
 def healthy(status: dict[str, Any], *, options_required: bool) -> bool:
     names = ("paper", "options") if options_required else ("paper",)
     for name in names:

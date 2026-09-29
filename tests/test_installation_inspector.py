@@ -56,7 +56,8 @@ function Get-CimInstance {
     }
 }
 function Get-Process { [pscustomobject]@{Id=7} }
-function Invoke-RestMethod {
+Set-Item -LiteralPath ("Function:\" + $python) -Value {
+    $global:LASTEXITCODE = 0
     $global:qtradesTestHttpRequests++
     if ($Scenario -eq 'health_unavailable') { throw 'Synthetic unavailable service' }
     $response = [pscustomobject]@{paper=[pscustomobject]@{
@@ -85,8 +86,9 @@ function Invoke-RestMethod {
             $response.paper.journal.balanced=1;$response.paper.error=0
         }
     }
-    return $response
+    return ($response | ConvertTo-Json -Depth 6 -Compress)
 }
+function Invoke-RestMethod { throw 'Inspector must use the bounded Python health reader' }
 function Stop-Process { throw 'MUTATION FORBIDDEN' }
 function Stop-ScheduledTask { throw 'MUTATION FORBIDDEN' }
 function Start-ScheduledTask { throw 'MUTATION FORBIDDEN' }

@@ -16,10 +16,10 @@ Push-Location $source
 try {
     if ($Action -eq 'Verify') {
         & (Join-Path $PSScriptRoot 'Get-QTradesInstallation.ps1') -ExpectedRuntimeRoot $runtime
-        & $python -B -m pytest -q -p no:cacheprovider `
+        & $python -B -m pytest -q -rs -p no:cacheprovider --tb=long `
             tests/test_installation_inspector.py tests/test_managed_startup.py `
             tests/test_startup_identity.py tests/test_windows_supervision.py `
-            tests/test_native_update.py tests/test_update_desktop_files.py `
+            tests/test_native_update.py tests/test_update_desktop_files.py tests/test_local_health.py `
             tests/test_local_activation.py tests/test_activation_state.py
         if ($LASTEXITCODE -ne 0) { throw 'Verification failed. No update was applied.' }
         & (Join-Path $PSScriptRoot 'Build-DesktopLauncher.ps1') -RuntimeRoot $runtime

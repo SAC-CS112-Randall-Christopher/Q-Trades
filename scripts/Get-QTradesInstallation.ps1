@@ -75,9 +75,13 @@ if ($listeners.Count) {
 }
 if ($null -ne $launcherId) {
     try {
-        $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8780/api/status' `
-            -UseBasicParsing -TimeoutSec 5 -MaximumRedirection 0 -ErrorAction Stop
-        $health = ConvertTo-QTradesPaperHealth $status
+        # Windows PowerShell's case-insensitive JSON objects reject retained exchange
+        # keys such as e/E. Reuse the Python updater's bounded, no-proxy/no-redirect
+        # reader, then parse only a small health projection without exchange payloads.
+        $python = Join-Path $codeRoot '.venv\Scripts\python.exe'
+        $reply = @(& $python -B (Join-Path $PSScriptRoot 'qtrades_health.py') 2>$null)
+        if ($LASTEXITCODE -ne 0) { throw 'Local health projection failed.' }
+        $health = ConvertTo-QTradesPaperHealth ($reply -join "`n")
         if (-not $health.complete) {
             $healthError = 'Some health fields are missing or invalid; null means unknown, not failed.'
         }
