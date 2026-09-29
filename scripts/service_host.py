@@ -13,12 +13,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def supervisor_command(kind: str, profile: str) -> list[str]:
+def supervisor_command(
+    kind: str, profile: str, runtime_root: Path | None = None
+) -> list[str]:
     if kind not in ("paper", "models") or profile not in ("CpuTwoProcessors", "CpuElastic"):
         raise ValueError("Unknown project service")
     shell = Path(os.environ["SystemRoot"]) / "System32/WindowsPowerShell/v1.0/powershell.exe"
     script = "Run-PaperExperiment.ps1" if kind == "paper" else "Run-ResearchRuntime.ps1"
     command = [str(shell), "-NoProfile", "-NonInteractive", "-File", str(ROOT / "scripts" / script)]
+    if runtime_root is not None:
+        if kind != "paper":
+            raise ValueError("Managed paper updates cannot redirect the model runtime")
+        command.extend(["-RuntimeRoot", str(runtime_root)])
     if kind == "models":
         command.extend(["-RuntimeProfile", profile])
     return command
@@ -30,11 +36,15 @@ def main() -> None:
     parser.add_argument(
         "--runtime-profile", choices=("CpuTwoProcessors", "CpuElastic"), default="CpuTwoProcessors"
     )
+    parser.add_argument("--runtime-root", type=Path)
     args = parser.parse_args()
     if sys.platform != "win32":
         raise RuntimeError("This service host requires Windows")
-    command = supervisor_command(args.kind, args.runtime_profile)
-    data = ROOT / "data"
+    runtime = args.runtime_root.resolve() if args.runtime_root else None
+    command = supervisor_command(args.kind, args.runtime_profile, runtime)
+    data = (runtime or ROOT) / "data"
+    if runtime is not None and not data.is_dir():
+        raise RuntimeError("Existing paper runtime data is missing; refusing a fresh installation")
     data.mkdir(exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     state = {

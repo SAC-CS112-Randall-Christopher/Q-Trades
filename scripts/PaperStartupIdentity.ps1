@@ -1,6 +1,6 @@
 # One exact contract shared by the launcher and read-only installation inspector.
 function Test-PaperStartupAction {
-    param($Task, [string] $ProjectRoot)
+    param($Task, [string] $ProjectRoot, [string] $RuntimeRoot)
     $actions = @($Task.Actions)
     if ($actions.Count -ne 1 -or -not $actions[0].WorkingDirectory) { return $false }
     $action = $actions[0]
@@ -10,8 +10,9 @@ function Test-PaperStartupAction {
     $hostExe = Join-Path $ProjectRoot '.venv\Scripts\pythonw.exe'
     $hostScript = Join-Path $ProjectRoot 'scripts\service_host.py'
     $hostArgs = '"' + $hostScript + '" --kind paper'
+    if ($RuntimeRoot) { $hostArgs += ' --runtime-root "' + $RuntimeRoot + '"' }
     return (
-        ($action.Execute -ieq 'powershell.exe' -and $action.Arguments -ceq $legacy) -or
+        (-not $RuntimeRoot -and $action.Execute -ieq 'powershell.exe' -and $action.Arguments -ceq $legacy) -or
         ($action.Execute -ieq $hostExe -and $action.Arguments -ceq $hostArgs)
     )
 }

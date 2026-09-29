@@ -1,8 +1,18 @@
 [CmdletBinding()]
-param()
+param([string] $RuntimeRoot)
 $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path -LiteralPath (Split-Path -Parent $PSScriptRoot)).Path
-$dataPath = Join-Path $projectRoot 'data'
+$dataRoot = if ($RuntimeRoot) { (Resolve-Path -LiteralPath $RuntimeRoot).Path } else { $projectRoot }
+$dataPath = Join-Path $dataRoot 'data'
+if ($RuntimeRoot -and -not (Test-Path -LiteralPath $dataPath -PathType Container)) {
+    throw 'Existing paper data is missing; no fresh installation was created.'
+}
+$serveArguments = '-m trading serve --experiment'
+if ($RuntimeRoot) {
+    if ($dataRoot.Contains('"')) { throw 'Invalid runtime path.' }
+    $RuntimeRoot = $dataRoot
+    $serveArguments += ' --runtime-root "' + $dataRoot + '"'
+}
 $pythonPath = Join-Path $projectRoot '.venv\Scripts\python.exe'
 $runnerLog = Join-Path $dataPath 'supervisor.log'
 $mutex = New-Object Threading.Mutex($false, 'Local\TradingResearchPaper20260927')
@@ -20,14 +30,14 @@ function Stop-OwnedServer {
     $identity = Get-CimInstance Win32_Process -Filter "ProcessId=$parent"
     $pidRecord = Get-Item -LiteralPath (Join-Path $dataPath 'server.pid') -ErrorAction SilentlyContinue
     if (-not $identity) { $script:serverProcess = $null; return }
-    if (-not $pidRecord -or -not (Test-PaperLauncherIdentity $identity $pythonPath $pidRecord.LastWriteTimeUtc)) {
+    if (-not $pidRecord -or -not (Test-PaperLauncherIdentity $identity $pythonPath $pidRecord.LastWriteTimeUtc $RuntimeRoot)) {
         Write-RunnerLog 'Launcher identity changed; preserving the unverified process.'
         $script:serverProcess = $null
         return
     }
     # The venv launcher may own a Python child. Stop only this launcher and its verified child.
     $children = Get-CimInstance Win32_Process -Filter "ParentProcessId=$parent" |
-        Where-Object { Test-PaperWorkerIdentity $_ $identity }
+        Where-Object { Test-PaperWorkerIdentity $_ $identity $RuntimeRoot }
     foreach ($child in $children) {
         Stop-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
     }
@@ -50,17 +60,17 @@ try {
         try {
             $databaseStart = Start-Process -FilePath 'docker.exe' `
                 -ArgumentList @('compose', 'up', '-d', '--wait', '--wait-timeout', '30', 'paper-db') `
-                -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru -Wait `
+                -WorkingDirectory $dataRoot -WindowStyle Hidden -PassThru -Wait `
                 -RedirectStandardOutput (Join-Path $dataPath 'database-start.out.log') `
                 -RedirectStandardError (Join-Path $dataPath 'database-start.err.log')
             if ($databaseStart.ExitCode -ne 0) { throw 'Dedicated paper database is unavailable.' }
             $listener = @(Get-NetTCPConnection -LocalPort 8780 -State Listen -ErrorAction SilentlyContinue)
             if ($listener.Count) {
-                $serverProcess = Get-ExistingPaperServer $pythonPath (Join-Path $dataPath 'server.pid') $listener
+                $serverProcess = Get-ExistingPaperServer $pythonPath (Join-Path $dataPath 'server.pid') $listener $RuntimeRoot
                 Write-RunnerLog "Adopted verified existing paper service launcher $($serverProcess.Id); no worker restart."
             } else {
                 $runStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
-                $serverProcess = Start-Process -FilePath $pythonPath -ArgumentList @('-m', 'trading', 'serve', '--experiment') `
+                $serverProcess = Start-Process -FilePath $pythonPath -ArgumentList $serveArguments `
                     -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru `
                     -RedirectStandardOutput (Join-Path $dataPath "server-$runStamp.out.log") `
                     -RedirectStandardError (Join-Path $dataPath "server-$runStamp.err.log")

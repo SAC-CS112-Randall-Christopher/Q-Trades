@@ -34,6 +34,24 @@ A source identity is not a health check or proof of trading correctness. The usu
 paper-account panels retain reconciliation information. A prepared release is not
 an installed release. The panel deliberately says activation is not connected.
 
+## Registered installation identified
+
+Chris supplied the actual task working directory:
+`C:\Users\chris.t0\Documents\Codex\2026-09-27\we-are-starting-a-new-project`.
+The task executable is that directory's `.venv\Scripts\pythonw.exe`. Native source
+was inspected through the read-only mount; newer engine diagnostics and tests absent
+from the ZIP have been preserved in this PR. See
+[the source-preservation and native handoff record](reviews/cp0-local-updates/native-handoff.md).
+This establishes the registered root and observed source, not current worker health.
+
+The windowless host, supervisor, process/task identity checks and desktop launcher
+now accept the existing runtime root separately from the release code directory.
+The host forwards `--runtime-root` only for paper, never to the model service.
+The supervisor retains the original Compose/data/log/PID location while running
+Python from the chosen release. Existing default commands remain supported.
+These are launch-path prerequisites: a native activation/rollback driver has **not**
+been implemented or installed, and no task has been repointed by this PR.
+
 ## Inspect the actual Windows installation first
 
 From this PR's source checkout in Windows PowerShell:
@@ -44,9 +62,10 @@ From this PR's source checkout in Windows PowerShell:
 
 This reads only the named `TradingResearch-Paper-20260927` task, its working
 directory, expected startup-command identity, presence of the existing data files,
-and the paper-port listener IDs. It does not read database passwords, enumerate
+and the paper-port listener identity and current read-only health when ownership verifies. It does not read database passwords, enumerate
 unrelated process command lines, alter a task, or restart a service. A listener PID
-alone is explicitly **not** proof of ownership. Do not assume the runtime root is
+alone is explicitly **not** proof of ownership; executable, command, timestamp and parentage
+are checked before the health request. Do not assume the runtime root is
 `C:\Projects\Q-Trades` just because that is the Git checkout.
 
 The shared `PaperStartupIdentity.ps1` contract fixes a source-confirmed mismatch:
