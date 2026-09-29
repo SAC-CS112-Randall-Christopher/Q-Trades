@@ -1,0 +1,132 @@
+{
+  "at": 1790556980.4614618,
+  "futures_context": {
+    "enabled": true,
+    "version": "kraken-futures-context-v1",
+    "source": "Kraken public linear perpetuals",
+    "role": "Observation and research only; no futures execution or signal changes",
+    "poll_seconds": 60,
+    "stale_seconds": 150,
+    "coverage": "One venue sample; no liquidation feed, dated/CME futures or options chain",
+    "error": null,
+    "markets": {
+      "ETHUSD": {
+        "status": "observed",
+        "spot_symbol": "ETHUSD",
+        "contract": "PF_ETHUSD",
+        "base": "ETH",
+        "observed_at": 1790556925.92943,
+        "server_at": 1790556925.961,
+        "round_trip_ms": 188.0,
+        "mark_price": "2680.07603539234",
+        "index_price": "2680.14",
+        "premium_bps": "-0.2386614417903542352265180000",
+        "open_interest_base": "25828.12000000000",
+        "open_interest_change_pct": "-0.0152097884298686488245667200",
+        "change_interval_seconds": 60.21,
+        "funding_usd_per_base_hour": "0.0184081347265",
+        "predicted_funding_usd_per_base_hour": "0.005491854462874105",
+        "funding_est_bps_hour": "0.06868348193191400449230264091",
+        "funding_direction": "longs pay",
+        "last_trade_at": "2026-09-28T00:55:23.881239Z",
+        "raw_sha256": "c7bdf0598e80545b882378a31bfe152e3916e280868eaf1ba0a4abef11800506",
+        "metadata_sha256": "287c24db6624cd41e70714e4c634453f382343778b4f17a3014552dd77d7eab6",
+        "instrument": {
+          "symbol": "PF_ETHUSD",
+          "base": "ETH",
+          "quote": "USD",
+          "type": "flexible_futures",
+          "contractSize": 1,
+          "tradeable": true,
+          "isExpired": false,
+          "tradfi": false
+        },
+        "capture_id": "6fcb874c93464b64bff4dc2fe29f2b51",
+        "age_seconds": 54.5
+      },
+      "BTCUSD": {
+        "status": "observed",
+        "spot_symbol": "BTCUSD",
+        "contract": "PF_XBTUSD",
+        "base": "BTC",
+        "observed_at": 1790556925.93943,
+        "server_at": 1790556925.969,
+        "round_trip_ms": 218.0,
+        "mark_price": "84337.86997022699",
+        "index_price": "84339.4",
+        "premium_bps": "-0.1814134050052525865728240000",
+        "open_interest_base": "2151.075300000000",
+        "open_interest_change_pct": "-0.0060431238245833626386100900",
+        "change_interval_seconds": 60.27,
+        "funding_usd_per_base_hour": "0.394386525705763514",
+        "predicted_funding_usd_per_base_hour": "0.292809161416125",
+        "funding_est_bps_hour": "0.04676183678159478416967633158",
+        "funding_direction": "longs pay",
+        "last_trade_at": "2026-09-28T00:55:23.837961Z",
+        "raw_sha256": "b3c0459770a8d5360ba9b08f4e56f50ae87c597912d0874c44769bbd573684c6",
+        "metadata_sha256": "287c24db6624cd41e70714e4c634453f382343778b4f17a3014552dd77d7eab6",
+        "instrument": {
+          "symbol": "PF_XBTUSD",
+          "base": "BTC",
+          "quote": "USD",
+          "type": "flexible_futures",
+          "contractSize": 1,
+          "tradeable": true,
+          "isExpired": false,
+          "tradfi": false
+        },
+        "capture_id": "6fcb874c93464b64bff4dc2fe29f2b51",
+        "age_seconds": 54.5
+      }
+    }
+  },
+  "performance": {
+    "average_cpu_percent_of_machine": 1.19,
+    "engine_p95_ms": 32.0,
+    "commit_p95_ms": 31.0
+  },
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 4745
+  },
+  "context_window": {
+    "markets": {
+      "PF_ETHUSD": {
+        "base": "ETH",
+        "last_at": 1790556925.92943,
+        "samples": 2,
+        "first_at": 1790556865.7273197,
+        "spot_symbol": "ETHUSD",
+        "premium_max_bps": "0.013914605465140540701660000",
+        "premium_min_bps": "-0.2386614417903542352265180000",
+        "longs_pay_samples": 2,
+        "shorts_pay_samples": 0,
+        "zero_funding_samples": 0,
+        "last_open_interest_base": "25828.12000000000",
+        "first_open_interest_base": "25832.04900000000"
+      },
+      "PF_XBTUSD": {
+        "base": "BTC",
+        "last_at": 1790556925.93943,
+        "samples": 2,
+        "first_at": 1790556865.6843114,
+        "spot_symbol": "BTCUSD",
+        "premium_max_bps": "-0.0592192858306806123995760000",
+        "premium_min_bps": "-0.1814134050052525865728240000",
+        "longs_pay_samples": 2,
+        "shorts_pay_samples": 0,
+        "zero_funding_samples": 0,
+        "last_open_interest_base": "2151.075300000000",
+        "first_open_interest_base": "2151.205300000000"
+      }
+    },
+    "omitted": 0,
+    "snapshots": 2,
+    "started_at": 1790556865.7273197,
+    "unavailable": 0,
+    "last_observed_at": 1790556925.93943
+  },
+  "persisted_events": 2
+}

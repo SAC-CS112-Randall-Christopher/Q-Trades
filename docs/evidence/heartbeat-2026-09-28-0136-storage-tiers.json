@@ -1,0 +1,68 @@
+{
+  "observed_at": "2026-09-28T07:39:20.314308+00:00",
+  "interval_seconds": 14403.00925707817,
+  "tier_constrained_seconds": 917.59,
+  "tier_state_changes": 7,
+  "tier_event_counts": [
+    {
+      "constrained": "false",
+      "n": 67
+    },
+    {
+      "constrained": "true",
+      "n": 4
+    }
+  ],
+  "limitation": "Duration inferred from durable feed-tier events; underlying engine work-stall durations are not retained. Last interval is open at the status cutoff.",
+  "before_storage": {
+    "captured": 41051,
+    "pruned": 21051,
+    "retained": 20000,
+    "bytes": 60105992,
+    "max_bytes": 67108864,
+    "max_rows": 20000,
+    "physical_bytes": 77886888,
+    "raw_bytes_per_second": 11653.87,
+    "projected_uncapped_raw_gib_per_day": 0.938,
+    "disk_free_gib": 37.13,
+    "capture_error": null,
+    "capture_discarded": 0,
+    "postgres": {
+      "database_bytes": 26719935,
+      "candles": 7511,
+      "events": 21938,
+      "journal_lines": 103,
+      "candle_table_bytes": 2146304,
+      "journal_table_bytes": 13082624
+    },
+    "raw_retention": "20,000 records / 64 MiB payload cap; older raw data pruned",
+    "permanent_retention": "Trades, decisions, reviews and candles retained",
+    "database": "Dedicated local PostgreSQL; raw capture in separate local SQLite"
+  },
+  "after_storage": {
+    "captured": 90976,
+    "pruned": 70976,
+    "retained": 20000,
+    "bytes": 59642534,
+    "max_bytes": 67108864,
+    "max_rows": 20000,
+    "physical_bytes": 79791584,
+    "raw_bytes_per_second": 11468.97,
+    "projected_uncapped_raw_gib_per_day": 0.923,
+    "disk_free_gib": 34.77,
+    "capture_error": null,
+    "capture_discarded": 0,
+    "postgres": {
+      "database_bytes": 45078207,
+      "candles": 10490,
+      "events": 49970,
+      "journal_lines": 116,
+      "candle_table_bytes": 2965504,
+      "journal_table_bytes": 30343168
+    },
+    "raw_retention": "20,000 records / 64 MiB payload cap; older raw data pruned",
+    "permanent_retention": "Trades, decisions, reviews and candles retained",
+    "database": "Dedicated local PostgreSQL; raw capture in separate local SQLite"
+  },
+  "database_growth_bytes": 18358272
+}

@@ -1,0 +1,136 @@
+{
+  "checked_at": "2026-09-28T16:45:31.171211+00:00",
+  "freeze": "docs/evidence/qualification-qwen14b-remaining-20260928T163843Z.json",
+  "frozen_sources_verified": true,
+  "queue": {
+    "pid": 30356,
+    "state": "evaluating",
+    "active_stage": "dev-trainer-reviewer",
+    "updated_at": "2026-09-28T16:45:19.118209+00:00",
+    "reason": null,
+    "error": null,
+    "stages": [
+      {
+        "stage": "dev-trainer-reviewer",
+        "started_at": "2026-09-28T16:42:04.050543+00:00",
+        "log": "data/qualification-qwen14b-remaining-20260928T163843Z.dev-trainer-reviewer.log",
+        "pid": 33452
+      }
+    ]
+  },
+  "evaluation": {
+    "receipt": "docs/evidence/research-roles-dev-20260928T164204Z.json",
+    "finished_at": null,
+    "stopped": null,
+    "completed_results": 0,
+    "rows": []
+  },
+  "paper": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "research_constrained": true,
+    "performance": {
+      "average_cpu_percent_of_machine": 1.84,
+      "engine_p95_ms": 62.0,
+      "commit_p95_ms": 47.0
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 113827
+    }
+  },
+  "primary": {
+    "equity": "98.2513210130000000000",
+    "closed": 14,
+    "fees": "1.3590661870000000000",
+    "net_pnl": "-1.7486789870000000000",
+    "funding": "100",
+    "replenishments": 0,
+    "attempt": {
+      "number": 1,
+      "outcome": "open",
+      "started_at": 1790550318.7589083
+    }
+  },
+  "resources": {
+    "profile": "trading-cpu-elastic-six-threads-v1",
+    "inference_threads": 6,
+    "observed_at": "2026-09-28T16:45:31.170200+00:00",
+    "server": {
+      "pid": 22284,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    },
+    "worker": {
+      "pid": 26732,
+      "priority_class": 64,
+      "affinity": 4095,
+      "available_affinity": 4095
+    }
+  },
+  "resource_profile_verified": true,
+  "placement": {
+    "models": [
+      {
+        "name": "qwen3:14b",
+        "model": "qwen3:14b",
+        "size": 10927608954,
+        "digest": "bdbd181c33f2ed1b31c972991882db3cf4d192569092138a7d29e973cd9debe8",
+        "details": {
+          "parent_model": "",
+          "format": "gguf",
+          "family": "qwen3",
+          "families": [
+            "qwen3"
+          ],
+          "parameter_size": "14.8B",
+          "quantization_level": "Q4_K_M"
+        },
+        "expires_at": "2026-09-28T10:46:31.1681945-06:00",
+        "size_vram": 0,
+        "context_length": 8192
+      }
+    ]
+  },
+  "hosts": {
+    "models": {
+      "host_pid": 22656,
+      "kind": "models",
+      "started_at": "2026-09-28T16:33:42.157802+00:00",
+      "host_has_console": false,
+      "child_creation_flags": "CREATE_NO_WINDOW",
+      "command": [
+        "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-ResearchRuntime.ps1",
+        "-RuntimeProfile",
+        "CpuElastic"
+      ],
+      "state": "running",
+      "supervisor_pid": 17092
+    },
+    "paper": {
+      "host_pid": 46140,
+      "kind": "paper",
+      "started_at": "2026-09-28T16:33:43.757381+00:00",
+      "host_has_console": false,
+      "child_creation_flags": "CREATE_NO_WINDOW",
+      "command": [
+        "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-PaperExperiment.ps1"
+      ],
+      "state": "running",
+      "supervisor_pid": 39568
+    }
+  },
+  "interpretation": "Active unfinished development evaluation, not role qualification. No inference request started by this monitor. Existing failure receipts preserved. No sustained ArcGIS response-time claim."
+}

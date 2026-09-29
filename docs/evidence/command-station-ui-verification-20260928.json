@@ -1,0 +1,33 @@
+{
+  "checked_at": 1790605871.2756422,
+  "browser_checks": [
+    "BTC/ETH market switching",
+    "missing AAVE quote and persisted failed cost request",
+    "saved pre-reload cost receipt reopened",
+    "all four deterministic tools",
+    "30/60/120 candle range",
+    "search and liquidity filter",
+    "desktop/430px/360px no overflow",
+    "comparison selection does not change primary",
+    "collapsed diagnostics and sizing details",
+    "no final browser errors or warnings"
+  ],
+  "tests": {
+    "pytest": 170,
+    "ruff": "passed",
+    "mypy_files": 33,
+    "frontend_build": "passed"
+  },
+  "paper": {
+    "running": true,
+    "error": null,
+    "primary_version": "breakout-v1",
+    "primary_equity": "98.6630401795000000000",
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 90982
+    }
+  }
+}

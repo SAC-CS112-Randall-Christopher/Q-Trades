@@ -1,0 +1,1234 @@
+{
+  "enabled": true,
+  "mode": "paper",
+  "tier": 3,
+  "running": true,
+  "error": null,
+  "feed_errors": {},
+  "stale": false,
+  "paused": false,
+  "started_at": 1790554257.3972576,
+  "last_tick": 1790554274.7781825,
+  "next_review": 1790568657.3972576,
+  "review_count": 0,
+  "reviews": [],
+  "promotions": 0,
+  "features": {
+    "ETHUSD": {
+      "breakout-v1": {
+        "version": "breakout-v1",
+        "eligible": false,
+        "bar_open_ms": 1790554200000,
+        "reason": "No closed-bar breakout; Volume confirmation absent",
+        "atr": "0.8719088829962616406990475436",
+        "close": "2685.07000000",
+        "breakout": "2690.29000000",
+        "volume_ratio": "0",
+        "trend_up": true,
+        "ema20_5m": "2683.987139564931549656111642",
+        "closed_bars": 599
+      },
+      "responsive-v1": {
+        "version": "responsive-v1",
+        "eligible": false,
+        "bar_open_ms": 1790554200000,
+        "reason": "No closed-bar breakout; Volume confirmation absent",
+        "atr": "0.8719088829962616406990475436",
+        "close": "2685.07000000",
+        "breakout": "2690.29000000",
+        "volume_ratio": "0",
+        "trend_up": true,
+        "ema20_5m": "2683.987139564931549656111642",
+        "closed_bars": 599
+      },
+      "selective-v1": {
+        "version": "selective-v1",
+        "eligible": false,
+        "bar_open_ms": 1790554200000,
+        "reason": "No closed-bar breakout; Volume confirmation absent",
+        "atr": "0.8719088829962616406990475436",
+        "close": "2685.07000000",
+        "breakout": "2690.80000000",
+        "volume_ratio": "0",
+        "trend_up": true,
+        "ema20_5m": "2683.987139564931549656111642",
+        "closed_bars": 599
+      }
+    },
+    "BTCUSD": {
+      "breakout-v1": {
+        "version": "breakout-v1",
+        "eligible": false,
+        "bar_open_ms": 1790554140000,
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "atr": "30.7034040918889808783213193",
+        "close": "84369.88000000",
+        "breakout": "84557.97000000",
+        "volume_ratio": "0.3253652058432934926958831341",
+        "trend_up": false,
+        "ema20_5m": "84396.66303085959977839523747",
+        "closed_bars": 599
+      },
+      "responsive-v1": {
+        "version": "responsive-v1",
+        "eligible": false,
+        "bar_open_ms": 1790554140000,
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "atr": "30.7034040918889808783213193",
+        "close": "84369.88000000",
+        "breakout": "84557.97000000",
+        "volume_ratio": "0.4766536964980544747081712062",
+        "trend_up": false,
+        "ema20_5m": "84396.66303085959977839523747",
+        "closed_bars": 599
+      },
+      "selective-v1": {
+        "version": "selective-v1",
+        "eligible": false,
+        "bar_open_ms": 1790554140000,
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "atr": "30.7034040918889808783213193",
+        "close": "84369.88000000",
+        "breakout": "84557.97000000",
+        "volume_ratio": "0.3181818181818181818181818182",
+        "trend_up": false,
+        "ema20_5m": "84396.66303085959977839523747",
+        "closed_bars": 599
+      }
+    }
+  },
+  "accounts": {
+    "primary": {
+      "day": 20724,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790554257.3972576
+      },
+      "funding": "100",
+      "pending": {},
+      "version": "breakout-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790554260.6368852,
+          "bar": 1790554140000,
+          "reason": "Bootstrap only; awaiting new closed bar",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "30.7034040918889808783213193",
+            "close": "84369.88000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "breakout-v1",
+            "breakout": "84557.97000000",
+            "eligible": false,
+            "ema20_5m": "84396.66303085959977839523747",
+            "trend_up": false,
+            "bar_open_ms": 1790554140000,
+            "closed_bars": 599,
+            "volume_ratio": "0.3253652058432934926958831341"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790554261.4786286,
+          "bar": 1790554200000,
+          "reason": "No closed-bar breakout; Volume confirmation absent",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "0.8719088829962616406990475436",
+            "close": "2685.07000000",
+            "reason": "No closed-bar breakout; Volume confirmation absent",
+            "version": "breakout-v1",
+            "breakout": "2690.29000000",
+            "eligible": false,
+            "ema20_5m": "2683.987139564931549656111642",
+            "trend_up": true,
+            "bar_open_ms": 1790554200000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    },
+    "breakout-v1": {
+      "day": 20724,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790554257.3972576
+      },
+      "funding": "100",
+      "pending": {},
+      "version": "breakout-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790554260.6368852,
+          "bar": 1790554140000,
+          "reason": "Bootstrap only; awaiting new closed bar",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "30.7034040918889808783213193",
+            "close": "84369.88000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "breakout-v1",
+            "breakout": "84557.97000000",
+            "eligible": false,
+            "ema20_5m": "84396.66303085959977839523747",
+            "trend_up": false,
+            "bar_open_ms": 1790554140000,
+            "closed_bars": 599,
+            "volume_ratio": "0.3253652058432934926958831341"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790554261.4786286,
+          "bar": 1790554200000,
+          "reason": "No closed-bar breakout; Volume confirmation absent",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "0.8719088829962616406990475436",
+            "close": "2685.07000000",
+            "reason": "No closed-bar breakout; Volume confirmation absent",
+            "version": "breakout-v1",
+            "breakout": "2690.29000000",
+            "eligible": false,
+            "ema20_5m": "2683.987139564931549656111642",
+            "trend_up": true,
+            "bar_open_ms": 1790554200000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    },
+    "selective-v1": {
+      "day": 20724,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790554257.3972576
+      },
+      "funding": "100",
+      "pending": {},
+      "version": "selective-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790554260.6368852,
+          "bar": 1790554140000,
+          "reason": "Bootstrap only; awaiting new closed bar",
+          "symbol": "BTCUSD",
+          "version": "selective-v1",
+          "features": {
+            "atr": "30.7034040918889808783213193",
+            "close": "84369.88000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "selective-v1",
+            "breakout": "84557.97000000",
+            "eligible": false,
+            "ema20_5m": "84396.66303085959977839523747",
+            "trend_up": false,
+            "bar_open_ms": 1790554140000,
+            "closed_bars": 599,
+            "volume_ratio": "0.3181818181818181818181818182"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790554261.4786286,
+          "bar": 1790554200000,
+          "reason": "No closed-bar breakout; Volume confirmation absent",
+          "symbol": "ETHUSD",
+          "version": "selective-v1",
+          "features": {
+            "atr": "0.8719088829962616406990475436",
+            "close": "2685.07000000",
+            "reason": "No closed-bar breakout; Volume confirmation absent",
+            "version": "selective-v1",
+            "breakout": "2690.80000000",
+            "eligible": false,
+            "ema20_5m": "2683.987139564931549656111642",
+            "trend_up": true,
+            "bar_open_ms": 1790554200000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    },
+    "responsive-v1": {
+      "day": 20724,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790554257.3972576
+      },
+      "funding": "100",
+      "pending": {},
+      "version": "responsive-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790554260.6368852,
+          "bar": 1790554140000,
+          "reason": "Bootstrap only; awaiting new closed bar",
+          "symbol": "BTCUSD",
+          "version": "responsive-v1",
+          "features": {
+            "atr": "30.7034040918889808783213193",
+            "close": "84369.88000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "responsive-v1",
+            "breakout": "84557.97000000",
+            "eligible": false,
+            "ema20_5m": "84396.66303085959977839523747",
+            "trend_up": false,
+            "bar_open_ms": 1790554140000,
+            "closed_bars": 599,
+            "volume_ratio": "0.4766536964980544747081712062"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790554261.4786286,
+          "bar": 1790554200000,
+          "reason": "No closed-bar breakout; Volume confirmation absent",
+          "symbol": "ETHUSD",
+          "version": "responsive-v1",
+          "features": {
+            "atr": "0.8719088829962616406990475436",
+            "close": "2685.07000000",
+            "reason": "No closed-bar breakout; Volume confirmation absent",
+            "version": "responsive-v1",
+            "breakout": "2690.29000000",
+            "eligible": false,
+            "ema20_5m": "2683.987139564931549656111642",
+            "trend_up": true,
+            "bar_open_ms": 1790554200000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    },
+    "universe-wide-v1": {
+      "day": 20724,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790554257.7944343
+      },
+      "funding": "100",
+      "pending": {},
+      "symbols": [
+        "BTCUSD",
+        "ETHUSD"
+      ],
+      "version": "breakout-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790554260.6368852,
+          "bar": 1790554140000,
+          "reason": "Bootstrap only; awaiting new closed bar",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "30.7034040918889808783213193",
+            "close": "84369.88000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "breakout-v1",
+            "breakout": "84557.97000000",
+            "eligible": false,
+            "ema20_5m": "84396.66303085959977839523747",
+            "trend_up": false,
+            "bar_open_ms": 1790554140000,
+            "closed_bars": 599,
+            "volume_ratio": "0.3253652058432934926958831341"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790554261.4786286,
+          "bar": 1790554200000,
+          "reason": "No closed-bar breakout; Volume confirmation absent",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "0.8719088829962616406990475436",
+            "close": "2685.07000000",
+            "reason": "No closed-bar breakout; Volume confirmation absent",
+            "version": "breakout-v1",
+            "breakout": "2690.29000000",
+            "eligible": false,
+            "ema20_5m": "2683.987139564931549656111642",
+            "trend_up": true,
+            "bar_open_ms": 1790554200000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    },
+    "universe-control-v1": {
+      "day": 20724,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790554257.7944343
+      },
+      "funding": "100",
+      "pending": {},
+      "symbols": [
+        "BTCUSD",
+        "ETHUSD"
+      ],
+      "version": "breakout-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790554260.6368852,
+          "bar": 1790554140000,
+          "reason": "Bootstrap only; awaiting new closed bar",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "30.7034040918889808783213193",
+            "close": "84369.88000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "breakout-v1",
+            "breakout": "84557.97000000",
+            "eligible": false,
+            "ema20_5m": "84396.66303085959977839523747",
+            "trend_up": false,
+            "bar_open_ms": 1790554140000,
+            "closed_bars": 599,
+            "volume_ratio": "0.3253652058432934926958831341"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790554261.4786286,
+          "bar": 1790554200000,
+          "reason": "No closed-bar breakout; Volume confirmation absent",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "0.8719088829962616406990475436",
+            "close": "2685.07000000",
+            "reason": "No closed-bar breakout; Volume confirmation absent",
+            "version": "breakout-v1",
+            "breakout": "2690.29000000",
+            "eligible": false,
+            "ema20_5m": "2683.987139564931549656111642",
+            "trend_up": true,
+            "bar_open_ms": 1790554200000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    }
+  },
+  "events": [
+    {
+      "id": 5,
+      "at": 1790554257.7944343,
+      "kind": "feed_model_changed",
+      "body": {
+        "note": "Risk, fees and one-second fill delay unchanged",
+        "previous": "paper-rest-ioc-v1",
+        "selected": "paper-tiered-feed-ioc-v2"
+      }
+    },
+    {
+      "id": 1,
+      "at": 1790554257.3972576,
+      "kind": "initial_funding",
+      "body": {
+        "amount": "100",
+        "currency": "USD"
+      }
+    }
+  ],
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 1
+  },
+  "bars_studied": 1797,
+  "gaps": 0,
+  "target": "1000",
+  "replenish_below": "5",
+  "replenish_to": "100",
+  "repeatability": {
+    "won": 0,
+    "failed": 0,
+    "open": 1,
+    "conclusion": "Not established; open attempts and correlated shadows are not proof"
+  },
+  "cost_model": "0.10% fee per side + 2 bps adverse price + 10% depth participation",
+  "sampling": "100ms fast / 1s watch WebSocket target; explicit capped REST fallback",
+  "feed": {
+    "transport": "Public WebSocket",
+    "clock_offset_ms": 375.74,
+    "clock_uncertainty_ms": 382.5,
+    "capture_dropped": 0,
+    "markets": {
+      "BTCUSD": {
+        "interval_ms": 100,
+        "fresh": false,
+        "received_age_ms": 78.0,
+        "exchange_event_ms": null,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 2,
+        "trade_gaps": 0,
+        "interval_p50_ms": null,
+        "event_age_p95_ms": null,
+        "error": "Stream unavailable: TimeoutError",
+        "source": "binance.us-rest-fallback",
+        "usable": true,
+        "round_trip_ms": 203.0
+      },
+      "ETHUSD": {
+        "interval_ms": 100,
+        "fresh": false,
+        "received_age_ms": 515.0,
+        "exchange_event_ms": null,
+        "books": 0,
+        "trades": 0,
+        "reconnects": 2,
+        "trade_gaps": 0,
+        "interval_p50_ms": null,
+        "event_age_p95_ms": null,
+        "error": "Stream unavailable: TimeoutError",
+        "source": "binance.us-rest-fallback",
+        "usable": true,
+        "round_trip_ms": 219.0
+      }
+    }
+  },
+  "universe": {
+    "policy": "usd-liquidity-ladder-v1",
+    "scan_seconds": 60,
+    "scanned_at": 1790554259.2683926,
+    "markets_scanned": 52,
+    "selected": [],
+    "rows": [
+      {
+        "symbol": "BTCUSD",
+        "eligible": true,
+        "reason": "Qualified for closer observation",
+        "quote_volume": "1642655.51591950",
+        "trades": 6286,
+        "spread_bps": "0.01422308867171286049307181498",
+        "change_percent": "0.089",
+        "range_percent": "1.183262596531131245254564500",
+        "confirmed": false
+      },
+      {
+        "symbol": "ETHUSD",
+        "eligible": true,
+        "reason": "Qualified for closer observation",
+        "quote_volume": "581410.28513200",
+        "trades": 1711,
+        "spread_bps": "0.3352136335109344824953302879",
+        "change_percent": "-0.239",
+        "range_percent": "1.951720210980580196595540600",
+        "confirmed": false
+      },
+      {
+        "symbol": "BCHUSD",
+        "eligible": false,
+        "reason": "Ticker stale",
+        "quote_volume": "358.79690000",
+        "trades": 10,
+        "spread_bps": "108.7613293051359516616314199",
+        "change_percent": "0.361",
+        "range_percent": "1.955990220048899755501222500",
+        "confirmed": false
+      },
+      {
+        "symbol": "LTCUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "8431.87990000",
+        "trades": 71,
+        "spread_bps": "36.56821378340365682137834037",
+        "change_percent": "-0.900",
+        "range_percent": "2.541891508094291394490201600",
+        "confirmed": false
+      },
+      {
+        "symbol": "BNBUSD",
+        "eligible": false,
+        "reason": "Insufficient observed USD trading activity",
+        "quote_volume": "30298.67580000",
+        "trades": 222,
+        "spread_bps": "4.113533525298231180584121761",
+        "change_percent": "0.814",
+        "range_percent": "1.472246342063996060185845200",
+        "confirmed": false
+      },
+      {
+        "symbol": "ADAUSD",
+        "eligible": true,
+        "reason": "Qualified for closer observation",
+        "quote_volume": "122023.95746900",
+        "trades": 445,
+        "spread_bps": "6.705188632733153213560257953",
+        "change_percent": "0.756",
+        "range_percent": "3.500359625988971469671541600",
+        "confirmed": false
+      },
+      {
+        "symbol": "ETCUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "XLMUSD",
+        "eligible": false,
+        "reason": "Insufficient observed USD trading activity",
+        "quote_volume": "17348.05353000",
+        "trades": 306,
+        "spread_bps": "17.70818770678969197073488979",
+        "change_percent": "-0.111",
+        "range_percent": "3.057486379860980650009393200",
+        "confirmed": false
+      },
+      {
+        "symbol": "LINKUSD",
+        "eligible": false,
+        "reason": "Insufficient observed USD trading activity",
+        "quote_volume": "77689.27201000",
+        "trades": 463,
+        "spread_bps": "6.447222321716393853648053297",
+        "change_percent": "-0.766",
+        "range_percent": "3.966942148760330578512396700",
+        "confirmed": false
+      },
+      {
+        "symbol": "RVNUSD",
+        "eligible": false,
+        "reason": "Ticker stale",
+        "quote_volume": "32.03383110",
+        "trades": 2,
+        "spread_bps": "1224.230891214716143355534412",
+        "change_percent": "9.696",
+        "range_percent": "9.695945945945945945945945900",
+        "confirmed": false
+      },
+      {
+        "symbol": "ZECUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "68056.16016000",
+        "trades": 207,
+        "spread_bps": "29.93039590908801446848074584",
+        "change_percent": "-4.390",
+        "range_percent": "6.745036106830367945795178100",
+        "confirmed": false
+      },
+      {
+        "symbol": "ALGOUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "IOTAUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "ATOMUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "17.10690000",
+        "trades": 2,
+        "spread_bps": "229.1500133226751931787903011",
+        "change_percent": "0.792",
+        "range_percent": "0.792393026941362916006339100",
+        "confirmed": false
+      },
+      {
+        "symbol": "ZILUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "VETUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "9173.24473100",
+        "trades": 128,
+        "spread_bps": "131.5574884479478119054090786",
+        "change_percent": "-1.554",
+        "range_percent": "5.711135611907386990077177500",
+        "confirmed": false
+      },
+      {
+        "symbol": "HBARUSD",
+        "eligible": false,
+        "reason": "Insufficient observed USD trading activity",
+        "quote_volume": "107485.64114000",
+        "trades": 201,
+        "spread_bps": "11.50206514351440372248653736",
+        "change_percent": "2.780",
+        "range_percent": "3.723289445283833369307144400",
+        "confirmed": false
+      },
+      {
+        "symbol": "DOGEUSD",
+        "eligible": true,
+        "reason": "Qualified for closer observation",
+        "quote_volume": "146620.77165000",
+        "trades": 465,
+        "spread_bps": "6.224066390041493775933609959",
+        "change_percent": "0.560",
+        "range_percent": "3.497382198952879581151832500",
+        "confirmed": false
+      },
+      {
+        "symbol": "VTHOUSD",
+        "eligible": false,
+        "reason": "Ticker stale",
+        "quote_volume": "147.09817500",
+        "trades": 4,
+        "spread_bps": "483.9764551994767822105951602",
+        "change_percent": "-2.655",
+        "range_percent": "2.727272727272727272727272700",
+        "confirmed": false
+      },
+      {
+        "symbol": "ONEUSD",
+        "eligible": false,
+        "reason": "Ticker stale",
+        "quote_volume": "3311.86300110",
+        "trades": 1000,
+        "spread_bps": "2545.454545454545454545454545",
+        "change_percent": "-11.103",
+        "range_percent": "61.44349477682811016144349480",
+        "confirmed": false
+      },
+      {
+        "symbol": "UNIUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "2259.51376000",
+        "trades": 35,
+        "spread_bps": "33.20880033208800332088003321",
+        "change_percent": "-2.665",
+        "range_percent": "5.956471935853379152348224500",
+        "confirmed": false
+      },
+      {
+        "symbol": "SOLUSD",
+        "eligible": true,
+        "reason": "Qualified for closer observation",
+        "quote_volume": "342661.80357000",
+        "trades": 1349,
+        "spread_bps": "2.467003823855926976686813865",
+        "change_percent": "0.619",
+        "range_percent": "3.979022725380837426121701500",
+        "confirmed": false
+      },
+      {
+        "symbol": "AAVEUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "40.82499000",
+        "trades": 2,
+        "spread_bps": "83.66572623796089113727016247",
+        "change_percent": "-0.943",
+        "range_percent": "0.951825951825951825951826000",
+        "confirmed": false
+      },
+      {
+        "symbol": "GRTUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "2170.38020000",
+        "trades": 33,
+        "spread_bps": "252.4544179523141654978962132",
+        "change_percent": "32.963",
+        "range_percent": "32.96296296296296296296296300",
+        "confirmed": false
+      },
+      {
+        "symbol": "SUSHIUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "CRVUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "166.11920000",
+        "trades": 19,
+        "spread_bps": "94.08410548823948681397006415",
+        "change_percent": "1.701",
+        "range_percent": "2.827164092101428155056834700",
+        "confirmed": false
+      },
+      {
+        "symbol": "AVAXUSD",
+        "eligible": false,
+        "reason": "Insufficient observed USD trading activity",
+        "quote_volume": "79366.13941000",
+        "trades": 741,
+        "spread_bps": "10.15368994323164259011399825",
+        "change_percent": "0.018",
+        "range_percent": "5.571682741829759340762243700",
+        "confirmed": false
+      },
+      {
+        "symbol": "DOTUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "12116.10229000",
+        "trades": 52,
+        "spread_bps": "70.89405277668373375344623868",
+        "change_percent": "2.190",
+        "range_percent": "4.734693877551020408163265300",
+        "confirmed": false
+      },
+      {
+        "symbol": "NEARUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "43157.70550000",
+        "trades": 299,
+        "spread_bps": "78.68115399025852379168227801",
+        "change_percent": "7.834",
+        "range_percent": "10.20733652312599681020733650",
+        "confirmed": false
+      },
+      {
+        "symbol": "LPTUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "GALAUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "6.34793000",
+        "trades": 2,
+        "spread_bps": "267.9343128781331028522039758",
+        "change_percent": "0.044",
+        "range_percent": "0.043975373790677220756376400",
+        "confirmed": false
+      },
+      {
+        "symbol": "TRXUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "5261.56394000",
+        "trades": 15,
+        "spread_bps": "39.02146180399219570763920156",
+        "change_percent": "0.090",
+        "range_percent": "1.208094231350045303533675600",
+        "confirmed": false
+      },
+      {
+        "symbol": "ENSUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "THETAUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "2834.57540000",
+        "trades": 9,
+        "spread_bps": "42.82655246252676659528907923",
+        "change_percent": "0.862",
+        "range_percent": "1.298701298701298701298701300",
+        "confirmed": false
+      },
+      {
+        "symbol": "FETUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "12979.96244000",
+        "trades": 161,
+        "spread_bps": "49.24086992203528929011079196",
+        "change_percent": "2.667",
+        "range_percent": "3.986571548468317247167436000",
+        "confirmed": false
+      },
+      {
+        "symbol": "ICPUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "180.57049000",
+        "trades": 12,
+        "spread_bps": "44.74272930648769574944071588",
+        "change_percent": "-1.525",
+        "range_percent": "3.753180661577608142493638700",
+        "confirmed": false
+      },
+      {
+        "symbol": "OPUSD",
+        "eligible": false,
+        "reason": "Ticker stale",
+        "quote_volume": "243.56600000",
+        "trades": 9,
+        "spread_bps": "134.2281879194630872483221477",
+        "change_percent": "6.383",
+        "range_percent": "6.382978723404255319148936200",
+        "confirmed": false
+      },
+      {
+        "symbol": "DGBUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "5258.79515500",
+        "trades": 107,
+        "spread_bps": "475.1619870410367170626349892",
+        "change_percent": "5.345",
+        "range_percent": "19.86301369863013698630136990",
+        "confirmed": false
+      },
+      {
+        "symbol": "SANDUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "SHIBUSD",
+        "eligible": false,
+        "reason": "Insufficient observed USD trading activity",
+        "quote_volume": "1871.18792029",
+        "trades": 8,
+        "spread_bps": "16.96352841391009329940627651",
+        "change_percent": "-0.508",
+        "range_percent": "0.851788756388415672913117500",
+        "confirmed": false
+      },
+      {
+        "symbol": "FLOKIUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "257.47962946",
+        "trades": 4,
+        "spread_bps": "42.16444132115249472944483486",
+        "change_percent": "-3.922",
+        "range_percent": "4.153354632587859424920127800",
+        "confirmed": false
+      },
+      {
+        "symbol": "SUIUSD",
+        "eligible": true,
+        "reason": "Qualified for closer observation",
+        "quote_volume": "266195.41037000",
+        "trades": 1161,
+        "spread_bps": "6.312633157105657697467055946",
+        "change_percent": "8.751",
+        "range_percent": "11.60134959771606540358162470",
+        "confirmed": false
+      },
+      {
+        "symbol": "XRPUSD",
+        "eligible": true,
+        "reason": "Qualified for closer observation",
+        "quote_volume": "626666.36407000",
+        "trades": 1535,
+        "spread_bps": "1.322663844983797367898948482",
+        "change_percent": "-0.833",
+        "range_percent": "2.671451355661881977671451400",
+        "confirmed": false
+      },
+      {
+        "symbol": "BONKUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "15852.46369341",
+        "trades": 39,
+        "spread_bps": "26.99055330634278002699055331",
+        "change_percent": "3.324",
+        "range_percent": "5.292479108635097493036211700",
+        "confirmed": false
+      },
+      {
+        "symbol": "PEPEUSD",
+        "eligible": false,
+        "reason": "Insufficient observed USD trading activity",
+        "quote_volume": "253814.57499680",
+        "trades": 279,
+        "spread_bps": "23.06805074971164936562860438",
+        "change_percent": "-0.913",
+        "range_percent": "3.720930232558139534883720900",
+        "confirmed": false
+      },
+      {
+        "symbol": "POLUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "1306.45091000",
+        "trades": 31,
+        "spread_bps": "73.86130488305293393516618794",
+        "change_percent": "1.249",
+        "range_percent": "3.580349708576186511240632800",
+        "confirmed": false
+      },
+      {
+        "symbol": "RENDERUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "20076.17650000",
+        "trades": 120,
+        "spread_bps": "174.8421563865954346770276833",
+        "change_percent": "1.841",
+        "range_percent": "16.88376753507014028056112220",
+        "confirmed": false
+      },
+      {
+        "symbol": "TRUMPUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "1215.19242200",
+        "trades": 28,
+        "spread_bps": "56.79129200189304306672976810",
+        "change_percent": "-1.318",
+        "range_percent": "2.959427207637231503579952300",
+        "confirmed": false
+      },
+      {
+        "symbol": "MEUSD",
+        "eligible": false,
+        "confirmed": false,
+        "reason": "Invalid ticker or market filters"
+      },
+      {
+        "symbol": "JUPUSD",
+        "eligible": false,
+        "reason": "Spread exceeds 25 bps",
+        "quote_volume": "5081.63515000",
+        "trades": 53,
+        "spread_bps": "375.9193680196131844184146009",
+        "change_percent": "2.623",
+        "range_percent": "5.261584454409566517189835600",
+        "confirmed": false
+      },
+      {
+        "symbol": "SUSD",
+        "eligible": false,
+        "reason": "Ticker stale",
+        "quote_volume": "329.88532000",
+        "trades": 9,
+        "spread_bps": "126.8814529170294812787660157",
+        "change_percent": "3.506",
+        "range_percent": "3.761514841351074718526100300",
+        "confirmed": false
+      },
+      {
+        "symbol": "HYPEUSD",
+        "eligible": true,
+        "reason": "Qualified for closer observation",
+        "quote_volume": "213421.69471000",
+        "trades": 334,
+        "spread_bps": "3.288211760837397928426590672",
+        "change_percent": "-1.027",
+        "range_percent": "2.918586789554531490015361000",
+        "confirmed": false
+      }
+    ],
+    "candidate_limit": 4,
+    "fast_candidate_limit": 2
+  },
+  "research_constrained": false,
+  "performance": {
+    "average_cpu_percent_of_machine": 0.54,
+    "engine_p95_ms": 47.0,
+    "commit_p95_ms": 31.0
+  },
+  "storage": {
+    "captured": 47,
+    "pruned": 0,
+    "retained": 47,
+    "bytes": 389790,
+    "max_bytes": 67108864,
+    "max_rows": 20000,
+    "physical_bytes": 696096,
+    "raw_bytes_per_second": 23376.46,
+    "projected_uncapped_raw_gib_per_day": 1.881,
+    "disk_free_gib": 37.72,
+    "capture_error": null,
+    "capture_discarded": 0,
+    "postgres": {
+      "database_bytes": 10524351,
+      "candles": 0,
+      "events": 15,
+      "journal_lines": 12,
+      "candle_table_bytes": 16384,
+      "journal_table_bytes": 98304
+    },
+    "raw_retention": "20,000 records / 64 MiB payload cap; older raw data pruned",
+    "permanent_retention": "Trades, decisions, reviews and candles retained",
+    "database": "Dedicated local PostgreSQL; raw capture in separate local SQLite"
+  },
+  "independent_reconciliation": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 18
+  },
+  "probe_scope": "Disposable isolated database schema, never the primary journal"
+}

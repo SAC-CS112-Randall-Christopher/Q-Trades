@@ -1,0 +1,355 @@
+{
+  "started_at": "2026-09-28T03:13:41.599349+00:00",
+  "purpose": "Three short synthetic tasks; not a trading, tool-use or reasoning certification",
+  "settings": {
+    "thinking": false,
+    "context": 4096,
+    "output_tokens": 240,
+    "threads": 2
+  },
+  "cases": [
+    {
+      "id": "extract_evidence",
+      "task": "Extract these facts, preserving money strings exactly. Evidence: equity USD 99.7593799833; completed trades 2; source binance.us-rest-fallback; received WebSocket books 0; account target 1000; successful attempts 0. Return equity, closed_trades, successful_attempts, and streaming_confirmed (a boolean).",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "equity": {
+            "type": "string"
+          },
+          "closed_trades": {
+            "type": "integer"
+          },
+          "successful_attempts": {
+            "type": "integer"
+          },
+          "streaming_confirmed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "equity",
+          "closed_trades",
+          "successful_attempts",
+          "streaming_confirmed"
+        ],
+        "additionalProperties": false
+      },
+      "expected": {
+        "equity": "99.7593799833",
+        "closed_trades": 2,
+        "successful_attempts": 0,
+        "streaming_confirmed": false
+      }
+    },
+    {
+      "id": "contaminated_research",
+      "task": "Review an experiment's evidence. At decision time t, feature future_move is close[t+5]/close[t]-1. A scaler was fit on all dates before dividing them into train and test. Researchers tried 800 versions and tuned each version using the same final test month. Twelve shadow accounts traded identical signals on identical timestamps; they count these as 12 independent replications. The winner has high profit after realistic costs. Decide reject, forward_paper_only, or promote_primary. List applicable issue codes from future_feature, preprocessing_leakage, test_reuse, correlated_samples. Give one concise reason.",
+      "expected": {
+        "decision": "reject",
+        "issues": [
+          "future_feature",
+          "preprocessing_leakage",
+          "test_reuse",
+          "correlated_samples"
+        ]
+      }
+    },
+    {
+      "id": "eligible_forward_experiment",
+      "task": "Review an experiment's evidence. Every feature was available at its decision time. Preprocessing was fitted only on training dates. Chronological splits purged overlapping outcomes. Researchers logged all attempted versions, selected using training/validation data, then evaluated their one frozen candidate once on a previously untouched later period. A separately computed report includes realistic costs, uncertainty and all losses; it supports a small forward paper comparison. There has been no prospective paper run yet. Decide reject, forward_paper_only, or promote_primary. List applicable issue codes from future_feature, preprocessing_leakage, test_reuse, correlated_samples. Give one concise reason.",
+      "expected": {
+        "decision": "forward_paper_only",
+        "issues": []
+      }
+    }
+  ],
+  "models": {
+    "qwen3.5:2b": {
+      "name": "qwen3.5:2b",
+      "model": "qwen3.5:2b",
+      "modified_at": "2026-09-24T15:52:16.9989441-06:00",
+      "size": 2741192820,
+      "digest": "324d162be6ca5629ae4517c8710434d0bd2d665bc94dbad46e9af8fbf8a2f0df",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen35",
+        "families": [
+          "qwen35"
+        ],
+        "parameter_size": "2.3B",
+        "quantization_level": "Q8_0",
+        "context_length": 262144,
+        "embedding_length": 2048
+      },
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    "qwen3.5:4b": {
+      "name": "qwen3.5:4b",
+      "model": "qwen3.5:4b",
+      "modified_at": "2026-09-24T15:50:18.3427167-06:00",
+      "size": 3389983735,
+      "digest": "2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen35",
+        "families": [
+          "qwen35"
+        ],
+        "parameter_size": "4.7B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 262144,
+        "embedding_length": 2560
+      },
+      "capabilities": [
+        "completion",
+        "vision",
+        "tools",
+        "thinking"
+      ]
+    },
+    "qwen3:8b": {
+      "name": "qwen3:8b",
+      "model": "qwen3:8b",
+      "modified_at": "2026-09-09T10:41:55.4469753-06:00",
+      "size": 5225388164,
+      "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+      "details": {
+        "parent_model": "",
+        "format": "gguf",
+        "family": "qwen3",
+        "families": [
+          "qwen3"
+        ],
+        "parameter_size": "8.2B",
+        "quantization_level": "Q4_K_M",
+        "context_length": 40960,
+        "embedding_length": 4096
+      },
+      "capabilities": [
+        "completion",
+        "tools",
+        "thinking"
+      ]
+    }
+  },
+  "runtime_before": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "performance": {
+      "average_cpu_percent_of_machine": 2.51,
+      "engine_p95_ms": 32.0,
+      "commit_p95_ms": 32.0
+    }
+  },
+  "results": [
+    {
+      "model": "qwen3.5:2b",
+      "case": "extract_evidence",
+      "response": "{\n  \"equity\": \"99.7593799833\",\n  \"closed_trades\": 2,\n  \"successful_attempts\": 0,\n  \"streaming_confirmed\": false\n}",
+      "done_reason": "stop",
+      "eval_count": 53,
+      "generation_seconds": 1.015044,
+      "load_seconds": 9.4305333,
+      "passed_expected_fields": true,
+      "wall_seconds": 10.94,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    },
+    {
+      "model": "qwen3.5:2b",
+      "case": "contaminated_research",
+      "response": "{\n  \"decision\": \"reject\",\n  \"issues\": [\n    \"future_feature\"\n  ],\n  \"reason\": \"The feature 'future_move' is calculated using data from the future (t+5), which constitutes a lookahead bias and violates the principle of forward_paper_only.\"\n}",
+      "done_reason": "stop",
+      "eval_count": 66,
+      "generation_seconds": 1.362933,
+      "load_seconds": 0.0053759,
+      "passed_expected_fields": false,
+      "wall_seconds": 1.83,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    },
+    {
+      "model": "qwen3.5:2b",
+      "case": "eligible_forward_experiment",
+      "response": "{\n  \"decision\": \"forward_paper_only\",\n  \"issues\": [\n    \"future_feature\"\n  ],\n  \"reason\": \"The experiment lacks prospective paper runs and has no separate report with realistic costs, uncertainty, or all losses to support a forward paper comparison.\"\n}",
+      "done_reason": "stop",
+      "eval_count": 63,
+      "generation_seconds": 1.308759,
+      "load_seconds": 0.0050405,
+      "passed_expected_fields": false,
+      "wall_seconds": 1.8,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    },
+    {
+      "model": "qwen3.5:4b",
+      "case": "extract_evidence",
+      "response": "{\n  \"equity\": \"USD 99.7593799833\",\n  \"closed_trades\": 2,\n  \"successful_attempts\": 0,\n  \"streaming_confirmed\": false\n}",
+      "done_reason": "stop",
+      "eval_count": 55,
+      "generation_seconds": 1.503906,
+      "load_seconds": 7.0946518,
+      "passed_expected_fields": false,
+      "wall_seconds": 9.55,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    },
+    {
+      "model": "qwen3.5:4b",
+      "case": "contaminated_research",
+      "response": "{\n  \"decision\": \"reject\",\n  \"issues\": [\"test_reuse\"],\n  \"reason\": \"The researchers tuned model versions using the same final test month, which constitutes data leakage and invalidates the evaluation of generalization performance.\"\n}",
+      "done_reason": "stop",
+      "eval_count": 55,
+      "generation_seconds": 1.562889,
+      "load_seconds": 0.0060246,
+      "passed_expected_fields": false,
+      "wall_seconds": 2.73,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    },
+    {
+      "model": "qwen3.5:4b",
+      "case": "eligible_forward_experiment",
+      "response": "{\n  \"decision\": \"forward_paper_only\",\n  \"issues\": [\"test_reuse\"],\n  \"reason\": \"The experiment evaluated a frozen candidate on a previously untouched later period after selecting it via training/validation data, which constitutes test reuse without prospective validation.\"\n}",
+      "done_reason": "stop",
+      "eval_count": 59,
+      "generation_seconds": 1.681678,
+      "load_seconds": 0.0039263,
+      "passed_expected_fields": false,
+      "wall_seconds": 2.88,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    },
+    {
+      "model": "qwen3:8b",
+      "case": "extract_evidence",
+      "response": "{\n  \"equity\": \"USD 99.7593799833\",\n  \"closed_trades\": 2,\n  \"successful_attempts\": 0,\n  \"streaming_confirmed\": false\n}",
+      "done_reason": "stop",
+      "eval_count": 51,
+      "generation_seconds": 2.104022,
+      "load_seconds": 6.4474117,
+      "passed_expected_fields": false,
+      "wall_seconds": 10.28,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    },
+    {
+      "model": "qwen3:8b",
+      "case": "contaminated_research",
+      "response": "{\n  \"decision\": \"reject\",\n  \"issues\": [\"future_feature\", \"preprocessing_leakage\", \"test_reuse\"],\n  \"reason\": \"The feature future_move uses data from the future (close[t+5]), which is a future_feature violation. Additionally, the scaler was fit on all dates before splitting into train and test, causing preprocessing_leakage. The same final test month was reused across 800 versions, indicating test_reuse.\"\n}",
+      "done_reason": "stop",
+      "eval_count": 99,
+      "generation_seconds": 4.158174,
+      "load_seconds": 0.0064836,
+      "passed_expected_fields": false,
+      "wall_seconds": 6.25,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    },
+    {
+      "model": "qwen3:8b",
+      "case": "eligible_forward_experiment",
+      "response": "{\n  \"decision\": \"forward_paper_only\",\n  \"issues\": [\"future_feature\"],\n  \"reason\": \"The experiment includes features available at decision time, which may introduce future feature leakage, but preprocessing was properly fitted on training dates and splits were chronological. No test reuse or correlated samples were indicated.\"\n}",
+      "done_reason": "stop",
+      "eval_count": 64,
+      "generation_seconds": 2.683312,
+      "load_seconds": 0.0052825,
+      "passed_expected_fields": false,
+      "wall_seconds": 4.78,
+      "runtime_after": {
+        "running": true,
+        "error": null,
+        "stale": false,
+        "performance": {
+          "average_cpu_percent_of_machine": 2.51,
+          "engine_p95_ms": 32.0,
+          "commit_p95_ms": 32.0
+        }
+      }
+    }
+  ],
+  "finished_at": "2026-09-28T03:14:32.761741+00:00",
+  "runtime_after": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "performance": {
+      "average_cpu_percent_of_machine": 2.51,
+      "engine_p95_ms": 32.0,
+      "commit_p95_ms": 32.0
+    }
+  }
+}

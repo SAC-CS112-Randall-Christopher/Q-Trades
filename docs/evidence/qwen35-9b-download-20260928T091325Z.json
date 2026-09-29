@@ -1,0 +1,35 @@
+{
+  "model": "qwen3.5:9b",
+  "source": "Ollama official model library",
+  "authorization": "Chris approved downloading this candidate in the current conversation",
+  "started_at": "2026-09-28T09:13:25.721250+00:00",
+  "free_bytes_before": 36027588608,
+  "status": "installed",
+  "installed_metadata": {
+    "name": "qwen3.5:9b",
+    "model": "qwen3.5:9b",
+    "modified_at": "2026-09-28T03:15:33.6787447-06:00",
+    "size": 6594474711,
+    "digest": "6488c96fa5faab64bb65cbd30d4289e20e6130ef535a93ef9a49f42eda893ea7",
+    "details": {
+      "parent_model": "",
+      "format": "gguf",
+      "family": "qwen35",
+      "families": [
+        "qwen35"
+      ],
+      "parameter_size": "9.7B",
+      "quantization_level": "Q4_K_M",
+      "context_length": 262144,
+      "embedding_length": 4096
+    },
+    "capabilities": [
+      "completion",
+      "vision",
+      "tools",
+      "thinking"
+    ]
+  },
+  "finished_at": "2026-09-28T09:15:33.784980+00:00",
+  "free_bytes_after": 29399830528
+}

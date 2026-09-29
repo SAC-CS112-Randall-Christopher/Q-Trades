@@ -1,0 +1,12 @@
+{
+  "observed_at": "2026-09-28T01:40:15.5798319-06:00",
+  "task": "TradingResearch-Paper-20260927",
+  "state": "Running",
+  "actions": [
+    {
+      "Execute": "powershell.exe",
+      "Arguments": "-NoProfile -NonInteractive -WindowStyle Hidden -File \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-PaperExperiment.ps1\"",
+      "WorkingDirectory": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project"
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "observed_at": "2026-09-28T18:48:12.7487097Z",
+  "tasks": [
+    {
+      "name": "TradingResearch-Paper-20260927",
+      "state": "Running",
+      "last_result": 267009,
+      "last_run": "2026-09-28T10:33:43.0000000-06:00"
+    },
+    {
+      "name": "TradingResearch-Models-20260928",
+      "state": "Running",
+      "last_result": 267009,
+      "last_run": "2026-09-28T10:33:42.0000000-06:00"
+    }
+  ],
+  "processes": [
+    {
+      "pid": 11844,
+      "parent_pid": 23808,
+      "created_at": "2026-09-24T10:12:58.2242180-06:00",
+      "name": "ollama.exe",
+      "priority": "Normal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+      "command": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Ollama\\ollama.exe serve"
+    },
+    {
+      "pid": 11840,
+      "parent_pid": 50384,
+      "created_at": "2026-09-28T08:24:00.6813880-06:00",
+      "name": "python.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\python.exe",
+      "command": "\"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\python.exe\" -m trading serve --experiment "
+    },
+    {
+      "pid": 55988,
+      "parent_pid": 11840,
+      "created_at": "2026-09-28T08:24:00.7505520-06:00",
+      "name": "python.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "command": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\python.exe\" -m trading serve --experiment "
+    },
+    {
+      "pid": 30696,
+      "parent_pid": 3016,
+      "created_at": "2026-09-28T10:33:42.0244700-06:00",
+      "name": "pythonw.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\pythonw.exe",
+      "command": "\"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\pythonw.exe\" \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\service_host.py\" --kind models --runtime-profile CpuElastic"
+    },
+    {
+      "pid": 22656,
+      "parent_pid": 30696,
+      "created_at": "2026-09-28T10:33:42.0524280-06:00",
+      "name": "pythonw.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe",
+      "command": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe\" \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\service_host.py\" --kind models --runtime-profile CpuElastic"
+    },
+    {
+      "pid": 17092,
+      "parent_pid": 22656,
+      "created_at": "2026-09-28T10:33:42.1660790-06:00",
+      "name": "powershell.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "command": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -NonInteractive -File C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-ResearchRuntime.ps1 -RuntimeProfile CpuElastic"
+    },
+    {
+      "pid": 31796,
+      "parent_pid": 3016,
+      "created_at": "2026-09-28T10:33:43.6283940-06:00",
+      "name": "pythonw.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\pythonw.exe",
+      "command": "\"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\pythonw.exe\" \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\service_host.py\" --kind paper"
+    },
+    {
+      "pid": 46140,
+      "parent_pid": 31796,
+      "created_at": "2026-09-28T10:33:43.6456130-06:00",
+      "name": "pythonw.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe",
+      "command": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe\" \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\service_host.py\" --kind paper"
+    },
+    {
+      "pid": 39568,
+      "parent_pid": 46140,
+      "created_at": "2026-09-28T10:33:43.7657680-06:00",
+      "name": "powershell.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "command": "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -NonInteractive -File C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-PaperExperiment.ps1"
+    },
+    {
+      "pid": 22284,
+      "parent_pid": 17092,
+      "created_at": "2026-09-28T10:33:44.2626790-06:00",
+      "name": "ollama.exe",
+      "priority": "Idle",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+      "command": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Ollama\\ollama.exe\" serve "
+    },
+    {
+      "pid": 28312,
+      "parent_pid": 5248,
+      "created_at": "2026-09-28T11:30:30.3357670-06:00",
+      "name": "pythonw.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\pythonw.exe",
+      "command": "\"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\pythonw.exe\" -m scripts.run_qualification_queue \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\docs\\evidence\\qualification-qwen14b-resume-20260928T173007Z.json\""
+    },
+    {
+      "pid": 19768,
+      "parent_pid": 28312,
+      "created_at": "2026-09-28T11:30:30.3621190-06:00",
+      "name": "pythonw.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe",
+      "command": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe\" -m scripts.run_qualification_queue \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\docs\\evidence\\qualification-qwen14b-resume-20260928T173007Z.json\""
+    },
+    {
+      "pid": 34684,
+      "parent_pid": 19768,
+      "created_at": "2026-09-28T11:56:18.1959880-06:00",
+      "name": "pythonw.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\pythonw.exe",
+      "command": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\.venv\\Scripts\\pythonw.exe C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\evaluate_research_roles.py --models qwen3:14b --roles trainer --thinking --split holdout --seeds 92811 92812 92813 --request-timeout-seconds 600 --budget-seconds 21720 --ollama-origin http://127.0.0.1:11435 --cpu-only --cpu-profile trading-cpu-elastic-six-threads-v1 --resource-wait-seconds 1800 --stop-disqualified-role"
+    },
+    {
+      "pid": 24000,
+      "parent_pid": 34684,
+      "created_at": "2026-09-28T11:56:18.2415680-06:00",
+      "name": "pythonw.exe",
+      "priority": "BelowNormal",
+      "affinity": "4095",
+      "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe",
+      "command": "\"C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Python\\Python312\\pythonw.exe\" C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\evaluate_research_roles.py --models qwen3:14b --roles trainer --thinking --split holdout --seeds 92811 92812 92813 --request-timeout-seconds 600 --budget-seconds 21720 --ollama-origin http://127.0.0.1:11435 --cpu-only --cpu-profile trading-cpu-elastic-six-threads-v1 --resource-wait-seconds 1800 --stop-disqualified-role"
+    }
+  ]
+}

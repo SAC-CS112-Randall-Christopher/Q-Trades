@@ -1,0 +1,26 @@
+{
+  "at": "2026-09-28T13:05:25.188345+00:00",
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 81168
+  },
+  "revision": 81168,
+  "gaps": 8,
+  "primary": {
+    "equity": "98.8371108497000000000",
+    "funding": "100",
+    "closed": 9,
+    "fees": "0.8906600503000000000",
+    "realized": "-1.1628891503000000000",
+    "replenishments": 0,
+    "attempt": {
+      "number": 1,
+      "outcome": "open",
+      "started_at": 1790550318.7589083
+    },
+    "positions": {},
+    "pending": {}
+  }
+}

@@ -1,0 +1,263 @@
+[
+  {
+    "id": 3,
+    "started": 1790604261.3231268,
+    "finished": 1790604261.3251274,
+    "tool": "outcome_review",
+    "symbol": "ETHUSD",
+    "version": "market-evidence-tools-v1",
+    "actor": "local_operator",
+    "status": "completed",
+    "result": {
+      "observed_at": 1790604261.3251274,
+      "result": {
+        "account_totals": {
+          "attempt": {
+            "number": 1,
+            "outcome": "open",
+            "started_at": 1790550318.7589083
+          },
+          "closed": 10,
+          "equity": "98.6630401795000000000",
+          "fees": "0.9877909205000000000",
+          "funding": "100",
+          "realized": "-1.3369598205000000000",
+          "replenishments": 0
+        },
+        "omitted_retained_market_trades": 0,
+        "recent_market_trades": [
+          {
+            "closed_at": 1790552202.6353507,
+            "cost": "49.7425428500000000000",
+            "entry_features": {
+              "atr": "0.5326753499245162107429649553",
+              "bar_open_ms": 1790552100000,
+              "breakout": "2686.33000000",
+              "close": "2686.42000000",
+              "closed_bars": 600,
+              "eligible": true,
+              "ema20_5m": "2679.995093722838699263428685",
+              "reason": "Confirmed breakout",
+              "trend_up": true,
+              "version": "breakout-v1",
+              "volume_ratio": "9.756097560975609756097560976"
+            },
+            "fees": "0.0993614650000000000",
+            "opened_at": 1790552174.3832293,
+            "pnl": "-0.1235964650000000000",
+            "proceeds": "49.6189463850000000000",
+            "reason": "ATR stop",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1"
+          },
+          {
+            "closed_at": 1790591140.7774646,
+            "cost": "49.6133447810000000000",
+            "entry_features": {
+              "atr": "0.7976722901326529175458248814",
+              "bar_open_ms": 1790591040000,
+              "breakout": "2648.67000000",
+              "close": "2649.55000000",
+              "closed_bars": 600,
+              "eligible": true,
+              "ema20_5m": "2645.099444287401361377792671",
+              "reason": "Confirmed breakout",
+              "trend_up": true,
+              "version": "breakout-v1",
+              "volume_ratio": "32.65203761755485893416927900"
+            },
+            "fees": "0.0990914790000000000",
+            "opened_at": 1790591116.9750102,
+            "pnl": "-0.1351744790000000000",
+            "proceeds": "49.4781703020000000000",
+            "reason": "ATR stop",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1"
+          },
+          {
+            "closed_at": 1790592504.4402893,
+            "cost": "49.6982155670000000000",
+            "entry_features": {
+              "atr": "0.8640801605763627133358425864",
+              "bar_open_ms": 1790592120000,
+              "breakout": "2654.32000000",
+              "close": "2654.40000000",
+              "closed_bars": 600,
+              "eligible": true,
+              "ema20_5m": "2646.618596936302425699729014",
+              "reason": "Confirmed breakout",
+              "trend_up": true,
+              "version": "breakout-v1",
+              "volume_ratio": "9.840182648401826484018264840"
+            },
+            "fees": "0.0992610070000000000",
+            "opened_at": 1790592198.300291,
+            "pnl": "-0.1353880070000000000",
+            "proceeds": "49.5628275600000000000",
+            "reason": "ATR stop",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1"
+          },
+          {
+            "closed_at": 1790594344.3228316,
+            "cost": "49.6127972340000000000",
+            "entry_features": {
+              "atr": "1.449264059011907480947461055",
+              "bar_open_ms": 1790594160000,
+              "breakout": "2662.19000000",
+              "close": "2663.78000000",
+              "closed_bars": 600,
+              "eligible": true,
+              "ema20_5m": "2652.374325254404059141131194",
+              "reason": "Confirmed breakout",
+              "trend_up": true,
+              "version": "breakout-v1",
+              "volume_ratio": "10.32848232848232848232848233"
+            },
+            "fees": "0.0990591360000000000",
+            "opened_at": 1790594236.8698573,
+            "pnl": "-0.1663911360000000000",
+            "proceeds": "49.4464060980000000000",
+            "reason": "ATR stop",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1"
+          },
+          {
+            "closed_at": 1790599981.4777849,
+            "cost": "49.4275832050000000000",
+            "entry_features": {
+              "atr": "1.575354369457009838579500814",
+              "bar_open_ms": 1790599560000,
+              "breakout": "2681.99000000",
+              "close": "2684.00000000",
+              "closed_bars": 600,
+              "eligible": true,
+              "ema20_5m": "2672.252117017919404972756546",
+              "reason": "Confirmed breakout",
+              "trend_up": true,
+              "version": "breakout-v1",
+              "volume_ratio": "2.420268256333830104321907601"
+            },
+            "fees": "0.0987928050000000000",
+            "opened_at": 1790599637.2054925,
+            "pnl": "-0.0623978050000000000",
+            "proceeds": "49.3651854000000000000",
+            "reason": "Trailing stop",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1"
+          }
+        ],
+        "retained_market_count": 5,
+        "scope": "Latest 30 matching trades from the primary account's 1,000-trade memory; durable history remains in the journal",
+        "symbol": "ETHUSD"
+      },
+      "tool": "outcome_review",
+      "version": "market-evidence-tools-v1"
+    },
+    "result_sha256": "5e246ad2889054901b633b0ea4ac3080e20190e966eb38e0ee7da52fd28f2af4",
+    "error": null
+  },
+  {
+    "id": 2,
+    "started": 1790604227.284913,
+    "finished": 1790604227.2859106,
+    "tool": "strategy_evidence",
+    "symbol": "ETHUSD",
+    "version": "market-evidence-tools-v1",
+    "actor": "local_operator",
+    "status": "completed",
+    "result": {
+      "observed_at": 1790604227.2859106,
+      "result": {
+        "entries_paused": false,
+        "features": {
+          "atr": "2.277111966186989452470422696",
+          "bar_open_ms": 1790604120000,
+          "breakout": "2696.29000000",
+          "close": "2683.59000000",
+          "closed_bars": 600,
+          "eligible": false,
+          "ema20_5m": "2686.185492728637394904882061",
+          "reason": "No closed-bar breakout",
+          "trend_up": true,
+          "version": "breakout-v1",
+          "volume_ratio": "10.72792792792792792792792793"
+        },
+        "last_decision": {
+          "at": 1790604181.2063982,
+          "bar": 1790604120000,
+          "features": {
+            "atr": "2.277111966186989452470422696",
+            "bar_open_ms": 1790604120000,
+            "breakout": "2696.29000000",
+            "close": "2683.59000000",
+            "closed_bars": 600,
+            "eligible": false,
+            "ema20_5m": "2686.185492728637394904882061",
+            "reason": "No closed-bar breakout",
+            "trend_up": true,
+            "version": "breakout-v1",
+            "volume_ratio": "10.72792792792792792792792793"
+          },
+          "reason": "No closed-bar breakout",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1"
+        },
+        "next_review": 1790607919.5472558,
+        "note": "Recorded decisions retain their timestamps; no new entry approval is given",
+        "pending": null,
+        "position": null,
+        "primary_market": true,
+        "symbol": "ETHUSD",
+        "version": "breakout-v1"
+      },
+      "tool": "strategy_evidence",
+      "version": "market-evidence-tools-v1"
+    },
+    "result_sha256": "87a7af96eafb1173f3813c38c0e63507acffae7b1c0b1132611a04eb49c81443",
+    "error": null
+  },
+  {
+    "id": 1,
+    "started": 1790603962.153585,
+    "finished": 1790603962.1555843,
+    "tool": "cost_hurdle",
+    "symbol": "BTCUSD",
+    "version": "market-evidence-tools-v1",
+    "actor": "local_operator",
+    "status": "completed",
+    "result": {
+      "observed_at": 1790603962.1545846,
+      "result": {
+        "adverse_price_per_side": "0.0002",
+        "fee_per_side": "0.001",
+        "participation_cap": "0.10",
+        "price_tick": "0.01000000",
+        "quote": {
+          "ask": "83649.93000000",
+          "bid": "83649.86000000",
+          "book_update_id": 4601865279,
+          "exchange_event_ms": 1790603961760,
+          "interval_ms": 100,
+          "interval_p50_ms": 109.0,
+          "observed_at": 1790603961.7449672,
+          "reason": null,
+          "received_age_ms": 406.0,
+          "source": "binance.us-depth-websocket",
+          "state": "fresh",
+          "symbol": "BTCUSD",
+          "valid_for_ms": 205.48608392942697
+        },
+        "required_bid": "83850.95000000",
+        "required_bid_move_percent": "0.240394903231159024055748600",
+        "round_trip_loss_percent": "0.2397958288751586822765951900",
+        "scope": "Top-of-book cost hurdle per unit; deeper impact, quantity filters, timing and fill uncertainty are excluded. No order or fill is created.",
+        "symbol": "BTCUSD"
+      },
+      "tool": "cost_hurdle",
+      "version": "market-evidence-tools-v1"
+    },
+    "result_sha256": "f4dceb2ab66307892c3994ece11aa242524e40a65275194474e92000046beb4e",
+    "error": null
+  }
+]

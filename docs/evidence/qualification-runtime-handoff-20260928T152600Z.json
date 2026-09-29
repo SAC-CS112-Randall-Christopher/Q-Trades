@@ -1,0 +1,57 @@
+{
+  "at": "2026-09-28T15:24:42.737081+00:00",
+  "reason": "Chris authorized a dedicated runtime for simultaneous ArcGIS and trading work. Stopped only the verified idle project queue before any model request. Original frozen profile and all earlier results remain intact.",
+  "previous_state_sha256": "886bcb876997cc2f807a173920832798a460f143aac8b1ebaf61b090fea71ddc",
+  "previous_state": {
+    "started_at": "2026-09-28T15:13:09.178997+00:00",
+    "state": "waiting_for_runtime",
+    "pid": 29524,
+    "freeze": "docs/evidence/qualification-qwen14b-20260928T151237Z.json",
+    "freeze_sha256": "dad1818e0fe9d4cabe20db2a423e98265bac8e1cbf5a5bf2367aa8cc18513c45",
+    "model": "qwen3:14b",
+    "stages": [],
+    "agents_enabled": false,
+    "authority": "Installed local evaluation only; no account, risk or promotion writes",
+    "reason": "Waiting for the shared local model runtime to become idle",
+    "runtime": {
+      "running": true,
+      "error": null,
+      "stale": false,
+      "performance": {
+        "average_cpu_percent_of_machine": 1.77,
+        "engine_p95_ms": 63.0,
+        "commit_p95_ms": 47.0
+      },
+      "research_constrained": false,
+      "storage": {
+        "captured": 277139,
+        "pruned": 257139,
+        "retained": 20000,
+        "bytes": 21575273,
+        "max_bytes": 67108864,
+        "max_rows": 20000,
+        "physical_bytes": 83846624,
+        "raw_bytes_per_second": 18963.01,
+        "projected_uncapped_raw_gib_per_day": 1.526,
+        "disk_free_gib": 53.34,
+        "capture_error": null,
+        "capture_discarded": 0,
+        "postgres": {
+          "database_bytes": 73922239,
+          "candles": 15392,
+          "events": 89270,
+          "journal_lines": 831,
+          "candle_table_bytes": 4300800,
+          "journal_table_bytes": 56139776
+        },
+        "raw_retention": "20,000 records / 64 MiB payload cap; older raw data pruned",
+        "permanent_retention": "Trades, decisions, reviews and candles retained",
+        "database": "Dedicated local PostgreSQL; raw capture in separate local SQLite"
+      }
+    },
+    "idle_wait_seconds": 678.4,
+    "updated_at": "2026-09-28T15:24:28.121677+00:00"
+  },
+  "requests_started": 0,
+  "shared_runtime_changed": false
+}

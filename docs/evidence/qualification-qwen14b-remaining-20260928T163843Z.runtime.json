@@ -1,0 +1,75 @@
+{
+  "recorded_at": "2026-09-28T16:38:43.633138+00:00",
+  "runtime": {
+    "profile": "trading-cpu-elastic-six-threads-v1",
+    "state": "running",
+    "origin": "http://127.0.0.1:11435",
+    "supervisor_pid": 17092,
+    "server_pid": 22284,
+    "executable": "C:\\Users\\chris.t0\\AppData\\Local\\Programs\\Ollama\\ollama.exe",
+    "server_started_at": "2026-09-28T16:33:44.2626798Z",
+    "started_at": "2026-09-28T16:33:44.3025591Z",
+    "priority": "Idle",
+    "processor_affinity": 4095,
+    "logical_processors": 12,
+    "inference_threads": 6,
+    "gpu_policy": "Reserved for ArcGIS; research CPU only",
+    "environment": {
+      "OLLAMA_HOST": "127.0.0.1:11435",
+      "OLLAMA_MODELS": "C:\\Users\\chris.t0\\.ollama\\models",
+      "OLLAMA_NO_CLOUD": "1",
+      "OLLAMA_NOPRUNE": "1",
+      "OLLAMA_NUM_PARALLEL": "1",
+      "OLLAMA_MAX_LOADED_MODELS": "1",
+      "OLLAMA_MAX_QUEUE": "2",
+      "OLLAMA_KEEP_ALIVE": "60s",
+      "OLLAMA_CONTEXT_LENGTH": "8192",
+      "CUDA_VISIBLE_DEVICES": "-1",
+      "ROCR_VISIBLE_DEVICES": "-1",
+      "OLLAMA_VULKAN": "0",
+      "GGML_VK_VISIBLE_DEVICES": "-1",
+      "OMP_NUM_THREADS": "6",
+      "OLLAMA_DEBUG": "0"
+    },
+    "script_sha256": "99fda922fa650d226839525121732f171efdcfaf268284579fa729ddce9f30bf",
+    "updated_at": "2026-09-28T16:38:40.3517624Z",
+    "version": "0.34.4"
+  },
+  "hosts": {
+    "paper": {
+      "host_pid": 46140,
+      "kind": "paper",
+      "started_at": "2026-09-28T16:33:43.757381+00:00",
+      "host_has_console": false,
+      "child_creation_flags": "CREATE_NO_WINDOW",
+      "command": [
+        "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-PaperExperiment.ps1"
+      ],
+      "state": "running",
+      "supervisor_pid": 39568
+    },
+    "models": {
+      "host_pid": 22656,
+      "kind": "models",
+      "started_at": "2026-09-28T16:33:42.157802+00:00",
+      "host_has_console": false,
+      "child_creation_flags": "CREATE_NO_WINDOW",
+      "command": [
+        "C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "-NoProfile",
+        "-NonInteractive",
+        "-File",
+        "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-ResearchRuntime.ps1",
+        "-RuntimeProfile",
+        "CpuElastic"
+      ],
+      "state": "running",
+      "supervisor_pid": 17092
+    }
+  },
+  "supervision_policy": "GUI Python host with CREATE_NO_WINDOW PowerShell child. Both hosts have no console. Source of previous console interruption is unknown; unattended duration remains to be observed."
+}

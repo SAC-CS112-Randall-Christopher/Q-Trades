@@ -1,0 +1,8 @@
+{
+  "name": "TradingResearch-Paper-20260927",
+  "state": "Running",
+  "identity": "chris.t0",
+  "logon": "Interactive",
+  "restartCount": 3,
+  "trigger": "MSFT_TaskLogonTrigger"
+}

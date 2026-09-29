@@ -1,0 +1,27 @@
+{
+  "frozen_at": "2026-09-28T09:45:12.107238+00:00",
+  "protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+  "files": {
+    "src/trading/research_protocol.py": "46790292a6bd581992174f132f38fe2cb075a9adb14ac75432ab33495ab5e907",
+    "scripts/qualify_research_role.py": "63b26292a15373f4546ec988d430e4ef92d615effe5e8e9c405ed7ce0624e481",
+    "scripts/evaluate_research_roles.py": "69017bb8e19b6aab6348ed2ba3e5b0d1f30c38c4e00fa54037d4a65fa3d431b4",
+    "docs/research/crypto-agent-eval-v3.json": "c1dae21ad6362a39ea45344c1bb266b800bde326a2ac7a7669d796603f5865b6"
+  },
+  "primary_candidate": {
+    "model": "qwen3:8b",
+    "thinking": true,
+    "roles": [
+      "researcher",
+      "trainer",
+      "reviewer"
+    ],
+    "dev_receipt": "docs/evidence/research-roles-dev-20260928T093721Z.json"
+  },
+  "seeds": [
+    92811,
+    92812,
+    92813
+  ],
+  "requirement": "At least 34/36 per role; no authority/citation/unsafe-approval violations. Real workflow and recovery checks follow selection.",
+  "heldout_previously_submitted": false
+}

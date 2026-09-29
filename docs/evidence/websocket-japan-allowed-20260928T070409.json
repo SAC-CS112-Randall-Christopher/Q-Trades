@@ -1,0 +1,129 @@
+{
+  "observed_at": "2026-09-28T13:04:20.091728+00:00",
+  "scope": "Read-only public connectivity; no trading process or account mutations",
+  "dns": {
+    "host": "stream.binance.us",
+    "addresses": [
+      "35.73.15.38",
+      "52.69.13.128"
+    ]
+  },
+  "dns_addresses_truncated": false,
+  "tcp_tls": [
+    {
+      "address": "35.73.15.38",
+      "port": 9443,
+      "stage": "tls_verified",
+      "tcp_ms": 172.0,
+      "tls_ms": 407.0,
+      "elapsed_ms": 672.0
+    },
+    {
+      "address": "35.73.15.38",
+      "port": 443,
+      "stage": "tls_verified",
+      "tcp_ms": 125.0,
+      "tls_ms": 297.0,
+      "elapsed_ms": 547.0
+    },
+    {
+      "address": "52.69.13.128",
+      "port": 9443,
+      "stage": "tls_verified",
+      "tcp_ms": 250.0,
+      "tls_ms": 422.0,
+      "elapsed_ms": 672.0
+    },
+    {
+      "address": "52.69.13.128",
+      "port": 443,
+      "stage": "tls_verified",
+      "tcp_ms": 203.0,
+      "tls_ms": 407.0,
+      "elapsed_ms": 672.0
+    }
+  ],
+  "websockets": [
+    {
+      "uri": "wss://stream.binance.us:9443/stream?streams=btcusd@depth@100ms/btcusd@trade",
+      "stage": "received_message",
+      "handshake_ms": 1547.0,
+      "received_at": "2026-09-28T13:04:13.535886+00:00",
+      "message": {
+        "stream": "btcusd@depth@100ms",
+        "channel": null,
+        "status": null,
+        "event": "depthUpdate",
+        "symbol": "BTCUSD",
+        "exchange_event_ms": 1790600653558,
+        "update_id": 4601759595
+      },
+      "elapsed_ms": 3344.0
+    },
+    {
+      "uri": "wss://stream.binance.us:443/stream?streams=btcusd@depth@100ms/btcusd@trade",
+      "stage": "received_message",
+      "handshake_ms": 1547.0,
+      "received_at": "2026-09-28T13:04:13.535886+00:00",
+      "message": {
+        "stream": "btcusd@depth@100ms",
+        "channel": null,
+        "status": null,
+        "event": "depthUpdate",
+        "symbol": "BTCUSD",
+        "exchange_event_ms": 1790600653558,
+        "update_id": 4601759595
+      },
+      "elapsed_ms": 3344.0
+    },
+    {
+      "uri": "wss://ws-api.binance.us:443/ws-api/v3",
+      "stage": "received_message",
+      "handshake_ms": 1469.0,
+      "received_at": "2026-09-28T13:04:12.797479+00:00",
+      "message": {
+        "stream": null,
+        "channel": null,
+        "status": 200,
+        "event": null,
+        "symbol": null,
+        "exchange_event_ms": null,
+        "update_id": null
+      },
+      "elapsed_ms": 1735.0
+    },
+    {
+      "uri": "wss://ws.kraken.com/v2",
+      "stage": "received_message",
+      "handshake_ms": 2203.0,
+      "received_at": "2026-09-28T13:04:13.403852+00:00",
+      "message": {
+        "stream": null,
+        "channel": "status",
+        "status": null,
+        "event": null,
+        "symbol": null,
+        "exchange_event_ms": null,
+        "update_id": null
+      },
+      "elapsed_ms": 2328.0
+    }
+  ],
+  "rest": {
+    "url": "https://api.binance.us/api/v3/time",
+    "status": 200,
+    "server_time": 1790600652539
+  },
+  "http_block_page_probe": {
+    "url": "http://stream.binance.us/",
+    "error": "ConnectTimeout",
+    "detail": ""
+  },
+  "limitations": [
+    "Timeouts do not identify which network hop or endpoint drops traffic.",
+    "A successful handshake alone does not prove sequence-valid, timely market data.",
+    "Port 443 is an alternate-port probe, not a configured market-feed replacement.",
+    "The Kraken probe is a connectivity control, not Binance.US market data.",
+    "An HTTP block page is untrusted evidence, not a TLS-authenticated response."
+  ]
+}

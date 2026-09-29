@@ -1,0 +1,10 @@
+{
+  "at": "2026-09-28T11:33:05.690356+00:00",
+  "free_bytes": 22102028288,
+  "free_gib": 20.58,
+  "downloads_complete": [
+    "qwen3.5:9b",
+    "hf.co/mistralai/Ministral-3-8B-Reasoning-2512-GGUF:Q4_K_M"
+  ],
+  "cleanup_performed": false
+}

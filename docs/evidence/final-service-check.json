@@ -1,0 +1,40 @@
+{
+  "verified_at": "2026-09-27T22:00:57.700494+00:00",
+  "runtime_state": "monitoring",
+  "mode": "paper",
+  "ai": {
+    "enabled": false,
+    "daily_budget_usd": "0.00"
+  },
+  "execution": {
+    "paper_available": false,
+    "live_available": false,
+    "approved_symbols": []
+  },
+  "markets": [
+    {
+      "symbol": "BTCUSD",
+      "state": "observed",
+      "quote": "USD",
+      "response_age_seconds": 8.3
+    },
+    {
+      "symbol": "ETHUSD",
+      "state": "observed",
+      "quote": "USD",
+      "response_age_seconds": 8.1
+    },
+    {
+      "symbol": "BTCUSDT",
+      "state": "observed",
+      "quote": "USDT",
+      "response_age_seconds": 8.0
+    },
+    {
+      "symbol": "ETHUSDT",
+      "state": "observed",
+      "quote": "USDT",
+      "response_age_seconds": 7.8
+    }
+  ]
+}

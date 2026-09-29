@@ -1,0 +1,505 @@
+{
+  "observed_at": "2026-09-28T12:01:53.818071+00:00",
+  "window_start": "2026-09-28T07:38:45.298016+00:00",
+  "window_end": "2026-09-28T11:53:51+00:00",
+  "revision": 71987,
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 71987
+  },
+  "event_counts": [
+    {
+      "kind": "feed_status",
+      "n": 14310
+    },
+    {
+      "kind": "decision",
+      "n": 3772
+    },
+    {
+      "kind": "equity",
+      "n": 1530
+    },
+    {
+      "kind": "market_minute",
+      "n": 1226
+    },
+    {
+      "kind": "universe_scan",
+      "n": 253
+    },
+    {
+      "kind": "futures_context",
+      "n": 252
+    },
+    {
+      "kind": "feed_tiers",
+      "n": 83
+    },
+    {
+      "kind": "universe_membership",
+      "n": 81
+    },
+    {
+      "kind": "order_intent",
+      "n": 42
+    },
+    {
+      "kind": "fill",
+      "n": 42
+    },
+    {
+      "kind": "trade_closed",
+      "n": 21
+    },
+    {
+      "kind": "observation_gap",
+      "n": 2
+    },
+    {
+      "kind": "scheduled_review",
+      "n": 1
+    }
+  ],
+  "primary_decisions": [
+    {
+      "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+      "n": 242
+    },
+    {
+      "reason": "No closed-bar breakout; Volume confirmation absent",
+      "n": 116
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+      "n": 31
+    },
+    {
+      "reason": "Ten-minute symbol cooldown",
+      "n": 29
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; Volume confirmation absent",
+      "n": 21
+    },
+    {
+      "reason": "No closed-bar breakout",
+      "n": 20
+    },
+    {
+      "reason": "Volume confirmation absent",
+      "n": 13
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; Volume confirmation absent; Breakout already extended",
+      "n": 12
+    },
+    {
+      "reason": "Position or pending order already exists",
+      "n": 6
+    },
+    {
+      "reason": "Volume confirmation absent; Breakout already extended",
+      "n": 4
+    },
+    {
+      "reason": "Market metadata is stale; entries paused",
+      "n": 4
+    },
+    {
+      "reason": "Paper entry reserved; waiting for a later book",
+      "n": 3
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed",
+      "n": 3
+    },
+    {
+      "reason": "Bootstrap only; awaiting new closed bar",
+      "n": 3
+    },
+    {
+      "reason": "Breakout already extended",
+      "n": 2
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; Breakout already extended",
+      "n": 1
+    }
+  ],
+  "trade_closures": [
+    {
+      "id": 67091,
+      "at": 1790591140.7774646,
+      "account": "primary",
+      "body": {
+        "pnl": "-0.1351744790000000000",
+        "cost": "49.6133447810000000000",
+        "fees": "0.0990914790000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.4781703020000000000",
+        "closed_at": 1790591140.7774646,
+        "opened_at": 1790591116.9750102
+      }
+    },
+    {
+      "id": 67093,
+      "at": 1790591140.7774646,
+      "account": "breakout-v1",
+      "body": {
+        "pnl": "-0.1351744790000000000",
+        "cost": "49.6133447810000000000",
+        "fees": "0.0990914790000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.4781703020000000000",
+        "closed_at": 1790591140.7774646,
+        "opened_at": 1790591116.9750102
+      }
+    },
+    {
+      "id": 67095,
+      "at": 1790591140.7774646,
+      "account": "selective-v1",
+      "body": {
+        "pnl": "-0.1359153980000000000",
+        "cost": "49.8786748460000000000",
+        "fees": "0.0996213980000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "selective-v1",
+        "proceeds": "49.7427594480000000000",
+        "closed_at": 1790591140.7774646,
+        "opened_at": 1790591116.9750102
+      }
+    },
+    {
+      "id": 67097,
+      "at": 1790591140.7774646,
+      "account": "responsive-v1",
+      "body": {
+        "pnl": "-0.1351744790000000000",
+        "cost": "49.6133447810000000000",
+        "fees": "0.0990914790000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "responsive-v1",
+        "proceeds": "49.4781703020000000000",
+        "closed_at": 1790591140.7774646,
+        "opened_at": 1790591116.9750102
+      }
+    },
+    {
+      "id": 67099,
+      "at": 1790591140.7774646,
+      "account": "universe-wide-v1",
+      "body": {
+        "pnl": "-0.1351744790000000000",
+        "cost": "49.6133447810000000000",
+        "fees": "0.0990914790000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.4781703020000000000",
+        "closed_at": 1790591140.7774646,
+        "opened_at": 1790591116.9750102
+      }
+    },
+    {
+      "id": 67101,
+      "at": 1790591140.7774646,
+      "account": "universe-control-v1",
+      "body": {
+        "pnl": "-0.1359153980000000000",
+        "cost": "49.8786748460000000000",
+        "fees": "0.0996213980000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.7427594480000000000",
+        "closed_at": 1790591140.7774646,
+        "opened_at": 1790591116.9750102
+      }
+    },
+    {
+      "id": 68122,
+      "at": 1790592320.801076,
+      "account": "responsive-v1",
+      "body": {
+        "pnl": "-0.0760251430000000000",
+        "cost": "49.6560724660000000000",
+        "fees": "0.0992361430000000000",
+        "reason": "Trailing stop",
+        "symbol": "ETHUSD",
+        "version": "responsive-v1",
+        "proceeds": "49.5800473230000000000",
+        "closed_at": 1790592320.801076,
+        "opened_at": 1790591897.5441887
+      }
+    },
+    {
+      "id": 68250,
+      "at": 1790592504.4402893,
+      "account": "primary",
+      "body": {
+        "pnl": "-0.1353880070000000000",
+        "cost": "49.6982155670000000000",
+        "fees": "0.0992610070000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.5628275600000000000",
+        "closed_at": 1790592504.4402893,
+        "opened_at": 1790592198.300291
+      }
+    },
+    {
+      "id": 68252,
+      "at": 1790592504.4402893,
+      "account": "breakout-v1",
+      "body": {
+        "pnl": "-0.1353880070000000000",
+        "cost": "49.6982155670000000000",
+        "fees": "0.0992610070000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.5628275600000000000",
+        "closed_at": 1790592504.4402893,
+        "opened_at": 1790592198.300291
+      }
+    },
+    {
+      "id": 68254,
+      "at": 1790592504.4402893,
+      "account": "selective-v1",
+      "body": {
+        "pnl": "-0.1353880070000000000",
+        "cost": "49.6982155670000000000",
+        "fees": "0.0992610070000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "selective-v1",
+        "proceeds": "49.5628275600000000000",
+        "closed_at": 1790592504.4402893,
+        "opened_at": 1790592198.300291
+      }
+    },
+    {
+      "id": 68256,
+      "at": 1790592504.4402893,
+      "account": "universe-wide-v1",
+      "body": {
+        "pnl": "-0.1353880070000000000",
+        "cost": "49.6982155670000000000",
+        "fees": "0.0992610070000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.5628275600000000000",
+        "closed_at": 1790592504.4402893,
+        "opened_at": 1790592198.300291
+      }
+    },
+    {
+      "id": 68258,
+      "at": 1790592504.4402893,
+      "account": "universe-control-v1",
+      "body": {
+        "pnl": "-0.1353880070000000000",
+        "cost": "49.6982155670000000000",
+        "fees": "0.0992610070000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.5628275600000000000",
+        "closed_at": 1790592504.4402893,
+        "opened_at": 1790592198.300291
+      }
+    },
+    {
+      "id": 69472,
+      "at": 1790594184.8251777,
+      "account": "responsive-v1",
+      "body": {
+        "pnl": "-0.1456669324000000000",
+        "cost": "49.0239235486000000000",
+        "fees": "0.0979021324000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "responsive-v1",
+        "proceeds": "48.8782566162000000000",
+        "closed_at": 1790594184.8251777,
+        "opened_at": 1790594176.7320685
+      }
+    },
+    {
+      "id": 69556,
+      "at": 1790594344.3228316,
+      "account": "primary",
+      "body": {
+        "pnl": "-0.1663911360000000000",
+        "cost": "49.6127972340000000000",
+        "fees": "0.0990591360000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.4464060980000000000",
+        "closed_at": 1790594344.3228316,
+        "opened_at": 1790594236.8698573
+      }
+    },
+    {
+      "id": 69558,
+      "at": 1790594344.3228316,
+      "account": "breakout-v1",
+      "body": {
+        "pnl": "-0.1663911360000000000",
+        "cost": "49.6127972340000000000",
+        "fees": "0.0990591360000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.4464060980000000000",
+        "closed_at": 1790594344.3228316,
+        "opened_at": 1790594236.8698573
+      }
+    },
+    {
+      "id": 69560,
+      "at": 1790594344.3228316,
+      "account": "selective-v1",
+      "body": {
+        "pnl": "-0.1663911360000000000",
+        "cost": "49.6127972340000000000",
+        "fees": "0.0990591360000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "selective-v1",
+        "proceeds": "49.4464060980000000000",
+        "closed_at": 1790594344.3228316,
+        "opened_at": 1790594236.8698573
+      }
+    },
+    {
+      "id": 69562,
+      "at": 1790594344.3228316,
+      "account": "responsive-v1",
+      "body": {
+        "pnl": "-0.1663911360000000000",
+        "cost": "49.6127972340000000000",
+        "fees": "0.0990591360000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "responsive-v1",
+        "proceeds": "49.4464060980000000000",
+        "closed_at": 1790594344.3228316,
+        "opened_at": 1790594236.8698573
+      }
+    },
+    {
+      "id": 69564,
+      "at": 1790594344.3228316,
+      "account": "universe-wide-v1",
+      "body": {
+        "pnl": "-0.1663911360000000000",
+        "cost": "49.6127972340000000000",
+        "fees": "0.0990591360000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.4464060980000000000",
+        "closed_at": 1790594344.3228316,
+        "opened_at": 1790594236.8698573
+      }
+    },
+    {
+      "id": 69566,
+      "at": 1790594344.3228316,
+      "account": "universe-control-v1",
+      "body": {
+        "pnl": "-0.1663911360000000000",
+        "cost": "49.6127972340000000000",
+        "fees": "0.0990591360000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "breakout-v1",
+        "proceeds": "49.4464060980000000000",
+        "closed_at": 1790594344.3228316,
+        "opened_at": 1790594236.8698573
+      }
+    },
+    {
+      "id": 70412,
+      "at": 1790595825.5538616,
+      "account": "responsive-v1",
+      "body": {
+        "pnl": "-0.1299378950000000000",
+        "cost": "49.4014320800000000000",
+        "fees": "0.0986728950000000000",
+        "reason": "ATR stop",
+        "symbol": "ETHUSD",
+        "version": "responsive-v1",
+        "proceeds": "49.2714941850000000000",
+        "closed_at": 1790595825.5538616,
+        "opened_at": 1790595797.1078098
+      }
+    },
+    {
+      "id": 70504,
+      "at": 1790595864.2118118,
+      "account": "selective-v1",
+      "body": {
+        "pnl": "-0.1262108740000000000",
+        "cost": "49.0657565398000000000",
+        "fees": "0.0980052740000000000",
+        "reason": "ATR stop",
+        "symbol": "BTCUSD",
+        "version": "selective-v1",
+        "proceeds": "48.9395456658000000000",
+        "closed_at": 1790595864.2118118,
+        "opened_at": 1790595856.7915735
+      }
+    }
+  ],
+  "gaps_and_funding": [
+    {
+      "id": 69515,
+      "at": 1790594326.8486404,
+      "kind": "observation_gap",
+      "account": "system",
+      "body": {
+        "note": "No simulated fills invented inside the gap",
+        "seconds": 48.04099178314209
+      }
+    },
+    {
+      "id": 69826,
+      "at": 1790595025.3790975,
+      "kind": "observation_gap",
+      "account": "system",
+      "body": {
+        "note": "No simulated fills invented inside the gap",
+        "seconds": 48.348538398742676
+      }
+    }
+  ],
+  "tier_resource_window": {
+    "seconds": 15305.70198392868,
+    "inferred_constrained_seconds": 5950.105584859848,
+    "unknown_seconds": 0,
+    "state_changes": 22,
+    "events": 83,
+    "truncated": false,
+    "limitation": "Inferred from plan-change events; not a direct continuous CPU or engine-stall measurement. Planned service restart intervals are included."
+  },
+  "bounded_result_truncation": {
+    "trade_closures": false,
+    "gaps_and_funding": false
+  }
+}

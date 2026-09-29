@@ -1,0 +1,16 @@
+{
+  "ObservedAt": "2026-09-28T03:40:08.3518566Z",
+  "TaskName": "TradingResearch-Paper-20260927",
+  "State": "Running",
+  "LastRunTime": "2026-09-27T17:05:12.0000000-06:00",
+  "LastTaskResult": 267009,
+  "LastTaskResultHex": "0x41301",
+  "MissedRuns": 0,
+  "Actions": [
+    {
+      "Execute": "powershell.exe",
+      "Arguments": "-NoProfile -NonInteractive -WindowStyle Hidden -File \"C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project\\scripts\\Run-PaperExperiment.ps1\"",
+      "WorkingDirectory": "C:\\Users\\chris.t0\\Documents\\Codex\\2026-09-27\\we-are-starting-a-new-project"
+    }
+  ]
+}

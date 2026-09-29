@@ -1,0 +1,188 @@
+[
+  {
+    "at": "2026-09-28T13:04:48.985771+00:00",
+    "running": true,
+    "error": null,
+    "stale": false,
+    "gaps": 8,
+    "feed_errors": {
+      "SOLUSD": "REST fallback round trip exceeded one second",
+      "HBARUSD": "REST fallback round trip exceeded one second"
+    },
+    "feed": {
+      "transport": "Public WebSocket",
+      "clock_offset_ms": 81.27,
+      "clock_uncertainty_ms": 62.5,
+      "capture_dropped": 0,
+      "markets": {
+        "BTCUSD": {
+          "interval_ms": 100,
+          "fresh": true,
+          "received_age_ms": 343.0,
+          "exchange_event_ms": 1790600688657,
+          "books": 70,
+          "trades": 1,
+          "reconnects": 87,
+          "trade_gaps": 0,
+          "interval_p50_ms": 203.0,
+          "event_age_p95_ms": 70.91,
+          "error": null,
+          "source": "binance.us-depth-websocket",
+          "usable": true,
+          "round_trip_ms": 0
+        },
+        "ETHUSD": {
+          "interval_ms": 100,
+          "fresh": true,
+          "received_age_ms": 140.0,
+          "exchange_event_ms": 1790600688858,
+          "books": 67,
+          "trades": 0,
+          "reconnects": 87,
+          "trade_gaps": 0,
+          "interval_p50_ms": 203.0,
+          "event_age_p95_ms": 74.15,
+          "error": null,
+          "source": "binance.us-depth-websocket",
+          "usable": true,
+          "round_trip_ms": 0
+        }
+      }
+    },
+    "performance": {
+      "average_cpu_percent_of_machine": 2.63,
+      "engine_p95_ms": 47.0,
+      "commit_p95_ms": 32.0
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 81037
+    }
+  },
+  {
+    "at": "2026-09-28T13:05:04.004860+00:00",
+    "running": true,
+    "error": null,
+    "stale": false,
+    "gaps": 8,
+    "feed_errors": {
+      "SOLUSD": "REST fallback round trip exceeded one second",
+      "HBARUSD": "REST fallback round trip exceeded one second"
+    },
+    "feed": {
+      "transport": "Public WebSocket",
+      "clock_offset_ms": 80.84,
+      "clock_uncertainty_ms": 62.5,
+      "capture_dropped": 0,
+      "markets": {
+        "BTCUSD": {
+          "interval_ms": 100,
+          "fresh": true,
+          "received_age_ms": 62.0,
+          "exchange_event_ms": 1790600703959,
+          "books": 110,
+          "trades": 4,
+          "reconnects": 87,
+          "trade_gaps": 0,
+          "interval_p50_ms": 203.0,
+          "event_age_p95_ms": 82.82,
+          "error": null,
+          "source": "binance.us-depth-websocket",
+          "usable": true,
+          "round_trip_ms": 0
+        },
+        "ETHUSD": {
+          "interval_ms": 100,
+          "fresh": true,
+          "received_age_ms": 156.0,
+          "exchange_event_ms": 1790600703858,
+          "books": 132,
+          "trades": 0,
+          "reconnects": 87,
+          "trade_gaps": 0,
+          "interval_p50_ms": 171.0,
+          "event_age_p95_ms": 149.78,
+          "error": null,
+          "source": "binance.us-depth-websocket",
+          "usable": true,
+          "round_trip_ms": 0
+        }
+      }
+    },
+    "performance": {
+      "average_cpu_percent_of_machine": 2.63,
+      "engine_p95_ms": 47.0,
+      "commit_p95_ms": 32.0
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 81129
+    }
+  },
+  {
+    "at": "2026-09-28T13:05:19.022274+00:00",
+    "running": true,
+    "error": null,
+    "stale": false,
+    "gaps": 8,
+    "feed_errors": {
+      "SOLUSD": "REST fallback round trip exceeded one second",
+      "HBARUSD": "REST fallback round trip exceeded one second"
+    },
+    "feed": {
+      "transport": "Public WebSocket",
+      "clock_offset_ms": 80.84,
+      "clock_uncertainty_ms": 62.5,
+      "capture_dropped": 0,
+      "markets": {
+        "BTCUSD": {
+          "interval_ms": 100,
+          "fresh": true,
+          "received_age_ms": 485.0,
+          "exchange_event_ms": 1790600718557,
+          "books": 153,
+          "trades": 7,
+          "reconnects": 87,
+          "trade_gaps": 0,
+          "interval_p50_ms": 203.0,
+          "event_age_p95_ms": 70.91,
+          "error": null,
+          "source": "binance.us-depth-websocket",
+          "usable": true,
+          "round_trip_ms": 0
+        },
+        "ETHUSD": {
+          "interval_ms": 100,
+          "fresh": true,
+          "received_age_ms": 172.0,
+          "exchange_event_ms": 1790600718858,
+          "books": 194,
+          "trades": 0,
+          "reconnects": 87,
+          "trade_gaps": 0,
+          "interval_p50_ms": 110.0,
+          "event_age_p95_ms": 78.89,
+          "error": null,
+          "source": "binance.us-depth-websocket",
+          "usable": true,
+          "round_trip_ms": 0
+        }
+      }
+    },
+    "performance": {
+      "average_cpu_percent_of_machine": 2.63,
+      "engine_p95_ms": 47.0,
+      "commit_p95_ms": 32.0
+    },
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 81129
+    }
+  }
+]

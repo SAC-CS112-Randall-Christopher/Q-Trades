@@ -1,0 +1,56 @@
+{
+  "paused_after_restart": true,
+  "observations_preserved": 21,
+  "books_preserved": true,
+  "restored_books_require_reconfirmation": true,
+  "capture_sha256": "d1aa6e60f3b06a5545f7a2ba98fc0f33dec3da090e1546e06f0a6a222a6916d2",
+  "replay": {
+    "evidence_type": "offline_public_snapshot_replay",
+    "valid_depth_observations": 20,
+    "rejected": [],
+    "latest_metrics": {
+      "BTCUSD": {
+        "bid": "84671.56000000",
+        "ask": "84672.45000000",
+        "mid": "84672.00500000",
+        "spread_bps": "0.10511148283308042605108973148799299130804803783730",
+        "bid_depth_quote": "115203.1880841000000000",
+        "ask_depth_quote": "93202.0035303000000000"
+      },
+      "ETHUSD": {
+        "bid": "2684.63000000",
+        "ask": "2684.66000000",
+        "mid": "2684.64500000",
+        "spread_bps": "0.11174661826796466571930366957269955617968111240034",
+        "bid_depth_quote": "118939.7808700000000000",
+        "ask_depth_quote": "129160.8427170000000000"
+      },
+      "BTCUSDT": {
+        "bid": "84679.00000000",
+        "ask": "84679.26000000",
+        "mid": "84679.13000000",
+        "spread_bps": "0.030704141622617048616347380989861374343359455865926",
+        "bid_depth_quote": "148604.0940310000000000",
+        "ask_depth_quote": "212976.1413342000000000"
+      },
+      "ETHUSDT": {
+        "bid": "2684.96000000",
+        "ask": "2685.07000000",
+        "mid": "2685.01500000",
+        "spread_bps": "0.40968113772176319312927488300810237559194268933321",
+        "bid_depth_quote": "120981.9470780000000000",
+        "ask_depth_quote": "142450.2744410000000000"
+      }
+    },
+    "retention": {
+      "retained": 21,
+      "oldest": "2026-09-27T21:50:28.476802+00:00",
+      "newest": "2026-09-27T21:51:33.431999+00:00",
+      "total": 21,
+      "evicted": 0,
+      "capacity": 2000,
+      "payload_byte_budget": 16000000
+    },
+    "limitation": "Sampled REST books do not prove continuous coverage, fills, or strategy returns"
+  }
+}

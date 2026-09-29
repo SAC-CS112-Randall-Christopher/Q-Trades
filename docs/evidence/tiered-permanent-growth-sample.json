@@ -1,0 +1,22 @@
+{
+  "sample_seconds": 180,
+  "begin": 1790554999.6096137,
+  "end": 1790555179.6096137,
+  "events": {
+    "rows": 67,
+    "bytes": 40675
+  },
+  "nonbootstrap_bars": {
+    "rows": 18,
+    "bytes": 3325
+  },
+  "physical_database": {
+    "database_bytes": 11507391,
+    "candles": 4379,
+    "events": 1198,
+    "journal_lines": 90,
+    "candle_table_bytes": 1269760,
+    "journal_table_bytes": 983040
+  },
+  "note": "Logical bodies only; excludes indexes, state rewrites, journal lines, WAL, backups; sample may include candidate promotions."
+}

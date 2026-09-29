@@ -1,0 +1,4486 @@
+{
+  "mode": "paper",
+  "checkpoint": "CP0 / CP1 \u2014 public market monitor",
+  "runtime_state": "monitoring",
+  "paused": false,
+  "generated_at": "2026-09-28T00:23:07.452555+00:00",
+  "poll_seconds": 15,
+  "stale_after_seconds": 45,
+  "retry_in_seconds": 0,
+  "storage_error": null,
+  "ai": {
+    "enabled": false,
+    "daily_budget_usd": "0.00"
+  },
+  "execution": {
+    "paper_available": true,
+    "live_available": false,
+    "approved_symbols": []
+  },
+  "markets": [
+    {
+      "symbol": "BTCUSD",
+      "instrument": {
+        "symbol": "BTCUSD",
+        "base": "BTC",
+        "quote": "USD",
+        "venue_status": "TRADING",
+        "spot_allowed": true,
+        "minimum_notional": "1.00000000",
+        "filters": [
+          {
+            "filterType": "PRICE_FILTER",
+            "minPrice": "0.01000000",
+            "maxPrice": "1000000.00000000",
+            "tickSize": "0.01000000"
+          },
+          {
+            "filterType": "PERCENT_PRICE",
+            "multiplierUp": "5",
+            "multiplierDown": "0.2",
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "LOT_SIZE",
+            "minQty": "0.00001000",
+            "maxQty": "9000.00000000",
+            "stepSize": "0.00001000"
+          },
+          {
+            "filterType": "MIN_NOTIONAL",
+            "minNotional": "1.00000000",
+            "applyToMarket": true,
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "ICEBERG_PARTS",
+            "limit": 10
+          },
+          {
+            "filterType": "MARKET_LOT_SIZE",
+            "minQty": "0.00000000",
+            "maxQty": "10.37140333",
+            "stepSize": "0.00000000"
+          },
+          {
+            "filterType": "TRAILING_DELTA",
+            "minTrailingAboveDelta": 10,
+            "maxTrailingAboveDelta": 2000,
+            "minTrailingBelowDelta": 10,
+            "maxTrailingBelowDelta": 2000
+          },
+          {
+            "filterType": "PERCENT_PRICE_BY_SIDE",
+            "bidMultiplierUp": "5",
+            "bidMultiplierDown": "0.2",
+            "askMultiplierUp": "5",
+            "askMultiplierDown": "0.2",
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "MAX_NUM_ORDERS",
+            "maxNumOrders": 200
+          },
+          {
+            "filterType": "MAX_NUM_ORDER_LISTS",
+            "maxNumOrderLists": 20
+          },
+          {
+            "filterType": "MAX_NUM_ALGO_ORDERS",
+            "maxNumAlgoOrders": 5
+          },
+          {
+            "filterType": "MAX_NUM_ORDER_AMENDS",
+            "maxNumOrderAmends": 10
+          }
+        ]
+      },
+      "state": "observed",
+      "reasons": [],
+      "response_age_seconds": 2.5,
+      "observed_at": "2026-09-28T00:23:04.893354+00:00",
+      "request_ms": 484,
+      "metrics": {
+        "bid": "84933.48000000",
+        "ask": "84939.37000000",
+        "mid": "84936.42500000",
+        "spread_bps": "0.69345984364187685083284350618712760750172849869770",
+        "bid_depth_quote": "175502.5146410000000000",
+        "ask_depth_quote": "178058.4396473000000000"
+      },
+      "book": {
+        "lastUpdateId": 4600970678,
+        "bids": [
+          [
+            "84933.48000000",
+            "0.02381000"
+          ],
+          [
+            "84921.22000000",
+            "0.02476000"
+          ],
+          [
+            "84919.60000000",
+            "0.00306000"
+          ],
+          [
+            "84906.01000000",
+            "0.03250000"
+          ],
+          [
+            "84902.26000000",
+            "0.10191000"
+          ],
+          [
+            "84901.65000000",
+            "0.02663000"
+          ],
+          [
+            "84898.80000000",
+            "0.02125000"
+          ],
+          [
+            "84898.46000000",
+            "0.02663000"
+          ],
+          [
+            "84891.94000000",
+            "0.10108000"
+          ],
+          [
+            "84887.10000000",
+            "0.10124000"
+          ],
+          [
+            "84884.60000000",
+            "0.02663000"
+          ],
+          [
+            "84883.20000000",
+            "0.10146000"
+          ],
+          [
+            "84881.67000000",
+            "0.43142000"
+          ],
+          [
+            "84878.75000000",
+            "0.10205000"
+          ],
+          [
+            "84869.30000000",
+            "0.15485000"
+          ],
+          [
+            "84859.84000000",
+            "0.14601000"
+          ],
+          [
+            "84853.49000000",
+            "0.20270000"
+          ],
+          [
+            "84847.05000000",
+            "0.16112000"
+          ],
+          [
+            "84837.08000000",
+            "0.11787000"
+          ],
+          [
+            "84836.10000000",
+            "0.16088000"
+          ]
+        ],
+        "asks": [
+          [
+            "84939.37000000",
+            "0.00061000"
+          ],
+          [
+            "84942.19000000",
+            "0.00247000"
+          ],
+          [
+            "84946.72000000",
+            "0.02464000"
+          ],
+          [
+            "84949.34000000",
+            "0.00306000"
+          ],
+          [
+            "84956.44000000",
+            "0.74226000"
+          ],
+          [
+            "84962.93000000",
+            "0.03248000"
+          ],
+          [
+            "84963.68000000",
+            "0.01775000"
+          ],
+          [
+            "84972.33000000",
+            "0.02663000"
+          ],
+          [
+            "84974.94000000",
+            "0.01176000"
+          ],
+          [
+            "84978.10000000",
+            "0.00018000"
+          ],
+          [
+            "84987.21000000",
+            "0.10105000"
+          ],
+          [
+            "84992.35000000",
+            "0.11123000"
+          ],
+          [
+            "84994.96000000",
+            "0.00200000"
+          ],
+          [
+            "85000.00000000",
+            "0.00010000"
+          ],
+          [
+            "85005.52000000",
+            "0.16988000"
+          ],
+          [
+            "85010.50000000",
+            "0.20232000"
+          ],
+          [
+            "85021.34000000",
+            "0.15166000"
+          ],
+          [
+            "85029.08000000",
+            "0.11777000"
+          ],
+          [
+            "85031.51000000",
+            "0.20974000"
+          ],
+          [
+            "85041.67000000",
+            "0.16740000"
+          ]
+        ]
+      },
+      "entry_allowed": false,
+      "entry_reason": "Monitor only; see separate Tier 3 paper engine status"
+    },
+    {
+      "symbol": "ETHUSD",
+      "instrument": {
+        "symbol": "ETHUSD",
+        "base": "ETH",
+        "quote": "USD",
+        "venue_status": "TRADING",
+        "spot_allowed": true,
+        "minimum_notional": "1.00000000",
+        "filters": [
+          {
+            "filterType": "PRICE_FILTER",
+            "minPrice": "0.01000000",
+            "maxPrice": "1000000.00000000",
+            "tickSize": "0.01000000"
+          },
+          {
+            "filterType": "PERCENT_PRICE",
+            "multiplierUp": "5",
+            "multiplierDown": "0.2",
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "LOT_SIZE",
+            "minQty": "0.00010000",
+            "maxQty": "9000.00000000",
+            "stepSize": "0.00010000"
+          },
+          {
+            "filterType": "MIN_NOTIONAL",
+            "minNotional": "1.00000000",
+            "applyToMarket": true,
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "ICEBERG_PARTS",
+            "limit": 10
+          },
+          {
+            "filterType": "MARKET_LOT_SIZE",
+            "minQty": "0.00000000",
+            "maxQty": "254.38308375",
+            "stepSize": "0.00000000"
+          },
+          {
+            "filterType": "TRAILING_DELTA",
+            "minTrailingAboveDelta": 10,
+            "maxTrailingAboveDelta": 2000,
+            "minTrailingBelowDelta": 10,
+            "maxTrailingBelowDelta": 2000
+          },
+          {
+            "filterType": "PERCENT_PRICE_BY_SIDE",
+            "bidMultiplierUp": "5",
+            "bidMultiplierDown": "0.2",
+            "askMultiplierUp": "5",
+            "askMultiplierDown": "0.2",
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "MAX_NUM_ORDERS",
+            "maxNumOrders": 200
+          },
+          {
+            "filterType": "MAX_NUM_ORDER_LISTS",
+            "maxNumOrderLists": 20
+          },
+          {
+            "filterType": "MAX_NUM_ALGO_ORDERS",
+            "maxNumAlgoOrders": 5
+          },
+          {
+            "filterType": "MAX_NUM_ORDER_AMENDS",
+            "maxNumOrderAmends": 10
+          }
+        ]
+      },
+      "state": "observed",
+      "reasons": [],
+      "response_age_seconds": 2.2,
+      "observed_at": "2026-09-28T00:23:05.279493+00:00",
+      "request_ms": 391,
+      "metrics": {
+        "bid": "2699.18000000",
+        "ask": "2699.23000000",
+        "mid": "2699.20500000",
+        "spread_bps": "0.18523972799398341363475541872514314399980735068289",
+        "bid_depth_quote": "106729.1284880000000000",
+        "ask_depth_quote": "103034.6226670000000000"
+      },
+      "book": {
+        "lastUpdateId": 3776880743,
+        "bids": [
+          [
+            "2699.18000000",
+            "0.44010000"
+          ],
+          [
+            "2699.16000000",
+            "0.82020000"
+          ],
+          [
+            "2699.14000000",
+            "0.86510000"
+          ],
+          [
+            "2699.09000000",
+            "0.07410000"
+          ],
+          [
+            "2699.07000000",
+            "0.09630000"
+          ],
+          [
+            "2698.88000000",
+            "0.37050000"
+          ],
+          [
+            "2698.64000000",
+            "1.02270000"
+          ],
+          [
+            "2698.43000000",
+            "0.82020000"
+          ],
+          [
+            "2698.32000000",
+            "0.15380000"
+          ],
+          [
+            "2698.30000000",
+            "0.82020000"
+          ],
+          [
+            "2697.97000000",
+            "0.75960000"
+          ],
+          [
+            "2697.19000000",
+            "6.68910000"
+          ],
+          [
+            "2697.13000000",
+            "6.37710000"
+          ],
+          [
+            "2696.79000000",
+            "2.73410000"
+          ],
+          [
+            "2696.50000000",
+            "3.70850000"
+          ],
+          [
+            "2696.28000000",
+            "0.00110000"
+          ],
+          [
+            "2695.49000000",
+            "7.40760000"
+          ],
+          [
+            "2694.15000000",
+            "3.68240000"
+          ],
+          [
+            "2693.70000000",
+            "2.73410000"
+          ],
+          [
+            "2693.09000000",
+            "0.00410000"
+          ]
+        ],
+        "asks": [
+          [
+            "2699.23000000",
+            "0.07420000"
+          ],
+          [
+            "2699.28000000",
+            "0.07390000"
+          ],
+          [
+            "2699.37000000",
+            "0.06130000"
+          ],
+          [
+            "2699.94000000",
+            "1.14420000"
+          ],
+          [
+            "2699.96000000",
+            "0.75860000"
+          ],
+          [
+            "2700.03000000",
+            "0.09620000"
+          ],
+          [
+            "2700.46000000",
+            "1.02200000"
+          ],
+          [
+            "2700.50000000",
+            "0.37030000"
+          ],
+          [
+            "2701.01000000",
+            "1.08570000"
+          ],
+          [
+            "2701.97000000",
+            "6.36570000"
+          ],
+          [
+            "2702.10000000",
+            "0.00580000"
+          ],
+          [
+            "2702.57000000",
+            "0.02000000"
+          ],
+          [
+            "2702.67000000",
+            "3.68240000"
+          ],
+          [
+            "2702.93000000",
+            "3.69960000"
+          ],
+          [
+            "2702.97000000",
+            "0.82020000"
+          ],
+          [
+            "2703.57000000",
+            "0.82020000"
+          ],
+          [
+            "2703.60000000",
+            "6.95020000"
+          ],
+          [
+            "2703.65000000",
+            "0.01000000"
+          ],
+          [
+            "2703.74000000",
+            "11.05640000"
+          ],
+          [
+            "2703.87000000",
+            "0.00460000"
+          ]
+        ]
+      },
+      "entry_allowed": false,
+      "entry_reason": "Monitor only; see separate Tier 3 paper engine status"
+    },
+    {
+      "symbol": "BTCUSDT",
+      "instrument": {
+        "symbol": "BTCUSDT",
+        "base": "BTC",
+        "quote": "USDT",
+        "venue_status": "TRADING",
+        "spot_allowed": true,
+        "minimum_notional": "1.00000000",
+        "filters": [
+          {
+            "filterType": "PRICE_FILTER",
+            "minPrice": "0.01000000",
+            "maxPrice": "1000000.00000000",
+            "tickSize": "0.01000000"
+          },
+          {
+            "filterType": "PERCENT_PRICE",
+            "multiplierUp": "5",
+            "multiplierDown": "0.2",
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "LOT_SIZE",
+            "minQty": "0.00001000",
+            "maxQty": "9000.00000000",
+            "stepSize": "0.00001000"
+          },
+          {
+            "filterType": "MIN_NOTIONAL",
+            "minNotional": "1.00000000",
+            "applyToMarket": true,
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "ICEBERG_PARTS",
+            "limit": 10
+          },
+          {
+            "filterType": "MARKET_LOT_SIZE",
+            "minQty": "0.00000000",
+            "maxQty": "11.18062795",
+            "stepSize": "0.00000000"
+          },
+          {
+            "filterType": "TRAILING_DELTA",
+            "minTrailingAboveDelta": 10,
+            "maxTrailingAboveDelta": 2000,
+            "minTrailingBelowDelta": 10,
+            "maxTrailingBelowDelta": 2000
+          },
+          {
+            "filterType": "PERCENT_PRICE_BY_SIDE",
+            "bidMultiplierUp": "5",
+            "bidMultiplierDown": "0.2",
+            "askMultiplierUp": "5",
+            "askMultiplierDown": "0.2",
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "MAX_NUM_ORDERS",
+            "maxNumOrders": 200
+          },
+          {
+            "filterType": "MAX_NUM_ORDER_LISTS",
+            "maxNumOrderLists": 20
+          },
+          {
+            "filterType": "MAX_NUM_ALGO_ORDERS",
+            "maxNumAlgoOrders": 5
+          },
+          {
+            "filterType": "MAX_NUM_ORDER_AMENDS",
+            "maxNumOrderAmends": 10
+          }
+        ]
+      },
+      "state": "observed",
+      "reasons": [],
+      "response_age_seconds": 2.0,
+      "observed_at": "2026-09-28T00:23:05.441780+00:00",
+      "request_ms": 172,
+      "metrics": {
+        "bid": "84951.45000000",
+        "ask": "84952.02000000",
+        "mid": "84951.73500000",
+        "spread_bps": "0.067096922740895168297622173343487334308122135469040",
+        "bid_depth_quote": "100785.8511007000000000",
+        "ask_depth_quote": "110027.5798203000000000"
+      },
+      "book": {
+        "lastUpdateId": 3345613864,
+        "bids": [
+          [
+            "84951.45000000",
+            "0.00328000"
+          ],
+          [
+            "84951.29000000",
+            "0.00331000"
+          ],
+          [
+            "84951.23000000",
+            "0.00331000"
+          ],
+          [
+            "84939.30000000",
+            "0.02944000"
+          ],
+          [
+            "84936.80000000",
+            "0.00306000"
+          ],
+          [
+            "84933.97000000",
+            "0.02478000"
+          ],
+          [
+            "84929.02000000",
+            "0.04477000"
+          ],
+          [
+            "84923.85000000",
+            "0.07888000"
+          ],
+          [
+            "84923.20000000",
+            "0.03249000"
+          ],
+          [
+            "84922.77000000",
+            "0.01489000"
+          ],
+          [
+            "84916.60000000",
+            "0.00117000"
+          ],
+          [
+            "84914.12000000",
+            "0.03549000"
+          ],
+          [
+            "84909.92000000",
+            "0.03549000"
+          ],
+          [
+            "84906.64000000",
+            "0.02366000"
+          ],
+          [
+            "84899.53000000",
+            "0.00816000"
+          ],
+          [
+            "84897.47000000",
+            "0.03549000"
+          ],
+          [
+            "84888.41000000",
+            "0.03273000"
+          ],
+          [
+            "84886.38000000",
+            "0.45630000"
+          ],
+          [
+            "84870.67000000",
+            "0.20266000"
+          ],
+          [
+            "84848.12000000",
+            "0.11788000"
+          ]
+        ],
+        "asks": [
+          [
+            "84952.02000000",
+            "0.00328000"
+          ],
+          [
+            "84952.07000000",
+            "0.00331000"
+          ],
+          [
+            "84952.18000000",
+            "0.00327000"
+          ],
+          [
+            "84959.47000000",
+            "0.02628000"
+          ],
+          [
+            "84959.90000000",
+            "0.02402000"
+          ],
+          [
+            "84965.80000000",
+            "0.00265000"
+          ],
+          [
+            "84966.54000000",
+            "0.00306000"
+          ],
+          [
+            "84971.79000000",
+            "0.03549000"
+          ],
+          [
+            "84980.13000000",
+            "0.03247000"
+          ],
+          [
+            "84983.77000000",
+            "0.05877000"
+          ],
+          [
+            "84985.54000000",
+            "0.02942000"
+          ],
+          [
+            "84986.26000000",
+            "0.45561000"
+          ],
+          [
+            "84992.67000000",
+            "0.03549000"
+          ],
+          [
+            "85000.00000000",
+            "0.02160000"
+          ],
+          [
+            "85001.53000000",
+            "0.00117000"
+          ],
+          [
+            "85003.11000000",
+            "0.03248000"
+          ],
+          [
+            "85027.70000000",
+            "0.20228000"
+          ],
+          [
+            "85044.44000000",
+            "0.11761000"
+          ],
+          [
+            "85056.71000000",
+            "0.08829000"
+          ],
+          [
+            "85056.72000000",
+            "0.11777000"
+          ]
+        ]
+      },
+      "entry_allowed": false,
+      "entry_reason": "Monitor only; see separate Tier 3 paper engine status"
+    },
+    {
+      "symbol": "ETHUSDT",
+      "instrument": {
+        "symbol": "ETHUSDT",
+        "base": "ETH",
+        "quote": "USDT",
+        "venue_status": "TRADING",
+        "spot_allowed": true,
+        "minimum_notional": "1.00000000",
+        "filters": [
+          {
+            "filterType": "PRICE_FILTER",
+            "minPrice": "0.01000000",
+            "maxPrice": "1000000.00000000",
+            "tickSize": "0.01000000"
+          },
+          {
+            "filterType": "PERCENT_PRICE",
+            "multiplierUp": "5",
+            "multiplierDown": "0.2",
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "LOT_SIZE",
+            "minQty": "0.00010000",
+            "maxQty": "9000.00000000",
+            "stepSize": "0.00010000"
+          },
+          {
+            "filterType": "MIN_NOTIONAL",
+            "minNotional": "1.00000000",
+            "applyToMarket": true,
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "ICEBERG_PARTS",
+            "limit": 10
+          },
+          {
+            "filterType": "MARKET_LOT_SIZE",
+            "minQty": "0.00000000",
+            "maxQty": "251.98127583",
+            "stepSize": "0.00000000"
+          },
+          {
+            "filterType": "TRAILING_DELTA",
+            "minTrailingAboveDelta": 10,
+            "maxTrailingAboveDelta": 2000,
+            "minTrailingBelowDelta": 10,
+            "maxTrailingBelowDelta": 2000
+          },
+          {
+            "filterType": "PERCENT_PRICE_BY_SIDE",
+            "bidMultiplierUp": "5",
+            "bidMultiplierDown": "0.2",
+            "askMultiplierUp": "5",
+            "askMultiplierDown": "0.2",
+            "avgPriceMins": 5
+          },
+          {
+            "filterType": "MAX_NUM_ORDERS",
+            "maxNumOrders": 200
+          },
+          {
+            "filterType": "MAX_NUM_ORDER_LISTS",
+            "maxNumOrderLists": 20
+          },
+          {
+            "filterType": "MAX_NUM_ALGO_ORDERS",
+            "maxNumAlgoOrders": 5
+          },
+          {
+            "filterType": "MAX_NUM_ORDER_AMENDS",
+            "maxNumOrderAmends": 10
+          }
+        ]
+      },
+      "state": "observed",
+      "reasons": [],
+      "response_age_seconds": 1.8,
+      "observed_at": "2026-09-28T00:23:05.596645+00:00",
+      "request_ms": 156,
+      "metrics": {
+        "bid": "2699.88000000",
+        "ask": "2700.03000000",
+        "mid": "2699.95500000",
+        "spread_bps": "0.55556481496913837452846436329494380461896587165342",
+        "bid_depth_quote": "126773.2301890000000000",
+        "ask_depth_quote": "127383.3091630000000000"
+      },
+      "book": {
+        "lastUpdateId": 2979546666,
+        "bids": [
+          [
+            "2699.88000000",
+            "0.07410000"
+          ],
+          [
+            "2699.84000000",
+            "0.07380000"
+          ],
+          [
+            "2699.57000000",
+            "0.82010000"
+          ],
+          [
+            "2699.55000000",
+            "0.76160000"
+          ],
+          [
+            "2699.44000000",
+            "0.09630000"
+          ],
+          [
+            "2699.27000000",
+            "0.82010000"
+          ],
+          [
+            "2699.25000000",
+            "0.92640000"
+          ],
+          [
+            "2699.10000000",
+            "0.82010000"
+          ],
+          [
+            "2699.01000000",
+            "1.02250000"
+          ],
+          [
+            "2698.59000000",
+            "0.21090000"
+          ],
+          [
+            "2698.53000000",
+            "0.05600000"
+          ],
+          [
+            "2698.47000000",
+            "0.00150000"
+          ],
+          [
+            "2698.29000000",
+            "0.10540000"
+          ],
+          [
+            "2697.64000000",
+            "0.03700000"
+          ],
+          [
+            "2697.26000000",
+            "15.62720000"
+          ],
+          [
+            "2697.04000000",
+            "5.13310000"
+          ],
+          [
+            "2696.81000000",
+            "5.10830000"
+          ],
+          [
+            "2696.79000000",
+            "5.12190000"
+          ],
+          [
+            "2696.63000000",
+            "5.07510000"
+          ],
+          [
+            "2696.59000000",
+            "5.10970000"
+          ]
+        ],
+        "asks": [
+          [
+            "2700.03000000",
+            "0.44010000"
+          ],
+          [
+            "2700.04000000",
+            "0.07430000"
+          ],
+          [
+            "2700.06000000",
+            "0.75960000"
+          ],
+          [
+            "2700.07000000",
+            "0.07420000"
+          ],
+          [
+            "2700.34000000",
+            "0.03700000"
+          ],
+          [
+            "2700.37000000",
+            "0.78760000"
+          ],
+          [
+            "2700.40000000",
+            "0.09620000"
+          ],
+          [
+            "2700.76000000",
+            "0.92590000"
+          ],
+          [
+            "2700.83000000",
+            "1.02190000"
+          ],
+          [
+            "2701.05000000",
+            "0.56800000"
+          ],
+          [
+            "2701.53000000",
+            "6.49710000"
+          ],
+          [
+            "2701.54000000",
+            "0.05600000"
+          ],
+          [
+            "2702.33000000",
+            "0.00140000"
+          ],
+          [
+            "2702.34000000",
+            "6.36480000"
+          ],
+          [
+            "2702.87000000",
+            "2.77820000"
+          ],
+          [
+            "2702.88000000",
+            "5.12170000"
+          ],
+          [
+            "2702.98000000",
+            "6.31350000"
+          ],
+          [
+            "2703.09000000",
+            "5.08050000"
+          ],
+          [
+            "2703.17000000",
+            "3.70030000"
+          ],
+          [
+            "2703.18000000",
+            "6.43740000"
+          ]
+        ]
+      },
+      "entry_allowed": false,
+      "entry_reason": "Monitor only; see separate Tier 3 paper engine status"
+    }
+  ],
+  "capture": {
+    "retained": 2000,
+    "oldest": "2026-09-27T22:05:26.835893+00:00",
+    "newest": "2026-09-28T00:23:05.596645+00:00",
+    "total": 2155,
+    "evicted": 155,
+    "capacity": 2000,
+    "payload_byte_budget": 16000000
+  },
+  "events": [
+    {
+      "id": 9,
+      "observed_at": "2026-09-28T00:19:32.271760+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    },
+    {
+      "id": 8,
+      "observed_at": "2026-09-27T23:19:32.259207+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    },
+    {
+      "id": 7,
+      "observed_at": "2026-09-27T23:08:55.534250+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    },
+    {
+      "id": 6,
+      "observed_at": "2026-09-27T23:05:19.116532+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    },
+    {
+      "id": 5,
+      "observed_at": "2026-09-27T21:57:33.277167+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    },
+    {
+      "id": 4,
+      "observed_at": "2026-09-27T21:56:55.163524+00:00",
+      "message": "Collection resumed by operator"
+    },
+    {
+      "id": 3,
+      "observed_at": "2026-09-27T21:55:21.751131+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    },
+    {
+      "id": 2,
+      "observed_at": "2026-09-27T21:51:34.303259+00:00",
+      "message": "Collection paused by operator"
+    },
+    {
+      "id": 1,
+      "observed_at": "2026-09-27T21:50:27.964109+00:00",
+      "message": "Collector started; previous observations require fresh confirmation"
+    }
+  ],
+  "events_total": 9,
+  "config_hash": "eef42c25c08a031aad438b7672ef50e41e8b1cc797676116f22300a23b3ae20c",
+  "paper": {
+    "enabled": true,
+    "mode": "paper",
+    "tier": 3,
+    "running": true,
+    "error": null,
+    "feed_errors": {},
+    "stale": false,
+    "paused": false,
+    "started_at": 1790550318.7589083,
+    "last_tick": 1790554986.6792767,
+    "next_review": 1790564718.7589083,
+    "review_count": 0,
+    "reviews": [],
+    "promotions": 0,
+    "features": {
+      "BTCUSD": {
+        "breakout-v1": {
+          "version": "breakout-v1",
+          "eligible": false,
+          "bar_open_ms": 1790554860000,
+          "reason": "Breakout already extended",
+          "atr": "53.70800716754132146997786494",
+          "close": "84945.68000000",
+          "breakout": "84805.75000000",
+          "volume_ratio": "45.81655320673593694016481548",
+          "trend_up": true,
+          "ema20_5m": "84425.64109633294946724658961",
+          "closed_bars": 600
+        },
+        "responsive-v1": {
+          "version": "responsive-v1",
+          "eligible": false,
+          "bar_open_ms": 1790554860000,
+          "reason": "Breakout already extended",
+          "atr": "53.70800716754132146997786494",
+          "close": "84945.68000000",
+          "breakout": "84805.75000000",
+          "volume_ratio": "43.20067567567567567567567568",
+          "trend_up": true,
+          "ema20_5m": "84425.64109633294946724658961",
+          "closed_bars": 600
+        },
+        "selective-v1": {
+          "version": "selective-v1",
+          "eligible": false,
+          "bar_open_ms": 1790554860000,
+          "reason": "Breakout already extended",
+          "atr": "53.70800716754132146997786494",
+          "close": "84945.68000000",
+          "breakout": "84805.75000000",
+          "volume_ratio": "92.66231884057971014492753623",
+          "trend_up": true,
+          "ema20_5m": "84425.64109633294946724658961",
+          "closed_bars": 600
+        }
+      },
+      "ETHUSD": {
+        "breakout-v1": {
+          "version": "breakout-v1",
+          "eligible": false,
+          "bar_open_ms": 1790554860000,
+          "reason": "Volume confirmation absent; Breakout already extended",
+          "atr": "1.49957773160560320338423582",
+          "close": "2701.73000000",
+          "breakout": "2695.92000000",
+          "volume_ratio": "0",
+          "trend_up": true,
+          "ema20_5m": "2684.861432575342397900282867",
+          "closed_bars": 600
+        },
+        "responsive-v1": {
+          "version": "responsive-v1",
+          "eligible": false,
+          "bar_open_ms": 1790554860000,
+          "reason": "Volume confirmation absent; Breakout already extended",
+          "atr": "1.49957773160560320338423582",
+          "close": "2701.73000000",
+          "breakout": "2695.92000000",
+          "volume_ratio": "0",
+          "trend_up": true,
+          "ema20_5m": "2684.861432575342397900282867",
+          "closed_bars": 600
+        },
+        "selective-v1": {
+          "version": "selective-v1",
+          "eligible": false,
+          "bar_open_ms": 1790554860000,
+          "reason": "Volume confirmation absent; Breakout already extended",
+          "atr": "1.49957773160560320338423582",
+          "close": "2701.73000000",
+          "breakout": "2695.92000000",
+          "volume_ratio": "0",
+          "trend_up": true,
+          "ema20_5m": "2684.861432575342397900282867",
+          "closed_bars": 600
+        }
+      }
+    },
+    "accounts": {
+      "primary": {
+        "day": 20724,
+        "cash": "99.7593799833000000000",
+        "fees": "0.1990161167000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 2,
+        "equity": "99.7593799833000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790550318.7589083
+        },
+        "funding": "100",
+        "pending": {},
+        "version": "breakout-v1",
+        "nav_peak": "1",
+        "realized": "-0.2406200167000000000",
+        "cooldowns": {
+          "BTCUSD": 1790554094.5905495,
+          "ETHUSD": 1790552802.6353507
+        },
+        "day_start": "99.7593799833000000000",
+        "last_exit": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.996960486322188449848024316"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0.0024627635470000000",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790554935.9998977,
+            "bar": 1790554860000,
+            "reason": "Breakout already extended",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "53.70800716754132146997786494",
+              "close": "84945.68000000",
+              "reason": "Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "84805.75000000",
+              "eligible": false,
+              "ema20_5m": "84425.64109633294946724658961",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "45.81655320673593694016481548"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790554936.2709672,
+            "bar": 1790554860000,
+            "reason": "Volume confirmation absent; Breakout already extended",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "1.49957773160560320338423582",
+              "close": "2701.73000000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "2695.92000000",
+              "eligible": false,
+              "ema20_5m": "2684.861432575342397900282867",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          }
+        },
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "BTCUSD": 4600945492,
+          "ETHUSD": 3776820125
+        },
+        "net_pnl": "-0.2406200167000000000"
+      },
+      "breakout-v1": {
+        "day": 20724,
+        "cash": "99.7593799833000000000",
+        "fees": "0.1990161167000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 2,
+        "equity": "99.7593799833000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790550318.7589083
+        },
+        "funding": "100",
+        "pending": {},
+        "version": "breakout-v1",
+        "nav_peak": "1",
+        "realized": "-0.2406200167000000000",
+        "cooldowns": {
+          "BTCUSD": 1790554094.5905495,
+          "ETHUSD": 1790552802.6353507
+        },
+        "day_start": "99.7593799833000000000",
+        "last_exit": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.996960486322188449848024316"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0.0024627635470000000",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790554935.9998977,
+            "bar": 1790554860000,
+            "reason": "Breakout already extended",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "53.70800716754132146997786494",
+              "close": "84945.68000000",
+              "reason": "Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "84805.75000000",
+              "eligible": false,
+              "ema20_5m": "84425.64109633294946724658961",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "45.81655320673593694016481548"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790554936.2709672,
+            "bar": 1790554860000,
+            "reason": "Volume confirmation absent; Breakout already extended",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "1.49957773160560320338423582",
+              "close": "2701.73000000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "2695.92000000",
+              "eligible": false,
+              "ema20_5m": "2684.861432575342397900282867",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          }
+        },
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "BTCUSD": 4600945492,
+          "ETHUSD": 3776820125
+        },
+        "net_pnl": "-0.2406200167000000000"
+      },
+      "selective-v1": {
+        "day": 20724,
+        "cash": "99.8829764483000000000",
+        "fees": "0.0996546517000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 1,
+        "equity": "99.8829764483000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790550318.7589083
+        },
+        "funding": "100",
+        "pending": {},
+        "version": "selective-v1",
+        "nav_peak": "1",
+        "realized": "-0.1170235517000000000",
+        "cooldowns": {
+          "BTCUSD": 1790554094.5905495
+        },
+        "day_start": "99.8829764483000000000",
+        "last_exit": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "selective-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "selective-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.822519083969465648854961832"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0.0012267988970000000",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790554935.9998977,
+            "bar": 1790554860000,
+            "reason": "Breakout already extended",
+            "symbol": "BTCUSD",
+            "version": "selective-v1",
+            "features": {
+              "atr": "53.70800716754132146997786494",
+              "close": "84945.68000000",
+              "reason": "Breakout already extended",
+              "version": "selective-v1",
+              "breakout": "84805.75000000",
+              "eligible": false,
+              "ema20_5m": "84425.64109633294946724658961",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "92.66231884057971014492753623"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790554936.2709672,
+            "bar": 1790554860000,
+            "reason": "Volume confirmation absent; Breakout already extended",
+            "symbol": "ETHUSD",
+            "version": "selective-v1",
+            "features": {
+              "atr": "1.49957773160560320338423582",
+              "close": "2701.73000000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "selective-v1",
+              "breakout": "2695.92000000",
+              "eligible": false,
+              "ema20_5m": "2684.861432575342397900282867",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          }
+        },
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "BTCUSD": 4600945492
+        },
+        "net_pnl": "-0.1170235517000000000"
+      },
+      "responsive-v1": {
+        "day": 20724,
+        "cash": "99.8829764483000000000",
+        "fees": "0.0996546517000000000",
+        "wins": 0,
+        "units": "100",
+        "closed": 1,
+        "equity": "99.8829764483000000000",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790550318.7589083
+        },
+        "funding": "100",
+        "pending": {},
+        "version": "responsive-v1",
+        "nav_peak": "1",
+        "realized": "-0.1170235517000000000",
+        "cooldowns": {
+          "BTCUSD": 1790554094.5905495
+        },
+        "day_start": "99.8829764483000000000",
+        "last_exit": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "responsive-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "responsive-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "1.501522842639593908629441624"
+          }
+        },
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0.0012267988970000000",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790554935.9998977,
+            "bar": 1790554860000,
+            "reason": "Breakout already extended",
+            "symbol": "BTCUSD",
+            "version": "responsive-v1",
+            "features": {
+              "atr": "53.70800716754132146997786494",
+              "close": "84945.68000000",
+              "reason": "Breakout already extended",
+              "version": "responsive-v1",
+              "breakout": "84805.75000000",
+              "eligible": false,
+              "ema20_5m": "84425.64109633294946724658961",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "43.20067567567567567567567568"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790554936.2709672,
+            "bar": 1790554860000,
+            "reason": "Volume confirmation absent; Breakout already extended",
+            "symbol": "ETHUSD",
+            "version": "responsive-v1",
+            "features": {
+              "atr": "1.49957773160560320338423582",
+              "close": "2701.73000000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "responsive-v1",
+              "breakout": "2695.92000000",
+              "eligible": false,
+              "ema20_5m": "2684.861432575342397900282867",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          }
+        },
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {
+          "BTCUSD": 4600945492
+        },
+        "net_pnl": "-0.1170235517000000000"
+      },
+      "universe-wide-v1": {
+        "day": 20724,
+        "cash": "100",
+        "fees": "0",
+        "wins": 0,
+        "units": "100",
+        "closed": 0,
+        "equity": "100",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790554772.306844
+        },
+        "funding": "100",
+        "pending": {},
+        "symbols": [
+          "BTCUSD",
+          "ETHUSD"
+        ],
+        "version": "breakout-v1",
+        "nav_peak": "1",
+        "realized": "0",
+        "cooldowns": {},
+        "day_start": "100",
+        "last_exit": null,
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0",
+        "last_decision": {
+          "ADAUSD": {
+            "at": 1790554876.3817532,
+            "bar": 1790554800000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "ADAUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.0002221917640818990305053387591",
+              "close": "0.25680000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "0.25552000",
+              "eligible": false,
+              "ema20_5m": "0.2541712754922619550646799297",
+              "trend_up": true,
+              "bar_open_ms": 1790554800000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          },
+          "BTCUSD": {
+            "at": 1790554935.9998977,
+            "bar": 1790554860000,
+            "reason": "Breakout already extended",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "53.70800716754132146997786494",
+              "close": "84945.68000000",
+              "reason": "Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "84805.75000000",
+              "eligible": false,
+              "ema20_5m": "84425.64109633294946724658961",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "45.81655320673593694016481548"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790554936.2709672,
+            "bar": 1790554860000,
+            "reason": "Volume confirmation absent; Breakout already extended",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "1.49957773160560320338423582",
+              "close": "2701.73000000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "2695.92000000",
+              "eligible": false,
+              "ema20_5m": "2684.861432575342397900282867",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          },
+          "SOLUSD": {
+            "at": 1790554876.818562,
+            "bar": 1790554800000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "SOLUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.08332426634279813143201264221",
+              "close": "122.64000000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "122.37000000",
+              "eligible": false,
+              "ema20_5m": "121.9463482134542385539447127",
+              "trend_up": true,
+              "bar_open_ms": 1790554800000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          },
+          "SUIUSD": {
+            "at": 1790554876.6612043,
+            "bar": 1790554800000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "SUIUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.001679295277374788236653679572",
+              "close": "1.28190000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "1.27830000",
+              "eligible": false,
+              "ema20_5m": "1.266519479048823007889999636",
+              "trend_up": true,
+              "bar_open_ms": 1790554800000,
+              "closed_bars": 600,
+              "volume_ratio": "1.312676056338028169014084507"
+            }
+          },
+          "HYPEUSD": {
+            "at": 1790554880.5017269,
+            "bar": 1790554800000,
+            "reason": "Market metadata is stale; entries paused",
+            "symbol": "HYPEUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "0.03123241310239312035139710114",
+              "close": "91.52000000",
+              "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+              "version": "breakout-v1",
+              "breakout": "91.53000000",
+              "eligible": false,
+              "ema20_5m": "91.57922357126379519458029181",
+              "trend_up": false,
+              "bar_open_ms": 1790554800000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          }
+        },
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {},
+        "net_pnl": "0"
+      },
+      "universe-control-v1": {
+        "day": 20724,
+        "cash": "100",
+        "fees": "0",
+        "wins": 0,
+        "units": "100",
+        "closed": 0,
+        "equity": "100",
+        "attempt": {
+          "number": 1,
+          "outcome": "open",
+          "started_at": 1790554772.306844
+        },
+        "funding": "100",
+        "pending": {},
+        "symbols": [
+          "BTCUSD",
+          "ETHUSD"
+        ],
+        "version": "breakout-v1",
+        "nav_peak": "1",
+        "realized": "0",
+        "cooldowns": {},
+        "day_start": "100",
+        "last_exit": null,
+        "positions": {},
+        "risk_peak": "100",
+        "daily_pause": false,
+        "attempt_wins": 0,
+        "day_turnover": "0",
+        "max_drawdown": "0",
+        "last_decision": {
+          "BTCUSD": {
+            "at": 1790554935.9998977,
+            "bar": 1790554860000,
+            "reason": "Breakout already extended",
+            "symbol": "BTCUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "53.70800716754132146997786494",
+              "close": "84945.68000000",
+              "reason": "Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "84805.75000000",
+              "eligible": false,
+              "ema20_5m": "84425.64109633294946724658961",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "45.81655320673593694016481548"
+            }
+          },
+          "ETHUSD": {
+            "at": 1790554936.2709672,
+            "bar": 1790554860000,
+            "reason": "Volume confirmation absent; Breakout already extended",
+            "symbol": "ETHUSD",
+            "version": "breakout-v1",
+            "features": {
+              "atr": "1.49957773160560320338423582",
+              "close": "2701.73000000",
+              "reason": "Volume confirmation absent; Breakout already extended",
+              "version": "breakout-v1",
+              "breakout": "2695.92000000",
+              "eligible": false,
+              "ema20_5m": "2684.861432575342397900282867",
+              "trend_up": true,
+              "bar_open_ms": 1790554860000,
+              "closed_bars": 600,
+              "volume_ratio": "0"
+            }
+          }
+        },
+        "cooldown_until": 0,
+        "drawdown_pause": false,
+        "replenishments": 0,
+        "failure_pending": false,
+        "valuation_fresh": true,
+        "attempt_failures": 0,
+        "last_fill_sequence": {},
+        "net_pnl": "0"
+      }
+    },
+    "events": [
+      {
+        "id": 929,
+        "at": 1790554772.306844,
+        "kind": "feed_model_changed",
+        "body": {
+          "note": "Risk, fees and one-second fill delay unchanged",
+          "previous": "paper-rest-ioc-v1",
+          "selected": "paper-tiered-feed-ioc-v2"
+        }
+      },
+      {
+        "id": 682,
+        "at": 1790553494.5905495,
+        "kind": "fill",
+        "body": {
+          "fee": "0.0498186414000000000",
+          "book": {
+            "asks": [
+              [
+                "84462.26000000",
+                "0.00245000"
+              ],
+              [
+                "84473.28000000",
+                "0.02663000"
+              ],
+              [
+                "84473.79000000",
+                "0.00307000"
+              ],
+              [
+                "84479.40000000",
+                "0.03697000"
+              ],
+              [
+                "84481.00000000",
+                "0.00522000"
+              ],
+              [
+                "84487.30000000",
+                "0.03266000"
+              ],
+              [
+                "84487.71000000",
+                "0.02663000"
+              ],
+              [
+                "84493.43000000",
+                "0.10077000"
+              ],
+              [
+                "84496.00000000",
+                "0.01775000"
+              ],
+              [
+                "84496.01000000",
+                "0.10180000"
+              ],
+              [
+                "84498.27000000",
+                "0.02663000"
+              ],
+              [
+                "84507.07000000",
+                "0.10111000"
+              ],
+              [
+                "84513.58000000",
+                "0.00438000"
+              ],
+              [
+                "84517.49000000",
+                "0.14166000"
+              ],
+              [
+                "84525.57000000",
+                "0.08877000"
+              ],
+              [
+                "84527.91000000",
+                "0.16036000"
+              ],
+              [
+                "84532.19000000",
+                "0.28600000"
+              ],
+              [
+                "84538.33000000",
+                "0.18143000"
+              ],
+              [
+                "84538.54000000",
+                "0.00004000"
+              ],
+              [
+                "84540.60000000",
+                "0.20345000"
+              ]
+            ],
+            "bids": [
+              [
+                "84462.17000000",
+                "0.00177000"
+              ],
+              [
+                "84454.76000000",
+                "0.00236000"
+              ],
+              [
+                "84449.72000000",
+                "0.37258000"
+              ],
+              [
+                "84446.11000000",
+                "0.00247000"
+              ],
+              [
+                "84445.39000000",
+                "0.01184000"
+              ],
+              [
+                "84444.22000000",
+                "0.00307000"
+              ],
+              [
+                "84443.64000000",
+                "0.02600000"
+              ],
+              [
+                "84442.49000000",
+                "0.00449000"
+              ],
+              [
+                "84440.52000000",
+                "0.02663000"
+              ],
+              [
+                "84435.77000000",
+                "0.02663000"
+              ],
+              [
+                "84430.71000000",
+                "0.03268000"
+              ],
+              [
+                "84429.22000000",
+                "0.02663000"
+              ],
+              [
+                "84428.45000000",
+                "0.02242000"
+              ],
+              [
+                "84407.35000000",
+                "0.10090000"
+              ],
+              [
+                "84404.18000000",
+                "0.10058000"
+              ],
+              [
+                "84401.77000000",
+                "0.10110000"
+              ],
+              [
+                "84391.46000000",
+                "0.00702000"
+              ],
+              [
+                "84391.18000000",
+                "0.10160000"
+              ],
+              [
+                "84383.41000000",
+                "0.20383000"
+              ],
+              [
+                "84380.58000000",
+                "0.15731000"
+              ]
+            ],
+            "lastUpdateId": 4600945492
+          },
+          "side": "sell",
+          "vwap": "84438.37525423728813559322034",
+          "gross": "49.8186414000000000",
+          "limit": "84039.85000000",
+          "model": "paper-rest-ioc-v1",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "partial": false,
+          "version": "breakout-v1",
+          "quantity": "0.00059000",
+          "reserved": "0",
+          "fee_asset": "USD",
+          "created_at": 1790553492.291121,
+          "instrument": {
+            "base": "BTC",
+            "quote": "USD",
+            "symbol": "BTCUSD",
+            "filters": [
+              {
+                "maxPrice": "1000000.00000000",
+                "minPrice": "0.01000000",
+                "tickSize": "0.01000000",
+                "filterType": "PRICE_FILTER"
+              },
+              {
+                "filterType": "PERCENT_PRICE",
+                "avgPriceMins": 5,
+                "multiplierUp": "5",
+                "multiplierDown": "0.2"
+              },
+              {
+                "maxQty": "9000.00000000",
+                "minQty": "0.00001000",
+                "stepSize": "0.00001000",
+                "filterType": "LOT_SIZE"
+              },
+              {
+                "filterType": "MIN_NOTIONAL",
+                "minNotional": "1.00000000",
+                "avgPriceMins": 5,
+                "applyToMarket": true
+              },
+              {
+                "limit": 10,
+                "filterType": "ICEBERG_PARTS"
+              },
+              {
+                "maxQty": "10.37140333",
+                "minQty": "0.00000000",
+                "stepSize": "0.00000000",
+                "filterType": "MARKET_LOT_SIZE"
+              },
+              {
+                "filterType": "TRAILING_DELTA",
+                "maxTrailingAboveDelta": 2000,
+                "maxTrailingBelowDelta": 2000,
+                "minTrailingAboveDelta": 10,
+                "minTrailingBelowDelta": 10
+              },
+              {
+                "filterType": "PERCENT_PRICE_BY_SIDE",
+                "avgPriceMins": 5,
+                "askMultiplierUp": "5",
+                "bidMultiplierUp": "5",
+                "askMultiplierDown": "0.2",
+                "bidMultiplierDown": "0.2"
+              },
+              {
+                "filterType": "MAX_NUM_ORDERS",
+                "maxNumOrders": 200
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_LISTS",
+                "maxNumOrderLists": 20
+              },
+              {
+                "filterType": "MAX_NUM_ALGO_ORDERS",
+                "maxNumAlgoOrders": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_AMENDS",
+                "maxNumOrderAmends": 10
+              }
+            ],
+            "spot_allowed": true,
+            "venue_status": "TRADING",
+            "minimum_notional": "1.00000000"
+          },
+          "observed_at": 1790553494.446062,
+          "filled_quantity": "0.00059000",
+          "unfilled_cancelled": "0E-8"
+        }
+      },
+      {
+        "id": 681,
+        "at": 1790553494.5905495,
+        "kind": "trade_closed",
+        "body": {
+          "pnl": "-0.1170235517000000000",
+          "cost": "49.8858463103000000000",
+          "fees": "0.0996546517000000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "proceeds": "49.7688227586000000000",
+          "closed_at": 1790553494.5905495,
+          "opened_at": 1790553070.5264788,
+          "entry_features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.996960486322188449848024316"
+          }
+        }
+      },
+      {
+        "id": 677,
+        "at": 1790553492.291121,
+        "kind": "order_intent",
+        "body": {
+          "book": {
+            "asks": [
+              [
+                "84462.26000000",
+                "0.00245000"
+              ],
+              [
+                "84473.28000000",
+                "0.02663000"
+              ],
+              [
+                "84473.78000000",
+                "0.00167000"
+              ],
+              [
+                "84473.79000000",
+                "0.00307000"
+              ],
+              [
+                "84479.40000000",
+                "0.03777000"
+              ],
+              [
+                "84486.22000000",
+                "0.10144000"
+              ],
+              [
+                "84487.30000000",
+                "0.03266000"
+              ],
+              [
+                "84487.71000000",
+                "0.02663000"
+              ],
+              [
+                "84491.80000000",
+                "0.10131000"
+              ],
+              [
+                "84496.00000000",
+                "0.01775000"
+              ],
+              [
+                "84496.01000000",
+                "0.10180000"
+              ],
+              [
+                "84498.27000000",
+                "0.02663000"
+              ],
+              [
+                "84507.07000000",
+                "0.10111000"
+              ],
+              [
+                "84507.10000000",
+                "0.00456000"
+              ],
+              [
+                "84517.49000000",
+                "0.14166000"
+              ],
+              [
+                "84525.57000000",
+                "0.08877000"
+              ],
+              [
+                "84527.91000000",
+                "0.16036000"
+              ],
+              [
+                "84532.19000000",
+                "0.28600000"
+              ],
+              [
+                "84538.33000000",
+                "0.18143000"
+              ],
+              [
+                "84538.54000000",
+                "0.00004000"
+              ]
+            ],
+            "bids": [
+              [
+                "84462.17000000",
+                "0.00177000"
+              ],
+              [
+                "84461.65000000",
+                "0.02176000"
+              ],
+              [
+                "84449.72000000",
+                "0.37258000"
+              ],
+              [
+                "84444.66000000",
+                "0.00080000"
+              ],
+              [
+                "84444.22000000",
+                "0.00307000"
+              ],
+              [
+                "84443.64000000",
+                "0.02600000"
+              ],
+              [
+                "84439.03000000",
+                "0.00246000"
+              ],
+              [
+                "84438.89000000",
+                "0.00247000"
+              ],
+              [
+                "84436.23000000",
+                "0.01184000"
+              ],
+              [
+                "84435.62000000",
+                "0.00224000"
+              ],
+              [
+                "84430.71000000",
+                "0.03268000"
+              ],
+              [
+                "84410.90000000",
+                "0.11794000"
+              ],
+              [
+                "84406.76000000",
+                "0.02663000"
+              ],
+              [
+                "84401.77000000",
+                "0.10110000"
+              ],
+              [
+                "84391.18000000",
+                "0.10160000"
+              ],
+              [
+                "84389.78000000",
+                "0.35383000"
+              ],
+              [
+                "84385.78000000",
+                "0.02663000"
+              ],
+              [
+                "84383.41000000",
+                "0.20383000"
+              ],
+              [
+                "84380.58000000",
+                "0.15731000"
+              ],
+              [
+                "84370.09000000",
+                "0.21792000"
+              ]
+            ],
+            "lastUpdateId": 4600945444
+          },
+          "side": "sell",
+          "limit": "84039.85000000",
+          "reason": "Trailing stop",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "quantity": "0.00059000",
+          "reserved": "0",
+          "created_at": 1790553492.291121
+        }
+      },
+      {
+        "id": 589,
+        "at": 1790553070.5264788,
+        "kind": "fill",
+        "body": {
+          "fee": "0.0498360103000000000",
+          "book": {
+            "asks": [
+              [
+                "84447.78000000",
+                "0.00246000"
+              ],
+              [
+                "84453.07000000",
+                "0.01253000"
+              ],
+              [
+                "84461.18000000",
+                "0.02552000"
+              ],
+              [
+                "84465.79000000",
+                "0.00307000"
+              ],
+              [
+                "84467.50000000",
+                "0.02663000"
+              ],
+              [
+                "84467.51000000",
+                "0.00025000"
+              ],
+              [
+                "84468.98000000",
+                "0.01183000"
+              ],
+              [
+                "84474.94000000",
+                "0.01775000"
+              ],
+              [
+                "84476.64000000",
+                "0.02663000"
+              ],
+              [
+                "84479.30000000",
+                "0.03267000"
+              ],
+              [
+                "84486.08000000",
+                "0.24030000"
+              ],
+              [
+                "84491.77000000",
+                "0.02663000"
+              ],
+              [
+                "84495.46000000",
+                "0.10153000"
+              ],
+              [
+                "84505.44000000",
+                "0.10179000"
+              ],
+              [
+                "84508.27000000",
+                "0.10181000"
+              ],
+              [
+                "84510.61000000",
+                "0.10139000"
+              ],
+              [
+                "84526.53000000",
+                "0.14729000"
+              ],
+              [
+                "84526.60000000",
+                "0.20348000"
+              ],
+              [
+                "84532.79000000",
+                "0.11794000"
+              ],
+              [
+                "84537.16000000",
+                "0.13252000"
+              ]
+            ],
+            "bids": [
+              [
+                "84447.00000000",
+                "0.00245000"
+              ],
+              [
+                "84446.83000000",
+                "0.00247000"
+              ],
+              [
+                "84440.23000000",
+                "0.42088000"
+              ],
+              [
+                "84439.05000000",
+                "0.01184000"
+              ],
+              [
+                "84437.69000000",
+                "0.02421000"
+              ],
+              [
+                "84436.22000000",
+                "0.00307000"
+              ],
+              [
+                "84435.83000000",
+                "0.02551000"
+              ],
+              [
+                "84425.43000000",
+                "0.02663000"
+              ],
+              [
+                "84425.28000000",
+                "0.02663000"
+              ],
+              [
+                "84422.71000000",
+                "0.03269000"
+              ],
+              [
+                "84421.27000000",
+                "0.02663000"
+              ],
+              [
+                "84410.57000000",
+                "0.10109000"
+              ],
+              [
+                "84399.76000000",
+                "0.10098000"
+              ],
+              [
+                "84390.17000000",
+                "0.10149000"
+              ],
+              [
+                "84388.67000000",
+                "0.01916000"
+              ],
+              [
+                "84380.58000000",
+                "0.15731000"
+              ],
+              [
+                "84379.42000000",
+                "0.20384000"
+              ],
+              [
+                "84367.01000000",
+                "0.11852000"
+              ],
+              [
+                "84366.79000000",
+                "0.02477000"
+              ],
+              [
+                "84365.37000000",
+                "0.15241000"
+              ]
+            ],
+            "lastUpdateId": 4600942595
+          },
+          "side": "buy",
+          "vwap": "84467.81406779661016949152542",
+          "gross": "49.8360103000000000",
+          "limit": "84532.22000000",
+          "model": "paper-rest-ioc-v1",
+          "reason": "Closed-bar breakout",
+          "symbol": "BTCUSD",
+          "partial": false,
+          "version": "breakout-v1",
+          "features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.996960486322188449848024316"
+          },
+          "quantity": "0.00059000",
+          "reserved": "49.9238838098000000000",
+          "fee_asset": "USD",
+          "created_at": 1790553068.130491,
+          "instrument": {
+            "base": "BTC",
+            "quote": "USD",
+            "symbol": "BTCUSD",
+            "filters": [
+              {
+                "maxPrice": "1000000.00000000",
+                "minPrice": "0.01000000",
+                "tickSize": "0.01000000",
+                "filterType": "PRICE_FILTER"
+              },
+              {
+                "filterType": "PERCENT_PRICE",
+                "avgPriceMins": 5,
+                "multiplierUp": "5",
+                "multiplierDown": "0.2"
+              },
+              {
+                "maxQty": "9000.00000000",
+                "minQty": "0.00001000",
+                "stepSize": "0.00001000",
+                "filterType": "LOT_SIZE"
+              },
+              {
+                "filterType": "MIN_NOTIONAL",
+                "minNotional": "1.00000000",
+                "avgPriceMins": 5,
+                "applyToMarket": true
+              },
+              {
+                "limit": 10,
+                "filterType": "ICEBERG_PARTS"
+              },
+              {
+                "maxQty": "10.37140333",
+                "minQty": "0.00000000",
+                "stepSize": "0.00000000",
+                "filterType": "MARKET_LOT_SIZE"
+              },
+              {
+                "filterType": "TRAILING_DELTA",
+                "maxTrailingAboveDelta": 2000,
+                "maxTrailingBelowDelta": 2000,
+                "minTrailingAboveDelta": 10,
+                "minTrailingBelowDelta": 10
+              },
+              {
+                "filterType": "PERCENT_PRICE_BY_SIDE",
+                "avgPriceMins": 5,
+                "askMultiplierUp": "5",
+                "bidMultiplierUp": "5",
+                "askMultiplierDown": "0.2",
+                "bidMultiplierDown": "0.2"
+              },
+              {
+                "filterType": "MAX_NUM_ORDERS",
+                "maxNumOrders": 200
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_LISTS",
+                "maxNumOrderLists": 20
+              },
+              {
+                "filterType": "MAX_NUM_ALGO_ORDERS",
+                "maxNumAlgoOrders": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_AMENDS",
+                "maxNumOrderAmends": 10
+              }
+            ],
+            "spot_allowed": true,
+            "venue_status": "TRADING",
+            "minimum_notional": "1.00000000"
+          },
+          "observed_at": 1790553070.3813682,
+          "stop_distance": "37.59297446581377670343189448",
+          "filled_quantity": "0.00059000",
+          "planned_unit_risk": "240.4703024658137767034318945",
+          "unfilled_cancelled": "0E-8"
+        }
+      },
+      {
+        "id": 577,
+        "at": 1790553068.130491,
+        "kind": "order_intent",
+        "body": {
+          "book": {
+            "asks": [
+              [
+                "84447.78000000",
+                "0.00246000"
+              ],
+              [
+                "84453.07000000",
+                "0.01253000"
+              ],
+              [
+                "84461.18000000",
+                "0.02552000"
+              ],
+              [
+                "84465.79000000",
+                "0.00307000"
+              ],
+              [
+                "84467.50000000",
+                "0.02663000"
+              ],
+              [
+                "84467.51000000",
+                "0.00025000"
+              ],
+              [
+                "84474.94000000",
+                "0.01775000"
+              ],
+              [
+                "84475.85000000",
+                "0.01183000"
+              ],
+              [
+                "84476.64000000",
+                "0.02663000"
+              ],
+              [
+                "84479.30000000",
+                "0.03267000"
+              ],
+              [
+                "84486.08000000",
+                "0.24030000"
+              ],
+              [
+                "84491.77000000",
+                "0.02663000"
+              ],
+              [
+                "84495.46000000",
+                "0.10153000"
+              ],
+              [
+                "84505.44000000",
+                "0.10179000"
+              ],
+              [
+                "84508.27000000",
+                "0.10181000"
+              ],
+              [
+                "84510.61000000",
+                "0.10139000"
+              ],
+              [
+                "84526.53000000",
+                "0.14729000"
+              ],
+              [
+                "84526.60000000",
+                "0.20348000"
+              ],
+              [
+                "84537.16000000",
+                "0.13252000"
+              ],
+              [
+                "84538.54000000",
+                "0.00004000"
+              ]
+            ],
+            "bids": [
+              [
+                "84447.00000000",
+                "0.00245000"
+              ],
+              [
+                "84446.83000000",
+                "0.00247000"
+              ],
+              [
+                "84440.23000000",
+                "0.42088000"
+              ],
+              [
+                "84439.05000000",
+                "0.01184000"
+              ],
+              [
+                "84436.22000000",
+                "0.00307000"
+              ],
+              [
+                "84435.83000000",
+                "0.02551000"
+              ],
+              [
+                "84435.79000000",
+                "0.02421000"
+              ],
+              [
+                "84425.43000000",
+                "0.02663000"
+              ],
+              [
+                "84425.28000000",
+                "0.02663000"
+              ],
+              [
+                "84422.71000000",
+                "0.03269000"
+              ],
+              [
+                "84421.27000000",
+                "0.02663000"
+              ],
+              [
+                "84410.57000000",
+                "0.10109000"
+              ],
+              [
+                "84399.76000000",
+                "0.10098000"
+              ],
+              [
+                "84390.17000000",
+                "0.10149000"
+              ],
+              [
+                "84388.67000000",
+                "0.01916000"
+              ],
+              [
+                "84380.58000000",
+                "0.15731000"
+              ],
+              [
+                "84379.42000000",
+                "0.20384000"
+              ],
+              [
+                "84378.35000000",
+                "0.11794000"
+              ],
+              [
+                "84367.01000000",
+                "0.11852000"
+              ],
+              [
+                "84365.37000000",
+                "0.15241000"
+              ]
+            ],
+            "lastUpdateId": 4600942585
+          },
+          "side": "buy",
+          "limit": "84532.22000000",
+          "reason": "Closed-bar breakout",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "25.06198297720918446895459632",
+            "close": "84462.17000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "84438.10000000",
+            "eligible": true,
+            "ema20_5m": "84366.66918638945068324437359",
+            "trend_up": true,
+            "bar_open_ms": 1790553000000,
+            "closed_bars": 600,
+            "volume_ratio": "2.996960486322188449848024316"
+          },
+          "quantity": "0.00059000",
+          "reserved": "49.9238838098000000000",
+          "created_at": 1790553068.130491,
+          "stop_distance": "37.59297446581377670343189448",
+          "planned_unit_risk": "240.4703024658137767034318945"
+        }
+      },
+      {
+        "id": 402,
+        "at": 1790552202.6353507,
+        "kind": "fill",
+        "body": {
+          "fee": "0.0496686150000000000",
+          "book": {
+            "asks": [
+              [
+                "2685.54000000",
+                "0.35460000"
+              ],
+              [
+                "2685.55000000",
+                "0.32120000"
+              ],
+              [
+                "2685.64000000",
+                "0.07430000"
+              ],
+              [
+                "2685.85000000",
+                "0.78070000"
+              ],
+              [
+                "2685.96000000",
+                "0.09670000"
+              ],
+              [
+                "2686.07000000",
+                "0.82020000"
+              ],
+              [
+                "2686.22000000",
+                "1.34090000"
+              ],
+              [
+                "2686.27000000",
+                "0.82020000"
+              ],
+              [
+                "2686.31000000",
+                "0.37220000"
+              ],
+              [
+                "2686.34000000",
+                "1.02740000"
+              ],
+              [
+                "2686.54000000",
+                "0.82020000"
+              ],
+              [
+                "2687.37000000",
+                "0.04150000"
+              ],
+              [
+                "2687.84000000",
+                "6.39910000"
+              ],
+              [
+                "2687.98000000",
+                "3.68240000"
+              ],
+              [
+                "2688.61000000",
+                "3.71940000"
+              ],
+              [
+                "2688.65000000",
+                "11.04720000"
+              ],
+              [
+                "2689.11000000",
+                "0.02000000"
+              ],
+              [
+                "2689.27000000",
+                "7.24700000"
+              ],
+              [
+                "2689.75000000",
+                "0.00110000"
+              ],
+              [
+                "2689.96000000",
+                "2.73410000"
+              ]
+            ],
+            "bids": [
+              [
+                "2685.45000000",
+                "0.07410000"
+              ],
+              [
+                "2685.25000000",
+                "0.35460000"
+              ],
+              [
+                "2685.24000000",
+                "0.07430000"
+              ],
+              [
+                "2685.05000000",
+                "0.37240000"
+              ],
+              [
+                "2685.03000000",
+                "0.82240000"
+              ],
+              [
+                "2684.98000000",
+                "0.09680000"
+              ],
+              [
+                "2684.96000000",
+                "0.82020000"
+              ],
+              [
+                "2684.76000000",
+                "0.68280000"
+              ],
+              [
+                "2684.53000000",
+                "1.02810000"
+              ],
+              [
+                "2684.51000000",
+                "2.62180000"
+              ],
+              [
+                "2684.37000000",
+                "0.82020000"
+              ],
+              [
+                "2684.33000000",
+                "0.82020000"
+              ],
+              [
+                "2684.29000000",
+                "0.19210000"
+              ],
+              [
+                "2683.06000000",
+                "0.86540000"
+              ],
+              [
+                "2683.02000000",
+                "6.41060000"
+              ],
+              [
+                "2682.60000000",
+                "3.68240000"
+              ],
+              [
+                "2682.39000000",
+                "3.72800000"
+              ],
+              [
+                "2681.93000000",
+                "11.04720000"
+              ],
+              [
+                "2681.78000000",
+                "2.73410000"
+              ],
+              [
+                "2681.68000000",
+                "2.73410000"
+              ]
+            ],
+            "lastUpdateId": 3776820125
+          },
+          "side": "sell",
+          "vwap": "2684.79000000",
+          "gross": "49.6686150000000000",
+          "limit": "2671.42000000",
+          "model": "paper-rest-ioc-v1",
+          "reason": "ATR stop",
+          "symbol": "ETHUSD",
+          "partial": false,
+          "version": "breakout-v1",
+          "quantity": "0.01850000",
+          "reserved": "0",
+          "fee_asset": "USD",
+          "created_at": 1790552200.3299315,
+          "instrument": {
+            "base": "ETH",
+            "quote": "USD",
+            "symbol": "ETHUSD",
+            "filters": [
+              {
+                "maxPrice": "1000000.00000000",
+                "minPrice": "0.01000000",
+                "tickSize": "0.01000000",
+                "filterType": "PRICE_FILTER"
+              },
+              {
+                "filterType": "PERCENT_PRICE",
+                "avgPriceMins": 5,
+                "multiplierUp": "5",
+                "multiplierDown": "0.2"
+              },
+              {
+                "maxQty": "9000.00000000",
+                "minQty": "0.00010000",
+                "stepSize": "0.00010000",
+                "filterType": "LOT_SIZE"
+              },
+              {
+                "filterType": "MIN_NOTIONAL",
+                "minNotional": "1.00000000",
+                "avgPriceMins": 5,
+                "applyToMarket": true
+              },
+              {
+                "limit": 10,
+                "filterType": "ICEBERG_PARTS"
+              },
+              {
+                "maxQty": "254.38308375",
+                "minQty": "0.00000000",
+                "stepSize": "0.00000000",
+                "filterType": "MARKET_LOT_SIZE"
+              },
+              {
+                "filterType": "TRAILING_DELTA",
+                "maxTrailingAboveDelta": 2000,
+                "maxTrailingBelowDelta": 2000,
+                "minTrailingAboveDelta": 10,
+                "minTrailingBelowDelta": 10
+              },
+              {
+                "filterType": "PERCENT_PRICE_BY_SIDE",
+                "avgPriceMins": 5,
+                "askMultiplierUp": "5",
+                "bidMultiplierUp": "5",
+                "askMultiplierDown": "0.2",
+                "bidMultiplierDown": "0.2"
+              },
+              {
+                "filterType": "MAX_NUM_ORDERS",
+                "maxNumOrders": 200
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_LISTS",
+                "maxNumOrderLists": 20
+              },
+              {
+                "filterType": "MAX_NUM_ALGO_ORDERS",
+                "maxNumAlgoOrders": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_AMENDS",
+                "maxNumOrderAmends": 10
+              }
+            ],
+            "spot_allowed": true,
+            "venue_status": "TRADING",
+            "minimum_notional": "1.00000000"
+          },
+          "observed_at": 1790552202.631348,
+          "filled_quantity": "0.01850000",
+          "unfilled_cancelled": "0E-8"
+        }
+      },
+      {
+        "id": 401,
+        "at": 1790552202.6353507,
+        "kind": "trade_closed",
+        "body": {
+          "pnl": "-0.1235964650000000000",
+          "cost": "49.7425428500000000000",
+          "fees": "0.0993614650000000000",
+          "reason": "ATR stop",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "proceeds": "49.6189463850000000000",
+          "closed_at": 1790552202.6353507,
+          "opened_at": 1790552174.3832293,
+          "entry_features": {
+            "atr": "0.5326753499245162107429649553",
+            "close": "2686.42000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "2686.33000000",
+            "eligible": true,
+            "ema20_5m": "2679.995093722838699263428685",
+            "trend_up": true,
+            "bar_open_ms": 1790552100000,
+            "closed_bars": 600,
+            "volume_ratio": "9.756097560975609756097560976"
+          }
+        }
+      },
+      {
+        "id": 399,
+        "at": 1790552200.3299315,
+        "kind": "order_intent",
+        "body": {
+          "book": {
+            "asks": [
+              [
+                "2685.01000000",
+                "0.32390000"
+              ],
+              [
+                "2685.02000000",
+                "0.07410000"
+              ],
+              [
+                "2685.09000000",
+                "0.07440000"
+              ],
+              [
+                "2685.20000000",
+                "0.24740000"
+              ],
+              [
+                "2685.31000000",
+                "0.49580000"
+              ],
+              [
+                "2685.35000000",
+                "0.77790000"
+              ],
+              [
+                "2685.46000000",
+                "0.09680000"
+              ],
+              [
+                "2685.74000000",
+                "0.82020000"
+              ],
+              [
+                "2685.78000000",
+                "0.37230000"
+              ],
+              [
+                "2685.89000000",
+                "1.02750000"
+              ],
+              [
+                "2686.07000000",
+                "0.82020000"
+              ],
+              [
+                "2686.22000000",
+                "1.34090000"
+              ],
+              [
+                "2686.27000000",
+                "0.82020000"
+              ],
+              [
+                "2687.37000000",
+                "0.04150000"
+              ],
+              [
+                "2687.57000000",
+                "6.39980000"
+              ],
+              [
+                "2687.98000000",
+                "3.68240000"
+              ],
+              [
+                "2688.61000000",
+                "3.71940000"
+              ],
+              [
+                "2688.65000000",
+                "11.04720000"
+              ],
+              [
+                "2689.11000000",
+                "0.02000000"
+              ],
+              [
+                "2689.27000000",
+                "7.24700000"
+              ]
+            ],
+            "bids": [
+              [
+                "2684.85000000",
+                "0.33050000"
+              ],
+              [
+                "2684.84000000",
+                "0.07390000"
+              ],
+              [
+                "2684.77000000",
+                "0.07390000"
+              ],
+              [
+                "2684.54000000",
+                "0.77330000"
+              ],
+              [
+                "2684.51000000",
+                "2.71860000"
+              ],
+              [
+                "2684.48000000",
+                "0.49580000"
+              ],
+              [
+                "2684.45000000",
+                "0.37250000"
+              ],
+              [
+                "2684.44000000",
+                "0.68280000"
+              ],
+              [
+                "2684.37000000",
+                "0.82020000"
+              ],
+              [
+                "2684.33000000",
+                "0.82020000"
+              ],
+              [
+                "2684.29000000",
+                "0.19210000"
+              ],
+              [
+                "2684.08000000",
+                "1.02820000"
+              ],
+              [
+                "2684.01000000",
+                "0.82020000"
+              ],
+              [
+                "2682.75000000",
+                "6.41130000"
+              ],
+              [
+                "2682.60000000",
+                "3.68240000"
+              ],
+              [
+                "2682.52000000",
+                "0.94310000"
+              ],
+              [
+                "2682.39000000",
+                "3.72800000"
+              ],
+              [
+                "2681.93000000",
+                "11.04720000"
+              ],
+              [
+                "2681.78000000",
+                "2.73410000"
+              ],
+              [
+                "2681.68000000",
+                "2.73410000"
+              ]
+            ],
+            "lastUpdateId": 3776819997
+          },
+          "side": "sell",
+          "limit": "2671.42000000",
+          "reason": "ATR stop",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "quantity": "0.01850000",
+          "reserved": "0",
+          "created_at": 1790552200.3299315
+        }
+      },
+      {
+        "id": 397,
+        "at": 1790552174.3832293,
+        "kind": "fill",
+        "body": {
+          "fee": "0.0496928500000000000",
+          "book": {
+            "asks": [
+              [
+                "2685.56000000",
+                "0.54120000"
+              ],
+              [
+                "2685.63000000",
+                "0.07430000"
+              ],
+              [
+                "2685.64000000",
+                "0.07460000"
+              ],
+              [
+                "2685.73000000",
+                "0.22820000"
+              ],
+              [
+                "2685.97000000",
+                "0.86060000"
+              ],
+              [
+                "2686.03000000",
+                "0.77640000"
+              ],
+              [
+                "2686.12000000",
+                "0.09670000"
+              ],
+              [
+                "2686.22000000",
+                "1.34090000"
+              ],
+              [
+                "2686.27000000",
+                "1.19240000"
+              ],
+              [
+                "2686.63000000",
+                "1.02730000"
+              ],
+              [
+                "2686.66000000",
+                "0.82020000"
+              ],
+              [
+                "2686.74000000",
+                "0.82020000"
+              ],
+              [
+                "2687.37000000",
+                "0.04150000"
+              ],
+              [
+                "2687.76000000",
+                "1.33350000"
+              ],
+              [
+                "2688.14000000",
+                "6.39840000"
+              ],
+              [
+                "2688.21000000",
+                "3.68240000"
+              ],
+              [
+                "2688.61000000",
+                "3.71940000"
+              ],
+              [
+                "2688.88000000",
+                "11.04720000"
+              ],
+              [
+                "2689.11000000",
+                "0.02000000"
+              ],
+              [
+                "2689.27000000",
+                "7.24700000"
+              ]
+            ],
+            "bids": [
+              [
+                "2685.39000000",
+                "0.08150000"
+              ],
+              [
+                "2685.33000000",
+                "7.88570000"
+              ],
+              [
+                "2685.21000000",
+                "0.79720000"
+              ],
+              [
+                "2685.17000000",
+                "0.09680000"
+              ],
+              [
+                "2685.14000000",
+                "0.37240000"
+              ],
+              [
+                "2684.97000000",
+                "0.66360000"
+              ],
+              [
+                "2684.74000000",
+                "1.02800000"
+              ],
+              [
+                "2684.42000000",
+                "1.38970000"
+              ],
+              [
+                "2684.33000000",
+                "0.82020000"
+              ],
+              [
+                "2684.09000000",
+                "0.82020000"
+              ],
+              [
+                "2683.76000000",
+                "0.82020000"
+              ],
+              [
+                "2683.32000000",
+                "6.40990000"
+              ],
+              [
+                "2682.82000000",
+                "3.68240000"
+              ],
+              [
+                "2682.46000000",
+                "2.15640000"
+              ],
+              [
+                "2682.39000000",
+                "3.72800000"
+              ],
+              [
+                "2682.15000000",
+                "11.04720000"
+              ],
+              [
+                "2681.78000000",
+                "2.73410000"
+              ],
+              [
+                "2681.68000000",
+                "2.73410000"
+              ],
+              [
+                "2681.20000000",
+                "7.21470000"
+              ],
+              [
+                "2681.07000000",
+                "0.02620000"
+              ]
+            ],
+            "lastUpdateId": 3776819753
+          },
+          "side": "buy",
+          "vwap": "2686.10000000",
+          "gross": "49.6928500000000000",
+          "limit": "2688.24000000",
+          "model": "paper-rest-ioc-v1",
+          "reason": "Closed-bar breakout",
+          "symbol": "ETHUSD",
+          "partial": false,
+          "version": "breakout-v1",
+          "features": {
+            "atr": "0.5326753499245162107429649553",
+            "close": "2686.42000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "2686.33000000",
+            "eligible": true,
+            "ema20_5m": "2679.995093722838699263428685",
+            "trend_up": true,
+            "bar_open_ms": 1790552100000,
+            "closed_bars": 600,
+            "volume_ratio": "9.756097560975609756097560976"
+          },
+          "quantity": "0.01850000",
+          "reserved": "49.7821724400000000000",
+          "fee_asset": "USD",
+          "created_at": 1790552172.0356338,
+          "instrument": {
+            "base": "ETH",
+            "quote": "USD",
+            "symbol": "ETHUSD",
+            "filters": [
+              {
+                "maxPrice": "1000000.00000000",
+                "minPrice": "0.01000000",
+                "tickSize": "0.01000000",
+                "filterType": "PRICE_FILTER"
+              },
+              {
+                "filterType": "PERCENT_PRICE",
+                "avgPriceMins": 5,
+                "multiplierUp": "5",
+                "multiplierDown": "0.2"
+              },
+              {
+                "maxQty": "9000.00000000",
+                "minQty": "0.00010000",
+                "stepSize": "0.00010000",
+                "filterType": "LOT_SIZE"
+              },
+              {
+                "filterType": "MIN_NOTIONAL",
+                "minNotional": "1.00000000",
+                "avgPriceMins": 5,
+                "applyToMarket": true
+              },
+              {
+                "limit": 10,
+                "filterType": "ICEBERG_PARTS"
+              },
+              {
+                "maxQty": "254.38308375",
+                "minQty": "0.00000000",
+                "stepSize": "0.00000000",
+                "filterType": "MARKET_LOT_SIZE"
+              },
+              {
+                "filterType": "TRAILING_DELTA",
+                "maxTrailingAboveDelta": 2000,
+                "maxTrailingBelowDelta": 2000,
+                "minTrailingAboveDelta": 10,
+                "minTrailingBelowDelta": 10
+              },
+              {
+                "filterType": "PERCENT_PRICE_BY_SIDE",
+                "avgPriceMins": 5,
+                "askMultiplierUp": "5",
+                "bidMultiplierUp": "5",
+                "askMultiplierDown": "0.2",
+                "bidMultiplierDown": "0.2"
+              },
+              {
+                "filterType": "MAX_NUM_ORDERS",
+                "maxNumOrders": 200
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_LISTS",
+                "maxNumOrderLists": 20
+              },
+              {
+                "filterType": "MAX_NUM_ALGO_ORDERS",
+                "maxNumAlgoOrders": 5
+              },
+              {
+                "filterType": "MAX_NUM_ORDER_AMENDS",
+                "maxNumOrderAmends": 10
+              }
+            ],
+            "spot_allowed": true,
+            "venue_status": "TRADING",
+            "minimum_notional": "1.00000000"
+          },
+          "observed_at": 1790552174.3742352,
+          "stop_distance": "0.7990130248867743161144474330",
+          "filled_quantity": "0.01850000",
+          "planned_unit_risk": "7.250789024886774316114447433",
+          "unfilled_cancelled": "0E-8"
+        }
+      },
+      {
+        "id": 388,
+        "at": 1790552172.0356338,
+        "kind": "order_intent",
+        "body": {
+          "book": {
+            "asks": [
+              [
+                "2685.56000000",
+                "0.54120000"
+              ],
+              [
+                "2685.63000000",
+                "0.07430000"
+              ],
+              [
+                "2685.64000000",
+                "0.07460000"
+              ],
+              [
+                "2685.73000000",
+                "0.22820000"
+              ],
+              [
+                "2685.97000000",
+                "0.86060000"
+              ],
+              [
+                "2686.13000000",
+                "0.81970000"
+              ],
+              [
+                "2686.21000000",
+                "0.09670000"
+              ],
+              [
+                "2686.22000000",
+                "1.34090000"
+              ],
+              [
+                "2686.27000000",
+                "1.19240000"
+              ],
+              [
+                "2686.63000000",
+                "1.02730000"
+              ],
+              [
+                "2686.66000000",
+                "0.82020000"
+              ],
+              [
+                "2686.74000000",
+                "0.82020000"
+              ],
+              [
+                "2687.37000000",
+                "0.04150000"
+              ],
+              [
+                "2687.76000000",
+                "1.33350000"
+              ],
+              [
+                "2688.14000000",
+                "6.39840000"
+              ],
+              [
+                "2688.21000000",
+                "3.68240000"
+              ],
+              [
+                "2688.61000000",
+                "3.71940000"
+              ],
+              [
+                "2688.88000000",
+                "11.04720000"
+              ],
+              [
+                "2689.11000000",
+                "0.02000000"
+              ],
+              [
+                "2689.27000000",
+                "7.24700000"
+              ]
+            ],
+            "bids": [
+              [
+                "2685.39000000",
+                "0.08150000"
+              ],
+              [
+                "2685.33000000",
+                "7.88570000"
+              ],
+              [
+                "2685.32000000",
+                "0.78520000"
+              ],
+              [
+                "2685.22000000",
+                "0.09680000"
+              ],
+              [
+                "2685.14000000",
+                "0.37240000"
+              ],
+              [
+                "2684.97000000",
+                "0.66360000"
+              ],
+              [
+                "2684.82000000",
+                "1.02800000"
+              ],
+              [
+                "2684.33000000",
+                "0.82020000"
+              ],
+              [
+                "2683.90000000",
+                "0.82020000"
+              ],
+              [
+                "2683.88000000",
+                "0.82020000"
+              ],
+              [
+                "2683.60000000",
+                "0.19210000"
+              ],
+              [
+                "2683.32000000",
+                "6.40990000"
+              ],
+              [
+                "2683.07000000",
+                "1.33460000"
+              ],
+              [
+                "2682.82000000",
+                "3.68240000"
+              ],
+              [
+                "2682.39000000",
+                "3.72800000"
+              ],
+              [
+                "2682.15000000",
+                "11.04720000"
+              ],
+              [
+                "2681.78000000",
+                "2.73410000"
+              ],
+              [
+                "2681.68000000",
+                "2.73410000"
+              ],
+              [
+                "2681.20000000",
+                "7.21470000"
+              ],
+              [
+                "2681.07000000",
+                "0.02620000"
+              ]
+            ],
+            "lastUpdateId": 3776819735
+          },
+          "side": "buy",
+          "limit": "2688.24000000",
+          "reason": "Closed-bar breakout",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "0.5326753499245162107429649553",
+            "close": "2686.42000000",
+            "reason": "Confirmed breakout",
+            "version": "breakout-v1",
+            "breakout": "2686.33000000",
+            "eligible": true,
+            "ema20_5m": "2679.995093722838699263428685",
+            "trend_up": true,
+            "bar_open_ms": 1790552100000,
+            "closed_bars": 600,
+            "volume_ratio": "9.756097560975609756097560976"
+          },
+          "quantity": "0.01850000",
+          "reserved": "49.7821724400000000000",
+          "created_at": 1790552172.0356338,
+          "stop_distance": "0.7990130248867743161144474330",
+          "planned_unit_risk": "7.250789024886774316114447433"
+        }
+      },
+      {
+        "id": 194,
+        "at": 1790551204.3989122,
+        "kind": "entry_control",
+        "body": {
+          "paused": false
+        }
+      },
+      {
+        "id": 176,
+        "at": 1790551125.1563528,
+        "kind": "entry_control",
+        "body": {
+          "paused": true
+        }
+      },
+      {
+        "id": 59,
+        "at": 1790550547.3318946,
+        "kind": "entry_control",
+        "body": {
+          "paused": false
+        }
+      },
+      {
+        "id": 53,
+        "at": 1790550486.8310397,
+        "kind": "entry_control",
+        "body": {
+          "paused": true
+        }
+      },
+      {
+        "id": 1,
+        "at": 1790550318.7589083,
+        "kind": "initial_funding",
+        "body": {
+          "amount": "100",
+          "currency": "USD"
+        }
+      }
+    ],
+    "journal": {
+      "balanced": true,
+      "imbalanced_events": 0,
+      "projection_errors": [],
+      "revision": 2038
+    },
+    "bars_studied": 7366,
+    "gaps": 3,
+    "target": "1000",
+    "replenish_below": "5",
+    "replenish_to": "100",
+    "repeatability": {
+      "won": 0,
+      "failed": 0,
+      "open": 1,
+      "conclusion": "Not established; open attempts and correlated shadows are not proof"
+    },
+    "cost_model": "0.10% fee per side + 2 bps adverse price + 10% depth participation",
+    "sampling": "100ms fast / 1s watch WebSocket target; explicit capped REST fallback",
+    "feed": {
+      "transport": "Public WebSocket",
+      "clock_offset_ms": 104.37,
+      "clock_uncertainty_ms": 109.5,
+      "capture_dropped": 0,
+      "markets": {
+        "BTCUSD": {
+          "interval_ms": 100,
+          "fresh": false,
+          "received_age_ms": 281.0,
+          "exchange_event_ms": null,
+          "books": 0,
+          "trades": 0,
+          "reconnects": 8,
+          "trade_gaps": 0,
+          "interval_p50_ms": null,
+          "event_age_p95_ms": null,
+          "error": "Stream unavailable: TimeoutError",
+          "source": "binance.us-rest-fallback",
+          "usable": true,
+          "round_trip_ms": 219.0
+        },
+        "ETHUSD": {
+          "interval_ms": 100,
+          "fresh": false,
+          "received_age_ms": 703.0,
+          "exchange_event_ms": null,
+          "books": 0,
+          "trades": 0,
+          "reconnects": 8,
+          "trade_gaps": 0,
+          "interval_p50_ms": null,
+          "event_age_p95_ms": null,
+          "error": "Stream unavailable: TimeoutError",
+          "source": "binance.us-rest-fallback",
+          "usable": true,
+          "round_trip_ms": 219.0
+        }
+      }
+    },
+    "universe": {
+      "policy": "usd-liquidity-ladder-v1",
+      "scan_seconds": 60,
+      "scanned_at": 1790554955.644297,
+      "markets_scanned": 52,
+      "selected": [
+        "SUIUSD",
+        "ADAUSD",
+        "HYPEUSD",
+        "SOLUSD"
+      ],
+      "rows": [
+        {
+          "symbol": "BTCUSD",
+          "eligible": true,
+          "reason": "Qualified for closer observation",
+          "quote_volume": "1731566.66257060",
+          "trades": 6427,
+          "spread_bps": "0.08594052456565747179576199019",
+          "change_percent": "0.816",
+          "range_percent": "1.183262596531131245254564500",
+          "confirmed": true
+        },
+        {
+          "symbol": "ETHUSD",
+          "eligible": true,
+          "reason": "Qualified for closer observation",
+          "quote_volume": "595292.27472300",
+          "trades": 1745,
+          "spread_bps": "0.3332364479216227874488343204",
+          "change_percent": "0.302",
+          "range_percent": "1.951720210980580196595540600",
+          "confirmed": true
+        },
+        {
+          "symbol": "BCHUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "358.79690000",
+          "trades": 10,
+          "spread_bps": "72.00720072007200720072007201",
+          "change_percent": "0.361",
+          "range_percent": "1.955990220048899755501222500",
+          "confirmed": false
+        },
+        {
+          "symbol": "LTCUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "8431.87990000",
+          "trades": 71,
+          "spread_bps": "54.54926917966291349045387789",
+          "change_percent": "-0.900",
+          "range_percent": "2.541891508094291394490201600",
+          "confirmed": false
+        },
+        {
+          "symbol": "BNBUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "33619.79840000",
+          "trades": 252,
+          "spread_bps": "3.698389925075721345448748605",
+          "change_percent": "1.484",
+          "range_percent": "1.594069542903798551081504900",
+          "confirmed": false
+        },
+        {
+          "symbol": "ADAUSD",
+          "eligible": true,
+          "reason": "Qualified for closer observation",
+          "quote_volume": "124136.81704300",
+          "trades": 465,
+          "spread_bps": "2.326753790669717299414433629",
+          "change_percent": "2.095",
+          "range_percent": "3.500359625988971469671541600",
+          "confirmed": true
+        },
+        {
+          "symbol": "ETCUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "XLMUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "17348.05353000",
+          "trades": 306,
+          "spread_bps": "5.518002483101117395502827976",
+          "change_percent": "-0.111",
+          "range_percent": "3.057486379860980650009393200",
+          "confirmed": false
+        },
+        {
+          "symbol": "LINKUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "77760.65710000",
+          "trades": 466,
+          "spread_bps": "6.384110657918070579890051428",
+          "change_percent": "-0.298",
+          "range_percent": "3.966942148760330578512396700",
+          "confirmed": false
+        },
+        {
+          "symbol": "RVNUSD",
+          "eligible": false,
+          "reason": "Ticker stale",
+          "quote_volume": "32.03383110",
+          "trades": 2,
+          "spread_bps": "1224.230891214716143355534412",
+          "change_percent": "9.696",
+          "range_percent": "9.695945945945945945945945900",
+          "confirmed": false
+        },
+        {
+          "symbol": "ZECUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "68088.03816000",
+          "trades": 208,
+          "spread_bps": "30.02184261409397024766453255",
+          "change_percent": "-2.955",
+          "range_percent": "6.745036106830367945795178100",
+          "confirmed": false
+        },
+        {
+          "symbol": "ALGOUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "IOTAUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "ATOMUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "17.10690000",
+          "trades": 2,
+          "spread_bps": "237.9064234734337827121332276",
+          "change_percent": "0.792",
+          "range_percent": "0.792393026941362916006339100",
+          "confirmed": false
+        },
+        {
+          "symbol": "ZILUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "VETUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "9173.24473100",
+          "trades": 128,
+          "spread_bps": "113.0430101738709156483824084",
+          "change_percent": "-1.554",
+          "range_percent": "5.711135611907386990077177500",
+          "confirmed": false
+        },
+        {
+          "symbol": "HBARUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "108331.99242000",
+          "trades": 211,
+          "spread_bps": "8.297894409293641738408878747",
+          "change_percent": "3.864",
+          "range_percent": "4.144183034750701489315778100",
+          "confirmed": false
+        },
+        {
+          "symbol": "DOGEUSD",
+          "eligible": true,
+          "reason": "Qualified for closer observation",
+          "quote_volume": "147816.70148000",
+          "trades": 487,
+          "spread_bps": "6.137479541734860883797054010",
+          "change_percent": "1.412",
+          "range_percent": "3.497382198952879581151832500",
+          "confirmed": true
+        },
+        {
+          "symbol": "VTHOUSD",
+          "eligible": false,
+          "reason": "Ticker stale",
+          "quote_volume": "147.09817500",
+          "trades": 4,
+          "spread_bps": "483.9764551994767822105951602",
+          "change_percent": "-2.655",
+          "range_percent": "2.727272727272727272727272700",
+          "confirmed": false
+        },
+        {
+          "symbol": "ONEUSD",
+          "eligible": false,
+          "reason": "Ticker stale",
+          "quote_volume": "3311.86300110",
+          "trades": 1000,
+          "spread_bps": "2545.454545454545454545454545",
+          "change_percent": "-11.103",
+          "range_percent": "61.44349477682811016144349480",
+          "confirmed": false
+        },
+        {
+          "symbol": "UNIUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "2259.51376000",
+          "trades": 35,
+          "spread_bps": "37.91177826732926891746503407",
+          "change_percent": "-2.665",
+          "range_percent": "5.956471935853379152348224500",
+          "confirmed": false
+        },
+        {
+          "symbol": "SOLUSD",
+          "eligible": true,
+          "reason": "Qualified for closer observation",
+          "quote_volume": "343456.45217000",
+          "trades": 1360,
+          "spread_bps": "2.443295190780632813454412184",
+          "change_percent": "1.545",
+          "range_percent": "3.979022725380837426121701500",
+          "confirmed": true
+        },
+        {
+          "symbol": "AAVEUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "40.82499000",
+          "trades": 2,
+          "spread_bps": "86.40829519633884852945882805",
+          "change_percent": "-0.943",
+          "range_percent": "0.951825951825951825951826000",
+          "confirmed": false
+        },
+        {
+          "symbol": "GRTUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "2170.38020000",
+          "trades": 33,
+          "spread_bps": "337.0786516853932584269662921",
+          "change_percent": "32.963",
+          "range_percent": "32.96296296296296296296296300",
+          "confirmed": false
+        },
+        {
+          "symbol": "SUSHIUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "CRVUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "176.42607000",
+          "trades": 21,
+          "spread_bps": "14.12628902387342845034609408",
+          "change_percent": "1.903",
+          "range_percent": "3.031186243077819877586709400",
+          "confirmed": false
+        },
+        {
+          "symbol": "AVAXUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "79879.93115000",
+          "trades": 747,
+          "spread_bps": "10.03878621948437143509012092",
+          "change_percent": "0.488",
+          "range_percent": "5.571682741829759340762243700",
+          "confirmed": false
+        },
+        {
+          "symbol": "DOTUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "12116.10229000",
+          "trades": 52,
+          "spread_bps": "23.55712603062426383981154299",
+          "change_percent": "2.190",
+          "range_percent": "4.734693877551020408163265300",
+          "confirmed": false
+        },
+        {
+          "symbol": "NEARUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "43249.18250000",
+          "trades": 305,
+          "spread_bps": "40.62788550323176361957525392",
+          "change_percent": "5.386",
+          "range_percent": "10.20733652312599681020733650",
+          "confirmed": false
+        },
+        {
+          "symbol": "LPTUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "GALAUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "6.34793000",
+          "trades": 2,
+          "spread_bps": "278.1938797346458377915685855",
+          "change_percent": "0.044",
+          "range_percent": "0.043975373790677220756376400",
+          "confirmed": false
+        },
+        {
+          "symbol": "TRXUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "5261.56394000",
+          "trades": 15,
+          "spread_bps": "56.94590139367600779259703282",
+          "change_percent": "0.090",
+          "range_percent": "1.208094231350045303533675600",
+          "confirmed": false
+        },
+        {
+          "symbol": "ENSUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "THETAUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "2834.57540000",
+          "trades": 9,
+          "spread_bps": "84.74576271186440677966101695",
+          "change_percent": "0.862",
+          "range_percent": "1.298701298701298701298701300",
+          "confirmed": false
+        },
+        {
+          "symbol": "FETUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "12979.96244000",
+          "trades": 161,
+          "spread_bps": "40.33884630899556272690601049",
+          "change_percent": "2.667",
+          "range_percent": "3.986571548468317247167436000",
+          "confirmed": false
+        },
+        {
+          "symbol": "ICPUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "180.57049000",
+          "trades": 12,
+          "spread_bps": "44.31782209559987337765115543",
+          "change_percent": "-1.525",
+          "range_percent": "3.753180661577608142493638700",
+          "confirmed": false
+        },
+        {
+          "symbol": "OPUSD",
+          "eligible": false,
+          "reason": "Ticker stale",
+          "quote_volume": "243.56600000",
+          "trades": 9,
+          "spread_bps": "134.2281879194630872483221477",
+          "change_percent": "6.383",
+          "range_percent": "6.382978723404255319148936200",
+          "confirmed": false
+        },
+        {
+          "symbol": "DGBUSD",
+          "eligible": false,
+          "reason": "Ticker stale",
+          "quote_volume": "5258.79515500",
+          "trades": 107,
+          "spread_bps": "475.1619870410367170626349892",
+          "change_percent": "5.345",
+          "range_percent": "19.86301369863013698630136990",
+          "confirmed": false
+        },
+        {
+          "symbol": "SANDUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "SHIBUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "1871.18792029",
+          "trades": 8,
+          "spread_bps": "16.73640167364016736401673640",
+          "change_percent": "-0.508",
+          "range_percent": "0.851788756388415672913117500",
+          "confirmed": false
+        },
+        {
+          "symbol": "FLOKIUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "257.47962946",
+          "trades": 4,
+          "spread_bps": "41.58004158004158004158004158",
+          "change_percent": "-3.922",
+          "range_percent": "4.153354632587859424920127800",
+          "confirmed": false
+        },
+        {
+          "symbol": "SUIUSD",
+          "eligible": true,
+          "reason": "Qualified for closer observation",
+          "quote_volume": "267045.26063000",
+          "trades": 1177,
+          "spread_bps": "4.668534080298786181139122316",
+          "change_percent": "9.683",
+          "range_percent": "11.60134959771606540358162470",
+          "confirmed": true
+        },
+        {
+          "symbol": "XRPUSD",
+          "eligible": true,
+          "reason": "Qualified for closer observation",
+          "quote_volume": "628324.53629000",
+          "trades": 1558,
+          "spread_bps": "1.305227435880702212360503818",
+          "change_percent": "0.664",
+          "range_percent": "2.671451355661881977671451400",
+          "confirmed": true
+        },
+        {
+          "symbol": "BONKUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "15868.43530691",
+          "trades": 41,
+          "spread_bps": "53.05039787798408488063660477",
+          "change_percent": "4.432",
+          "range_percent": "5.292479108635097493036211700",
+          "confirmed": false
+        },
+        {
+          "symbol": "PEPEUSD",
+          "eligible": false,
+          "reason": "Insufficient observed USD trading activity",
+          "quote_volume": "253814.57499680",
+          "trades": 279,
+          "spread_bps": "22.65005662514156285390713477",
+          "change_percent": "-0.913",
+          "range_percent": "3.720930232558139534883720900",
+          "confirmed": false
+        },
+        {
+          "symbol": "POLUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "1306.45091000",
+          "trades": 31,
+          "spread_bps": "97.48172217709179528838342811",
+          "change_percent": "1.249",
+          "range_percent": "3.580349708576186511240632800",
+          "confirmed": false
+        },
+        {
+          "symbol": "RENDERUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "20114.83994000",
+          "trades": 123,
+          "spread_bps": "105.6676272814601344860710855",
+          "change_percent": "2.736",
+          "range_percent": "16.88376753507014028056112220",
+          "confirmed": false
+        },
+        {
+          "symbol": "TRUMPUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "1215.19242200",
+          "trades": 28,
+          "spread_bps": "56.02240896358543417366946779",
+          "change_percent": "-1.318",
+          "range_percent": "2.959427207637231503579952300",
+          "confirmed": false
+        },
+        {
+          "symbol": "MEUSD",
+          "eligible": false,
+          "confirmed": false,
+          "reason": "Invalid ticker or market filters"
+        },
+        {
+          "symbol": "JUPUSD",
+          "eligible": false,
+          "reason": "Spread exceeds 25 bps",
+          "quote_volume": "5081.63515000",
+          "trades": 53,
+          "spread_bps": "362.5541125541125541125541126",
+          "change_percent": "2.623",
+          "range_percent": "5.261584454409566517189835600",
+          "confirmed": false
+        },
+        {
+          "symbol": "SUSD",
+          "eligible": false,
+          "reason": "Ticker stale",
+          "quote_volume": "329.88532000",
+          "trades": 9,
+          "spread_bps": "126.8814529170294812787660157",
+          "change_percent": "3.506",
+          "range_percent": "3.761514841351074718526100300",
+          "confirmed": false
+        },
+        {
+          "symbol": "HYPEUSD",
+          "eligible": true,
+          "reason": "Qualified for closer observation",
+          "quote_volume": "219987.60839000",
+          "trades": 342,
+          "spread_bps": "6.517488594394959808820334564",
+          "change_percent": "-0.691",
+          "range_percent": "2.918586789554531490015361000",
+          "confirmed": true
+        }
+      ],
+      "candidate_limit": 4,
+      "fast_candidate_limit": 2
+    },
+    "research_constrained": true,
+    "performance": {
+      "average_cpu_percent_of_machine": 0.4,
+      "engine_p95_ms": 31.0,
+      "commit_p95_ms": 31.0
+    },
+    "storage": {
+      "captured": 641,
+      "pruned": 0,
+      "retained": 641,
+      "bytes": 2197746,
+      "max_bytes": 67108864,
+      "max_rows": 20000,
+      "physical_bytes": 6065632,
+      "raw_bytes_per_second": 10988.72,
+      "projected_uncapped_raw_gib_per_day": 0.884,
+      "disk_free_gib": 37.58,
+      "capture_error": null,
+      "capture_discarded": 0,
+      "postgres": {
+        "database_bytes": 11450047,
+        "candles": 3756,
+        "events": 1110,
+        "journal_lines": 90,
+        "candle_table_bytes": 1105920,
+        "journal_table_bytes": 892928
+      },
+      "raw_retention": "20,000 records / 64 MiB payload cap; older raw data pruned",
+      "permanent_retention": "Trades, decisions, reviews and candles retained",
+      "database": "Dedicated local PostgreSQL; raw capture in separate local SQLite"
+    }
+  }
+}

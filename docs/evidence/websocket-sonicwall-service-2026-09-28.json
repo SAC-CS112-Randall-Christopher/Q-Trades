@@ -1,0 +1,160 @@
+{
+  "observed_at": "2026-09-28T08:13:46.835890+00:00",
+  "running": true,
+  "error": null,
+  "stale": false,
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 49619
+  },
+  "accounts": {
+    "primary": {
+      "equity": "99.7593799833000000000",
+      "funding": "100",
+      "closed": 2,
+      "positions": {},
+      "pending": {},
+      "replenishments": 0
+    },
+    "breakout-v1": {
+      "equity": "99.7593799833000000000",
+      "funding": "100",
+      "closed": 2,
+      "positions": {},
+      "pending": {},
+      "replenishments": 0
+    },
+    "selective-v1": {
+      "equity": "99.8829764483000000000",
+      "funding": "100",
+      "closed": 1,
+      "positions": {},
+      "pending": {},
+      "replenishments": 0
+    },
+    "responsive-v1": {
+      "equity": "99.7560266275000000000",
+      "funding": "100",
+      "closed": 2,
+      "positions": {},
+      "pending": {},
+      "replenishments": 0
+    },
+    "universe-wide-v1": {
+      "equity": "99.7751734200000000000",
+      "funding": "100",
+      "closed": 1,
+      "positions": {},
+      "pending": {},
+      "replenishments": 0
+    },
+    "universe-control-v1": {
+      "equity": "100",
+      "funding": "100",
+      "closed": 0,
+      "positions": {},
+      "pending": {},
+      "replenishments": 0
+    }
+  },
+  "markets": {
+    "BTCUSD": {
+      "interval_ms": 100,
+      "fresh": false,
+      "received_age_ms": 562.0,
+      "exchange_event_ms": null,
+      "books": 0,
+      "trades": 0,
+      "reconnects": 341,
+      "trade_gaps": 0,
+      "interval_p50_ms": null,
+      "event_age_p95_ms": null,
+      "error": "Stream unavailable: TimeoutError",
+      "source": "binance.us-rest-fallback",
+      "usable": true,
+      "round_trip_ms": 141.0
+    },
+    "ETHUSD": {
+      "interval_ms": 100,
+      "fresh": false,
+      "received_age_ms": 125.0,
+      "exchange_event_ms": null,
+      "books": 0,
+      "trades": 0,
+      "reconnects": 341,
+      "trade_gaps": 0,
+      "interval_p50_ms": null,
+      "event_age_p95_ms": null,
+      "error": "Stream unavailable: TimeoutError",
+      "source": "binance.us-rest-fallback",
+      "usable": true,
+      "round_trip_ms": 140.0
+    },
+    "ADAUSD": {
+      "interval_ms": 1000,
+      "fresh": false,
+      "received_age_ms": null,
+      "exchange_event_ms": null,
+      "books": 0,
+      "trades": 0,
+      "reconnects": 196,
+      "trade_gaps": 0,
+      "interval_p50_ms": null,
+      "event_age_p95_ms": null,
+      "error": "Stream unavailable: TimeoutError",
+      "source": "unavailable",
+      "usable": false,
+      "round_trip_ms": null
+    },
+    "SOLUSD": {
+      "interval_ms": 1000,
+      "fresh": false,
+      "received_age_ms": null,
+      "exchange_event_ms": null,
+      "books": 0,
+      "trades": 0,
+      "reconnects": 12,
+      "trade_gaps": 0,
+      "interval_p50_ms": null,
+      "event_age_p95_ms": null,
+      "error": "Stream unavailable: TimeoutError",
+      "source": "unavailable",
+      "usable": false,
+      "round_trip_ms": null
+    },
+    "PEPEUSD": {
+      "interval_ms": 1000,
+      "fresh": false,
+      "received_age_ms": 375.0,
+      "exchange_event_ms": null,
+      "books": 0,
+      "trades": 0,
+      "reconnects": 223,
+      "trade_gaps": 0,
+      "interval_p50_ms": null,
+      "event_age_p95_ms": null,
+      "error": "Stream unavailable: TimeoutError",
+      "source": "binance.us-rest-fallback",
+      "usable": true,
+      "round_trip_ms": 140.0
+    },
+    "SUIUSD": {
+      "interval_ms": 1000,
+      "fresh": false,
+      "received_age_ms": null,
+      "exchange_event_ms": null,
+      "books": 0,
+      "trades": 0,
+      "reconnects": 241,
+      "trade_gaps": 0,
+      "interval_p50_ms": null,
+      "event_age_p95_ms": null,
+      "error": "Stream unavailable: TimeoutError",
+      "source": "unavailable",
+      "usable": false,
+      "round_trip_ms": null
+    }
+  }
+}

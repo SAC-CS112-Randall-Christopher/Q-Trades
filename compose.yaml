@@ -1,0 +1,17 @@
+name: trading-research-paper
+services:
+  paper-db:
+    image: postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+    restart: unless-stopped
+    env_file: ./data/postgres.env
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - paper-pg18:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paper -d paper"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+volumes:
+  paper-pg18:

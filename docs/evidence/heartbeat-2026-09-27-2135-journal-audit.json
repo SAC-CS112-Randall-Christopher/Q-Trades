@@ -1,0 +1,267 @@
+{
+  "observed_at": "2026-09-28T03:38:24.951441+00:00",
+  "since": "2026-09-28T03:09:08.096173+00:00",
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 21230
+  },
+  "event_counts": [
+    {
+      "kind": "feed_status",
+      "count": 2603
+    },
+    {
+      "kind": "decision",
+      "count": 477
+    },
+    {
+      "kind": "market_minute",
+      "count": 177
+    },
+    {
+      "kind": "equity",
+      "count": 174
+    },
+    {
+      "kind": "futures_context",
+      "count": 29
+    },
+    {
+      "kind": "universe_scan",
+      "count": 29
+    },
+    {
+      "kind": "universe_membership",
+      "count": 4
+    },
+    {
+      "kind": "feed_tiers",
+      "count": 4
+    }
+  ],
+  "primary_decisions": [
+    {
+      "reason": "Five-minute uptrend not confirmed; No closed-bar breakout; Volume confirmation absent",
+      "count": 47
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; No closed-bar breakout",
+      "count": 9
+    },
+    {
+      "reason": "Market metadata is stale; entries paused",
+      "count": 2
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed",
+      "count": 1
+    },
+    {
+      "reason": "Five-minute uptrend not confirmed; Volume confirmation absent",
+      "count": 1
+    }
+  ],
+  "recent_data_gaps": [
+    {
+      "at": 1790566704.5745757,
+      "kind": "feed_status",
+      "body": {
+        "errors": {
+          "BTCUSD": "REST fallback round trip exceeded one second",
+          "missing_books": "BTCUSD"
+        },
+        "sources": {
+          "ETHUSD": "binance.us-rest-fallback"
+        }
+      }
+    },
+    {
+      "at": 1790566704.5477889,
+      "kind": "feed_status",
+      "body": {
+        "errors": {
+          "BTCUSD": "REST fallback round trip exceeded one second",
+          "missing_books": "BTCUSD, ETHUSD"
+        },
+        "sources": {}
+      }
+    },
+    {
+      "at": 1790566704.288293,
+      "kind": "feed_status",
+      "body": {
+        "errors": {
+          "missing_books": "BTCUSD, ETHUSD"
+        },
+        "sources": {}
+      }
+    },
+    {
+      "at": 1790566675.2305915,
+      "kind": "feed_status",
+      "body": {
+        "errors": {},
+        "sources": {
+          "BTCUSD": "binance.us-rest-fallback",
+          "ETHUSD": "binance.us-rest-fallback"
+        }
+      }
+    }
+  ],
+  "accounts": {
+    "primary": {
+      "cash": "99.7593799833000000000",
+      "equity": "99.7593799833000000000",
+      "funding": "100",
+      "fees": "0.1990161167000000000",
+      "realized": "-0.2406200167000000000",
+      "closed": 2,
+      "wins": 0,
+      "max_drawdown": "0.0024627635470000000",
+      "positions": {},
+      "pending": {},
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790550318.7589083
+      },
+      "attempt_wins": 0,
+      "attempt_failures": 0,
+      "replenishments": 0,
+      "failure_pending": false,
+      "daily_pause": false,
+      "drawdown_pause": false,
+      "version": "breakout-v1"
+    },
+    "breakout-v1": {
+      "cash": "99.7593799833000000000",
+      "equity": "99.7593799833000000000",
+      "funding": "100",
+      "fees": "0.1990161167000000000",
+      "realized": "-0.2406200167000000000",
+      "closed": 2,
+      "wins": 0,
+      "max_drawdown": "0.0024627635470000000",
+      "positions": {},
+      "pending": {},
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790550318.7589083
+      },
+      "attempt_wins": 0,
+      "attempt_failures": 0,
+      "replenishments": 0,
+      "failure_pending": false,
+      "daily_pause": false,
+      "drawdown_pause": false,
+      "version": "breakout-v1"
+    },
+    "selective-v1": {
+      "cash": "99.8829764483000000000",
+      "equity": "99.8829764483000000000",
+      "funding": "100",
+      "fees": "0.0996546517000000000",
+      "realized": "-0.1170235517000000000",
+      "closed": 1,
+      "wins": 0,
+      "max_drawdown": "0.0012267988970000000",
+      "positions": {},
+      "pending": {},
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790550318.7589083
+      },
+      "attempt_wins": 0,
+      "attempt_failures": 0,
+      "replenishments": 0,
+      "failure_pending": false,
+      "daily_pause": false,
+      "drawdown_pause": false,
+      "version": "selective-v1"
+    },
+    "responsive-v1": {
+      "cash": "99.8829764483000000000",
+      "equity": "99.8829764483000000000",
+      "funding": "100",
+      "fees": "0.0996546517000000000",
+      "realized": "-0.1170235517000000000",
+      "closed": 1,
+      "wins": 0,
+      "max_drawdown": "0.0012267988970000000",
+      "positions": {},
+      "pending": {},
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790550318.7589083
+      },
+      "attempt_wins": 0,
+      "attempt_failures": 0,
+      "replenishments": 0,
+      "failure_pending": false,
+      "daily_pause": false,
+      "drawdown_pause": false,
+      "version": "responsive-v1"
+    },
+    "universe-wide-v1": {
+      "cash": "99.7751734200000000000",
+      "equity": "99.7751734200000000000",
+      "funding": "100",
+      "fees": "0.0995665800000000000",
+      "realized": "-0.2248265800000000000",
+      "closed": 1,
+      "wins": 0,
+      "max_drawdown": "0.0025447690000000000",
+      "positions": {},
+      "pending": {},
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790554772.306844
+      },
+      "attempt_wins": 0,
+      "attempt_failures": 0,
+      "replenishments": 0,
+      "failure_pending": false,
+      "daily_pause": false,
+      "drawdown_pause": false,
+      "version": "breakout-v1"
+    },
+    "universe-control-v1": {
+      "cash": "100",
+      "equity": "100",
+      "funding": "100",
+      "fees": "0",
+      "realized": "0",
+      "closed": 0,
+      "wins": 0,
+      "max_drawdown": "0",
+      "positions": {},
+      "pending": {},
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790554772.306844
+      },
+      "attempt_wins": 0,
+      "attempt_failures": 0,
+      "replenishments": 0,
+      "failure_pending": false,
+      "daily_pause": false,
+      "drawdown_pause": false,
+      "version": "breakout-v1"
+    }
+  },
+  "reviews": [
+    {
+      "at": 1790564718.98755,
+      "selected": "breakout-v1",
+      "reason": "Insufficient forward evidence or no challenger passed all gates; retain version"
+    }
+  ],
+  "next_review": "2026-09-28T07:05:18.987550+00:00"
+}

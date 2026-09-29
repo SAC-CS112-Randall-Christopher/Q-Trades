@@ -1,0 +1,21 @@
+{
+  "account_changes": {
+    "primary": {},
+    "breakout-v1": {},
+    "selective-v1": {},
+    "responsive-v1": {},
+    "universe-wide-v1": {},
+    "universe-control-v1": {}
+  },
+  "tools_preserved": true,
+  "options_accounts_preserved": true,
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 90582
+  },
+  "running": true,
+  "error": null,
+  "active_version": "breakout-v1"
+}

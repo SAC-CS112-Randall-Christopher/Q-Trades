@@ -1,0 +1,120 @@
+{
+  "at": "2026-09-28T12:06:12.726817+00:00",
+  "complete_roles": [
+    {
+      "qualified": false,
+      "model": "qwen3:8b",
+      "role": "researcher",
+      "thinking": true,
+      "request_timeout_seconds": 120,
+      "model_digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+      "passed": 32,
+      "responses": 36,
+      "distinct_scenarios": 12,
+      "critical": [],
+      "invalid_outputs": 3,
+      "health_errors": 0,
+      "median_seconds": 27.375500000000002,
+      "receipt": "docs\\evidence\\research-roles-holdout-20260928T094512Z.json",
+      "receipt_sha256": "99ce3a89b509cf2d76162e96aaa7c5bef736a3813b149e693b05046f54986d37",
+      "resumed_from": null,
+      "protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+      "prompt_profile": "role-contract-only",
+      "effective_protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+      "settings": {
+        "num_ctx": 8192,
+        "num_thread": 2,
+        "num_predict": 4096,
+        "temperature": 0.6,
+        "top_p": 0.95,
+        "top_k": 20,
+        "min_p": 0.0,
+        "repeat_penalty": 1.0,
+        "seed": 92811
+      },
+      "scope": "Bounded advisory workflow; not trading skill or arbitrary research reliability"
+    },
+    {
+      "qualified": false,
+      "model": "qwen3.5:4b",
+      "role": "researcher",
+      "thinking": false,
+      "request_timeout_seconds": 120,
+      "model_digest": "2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd",
+      "passed": 33,
+      "responses": 36,
+      "distinct_scenarios": 12,
+      "critical": [],
+      "invalid_outputs": 1,
+      "health_errors": 0,
+      "median_seconds": 7.914,
+      "receipt": "docs\\evidence\\research-roles-holdout-20260928T103758Z.json",
+      "receipt_sha256": "03e25590ae359b7444ca993e2dc19513002c7984b83dd06137c71e4ea3d01eb1",
+      "resumed_from": null,
+      "protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+      "prompt_profile": "role-contract-only",
+      "effective_protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+      "settings": {
+        "num_ctx": 4096,
+        "num_thread": 2,
+        "num_predict": 768,
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "min_p": 0.0,
+        "repeat_penalty": 1.0,
+        "seed": 92811,
+        "presence_penalty": 1.5
+      },
+      "scope": "Bounded advisory workflow; not trading skill or arbitrary research reliability"
+    }
+  ],
+  "active_run": {
+    "receipt": "docs\\evidence\\research-roles-holdout-20260928T115506Z.json",
+    "finished_at": null,
+    "responses": 6,
+    "passed": 4,
+    "critical": 0,
+    "active_request": {
+      "model": "qwen3.5:9b",
+      "case": "holdout-researcher-spread_bps_15",
+      "role": "researcher",
+      "seed": 92811,
+      "started_at": "2026-09-28T12:06:03.638154+00:00"
+    }
+  },
+  "paper": {
+    "running": true,
+    "error": null,
+    "stale": false,
+    "gaps": 8,
+    "review_count": 3,
+    "performance": {
+      "average_cpu_percent_of_machine": 2.59,
+      "engine_p95_ms": 32.0,
+      "commit_p95_ms": 32.0
+    },
+    "research_constrained": false
+  },
+  "loaded_models": [
+    "qwen3.5:9b"
+  ],
+  "trials_ui_keys": [
+    "generated_at",
+    "agents_enabled",
+    "runs",
+    "warnings",
+    "scan_truncated",
+    "older_runs_omitted",
+    "earlier_contract_runs_omitted"
+  ],
+  "followup": {
+    "task": "One sequential Qwen3.5 9B researcher qualification after Ministral trainer",
+    "started_at": "2026-09-28T11:43:20.812505+00:00",
+    "dependency": "docs\\evidence\\research-roles-holdout-20260928T113553Z.json",
+    "state": "running",
+    "authority": "Local model tests only. No downloads, agent activation or account writes.",
+    "updated_at": "2026-09-28T11:55:06.160646+00:00",
+    "dependency_finished_at": "2026-09-28T11:55:05.126418+00:00"
+  }
+}

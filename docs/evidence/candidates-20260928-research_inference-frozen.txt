@@ -1,0 +1,42 @@
+"""Explicit local prompt profiles; these confer no execution permissions."""
+# ruff: noqa: E501
+
+import hashlib
+import json
+
+from trading.research_protocol import ROLES, Role, prompt
+
+MINISTRAL_REASONING = "hf.co/mistralai/Ministral-3-8B-Reasoning-2512-GGUF:Q4_K_M"
+MINISTRAL_TEXT = "trading-research-ministral3-8b-text:q4km-v1"
+MINISTRAL_MODELS = (MINISTRAL_REASONING, MINISTRAL_TEXT)
+BASE_PROFILE = "role-contract-only"
+MINISTRAL_PROFILE = "ministral-official-reasoning-prefix-v1"
+PROFILES = (BASE_PROFILE, MINISTRAL_PROFILE)
+
+# Mistral's Apache-2.0 model SYSTEM_PROMPT.txt, preserved verbatim.
+# https://huggingface.co/mistralai/Ministral-3-8B-Reasoning-2512/blob/main/SYSTEM_PROMPT.txt
+# The task contract appended afterward specifies the final JSON output.
+MINISTRAL_PREFIX = """# HOW YOU SHOULD THINK AND ANSWER
+
+First draft your thinking process (inner monologue) until you arrive at a response. Format your response using Markdown, and use LaTeX for any mathematical equations. Write both your thoughts and the response in the same language as the input.
+
+Your thinking process must follow the template below:[THINK]Your thoughts or/and draft, like working through an exercise on scratch paper. Be as casual and as long as you want until you are confident to generate the response to the user.[/THINK]Here, provide a self-contained response."""
+
+
+def role_prompt(role: Role, profile: str = BASE_PROFILE) -> str:
+    if profile == BASE_PROFILE:
+        return prompt(role)
+    if profile == MINISTRAL_PROFILE:
+        return MINISTRAL_PREFIX + "\n\n" + prompt(role)
+    raise ValueError("Unknown inference prompt profile")
+
+
+def effective_protocol_hash(profile: str = BASE_PROFILE) -> str:
+    return hashlib.sha256(json.dumps([role_prompt(r, profile) for r in ROLES]).encode()).hexdigest()
+
+
+def validate_profile(model: str, thinking: bool, profile: str) -> None:
+    if profile not in PROFILES:
+        raise ValueError("Unknown inference prompt profile")
+    if profile == MINISTRAL_PROFILE and (model not in MINISTRAL_MODELS or not thinking):
+        raise ValueError("The native reasoning profile requires the exact Ministral reasoning model")

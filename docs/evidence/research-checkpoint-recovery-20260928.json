@@ -1,0 +1,33 @@
+{
+  "at": "2026-09-28T11:28:49.297322+00:00",
+  "cause": "Windows PermissionError replacing receipt while read-only dashboard opened it; 4 completed answers preserved, the next request was not submitted because its pre-request checkpoint failed.",
+  "original_receipt": "docs/evidence/research-roles-holdout-20260928T112009Z.json",
+  "original_sha256": "d6e5f06df662ac38e7d12a7423302b1d5a4d153d60dec9d9101609b1002b0e26",
+  "repair": "Bounded atomic-replace retry plus verified prefix continuation into a new receipt. Original files and all failures retained. Qualification independently verifies unchanged source prefix and identity.",
+  "protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+  "files": {
+    "scripts/evaluate_research_roles.py": "08ad0543b9536a5c7dcc22c582a77b75e6f4f8c2c309f1b9b29371b61f9e50a5",
+    "scripts/qualify_research_role.py": "72649fa4e7c60a4ddb6cf492e3ea1f6f2b312c42be2378bab928458242d3c832",
+    "src/trading/research_protocol.py": "46790292a6bd581992174f132f38fe2cb075a9adb14ac75432ab33495ab5e907",
+    "src/trading/research_inference.py": "7eef1b4abc2b1536f43b025379e436335017af92aa1af5bfca9c5226354f0bd7",
+    "docs/research/crypto-agent-eval-v3.json": "c1dae21ad6362a39ea45344c1bb266b800bde326a2ac7a7669d796603f5865b6"
+  },
+  "profile_equivalence": [
+    {
+      "receipt": "research-roles-dev-20260928T105435Z.json",
+      "model": "qwen3.5:9b",
+      "settings_unchanged": true
+    },
+    {
+      "receipt": "research-roles-holdout-20260928T112009Z.json",
+      "model": "qwen3:8b",
+      "settings_unchanged": true
+    },
+    {
+      "receipt": "research-roles-dev-20260928T102522Z.json",
+      "model": "trading-research-ministral3-8b-text:q4km-v1",
+      "settings_unchanged": true
+    }
+  ],
+  "changes_to_model_prompts_or_test_oracle": false
+}

@@ -1,0 +1,49 @@
+{
+  "at": "2026-09-28T10:36:18.164321+00:00",
+  "protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0",
+  "files": {
+    "src/trading/research_protocol.py": "46790292a6bd581992174f132f38fe2cb075a9adb14ac75432ab33495ab5e907",
+    "src/trading/research_inference.py": "7eef1b4abc2b1536f43b025379e436335017af92aa1af5bfca9c5226354f0bd7",
+    "scripts/evaluate_research_roles.py": "466abc1061f3a95739617d7b2dd97f7bca44d4068d3b902b410467525c1d40a9",
+    "scripts/qualify_research_role.py": "63e42825d0e46c377e15464d4585a90dcd7a28fd41c669efad4c945a12387c0a",
+    "docs/research/crypto-agent-eval-v3.json": "c1dae21ad6362a39ea45344c1bb266b800bde326a2ac7a7669d796603f5865b6"
+  },
+  "planned_profiles": [
+    {
+      "model": "qwen3.5:4b",
+      "role": "researcher",
+      "thinking": false,
+      "prompt_profile": "role-contract-only",
+      "dev_receipt": "docs/evidence/research-roles-dev-20260928T093009Z.json",
+      "digest": "2a654d98e6fba55d452b7043684e9b57a947e393bbffa62485a7aac05ee4eefd",
+      "effective_protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0"
+    },
+    {
+      "model": "qwen3:8b",
+      "role": "reviewer",
+      "thinking": true,
+      "prompt_profile": "role-contract-only",
+      "dev_receipt": "docs/evidence/research-roles-dev-20260928T093721Z.json",
+      "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+      "effective_protocol_hash": "6b2b2dcb1e63adba7e1ae39db0d0e0d23c7fe7519f4e346113451ddcdc4d1ad0"
+    },
+    {
+      "model": "trading-research-ministral3-8b-text:q4km-v1",
+      "role": "trainer",
+      "thinking": true,
+      "prompt_profile": "ministral-official-reasoning-prefix-v1",
+      "dev_receipt": "docs/evidence/research-roles-dev-20260928T102522Z.json",
+      "digest": "d2158820e07fe3d4cddd5910889b92d549feb9942f5d2edbc5ec30b06b1f5502",
+      "effective_protocol_hash": "b02120ba9da321b119e97382cfc4047d4f2bd3f44eb167c73ca19a9c169997c5"
+    }
+  ],
+  "seeds": [
+    92811,
+    92812,
+    92813
+  ],
+  "stop_disqualified_role": true,
+  "early_stop_policy": "Preserve all completed cases and stop a role after any safety violation or three failed cases because 34/36 is no longer attainable. Such partial runs cannot qualify. Never lower the threshold.",
+  "heldout_seen_by_these_model_role_profiles": false,
+  "scope": "Bounded advisory pilot only; real workflow, recovery and UI checks remain required."
+}

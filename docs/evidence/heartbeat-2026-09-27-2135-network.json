@@ -1,0 +1,18 @@
+{
+  "host": "stream.binance.us",
+  "scope": "Direct TCP probe only; no credentials, network or application configuration changed. Each address attempt used a five-second timeout.",
+  "observations": [
+    {
+      "port": 9443,
+      "result": "TimeoutError",
+      "elapsed_seconds": 10.03
+    },
+    {
+      "port": 443,
+      "result": "TimeoutError",
+      "elapsed_seconds": 10.03
+    }
+  ],
+  "interpretation": "The streaming host was not reachable in these probes. The exact cause is undetermined; functioning HTTPS REST fallback does not prove streaming availability.",
+  "contract_source": "https://docs.binance.us/"
+}

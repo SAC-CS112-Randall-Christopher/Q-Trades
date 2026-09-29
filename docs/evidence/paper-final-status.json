@@ -1,0 +1,468 @@
+{
+  "enabled": true,
+  "mode": "paper",
+  "tier": 3,
+  "running": true,
+  "error": null,
+  "feed_errors": {},
+  "stale": false,
+  "paused": false,
+  "started_at": 1790550318.7589083,
+  "last_tick": 1790551202.19105,
+  "next_review": 1790564718.7589083,
+  "review_count": 0,
+  "reviews": [],
+  "promotions": 0,
+  "features": {
+    "BTCUSD": {
+      "breakout-v1": {
+        "atr": "34.85146843070705798749774541",
+        "close": "84241.23000000",
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "version": "breakout-v1",
+        "breakout": "84289.76000000",
+        "eligible": false,
+        "ema20_5m": "84354.64704058449645789126177",
+        "trend_up": false,
+        "bar_open_ms": 1790551080000,
+        "closed_bars": 599,
+        "volume_ratio": "3.541284403669724770642201835"
+      },
+      "selective-v1": {
+        "atr": "34.85146843070705798749774541",
+        "close": "84241.23000000",
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "version": "selective-v1",
+        "breakout": "84289.76000000",
+        "eligible": false,
+        "ema20_5m": "84354.64704058449645789126177",
+        "trend_up": false,
+        "bar_open_ms": 1790551080000,
+        "closed_bars": 599,
+        "volume_ratio": "2.356852103120759837177747626"
+      },
+      "responsive-v1": {
+        "atr": "34.85146843070705798749774541",
+        "close": "84241.23000000",
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "version": "responsive-v1",
+        "breakout": "84289.76000000",
+        "eligible": false,
+        "ema20_5m": "84354.64704058449645789126177",
+        "trend_up": false,
+        "bar_open_ms": 1790551080000,
+        "closed_bars": 599,
+        "volume_ratio": "2.356852103120759837177747626"
+      }
+    },
+    "ETHUSD": {
+      "breakout-v1": {
+        "atr": "0.7349381096401710573251265286",
+        "close": "2678.24000000",
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "version": "breakout-v1",
+        "breakout": "2678.12000000",
+        "eligible": false,
+        "ema20_5m": "2678.363083277461484199730061",
+        "trend_up": false,
+        "bar_open_ms": 1790551080000,
+        "closed_bars": 599,
+        "volume_ratio": "0"
+      },
+      "selective-v1": {
+        "atr": "0.7349381096401710573251265286",
+        "close": "2678.24000000",
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "version": "selective-v1",
+        "breakout": "2680.58000000",
+        "eligible": false,
+        "ema20_5m": "2678.363083277461484199730061",
+        "trend_up": false,
+        "bar_open_ms": 1790551080000,
+        "closed_bars": 599,
+        "volume_ratio": "0"
+      },
+      "responsive-v1": {
+        "atr": "0.7349381096401710573251265286",
+        "close": "2678.24000000",
+        "reason": "Bootstrap only; awaiting new closed bar",
+        "version": "responsive-v1",
+        "breakout": "2678.12000000",
+        "eligible": false,
+        "ema20_5m": "2678.363083277461484199730061",
+        "trend_up": false,
+        "bar_open_ms": 1790551080000,
+        "closed_bars": 599,
+        "volume_ratio": "0"
+      }
+    }
+  },
+  "accounts": {
+    "primary": {
+      "day": 20723,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790550318.7589083
+      },
+      "funding": "100",
+      "pending": {},
+      "version": "breakout-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790551176.2547953,
+          "bar": 1790551080000,
+          "reason": "Entry pause or review cooldown",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "34.85146843070705798749774541",
+            "close": "84241.23000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "breakout-v1",
+            "breakout": "84289.76000000",
+            "eligible": false,
+            "ema20_5m": "84354.64704058449645789126177",
+            "trend_up": false,
+            "bar_open_ms": 1790551080000,
+            "closed_bars": 599,
+            "volume_ratio": "3.541284403669724770642201835"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790551176.2547953,
+          "bar": 1790551080000,
+          "reason": "Entry pause or review cooldown",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "0.7349381096401710573251265286",
+            "close": "2678.24000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "breakout-v1",
+            "breakout": "2678.12000000",
+            "eligible": false,
+            "ema20_5m": "2678.363083277461484199730061",
+            "trend_up": false,
+            "bar_open_ms": 1790551080000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    },
+    "breakout-v1": {
+      "day": 20723,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790550318.7589083
+      },
+      "funding": "100",
+      "pending": {},
+      "version": "breakout-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790551176.2547953,
+          "bar": 1790551080000,
+          "reason": "Entry pause or review cooldown",
+          "symbol": "BTCUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "34.85146843070705798749774541",
+            "close": "84241.23000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "breakout-v1",
+            "breakout": "84289.76000000",
+            "eligible": false,
+            "ema20_5m": "84354.64704058449645789126177",
+            "trend_up": false,
+            "bar_open_ms": 1790551080000,
+            "closed_bars": 599,
+            "volume_ratio": "3.541284403669724770642201835"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790551176.2547953,
+          "bar": 1790551080000,
+          "reason": "Entry pause or review cooldown",
+          "symbol": "ETHUSD",
+          "version": "breakout-v1",
+          "features": {
+            "atr": "0.7349381096401710573251265286",
+            "close": "2678.24000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "breakout-v1",
+            "breakout": "2678.12000000",
+            "eligible": false,
+            "ema20_5m": "2678.363083277461484199730061",
+            "trend_up": false,
+            "bar_open_ms": 1790551080000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    },
+    "selective-v1": {
+      "day": 20723,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790550318.7589083
+      },
+      "funding": "100",
+      "pending": {},
+      "version": "selective-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790551176.2547953,
+          "bar": 1790551080000,
+          "reason": "Entry pause or review cooldown",
+          "symbol": "BTCUSD",
+          "version": "selective-v1",
+          "features": {
+            "atr": "34.85146843070705798749774541",
+            "close": "84241.23000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "selective-v1",
+            "breakout": "84289.76000000",
+            "eligible": false,
+            "ema20_5m": "84354.64704058449645789126177",
+            "trend_up": false,
+            "bar_open_ms": 1790551080000,
+            "closed_bars": 599,
+            "volume_ratio": "2.356852103120759837177747626"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790551176.2547953,
+          "bar": 1790551080000,
+          "reason": "Entry pause or review cooldown",
+          "symbol": "ETHUSD",
+          "version": "selective-v1",
+          "features": {
+            "atr": "0.7349381096401710573251265286",
+            "close": "2678.24000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "selective-v1",
+            "breakout": "2680.58000000",
+            "eligible": false,
+            "ema20_5m": "2678.363083277461484199730061",
+            "trend_up": false,
+            "bar_open_ms": 1790551080000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    },
+    "responsive-v1": {
+      "day": 20723,
+      "cash": "100",
+      "fees": "0",
+      "wins": 0,
+      "units": "100",
+      "closed": 0,
+      "equity": "100",
+      "attempt": {
+        "number": 1,
+        "outcome": "open",
+        "started_at": 1790550318.7589083
+      },
+      "funding": "100",
+      "pending": {},
+      "version": "responsive-v1",
+      "nav_peak": "1",
+      "realized": "0",
+      "cooldowns": {},
+      "day_start": "100",
+      "last_exit": null,
+      "positions": {},
+      "risk_peak": "100",
+      "daily_pause": false,
+      "attempt_wins": 0,
+      "day_turnover": "0",
+      "max_drawdown": "0",
+      "last_decision": {
+        "BTCUSD": {
+          "at": 1790551176.2547953,
+          "bar": 1790551080000,
+          "reason": "Entry pause or review cooldown",
+          "symbol": "BTCUSD",
+          "version": "responsive-v1",
+          "features": {
+            "atr": "34.85146843070705798749774541",
+            "close": "84241.23000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "responsive-v1",
+            "breakout": "84289.76000000",
+            "eligible": false,
+            "ema20_5m": "84354.64704058449645789126177",
+            "trend_up": false,
+            "bar_open_ms": 1790551080000,
+            "closed_bars": 599,
+            "volume_ratio": "2.356852103120759837177747626"
+          }
+        },
+        "ETHUSD": {
+          "at": 1790551176.2547953,
+          "bar": 1790551080000,
+          "reason": "Entry pause or review cooldown",
+          "symbol": "ETHUSD",
+          "version": "responsive-v1",
+          "features": {
+            "atr": "0.7349381096401710573251265286",
+            "close": "2678.24000000",
+            "reason": "Bootstrap only; awaiting new closed bar",
+            "version": "responsive-v1",
+            "breakout": "2678.12000000",
+            "eligible": false,
+            "ema20_5m": "2678.363083277461484199730061",
+            "trend_up": false,
+            "bar_open_ms": 1790551080000,
+            "closed_bars": 599,
+            "volume_ratio": "0"
+          }
+        }
+      },
+      "cooldown_until": 0,
+      "drawdown_pause": false,
+      "replenishments": 0,
+      "failure_pending": false,
+      "valuation_fresh": true,
+      "attempt_failures": 0,
+      "last_fill_sequence": {},
+      "net_pnl": "0"
+    }
+  },
+  "events": [
+    {
+      "id": 176,
+      "at": 1790551125.1563528,
+      "kind": "entry_control",
+      "body": {
+        "paused": true
+      }
+    },
+    {
+      "id": 59,
+      "at": 1790550547.3318946,
+      "kind": "entry_control",
+      "body": {
+        "paused": false
+      }
+    },
+    {
+      "id": 53,
+      "at": 1790550486.8310397,
+      "kind": "entry_control",
+      "body": {
+        "paused": true
+      }
+    },
+    {
+      "id": 1,
+      "at": 1790550318.7589083,
+      "kind": "initial_funding",
+      "body": {
+        "amount": "100",
+        "currency": "USD"
+      }
+    }
+  ],
+  "journal": {
+    "balanced": true,
+    "imbalanced_events": 0,
+    "projection_errors": [],
+    "revision": 320
+  },
+  "bars_studied": 1226,
+  "gaps": 2,
+  "target": "1000",
+  "replenish_below": "5",
+  "replenish_to": "100",
+  "repeatability": {
+    "won": 0,
+    "failed": 0,
+    "open": 1,
+    "conclusion": "Not established; open attempts and correlated shadows are not proof"
+  },
+  "cost_model": "0.10% fee per side + 2 bps adverse price + 10% depth participation",
+  "sampling": "Public REST, about 2 seconds plus request time; stops can gap"
+}
