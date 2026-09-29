@@ -133,7 +133,11 @@ def control_account(
             raise ValueError("This account has no processing failure to recover")
         candidate = deepcopy(a)
         execution(candidate)
-        if candidate["version"] not in VARIANTS:
+        if candidate.get("numerical_artifact"):
+            from trading.numerical_candidates import validate_artifact
+
+            validate_artifact(candidate["numerical_artifact"])
+        elif candidate["version"] not in VARIANTS:
             raise ValueError("Account strategy needs repair before recovery")
         if engine.state.get("campaigns"):
             frames = engine.campaign_frames(frames)

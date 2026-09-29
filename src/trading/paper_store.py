@@ -182,6 +182,13 @@ class PaperStore:
             ).fetchall()
         )
 
+    def numerical_inputs(self, as_of: float) -> list[dict[str, Any]]:
+        rows = self.connection.execute(
+            "SELECT id,at,body FROM paper_events WHERE kind='market_minute' "
+            "AND at<=%s AND body->>'symbol'='BTCUSD' ORDER BY id DESC LIMIT 121", (as_of,),
+        ).fetchall()
+        return sorted(rows, key=lambda r: (r["at"], r["id"]))
+
     def export(self, after: int, limit: int, account: str | None = None) -> dict[str, Any]:
         rows = list(
             self.connection.execute(

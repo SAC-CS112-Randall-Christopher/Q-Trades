@@ -184,6 +184,7 @@ function App() {
           <a href="#research">
             <FlaskConical size={18} /> Research tiers
           </a>
+          <a href="#experiment-lab"><FlaskConical size={18} /> Experiments</a>
           <a href="#model-lab">
             <Cpu size={18} /> Model trials
           </a>
@@ -320,7 +321,7 @@ function App() {
 
           <MarketStation />
           <PaperPanel data={data?.paper} disconnected={!!networkError} />
-          <ExperimentLab />
+          <ExperimentLab paper={data?.paper} />
           <ModelTrialsPanel />
           <OptionsPanel data={data?.options} disconnected={!!networkError} />
           <section id="research" className="research-section">

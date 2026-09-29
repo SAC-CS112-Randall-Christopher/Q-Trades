@@ -12,6 +12,7 @@ from trading.experiment_registry import (
     ExperimentRegistry,
     fingerprint,
 )
+from trading.numerical_candidates import evaluate_families
 from trading.research_experiment import run_experiment
 
 
@@ -20,7 +21,12 @@ def code_fingerprint() -> str:
     return hashlib.sha256(
         b"".join(
             (root / name).read_bytes().replace(b"\r\n", b"\n")
-            for name in ("research_experiment.py", "experiment_registry.py", "experiment_worker.py")
+            for name in (
+                "research_experiment.py",
+                "experiment_registry.py",
+                "experiment_worker.py",
+                "numerical_candidates.py",
+            )
         )
     ).hexdigest()
 
@@ -35,15 +41,18 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
     rows = snapshot["rows"]
     if any(not 0 <= r["at"] <= plan.as_of for r in rows):
         raise ValueError("Input availability exceeds the declared observation cutoff")
-    result = run_experiment(
-        rows,
-        plan.feature,
-        plan.horizon_minutes,
-        PREFLIGHT_END,
-        evaluation_start=plan.test_start,
-        evaluation_end=plan.test_end,
-    )
-    result["decision"] = (
+    if plan.experiment_mode == "distinct_families":
+        result = evaluate_families(rows, plan.test_start, plan.test_end, plan.as_of)
+    else:
+        result = run_experiment(
+            rows,
+            plan.feature,
+            plan.horizon_minutes,
+            PREFLIGHT_END,
+            evaluation_start=plan.test_start,
+            evaluation_end=plan.test_end,
+        )
+    result["decision"] = result.get("decision") or (
         "forward_review_only" if result.get("eligible_for_forward_review") else "reject"
     )
     synthetic = plan.evidence_kind == "synthetic_qa" or any(

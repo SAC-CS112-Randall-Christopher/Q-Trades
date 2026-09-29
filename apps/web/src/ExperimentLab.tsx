@@ -1,7 +1,12 @@
 import { useEffect, useState, type FormEvent } from "react";
+import type { PaperSnapshot } from "./PaperPanel";
+import { PaperCampaignJournal } from "./PaperCampaignJournal";
 
 type Plan = { name: string; mechanism: string; falsification: string; feature: string;
   horizon_minutes: number; test_start: number; test_end: number; as_of: number; request_id: string };
+type Candidate = { family: string; name: string; mechanism: string; failure_regimes: string;
+  status: string; reason?: string; qualification?: string; execution_replay?: string;
+  artifact?: { sha256: string }; metrics?: Record<string, unknown>; train_samples?: number; test_samples?: number };
 type Run = { seq: number; request_id: string; plan: Plan; status: string; progress: string;
   reason: string | null; attempt: number };
 type Lab = { runs: Run[]; counts: Record<string, number>; protected_through: number;
@@ -11,7 +16,8 @@ type Result = Run & { plan_sha256: string; code_sha256: string; snapshot_sha256:
   manifest: { rows: number; older_rows_omitted: boolean } | null;
   result: { status: string; reason?: string; decision: string; next_action: string;
     train_samples?: number; test_samples?: number; metrics?: Record<string, unknown>;
-    limitations?: string[]; model?: Record<string, unknown>; evidence_kind?: string } | null;
+    limitations?: string[]; model?: Record<string, unknown>; evidence_kind?: string;
+    candidate_group?: Candidate[]; selection_treatment?: string } | null;
   events: { at: number; kind: string; body: string }[] };
 const stamp = (seconds: number) => new Date(seconds * 1000).toLocaleString();
 const localDate = (seconds: number) => {
@@ -19,7 +25,7 @@ const localDate = (seconds: number) => {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 };
 
-export function ExperimentLab() {
+export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
   const [lab, setLab] = useState<Lab | null>(null);
   const [before, setBefore] = useState(0);
   const [selected, setSelected] = useState("");
@@ -31,6 +37,9 @@ export function ExperimentLab() {
   const [falsification, setFalsification] = useState("Reject when out-of-sample forecasts fail the constant baseline or after-cost hurdle.");
   const [feature, setFeature] = useState("momentum_5");
   const [horizon, setHorizon] = useState(5);
+  const [distinct, setDistinct] = useState(false);
+  const [forwardCash, setForwardCash] = useState("100");
+  const [daily, setDaily] = useState("");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState(localDate(Date.now() / 1000 - 60));
   const [retry, setRetry] = useState<Plan | null>(() => {
@@ -78,7 +87,8 @@ export function ExperimentLab() {
     event.preventDefault(); setBusy(true); setError(null);
     const dates = new FormData(event.currentTarget as HTMLFormElement);
     const plan = retry ?? { request_id: crypto.randomUUID(), name, mechanism, falsification,
-      feature, horizon_minutes: horizon, test_start: new Date(String(dates.get("test_start"))).getTime() / 1000,
+      feature, experiment_mode: distinct ? "distinct_families" : "quote_ridge",
+      horizon_minutes: distinct ? 60 : horizon, test_start: new Date(String(dates.get("test_start"))).getTime() / 1000,
       test_end: new Date(String(dates.get("test_end"))).getTime() / 1000, as_of: Date.now() / 1000 };
     try {
       localStorage.setItem("qtrades-experiment-retry", JSON.stringify(plan)); setRetry(plan);
@@ -98,12 +108,14 @@ export function ExperimentLab() {
     {error && <p role="alert">{error}</p>}
     <form onSubmit={event => void launch(event)}><fieldset disabled={busy || !!retry}>
       <label>Hypothesis name<input value={name} onChange={e => setName(e.target.value)} required minLength={3} maxLength={100} /></label>
+      <label><input type="checkbox" checked={distinct} onChange={e => setDistinct(e.target.checked)} />Compare three distinct mechanisms on one protected window</label>
+      {distinct && <p>Slower trend, volatility expansion and range-conditioned reversion share one declared holdout. Nine predeclared threshold checks remain part of the same search; none grants independent confirmation.</p>}
       <label>Why it might persist<textarea value={mechanism} onChange={e => setMechanism(e.target.value)} required minLength={12} maxLength={1000} /></label>
       <label>What would reject it<textarea value={falsification} onChange={e => setFalsification(e.target.value)} required minLength={12} maxLength={1000} /></label>
-      <div className="lab-form-row"><label>Input<select value={feature} onChange={e => setFeature(e.target.value)}>
+      <div className="lab-form-row"><label>Input<select disabled={distinct} value={feature} onChange={e => setFeature(e.target.value)}>
         <option value="momentum_1">One-minute direction</option><option value="momentum_5">Five-minute direction</option>
         <option value="volatility_5">Recent volatility</option><option value="spread_bps">Observed spread</option></select></label>
-        <label>Forecast horizon<select value={horizon} onChange={e => setHorizon(Number(e.target.value))}>
+        <label>Forecast horizon<select disabled={distinct} value={distinct ? 60 : horizon} onChange={e => setHorizon(Number(e.target.value))}>
           {[5, 15, 60].map(n => <option key={n} value={n}>{n} minutes</option>)}</select></label>
         <label>Untouched evaluation starts<input name="test_start" type="datetime-local" value={start} onChange={e => setStart(e.target.value)} onInput={e => setStart(e.currentTarget.value)} required /></label>
         <label>Evaluation ends<input name="test_end" type="datetime-local" value={end} onChange={e => setEnd(e.target.value)} onInput={e => setEnd(e.currentTarget.value)} required /></label></div>
@@ -121,9 +133,26 @@ export function ExperimentLab() {
       {detail.manifest && <p>{detail.manifest.rows} retained input events. Older rows omitted: {detail.manifest.older_rows_omitted ? "yes" : "no"}.</p>}
       {detail.result && <><h4>Decision: {detail.result.decision}</h4><p>{detail.result.next_action}</p>
         <p>Evidence: {detail.result.evidence_kind === "synthetic_qa" ? "Synthetic QA; never independent validation" : "Observed public quote labels; prospective qualification is separate"}.</p>
-        <p>Training examples: {detail.result.train_samples ?? "insufficient"}; test examples: {detail.result.test_samples ?? "insufficient"}. Overlapping labels are correlated.</p>
+        {!detail.result.candidate_group && <p>Training examples: {detail.result.train_samples ?? "insufficient"}; test examples: {detail.result.test_samples ?? "insufficient"}. Overlapping labels are correlated.</p>}
         {detail.result.metrics && <dl>{Object.entries(detail.result.metrics).map(([key, value]) => <div key={key}><dt>{key.replaceAll("_", " ")}</dt><dd>{value == null ? "Unavailable" : String(value)}</dd></div>)}</dl>}
         {detail.result.limitations?.map(note => <p key={note}>{note}</p>)}</>}
+      {detail.result?.candidate_group && <><h4>Frozen candidate families</h4>
+        <p>{detail.result.selection_treatment}</p><div className="lab-form-row">
+          <label>Forward hypothetical balance<select value={forwardCash} onChange={e => setForwardCash(e.target.value)}><option value="50">$50</option><option value="100">$100</option></select></label>
+          <label>Forward operating USD/day<input value={daily} onChange={e => setDaily(e.target.value)} placeholder="Unknown" /></label></div>
+        {detail.result.candidate_group.map(candidate => <article className="lab-result" key={candidate.family}>
+          <h4>{candidate.name}</h4><p>{candidate.mechanism}</p><p>Failure regimes: {candidate.failure_regimes}</p>
+          <p>Training examples: {candidate.train_samples ?? "insufficient"}; matured test examples: {candidate.test_samples ?? "insufficient"}. Overlapping labels are correlated.</p>
+          <p>{candidate.status}: {candidate.reason ?? candidate.qualification}</p><p>{candidate.execution_replay}</p>
+          {candidate.metrics && <dl>{Object.entries(candidate.metrics).map(([key, value]) => <div key={key}><dt>{key.replaceAll("_", " ")}</dt><dd>{value == null ? "Unresolved" : String(value)}</dd></div>)}</dl>}
+          {candidate.artifact && <p>Frozen artifact: {candidate.artifact.sha256}</p>}
+          <button type="button" disabled={busy || !candidate.artifact || !paper?.running || !!paper.error || paper.stale}
+            onClick={async () => { setBusy(true); setError(null); try {
+              await post(`/api/lab/experiments/${detail.request_id}/forward`, { family: candidate.family,
+                starting_cash: forwardCash, operating_daily_usd: daily.trim() || null });
+            } catch (e) { setError(String(e)); } finally { setBusy(false); } }}>
+            Freeze {candidate.name} for exploratory paper</button>
+        </article>)}<p>Exploratory accounts do not qualify or replace the primary. Their funding, losses, frozen parameters and existing cash-only checks remain separate.</p></>}
       <details><summary>Frozen fingerprints and attempt history</summary><p>Plan: {detail.plan_sha256}</p>
         <p>Evaluator: {detail.code_sha256}</p><p>Inputs: {detail.snapshot_sha256 ?? "Unavailable"}</p>
         {detail.events.map((event, i) => <p key={i}>{stamp(event.at)} · {event.kind.replaceAll("_", " ")} · {event.body}</p>)}</details>
@@ -131,5 +160,13 @@ export function ExperimentLab() {
       <button type="button" disabled={busy || !["acquiring", "queued", "running"].includes(detail.status)}
         onClick={() => void post(`/api/lab/experiments/${encodeURIComponent(detail.request_id)}/cancel`).catch(e => setError(String(e)))}>Cancel remaining work</button>
     </article>}
+    {Object.entries(paper?.accounts ?? {}).filter(([,a]) => a.campaign_id === "forward-research").map(([accountId, a]) => <article className="lab-result" key={accountId}>
+      <h3>{a.label ?? accountId}</h3><p>Equity ${a.equity}; funding ${a.funding}; fees ${a.fees}; retained net ${a.net_pnl}.</p>
+      <p>{a.risk?.reason ?? "Waiting for eligible frozen signals"}. {a.fault?.reason}</p>
+      <button type="button" disabled={!paper?.running || paper.stale || busy}
+        onClick={() => void post(`/api/paper/accounts/${accountId}/control`, { action: a.entries_paused ? "resume" : "pause", expected_version: a.control_version ?? 0 }).catch(e => setError(String(e)))}>{a.entries_paused ? "Resume exploratory entries" : "Pause exploratory entries"}</button>
+      {a.fault && <button type="button" onClick={() => void post(`/api/paper/accounts/${accountId}/control`, {action:"recover",expected_version:a.control_version ?? 0}).catch(e=>setError(String(e)))}>Recover exploratory processing</button>}
+      <PaperCampaignJournal account={accountId} />
+    </article>)}
   </section>;
 }

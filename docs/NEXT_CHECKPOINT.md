@@ -1,4 +1,15 @@
-# Next: CP5 distinct hypotheses and frozen numerical challengers
+# Next: CP6 persistent bounded research and twenty-account capacity
+
+CP5 adds three distinct frozen numerical families, common protected windows, honest
+history-gap rejection, train-only fitting, parameter/cost diagnostics and explicit
+$50/$100 exploratory paper admission. See CP5_NUMERICAL_CHALLENGERS.md and its
+review receipt. Historical minute quotes cannot prove execution returns without
+books; subsequent forward comparisons remain separate. Continue CP6–CP9 and the
+measured full-stack audit. Keep each step draft and preserve the operating trial.
+
+---
+
+# Historical: CP5 distinct hypotheses and frozen numerical challengers
 
 CP4 now provides protected durable hypotheses, frozen evaluation/input/code versions,
 one bounded numerical child and normal UI results/rejection/history/export. Read

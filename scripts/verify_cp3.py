@@ -97,7 +97,7 @@ def features(bar, eligible):
     }
 
 
-def serve(port, lab_qa=False):
+def serve(port, lab_qa=False, candidates_qa=False):
     app = create_app(
         Settings(),
         ROOT / "data/cp3-browser-monitor.sqlite3",
@@ -154,6 +154,10 @@ def serve(port, lab_qa=False):
                         row["body"]["last_observed_at"] += shift
                         row["body"]["minute"] += shift // 60
                         row["body"]["synthetic_qa"] = True
+                    if candidates_qa:
+                        from lab_fixtures import synthetic_rows
+
+                        rows = synthetic_rows(start=int(time.time() // 60) * 60 - 1200 * 60)
                     store.connection.cursor().executemany(
                         "INSERT INTO paper_events(revision,at,kind,account,body) "
                         "VALUES (1,%s,'market_minute','synthetic-qa',%s)",
@@ -172,8 +176,12 @@ def serve(port, lab_qa=False):
                     print(
                         json.dumps(
                             {
-                                "qa_test_start": original_result["split_at"] + shift,
-                                "qa_test_end": PREFLIGHT_END + shift,
+                                "qa_test_start": rows[850]["at"]
+                                if candidates_qa
+                                else original_result["split_at"] + shift,
+                                "qa_test_end": rows[-1]["at"]
+                                if candidates_qa
+                                else PREFLIGHT_END + shift,
                             }
                         ),
                         flush=True,
@@ -447,11 +455,12 @@ if __name__ == "__main__":
     parser.add_argument("mode", choices=["serve", "benchmark"])
     parser.add_argument("--port", type=int, default=8793)
     parser.add_argument("--lab", action="store_true")
+    parser.add_argument("--candidates", action="store_true")
     parser.add_argument(
         "--output", type=Path, default=ROOT / "docs/reviews/cp3-paper-campaigns/benchmark.json"
     )
     args = parser.parse_args()
     if args.mode == "serve":
-        serve(args.port, args.lab)
+        serve(args.port, args.lab, args.candidates)
     else:
         benchmark(args.output)

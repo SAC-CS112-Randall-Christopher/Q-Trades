@@ -8,9 +8,13 @@ import time
 from decimal import Decimal
 from typing import Any
 
+import psycopg
+
 from trading.execution_profiles import PROFILES, execution
 from trading.market import parse_book, parse_instruments
+from trading.numerical_candidates import signal
 from trading.paper_campaigns import CampaignSpec, control_account, create_campaign
+from trading.paper_challengers import admit
 from trading.paper_economics import report as economics_report
 from trading.paper_engine import SYMBOLS, PaperEngine, filters, fresh_frame, risk_summary
 from trading.paper_store import PaperStore
@@ -41,6 +45,38 @@ class PaperRuntime:
         self._last_receipts = 0.0
         self._previous_books: dict[str, Any] = dict(self.state.get("book_sequences", {}))
         self._candle_errors: dict[str, str] = {}
+        self._numerical_minute = -1
+        self._numerical_rows: list[dict[str, Any]] = []
+
+    def numerical_study(self, now: float, study: dict[str, Any]) -> None:
+        candidates = [a for a in self.state["accounts"].values() if a.get("numerical_artifact")]
+        if not candidates:
+            return
+        minute = int(now // 60)
+        if minute != self._numerical_minute:
+            try:
+                self._numerical_rows = self.store.numerical_inputs(now)
+            except psycopg.Error:
+                self._numerical_rows = []  # Research input loss never invents a signal.
+            self._numerical_minute = minute
+        for a in candidates:
+            try:
+                feature = signal(
+                    self._numerical_rows, now, a["numerical_artifact"], a["admitted_at"]
+                )
+            except (ValueError, KeyError, TypeError, ArithmeticError):
+                feature = {"eligible": False,
+                           "reason": "Frozen numerical input/model needs attention"}
+            study.setdefault("BTCUSD", {})[a["version"]] = feature
+
+    def forward_admit(self, experiment: str, artifact: dict[str, Any], cash: str,
+                      daily: str | None) -> dict[str, Any]:
+        self.require_healthy_control()
+        result: dict[str, Any] = {}
+        self.state = self.store.transact(time.time(), lambda e: result.update(
+            admit(e, experiment, artifact, cash, daily)
+        ))
+        return result
 
     async def collect_candles(self, symbol: str) -> int:
         now = time.time()
@@ -156,6 +192,8 @@ class PaperRuntime:
                     self.error = "Market data rejected: " + str(exc)
                     self.retry_at = time.time() + 15
                 now = time.time()
+
+                self.numerical_study(now, study)
 
                 def apply(
                     engine: PaperEngine,

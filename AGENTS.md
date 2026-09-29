@@ -1,3 +1,11 @@
+# CP5 numerical challengers
+
+Read docs/CP5_NUMERICAL_CHALLENGERS.md. Preserve common-holdout search groups, all
+parameter trials and input availability. Exploratory admission is not promotion or
+profitability proof. Use exact minute-quote semantics and the existing cash-only
+engine; missing historical books must not be fabricated for execution replay.
+Continue CP6–CP9, then perform the measured full-stack audit.
+
 # CP4 protected research
 
 Read docs/CP4_PROTECTED_RESEARCH.md. Preserve the imported consumed boundary and
