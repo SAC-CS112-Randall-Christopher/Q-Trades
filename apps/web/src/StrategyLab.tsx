@@ -8,14 +8,14 @@ type Variant = {
   checks: Record<"trend" | "breakout" | "volume" | "extension", boolean | null>;
   feature_closed_at: number | null;
   feature_fresh: boolean;
-  account: { closed: number; net_pnl: string; fees: string; max_drawdown: string; valuation_fresh: boolean };
+  account: { execution_profile?: string; fee_per_side?: string | null; closed: number; net_pnl: string; fees: string; max_drawdown: string; valuation_fresh: boolean };
 };
 export type Experiments = {
   active_version: string;
   variants: Variant[];
   next_review: number;
   review_count: number;
-  latest_review: { at: number; selected: string; reason: string; windows: { start: number; end: number; trades: Record<string, number> }[] } | null;
+  latest_review: { evaluation?: string; at: number; selected: string; reason: string; windows: { start: number; end: number; trades: Record<string, number>; returns?: Record<string, string | null> }[] } | null;
 };
 
 const names: Record<string, string> = {
@@ -69,8 +69,9 @@ export const StrategyLab = memo(function StrategyLab({ data, symbol, unavailable
       <article><span>03 / TIME EXITS</span><h4>10-minute progress check</h4><p>Exit if the bid has never reached 1R after 10 minutes. Exit any remaining position after 45 minutes; there is no fixed profit target.</p></article>
     </div>
     <p className="station-small">1R means the initial price-to-stop distance. Trail activation can still leave a loss after fees. A stop triggers a simulated exit request; its eventual fill can be worse after a gap.</p>
-    <details className="strategy-risk"><summary>Position sizing &amp; execution assumptions</summary><p>At most 50% of equity in one position and 90% total exposure. Planned risk is capped at 2.5% per entry and 5% combined, including modeled costs. Paper fills use a later fresh book, up to 10% of displayed liquidity, a 0.10% fee each side and 0.02% adverse price each side. Stops do not guarantee the planned loss limit.</p></details>
-    <div className="strategy-review"><div><p className="station-kicker">WHAT THE REVIEW IS LEARNING</p><h4>{review ? `Latest review selected ${names[review.selected] ?? review.selected}` : "Collecting forward outcomes for the first review"}</h4><p>{review?.reason ?? "A review needs new observed trades before it can compare the frozen rules."}</p>{review && <span>Reviewed at {when(review.at)} · {data.review_count} reviews recorded</span>}</div><div><strong>Evidence needed before a change</strong><p>Two separate four-hour windows, with at least 10 completed trades each for the current rule and challenger. Higher returns must survive extra fees without worse drawdown.</p>{review && <p>For {names[selected.version]} at the last review: {review.windows.map((w, i) => <span key={w.end}>{i > 0 ? " · " : ""}{w.trades[selected.version] ?? 0}/10 trades in window {i + 1}</span>)}.</p>}</div></div>
+    <details className="strategy-risk"><summary>Position sizing &amp; execution assumptions</summary><p>At most 50% of equity in one position and 90% total exposure. Planned risk is capped at 2.5% per entry and 5% combined, including modeled costs. Paper fills use a later fresh book, up to 10% of displayed liquidity, the selected account’s {selected.account.fee_per_side == null ? "unknown" : `${(Number(selected.account.fee_per_side) * 100).toFixed(3)}%`} taker fee each side and 0.02% adverse price each side. Stops do not guarantee the planned loss limit.</p></details>
+    <div className="strategy-review"><div><p className="station-kicker">WHAT THE REVIEW IS LEARNING</p><h4>{review ? `Latest review selected ${names[review.selected] ?? review.selected}` : "Collecting forward outcomes for the first review"}</h4><p>{review?.reason ?? "A review needs complete prospective account windows before it can compare the frozen rules."}</p>{review && <span>Reviewed at {when(review.at)} · {data.review_count} reviews recorded</span>}</div><div><strong>Evidence needed before a change</strong><p>Two fully observed four-hour account windows with matched capital, fees, risk and operating assumptions. Account returns must beat the current rule, cash and the exposure control without worse drawdown. There is no minimum-trade quota; incomplete observations cannot qualify.</p>{review && <p>For {names[selected.version]} at the last review: {review.windows.map((w, i) => <span key={w.end}>{i > 0 ? " · " : ""}{w.trades[selected.version] ?? 0} closed trades in window {i + 1}{w.returns?.[selected.version] != null ? `; account return ${(Number(w.returns[selected.version]) * 100).toFixed(3)}%` : "; no account return reported"}</span>)}.</p>}</div></div>
+    {review && review.evaluation !== "whole-account-v1" && <p className="station-small">The displayed review used historical completed-trade scoring. It has not been rewritten; new account windows start prospectively.</p>}
     <p className="strategy-boundary">Learning now: comparing frozen rules against new outcomes. Trainable models and LLM research roles are still being qualified.</p>
   </section>;
 });

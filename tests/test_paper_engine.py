@@ -235,7 +235,7 @@ def test_four_hour_reviews_do_not_force_promotion_or_replay_missed_windows():
     assert state["next_review"] == engine.now + REVIEW_SECONDS
 
 
-def test_two_disjoint_forward_windows_required_for_promotion():
+def test_completed_trades_alone_cannot_promote_without_whole_account_evidence():
     state = initial_state(START)
     now = START + REVIEW_SECONDS * 2
     for version in VARIANTS:
@@ -257,8 +257,8 @@ def test_two_disjoint_forward_windows_required_for_promotion():
     PaperEngine(one_window, now).review()
     assert one_window["promotion_count"] == 0
     PaperEngine(state, now).review()
-    assert state["accounts"]["primary"]["version"] == "selective-v1"
-    assert state["promotion_count"] == 1
+    assert state["accounts"]["primary"]["version"] == "breakout-v1"
+    assert state["promotion_count"] == 0
 
 
 def test_unbalanced_journal_cannot_be_emitted():

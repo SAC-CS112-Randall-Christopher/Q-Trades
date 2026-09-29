@@ -1,3 +1,20 @@
+# Next: CP3 concurrent paper accounts
+
+CP2 adds whole-account windows, explicit cost scenarios, cash/exposure controls,
+after-operating ranking, and compounded paper selection through the normal UI.
+Read [the method and limits](CP2_ACCOUNT_ECONOMICS.md) and the CP2 implementation audit.
+Existing costs and historical account results remain intact. This is not profitability
+proof, live trading, or the creation of ten accounts. CP3 is campaign setup and ten
+isolated accounts using this same engine, not a second execution/accounting system.
+
+The CP0/CP1/CP2 stack still requires approved merges and native installation through
+the normal batch updater. Do not recreate the retired installer. No operating trial,
+funding, risk policy or model service was changed by this implementation.
+
+---
+
+## Historical pre-CP2 handoff
+
 # Next: CP2 economics; CP1 implementation audit and CP0 installation remain distinct
 
 CP1's risk fixes, account-scoped policy adoption, recovery API and normal UI are

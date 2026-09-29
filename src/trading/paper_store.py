@@ -10,6 +10,7 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from trading.execution_profiles import LEGACY_EXECUTION
 from trading.paper_engine import PaperEngine, initial_state
 
 SCHEMA = """
@@ -75,15 +76,18 @@ class PaperStore:
     def close(self) -> None:
         self.connection.close()
 
-    def initialize(self, now: float) -> None:
+    def initialize(
+        self, now: float, starting_cash: str = "100", execution_profile: str = LEGACY_EXECUTION
+    ) -> None:
         self.require_owner()
+        initial = initial_state(now, starting_cash, execution_profile)
         with self.connection.transaction():
             inserted = self.connection.execute(
                 "INSERT INTO paper_state VALUES (1, 0, %s) ON CONFLICT DO NOTHING RETURNING id",
-                (Jsonb(initial_state(now)),),
+                (Jsonb(initial),),
             ).fetchone()
             if inserted:
-                engine = PaperEngine(initial_state(now), now)
+                engine = PaperEngine(initial, now)
                 engine.seed()
                 self._append(engine, 0)
 
@@ -204,7 +208,8 @@ class PaperStore:
         ).fetchone()
         rows = self.connection.execute(
             "SELECT account,asset,bucket,sum(amount) AS balance FROM paper_journal "
-            "WHERE bucket IN ('cash','reserved','inventory') GROUP BY account,asset,bucket"
+            "WHERE bucket IN ('cash','reserved','inventory','fees','fake_funding') "
+            "GROUP BY account,asset,bucket"
         ).fetchall()
         balances = {(r["account"], r["asset"], r["bucket"]): r["balance"] for r in rows}
         errors = []
@@ -213,6 +218,8 @@ class PaperStore:
             for bucket, expected in (
                 ("cash", Decimal(a["cash"]) - reserved),
                 ("reserved", reserved),
+                ("fees", Decimal(a["fees"])),
+                ("fake_funding", -Decimal(a["funding"])),
             ):
                 if balances.get((name, "USD", bucket), Decimal(0)) != expected:
                     errors.append(f"{name}: USD {bucket} mismatch")

@@ -6,7 +6,8 @@ import time
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from typing import Any
 
-from trading.paper_engine import FEE, PARTICIPATION, SLIPPAGE, filters
+from trading.execution_profiles import LEGACY_EXECUTION, PROFILES, execution
+from trading.paper_engine import filters, fresh_frame
 from trading.paper_strategy import VARIANTS
 from trading.tiered_runtime import TieredPaperRuntime
 
@@ -150,6 +151,7 @@ def strategy_experiments(runtime: TieredPaperRuntime, symbol: str) -> dict[str, 
     variants = []
     for version, rules in VARIANTS.items():
         account = state["accounts"][version]
+        profile = PROFILES.get(account.get("execution_profile", LEGACY_EXECUTION))
         feature = runtime.study.get(symbol, {}).get(version, {})
         closed_at = (feature["bar_open_ms"] + 60000) / 1000 if "bar_open_ms" in feature else None
         fresh = closed_at is not None and 0 <= time.time() - closed_at <= 90
@@ -174,12 +176,15 @@ def strategy_experiments(runtime: TieredPaperRuntime, symbol: str) -> dict[str, 
                 "feature_fresh": fresh and complete,
                 "checks": checks,
                 "account": {
+                    "execution_profile": profile.id if profile else "unknown",
+                    "fee_per_side": str(profile.fee(symbol)) if profile else None,
                     "closed": account["closed"],
                     "net_pnl": str(Decimal(account["equity"]) - Decimal(account["funding"])),
                     "fees": account["fees"],
                     "max_drawdown": account["max_drawdown"],
                     "valuation_fresh": (
                         account["valuation_fresh"]
+                        and fresh_frame({"observed": account.get("valuation_at")}, time.time())
                         and runtime.running
                         and not runtime.error
                         and time.time() - state["last_tick"] <= 10
@@ -196,12 +201,14 @@ def strategy_experiments(runtime: TieredPaperRuntime, symbol: str) -> dict[str, 
         "review_count": state["review_count"],
         "latest_review": {
             "at": latest["at"],
+            "evaluation": latest.get("evaluation", "historical-completed-trade-average"),
             "selected": latest["selected"],
             "reason": latest["reason"],
             "windows": [
                 {
                     "start": window["start"],
                     "end": window["end"],
+                    "returns": {v: score.get("return") for v, score in window["scores"].items()},
                     "trades": {
                         version: score["trades"] for version, score in window["scores"].items()
                     },
@@ -225,25 +232,28 @@ def cost_hurdle(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
         raise ValueError("A fresh quote is required; no cost estimate was fabricated")
     if time.time() - runtime.metadata_at > 900:
         raise ValueError("Market filters are stale; wait for refreshed instrument metadata")
+    profile = execution(runtime.state["accounts"]["primary"])
+    fee, slippage = profile.fee(symbol), Decimal(profile.slippage)
     tick = filters(runtime.instruments[symbol])["tick"]
     bid, ask = Decimal(quote["bid"]), Decimal(quote["ask"])
-    entry = (ask * (1 + SLIPPAGE) / tick).to_integral_value(rounding=ROUND_UP) * tick
-    exit_price = (bid * (1 - SLIPPAGE) / tick).to_integral_value(rounding=ROUND_DOWN) * tick
-    entry_cost = entry * (1 + FEE)
-    exit_value = exit_price * (1 - FEE)
-    minimum_exit = (entry_cost / (1 - FEE) / tick).to_integral_value(rounding=ROUND_UP) * tick
-    required_bid = (minimum_exit / (1 - SLIPPAGE) / tick).to_integral_value(
+    entry = (ask * (1 + slippage) / tick).to_integral_value(rounding=ROUND_UP) * tick
+    exit_price = (bid * (1 - slippage) / tick).to_integral_value(rounding=ROUND_DOWN) * tick
+    entry_cost = entry * (1 + fee)
+    exit_value = exit_price * (1 - fee)
+    minimum_exit = (entry_cost / (1 - fee) / tick).to_integral_value(rounding=ROUND_UP) * tick
+    required_bid = (minimum_exit / (1 - slippage) / tick).to_integral_value(
         rounding=ROUND_UP
     ) * tick
     return {
+        "execution_profile": profile.id,
         "symbol": symbol,
         "quote": quote,
         "round_trip_loss_percent": str((1 - exit_value / entry_cost) * 100),
         "required_bid": str(required_bid),
         "required_bid_move_percent": str((required_bid / bid - 1) * 100),
-        "fee_per_side": str(FEE),
-        "adverse_price_per_side": str(SLIPPAGE),
-        "participation_cap": str(PARTICIPATION),
+        "fee_per_side": str(fee),
+        "adverse_price_per_side": str(slippage),
+        "participation_cap": profile.participation,
         "price_tick": str(tick),
         "scope": (
             "Top-of-book cost hurdle per unit; deeper impact, quantity filters, timing "

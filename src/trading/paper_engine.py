@@ -1,10 +1,14 @@
 """Deterministic cash-only simulator. Every mutation is committed with its evidence."""
 
 import math
-from decimal import ROUND_DOWN, ROUND_UP, Decimal
+from decimal import Decimal
 from typing import Any
 
+from trading.execution_profiles import LEGACY_EXECUTION, PROFILES, execution
+from trading.execution_profiles import floor_step as floor_step
+from trading.execution_profiles import walk_book as walk_book
 from trading.market import Book
+from trading.paper_economics import observe as observe_economics
 from trading.paper_strategy import VARIANTS
 
 D = Decimal
@@ -114,10 +118,6 @@ def observation_evidence(frame: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def floor_step(value: Decimal, step: Decimal) -> Decimal:
-    return (value / step).to_integral_value(rounding=ROUND_DOWN) * step
-
-
 def filters(instrument: dict[str, Any]) -> dict[str, Decimal]:
     if (
         instrument.get("quote") != "USD"
@@ -145,39 +145,22 @@ def filters(instrument: dict[str, Any]) -> dict[str, Decimal]:
     return result
 
 
-def walk_book(
-    book: Book,
-    side: str,
-    quantity: Decimal,
-    limit: Decimal,
-    rules: dict[str, Decimal],
-) -> tuple[Decimal, Decimal]:
-    """Consume only a fraction of visible liquidity, applying adverse prices and lot sizes."""
-    filled = D(0)
-    gross = D(0)
-    for price, available in book.asks if side == "buy" else book.bids:
-        adjusted = price * (1 + SLIPPAGE if side == "buy" else 1 - SLIPPAGE)
-        rounding = ROUND_UP if side == "buy" else ROUND_DOWN
-        adjusted = (adjusted / rules["tick"]).to_integral_value(rounding=rounding)
-        adjusted *= rules["tick"]
-        if (side == "buy" and adjusted > limit) or (side == "sell" and adjusted < limit):
-            break
-        amount = floor_step(min(quantity - filled, available * PARTICIPATION), rules["step"])
-        filled += amount
-        gross += amount * adjusted
-        if filled >= quantity:
-            break
-    return filled, gross
-
-
-def account(version: str, now: float) -> dict[str, Any]:
+def account(
+    version: str, now: float, starting_cash: str = "100", execution_profile: str = LEGACY_EXECUTION
+) -> dict[str, Any]:
+    if starting_cash not in {"50", "100"} or execution_profile not in PROFILES:
+        raise ValueError("Declare $50 or $100 with a supported paper execution profile")
     return {
         "version": version,
         "risk_policy": HARD_STOP_POLICY,
+        "starting_capital": starting_cash,
+        "execution_profile": execution_profile,
+        "economics_settings_version": 0,
+        "execution_drag_usd": "0",
         "risk_stop_id": 0,
         "risk_recovery": None,
-        "cash": "100",
-        "funding": "100",
+        "cash": starting_cash,
+        "funding": starting_cash,
         "fees": "0",
         "positions": {},
         "pending": {},
@@ -186,15 +169,15 @@ def account(version: str, now: float) -> dict[str, Any]:
         "wins": 0,
         "realized": "0",
         "recent_trades": [],
-        "equity": "100",
+        "equity": starting_cash,
         "valuation_fresh": False,
-        "risk_peak": "100",
-        "units": "100",
+        "risk_peak": starting_cash,
+        "units": starting_cash,
         "nav_peak": "1",
         "max_drawdown": "0",
         "drawdown_pause": False,
         "day": int(now // 86400),
-        "day_start": "100",
+        "day_start": starting_cash,
         "day_turnover": "0",
         "daily_pause": False,
         "cooldown_until": 0,
@@ -209,7 +192,9 @@ def account(version: str, now: float) -> dict[str, Any]:
     }
 
 
-def initial_state(now: float) -> dict[str, Any]:
+def initial_state(
+    now: float, starting_cash: str = "100", execution_profile: str = LEGACY_EXECUTION
+) -> dict[str, Any]:
     return {
         "schema": 1,
         "model": MODEL_VERSION,
@@ -219,8 +204,11 @@ def initial_state(now: float) -> dict[str, Any]:
         "next_review": now + REVIEW_SECONDS,
         "paused": False,
         "accounts": {
-            "primary": account("breakout-v1", now),
-            **{version: account(version, now) for version in VARIANTS},
+            "primary": account("breakout-v1", now, starting_cash, execution_profile),
+            **{
+                version: account(version, now, starting_cash, execution_profile)
+                for version in VARIANTS
+            },
         },
         "features": {},
         "review_count": 0,
@@ -312,36 +300,47 @@ class PaperEngine:
             ] += 1
 
     def seed(self) -> None:
-        for name in self.state["accounts"]:
+        for name, saved in self.state["accounts"].items():
+            amount = D(saved["funding"])
             self.emit(
                 "initial_funding",
                 name,
                 {
-                    "amount": "100",
+                    "amount": str(amount),
                     "currency": "USD",
-                    "risk_policy": policy(self.state["accounts"][name]),
+                    "risk_policy": policy(saved),
+                    "execution_profile": execution(saved).id,
                 },
                 [
-                    self.line("USD", "cash", D(100)),
-                    self.line("USD", "fake_funding", D(-100)),
+                    self.line("USD", "cash", amount),
+                    self.line("USD", "fake_funding", -amount),
                 ],
             )
 
     def universe_experiment(self, symbols: list[str]) -> None:
         """A concurrent, separately funded control and challenger; never reset the primary."""
+        primary = self.state["accounts"]["primary"]
+        capital = primary.get("starting_capital", "100")
+        profile = primary.get("execution_profile", LEGACY_EXECUTION)
+        if capital not in {"50", "100"} or profile not in PROFILES:
+            return  # Unknown account assumptions cannot create a new comparison.
         for name in ("universe-control-v1", "universe-wide-v1"):
             if name not in self.state["accounts"]:
-                self.state["accounts"][name] = account("breakout-v1", self.now)
+                self.state["accounts"][name] = account("breakout-v1", self.now, capital, profile)
                 self.emit(
                     "research_account_created",
                     name,
                     {
-                        "amount": "100",
+                        "amount": capital,
+                        "execution_profile": profile,
                         "currency": "USD",
                         "strategy": "breakout-v1",
                         "comparison": "Paired forward universe comparison; balances never pooled",
                     },
-                    [self.line("USD", "cash", D(100)), self.line("USD", "fake_funding", D(-100))],
+                    [
+                        self.line("USD", "cash", D(capital)),
+                        self.line("USD", "fake_funding", -D(capital)),
+                    ],
                 )
         self.state["accounts"]["universe-control-v1"]["symbols"] = list(SYMBOLS)
         wide = self.state["accounts"]["universe-wide-v1"]
@@ -355,7 +354,9 @@ class PaperEngine:
             wide["symbols"] = membership
 
     def cancel(self, name: str, a: dict[str, Any], symbol: str, reason: str) -> None:
-        order = a["pending"].pop(symbol)
+        order = a["pending"].pop(symbol, None)
+        if order is None:
+            return
         reserve = D(order["reserved"])
         self.emit(
             "order_cancelled",
@@ -368,7 +369,15 @@ class PaperEngine:
 
     def value(self, a: dict[str, Any], frames: dict[str, dict[str, Any]]) -> bool:
         equity = D(a["cash"])
+        liquidation_fee, liquidation_drag = D(0), D(0)
         issues: dict[str, str] = {}
+        try:
+            profile = execution(a)
+        except ValueError:
+            a.update(
+                valuation_fresh=False, valuation_issues={"execution": "Unknown execution profile"}
+            )
+            return False
         for symbol, pos in a["positions"].items():
             frame = frames.get(symbol)
             if not fresh_frame(frame, self.now):
@@ -378,11 +387,14 @@ class PaperEngine:
             book: Book = frame["book"]
             rules = frame["rules"]
             qty = D(pos["quantity"])
-            filled, gross = walk_book(book, "sell", qty, D(0), rules)
+            filled, gross = walk_book(book, "sell", qty, D(0), rules, profile)
             if filled < qty or qty < rules["min_qty"] or gross < rules["min_notional"]:
                 issues[symbol] = "insufficient executable depth or quantity below venue minimum"
                 continue
-            equity += gross * (1 - FEE)
+            fee = gross * profile.fee(symbol)
+            equity += gross - fee
+            liquidation_fee += fee
+            liquidation_drag += qty * (book.bids[0][0] + book.asks[0][0]) / 2 - gross
         a["valuation_issues"] = issues
         a["valuation_fresh"] = not issues
         if issues:
@@ -390,6 +402,8 @@ class PaperEngine:
         # A fresh tick cannot rejuvenate an older held-asset quote for recovery.
         a["valuation_at"] = min([self.now, *(frames[s]["observed"] for s in a["positions"])])
         a["equity"] = str(equity)
+        a["liquidation_fee_usd"] = str(liquidation_fee)
+        a["liquidation_drag_usd"] = str(liquidation_drag)
         a["valuation_fresh"] = True
         a["risk_peak"] = str(max(D(a["risk_peak"]), equity))
         nav = equity / D(a["units"])
@@ -421,7 +435,17 @@ class PaperEngine:
         frame: dict[str, Any],
         frames: dict[str, dict[str, Any]],
     ) -> None:
-        order = a["pending"][symbol]
+        order = a["pending"].get(symbol)
+        if order is None:
+            return  # A serial cancel/expired order cannot be filled later or release funds twice.
+        try:
+            profile = execution(order)
+            fee_rate = profile.fee(symbol)
+            if order.get("fee_asset", "USD") != "USD":
+                raise ValueError("Unsupported fee asset; no conversion was invented")
+        except ValueError as exc:
+            self.cancel(name, a, symbol, str(exc))
+            return
         if order["side"] == "buy":
             # Revalue at acceptance with the complete observation set, not a cached flag.
             self.value(a, frames)
@@ -431,9 +455,12 @@ class PaperEngine:
                 return
         if not fresh_frame(frame, self.now):
             return
-        if self.now < order["created_at"] + 1 or frame["observed"] <= order["created_at"]:
+        if (
+            self.now < order["created_at"] + profile.latency_seconds
+            or frame["observed"] <= order["created_at"]
+        ):
             return
-        if self.now - order["created_at"] > 15:
+        if self.now - order["created_at"] > profile.expiry_seconds:
             self.cancel(name, a, symbol, "IOC observation window expired; no retrospective fill")
             return
         rules = frame["rules"]
@@ -451,11 +478,11 @@ class PaperEngine:
             return
         if frame["book"].update_id <= a["last_fill_sequence"].get(symbol, -1):
             return  # Do not repeatedly consume unchanged displayed liquidity.
-        filled, gross = walk_book(frame["book"], order["side"], qty, price_limit, rules)
+        filled, gross = walk_book(frame["book"], order["side"], qty, price_limit, rules, profile)
         if filled <= 0:
             self.cancel(name, a, symbol, "No displayed liquidity inside the price cap")
             return
-        fee = gross * FEE
+        fee = gross * fee_rate
         lines = []
         base = frame["base"]
         if order["side"] == "buy":
@@ -532,6 +559,9 @@ class PaperEngine:
                 self.line(base, "inventory", -filled),
                 self.line(base, "simulated_market", filled),
             ]
+        mid_notional = filled * (frame["book"].bids[0][0] + frame["book"].asks[0][0]) / 2
+        drag = gross - mid_notional if order["side"] == "buy" else mid_notional - gross
+        a["execution_drag_usd"] = str(D(a.get("execution_drag_usd", "0")) + drag)
         a["fees"] = str(D(a["fees"]) + fee)
         a["day_turnover"] = str(D(a["day_turnover"]) + gross)
         del a["pending"][symbol]
@@ -545,6 +575,9 @@ class PaperEngine:
                 "gross": str(gross),
                 "fee": str(fee),
                 "fee_asset": "USD",
+                "execution_profile": profile.id,
+                "liquidity_role": "taker",
+                "embedded_execution_drag_usd": str(drag),
                 "vwap": str(gross / filled),
                 "model": order.get("model", MODEL_VERSION),
                 "observation": observation_evidence(frame),
@@ -576,6 +609,8 @@ class PaperEngine:
             return "Ten-minute symbol cooldown"
         if not feature["eligible"]:
             return str(feature["reason"])
+        profile = execution(a)
+        fee_rate = profile.fee(symbol)
         book: Book = frame["book"]
         rules = frame["rules"]
         if D(book.metrics()["spread_bps"]) > D(25):
@@ -586,7 +621,7 @@ class PaperEngine:
         distance = D(feature["atr"]) * D("1.5")
         equity = D(a["equity"])
         reserved = sum((D(o["reserved"]) for o in a["pending"].values()), D(0))
-        exposure = max(D(0), (equity - D(a["cash"])) / (1 - FEE))
+        exposure = max(D(0), (equity - D(a["cash"])) / (1 - fee_rate))
         existing_risk = sum(
             (D(p["quantity"]) * D(p["planned_unit_risk"]) for p in a["positions"].values()), D(0)
         )
@@ -608,16 +643,17 @@ class PaperEngine:
         if budget <= 0 or risk <= 0 or distance <= 0:
             return "Cash, turnover, exposure, or risk capacity exhausted"
         # Include adverse execution and both fees in the planned risk denominator.
-        unit_risk = distance + limit * (2 * FEE + 2 * SLIPPAGE)
+        unit_risk = distance + limit * (2 * fee_rate + 2 * D(profile.slippage))
         qty = floor_step(
-            min(budget / (limit * (1 + FEE)), risk / unit_risk, rules["max_qty"]), rules["step"]
+            min(budget / (limit * (1 + fee_rate)), risk / unit_risk, rules["max_qty"]),
+            rules["step"],
         )
         if qty < rules["min_qty"] or qty * limit < rules["min_notional"]:
             return "Order below venue minimum after sizing"
-        visible, _ = walk_book(book, "buy", qty, limit, rules)
+        visible, _ = walk_book(book, "buy", qty, limit, rules, profile)
         if visible < qty:
             return "Insufficient conservative displayed depth"
-        reserve = qty * limit * (1 + FEE)
+        reserve = qty * limit * (1 + fee_rate)
         order = {
             "symbol": symbol,
             "side": "buy",
@@ -631,6 +667,8 @@ class PaperEngine:
             "features": feature,
             "reason": "Closed-bar breakout",
             "risk_policy": policy(a),
+            "execution_profile": profile.id,
+            "fee_asset": "USD",
             "book": frame["raw"],
             "model": self.state["model"],
             "observation": observation_evidence(frame),
@@ -683,6 +721,8 @@ class PaperEngine:
         order = {
             "symbol": symbol,
             "side": "sell",
+            "execution_profile": execution(a).id,
+            "fee_asset": "USD",
             "quantity": str(qty),
             "limit": str(limit),
             "reserved": "0",
@@ -749,6 +789,7 @@ class PaperEngine:
             a["units"] = str(D(a["units"]) + injection / nav)
         else:
             a["max_drawdown"] = "1"
+            a["economics_nav_unavailable"] = True
         a["cash"] = "100"
         a["funding"] = str(D(a["funding"]) + injection)
         a["equity"] = "100"
@@ -784,63 +825,82 @@ class PaperEngine:
 
     def review(self) -> None:
         """Two nonoverlapping, fully observed windows; frozen challengers and no forced changes."""
-        windows: list[dict[str, Any]] = []
-        enough_time = self.now - self.state["last_promotion"] >= 2 * REVIEW_SECONDS
-        for start, end in (
-            (self.now - 2 * REVIEW_SECONDS, self.now - REVIEW_SECONDS),
-            (self.now - REVIEW_SECONDS, self.now),
-        ):
-            scores = {}
-            for version in VARIANTS:
-                a = self.state["accounts"][version]
-                trades = [
-                    t
-                    for t in a["recent_trades"]
-                    if t["opened_at"] >= start and t["closed_at"] < end
-                ]
-                pnl = sum((D(t["pnl"]) for t in trades), D(0))
-                costs = sum((D(t["fees"]) for t in trades), D(0))
-                # Stress assumes one additional round-trip fee burden.
-                returns = [D(t["pnl"]) / D(t["cost"]) for t in trades]
-                scores[version] = {
-                    "trades": len(trades),
-                    "wins": sum(D(t["pnl"]) > 0 for t in trades),
-                    "net_pnl": str(pnl),
-                    "stress_pnl": str(pnl - costs),
-                    "mean_return": str(sum(returns, D(0)) / len(returns)) if returns else "0",
-                    "max_drawdown": a["max_drawdown"],
-                }
-            windows.append({"start": start, "end": end, "scores": scores})
+        # Only prospective, already closed account windows; old reviews stay immutable.
+        windows = self.state.get("economics", {}).get("completed", [])[-2:]
         primary = self.state["accounts"]["primary"]
         incumbent = primary["version"]
         candidates = []
+        rejections = {}
         for version in VARIANTS:
             if version == incumbent:
                 continue
-            gates = []
-            for window in windows:
-                score = window["scores"][version]
-                base = window["scores"][incumbent]
-                gates.append(
-                    score["trades"] >= 10
-                    and base["trades"] >= 10
-                    and D(score["stress_pnl"]) > 0
-                    and D(score["mean_return"]) > D(base["mean_return"]) + D("0.001")
-                    and D(score["max_drawdown"]) <= min(D("0.35"), D(base["max_drawdown"]))
-                )
-            if enough_time and all(gates):
-                candidates.append(version)
+            reason = "Two complete aligned account windows are required"
+            if len(windows) == 2 and windows[0]["start"] >= self.state["last_promotion"]:
+                reason = ""
+                for window in windows:
+                    score = window["scores"].get(version)
+                    base = window["scores"].get(incumbent)
+                    if not score or not base or not score["eligible"] or not base["eligible"]:
+                        reason = "Account/benchmark coverage is incomplete; retain version"
+                        break
+                    if any(
+                        score[k] != base[k]
+                        for k in (
+                            "execution_profile",
+                            "starting_capital",
+                            "funding_basis",
+                            "risk_policy",
+                            "operating_daily_usd",
+                        )
+                    ):
+                        reason = "Capital, cost or risk assumptions do not match"
+                        break
+                    if (
+                        score["execution_profile"]
+                        != primary.get("execution_profile", LEGACY_EXECUTION)
+                        or score["starting_capital"] != primary.get("starting_capital", "100")
+                        or score["funding_basis"] != primary["funding"]
+                        or score["risk_policy"] != policy(primary)
+                        or score["operating_daily_usd"] != primary.get("operating_daily_usd")
+                    ):
+                        reason = "Primary account assumptions do not match the comparison"
+                        break
+                    if score["total_pnl"] is None or base["total_pnl"] is None:
+                        reason = "Set operating-cost assumptions; total economics are unknown"
+                        break
+                    if D(score["funding_change"]) or D(base["funding_change"]):
+                        reason = (
+                            "Funding-adjusted results retained; funding changed, so no promotion"
+                        )
+                        break
+                    if not (
+                        D(score["total_pnl"]) > 0
+                        and D(score["total_return"])
+                        > max(
+                            D(base["total_return"]) + D("0.001"),
+                            D(score["cash_total_return"]),
+                            D(score["exposure_total_return"]),
+                        )
+                        and D(score["max_drawdown"]) <= min(D("0.35"), D(base["max_drawdown"]))
+                    ):
+                        reason = "No whole-account advantage after costs and benchmarks"
+                        break
+                if not reason:
+                    candidates.append(version)
+            rejections[version] = reason or "Passed both observed windows; not profitability proof"
         selected = incumbent
-        reason = "Insufficient forward evidence or no challenger passed all gates; retain version"
+        reason = "Retain version; no matched whole-account challenger qualified"
         if candidates and not primary["positions"] and not primary["pending"]:
             selected = max(
                 candidates,
-                key=lambda v: sum((D(w["scores"][v]["mean_return"]) for w in windows), D(0)),
+                key=lambda v: math.prod(
+                    (1 + D(w["scores"][v]["total_return"]) for w in windows), start=D(1)
+                ),
             )
             primary["version"] = selected
             self.state["last_promotion"] = self.now
             self.state["promotion_count"] += 1
-            reason = "Challenger passed two forward windows; paper-only promotion while flat"
+            reason = "Challenger passed two whole-account windows; paper-only change while flat"
         risk_resumed = []
         for name, a in self.state["accounts"].items():
             if (
@@ -866,6 +926,8 @@ class PaperEngine:
             "incumbent": incumbent,
             "selected": selected,
             "windows": windows,
+            "evaluation": "whole-account-v1",
+            "candidate_reasons": rejections,
             "risk_segments_reviewed": risk_resumed,
             "primary_closed_trades": primary["closed"],
             "primary_net_pnl": str(D(primary["equity"]) - D(primary["funding"])),
@@ -978,6 +1040,8 @@ class PaperEngine:
                 }
                 a["last_decision"][symbol] = decision
                 self.emit("decision", name, decision)
+        for observation in observe_economics(self.state, frames, self.now):
+            self.emit(observation["kind"], "system", observation["body"])
         if self.now >= self.state["next_review"]:
             self.review()
         minute = int(self.now // 60)
@@ -1000,6 +1064,44 @@ class PaperEngine:
                     },
                 )
         self.assert_invariants()
+
+    def set_economics(
+        self, name: str, profile: str, daily_usd: str | None, expected_version: int
+    ) -> dict[str, Any]:
+        a = self.state["accounts"][name]
+        if profile not in PROFILES:
+            raise ValueError("Select a supported paper fee scenario")
+        if daily_usd is not None:
+            rate = D(daily_usd)
+            if not rate.is_finite() or rate < 0 or rate > 10000:
+                raise ValueError("Daily operating allocation must be between 0 and 10000 USD")
+            daily_usd = format(rate.normalize(), "f")
+        if execution(a).id == profile and a.get("operating_daily_usd") == daily_usd:
+            return {"status": "already_applied"}
+        if a.get("economics_settings_version", 0) != expected_version:
+            raise ValueError("Cost assumptions changed; refresh before saving")
+        if execution(a).id != profile and (a["positions"] or a["pending"]):
+            raise ValueError(
+                "A new execution profile requires a flat account with no pending orders"
+            )
+        previous = {
+            "execution_profile": execution(a).id,
+            "operating_daily_usd": a.get("operating_daily_usd"),
+        }
+        a["execution_profile"] = profile
+        a["operating_daily_usd"] = daily_usd
+        a["economics_settings_version"] = expected_version + 1
+        self.emit(
+            "economics_settings",
+            name,
+            {
+                "previous": previous,
+                "selected": {"execution_profile": profile, "operating_daily_usd": daily_usd},
+                "version": expected_version + 1,
+                "reason": "Prospective paper assumptions only; no historical fees or funds changed",
+            },
+        )
+        return {"status": "applied", "version": expected_version + 1}
 
     def adopt_hard_stop(self, name: str) -> dict[str, Any]:
         a = self.state["accounts"][name]

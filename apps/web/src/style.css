@@ -1483,3 +1483,20 @@ h1 {
 .risk-account h4 { margin-bottom: 8px; }
 .risk-account p { margin-block: 8px; }
 .risk-account .button { max-width: 100%; white-space: normal; }
+
+.economics-panel { margin-top: 24px; padding: 22px; border: 1px solid var(--line, #d7dfd4); border-radius: 8px; }
+.economics-heading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+.economics-panel h4 { margin: 20px 0 12px; }
+.economics-values { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px; margin: 18px 0; }
+.economics-values dt { font-size: 12px; margin-bottom: 6px; }
+.economics-values dd { margin: 0; font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.economics-panel label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; min-width: 0; }
+.economics-panel select, .economics-panel input { padding: 9px; border-radius: 4px; border: 1px solid var(--line, #d7dfd4); max-width: 100%; min-width: 0; background: transparent; color: inherit; font: inherit; }
+.economics-panel p { margin: 12px 0; overflow-wrap: anywhere; }
+.economics-window { max-width: 450px; margin-top: 20px; }
+.economics-table { min-width: 680px; }
+.economics-table small { display: block; max-width: 240px; white-space: normal; overflow-wrap: anywhere; }
+.economics-settings { margin-top: 20px; }
+.economics-settings form { display: grid; gap: 12px; padding-top: 16px; }
+.economics-settings form label { max-width: 560px; }
+@media (max-width: 480px) { .economics-panel { padding: 14px; } .economics-values { grid-template-columns: 1fr; } .economics-heading > label { width: 100%; } }
