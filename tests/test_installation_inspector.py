@@ -59,10 +59,33 @@ function Get-Process { [pscustomobject]@{Id=7} }
 function Invoke-RestMethod {
     $global:qtradesTestHttpRequests++
     if ($Scenario -eq 'health_unavailable') { throw 'Synthetic unavailable service' }
-    [pscustomobject]@{paper=[pscustomobject]@{
-        running=$true;stale=($Scenario -eq 'stale');error=$null
+    $response = [pscustomobject]@{paper=[pscustomobject]@{
+        enabled=$true;running=$true;stale=($Scenario -eq 'stale');error=$null
         journal=[pscustomobject]@{balanced=($Scenario -ne 'unbalanced')}
     }}
+    switch ($Scenario) {
+        'json_text' { return ($response | ConvertTo-Json -Depth 5 -Compress) }
+        'no_paper' { return [pscustomobject]@{detail='Private diagnostic not for output'} }
+        'null_body' { return $null }
+        'null_paper' { $response.paper=$null }
+        'array_paper' { $response.paper=@($response.paper, $response.paper) }
+        'malformed_json' { return '{PRIVATE-UNPARSED-BODY' }
+        'json_scalar' { return '"PRIVATE-STRING-NOT-A-STATUS-OBJECT"' }
+        'missing_running' { $response.paper.PSObject.Properties.Remove('running') }
+        'missing_error' { $response.paper.PSObject.Properties.Remove('error') }
+        'null_journal' { $response.paper.journal=$null }
+        'stopped' { $response.paper.running=$false }
+        'engine_error' { $response.paper.error='PRIVATE-ENGINE-ERROR' }
+        'string_bools' {
+            $response.paper.running='true';$response.paper.stale='false'
+            $response.paper.journal.balanced='true';$response.paper.error=@('PRIVATE-ERROR')
+        }
+        'numeric_bools' {
+            $response.paper.running=1;$response.paper.stale=0
+            $response.paper.journal.balanced=1;$response.paper.error=0
+        }
+    }
+    return $response
 }
 function Stop-Process { throw 'MUTATION FORBIDDEN' }
 function Stop-ScheduledTask { throw 'MUTATION FORBIDDEN' }
@@ -129,3 +152,73 @@ def test_health_failures_remain_visible_without_restart(tmp_path, scenario):
         assert receipt["current_health"]["paper_stale"] is True
     else:
         assert receipt["current_health"]["journal_balanced"] is False
+
+
+def parsed_receipt(tmp_path, scenario):
+    result = invoke(tmp_path, scenario)
+    assert result.returncode == 0, result.stderr
+    assert "PRIVATE-" not in result.stdout + result.stderr
+    return json.loads(result.stdout)["result"]
+
+
+def test_json_text_response_is_parsed_not_reported_as_an_unhealthy_account(tmp_path):
+    receipt = parsed_receipt(tmp_path, "json_text")
+    health = receipt["current_health"]
+    assert health["paper_running"] is True
+    assert health["paper_stale"] is False
+    assert health["journal_balanced"] is True
+    assert health["reported_engine_error"] is False
+    assert health["complete"] is True and not receipt["health_error"]
+
+
+@pytest.mark.parametrize(
+    "scenario",
+    ["no_paper", "null_body", "null_paper", "array_paper", "malformed_json", "json_scalar"],
+)
+def test_unusable_status_is_unknown_not_a_false_account_failure(tmp_path, scenario):
+    receipt = parsed_receipt(tmp_path, scenario)
+    assert receipt["current_health"] is None
+    assert receipt["health_error"]
+
+
+@pytest.mark.parametrize(
+    "scenario,unknown",
+    [
+        ("missing_running", {"paper_running"}),
+        ("missing_error", {"reported_engine_error"}),
+        ("null_journal", {"journal_balanced"}),
+        (
+            "string_bools",
+            {"paper_running", "paper_stale", "journal_balanced", "reported_engine_error"},
+        ),
+        (
+            "numeric_bools",
+            {"paper_running", "paper_stale", "journal_balanced", "reported_engine_error"},
+        ),
+    ],
+)
+def test_missing_or_wrong_types_keep_unknown_separate_from_reported_false(
+    tmp_path, scenario, unknown
+):
+    receipt = parsed_receipt(tmp_path, scenario)
+    health = receipt["current_health"]
+    assert health["complete"] is False and receipt["health_error"]
+    assert set(health["unknown_fields"]) == unknown
+    assert all(health[key] is None for key in unknown)
+    assert health["paper_enabled"] is True
+
+
+@pytest.mark.parametrize(
+    "scenario,key,value",
+    [
+        ("stopped", "paper_running", False),
+        ("stale", "paper_stale", True),
+        ("unbalanced", "journal_balanced", False),
+        ("engine_error", "reported_engine_error", True),
+    ],
+)
+def test_real_negative_status_is_retained_not_normalized_to_healthy(tmp_path, scenario, key, value):
+    receipt = parsed_receipt(tmp_path, scenario)
+    assert receipt["current_health"][key] is value
+    assert receipt["current_health"]["complete"] is True
+    assert receipt["health_error"] is None  # Read succeeded; this is not a health endorsement.

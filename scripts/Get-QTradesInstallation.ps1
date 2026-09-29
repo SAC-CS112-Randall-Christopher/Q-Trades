@@ -3,6 +3,49 @@ param([string] $ExpectedRuntimeRoot)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'PaperStartupIdentity.ps1')
 . (Join-Path $PSScriptRoot 'PaperProcessOwnership.ps1')
+# Health observations are tri-state: reported true, reported false, or unknown.
+# A text/missing response is not evidence that the account stopped or lost balance.
+function Get-QTradesReportedBoolean {
+    param($Object, [string] $Name)
+    if ($Object -isnot [pscustomobject]) { return $null }
+    $property = $Object.PSObject.Properties[$Name]
+    if ($null -eq $property -or $property.Value -isnot [bool]) { return $null }
+    return $property.Value
+}
+
+function ConvertTo-QTradesPaperHealth {
+    param($Response)
+    if ($Response -is [string]) {
+        if ($Response.Length -gt 4000000 -or -not $Response.TrimStart().StartsWith('{')) {
+            throw 'Status response is not a bounded JSON object.'
+        }
+        # Some hosts return the body as text. Parse it explicitly, never coerce it.
+        $Response = ConvertFrom-Json -InputObject $Response -ErrorAction Stop
+    }
+    if ($Response -isnot [pscustomobject] -or $Response.paper -isnot [pscustomobject]) {
+        throw 'Paper status object is missing or invalid.'
+    }
+    $paper = $Response.paper
+    $result = [ordered]@{
+        paper_enabled = (Get-QTradesReportedBoolean $paper 'enabled')
+        paper_running = (Get-QTradesReportedBoolean $paper 'running')
+        paper_stale = (Get-QTradesReportedBoolean $paper 'stale')
+        journal_balanced = (Get-QTradesReportedBoolean $paper.journal 'balanced')
+        reported_engine_error = $null
+    }
+    $errorProperty = $paper.PSObject.Properties['error']
+    if ($null -ne $errorProperty) {
+        if ($null -eq $errorProperty.Value) { $result.reported_engine_error = $false }
+        elseif ($errorProperty.Value -is [string]) {
+            $result.reported_engine_error = ($errorProperty.Value.Length -gt 0)
+        }
+    }
+    $unknown = @($result.Keys | Where-Object { $null -eq $result[$_] })
+    $result['complete'] = ($unknown.Count -eq 0)
+    $result['unknown_fields'] = $unknown
+    return $result
+}
+
 $taskName = 'TradingResearch-Paper-20260927'
 $task = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
 $actions = @($task.Actions)
@@ -33,14 +76,14 @@ if ($listeners.Count) {
 if ($null -ne $launcherId) {
     try {
         $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8780/api/status' `
-            -TimeoutSec 5 -MaximumRedirection 0 -ErrorAction Stop
-        $health = [ordered]@{
-            paper_running = ($status.paper.running -eq $true)
-            paper_stale = ($status.paper.stale -ne $false)
-            journal_balanced = ($status.paper.journal.balanced -eq $true)
-            reported_engine_error = [bool]$status.paper.error
+            -UseBasicParsing -TimeoutSec 5 -MaximumRedirection 0 -ErrorAction Stop
+        $health = ConvertTo-QTradesPaperHealth $status
+        if (-not $health.complete) {
+            $healthError = 'Some health fields are missing or invalid; null means unknown, not failed.'
         }
-    } catch { $healthError = 'Current paper health could not be read; no service was restarted' }
+    } catch {
+        $healthError = 'Paper health could not be read or parsed; account health is unknown. No restart.'
+    }
 }
 [ordered]@{
     inspected_at = (Get-Date).ToUniversalTime().ToString('o')

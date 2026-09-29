@@ -68,6 +68,13 @@ alone is explicitly **not** proof of ownership; executable, command, timestamp a
 are checked before the health request. Do not assume the runtime root is
 `C:\Projects\Q-Trades` just because that is the Git checkout.
 
+Health values are tri-state: `true` and `false` mean those Boolean values were
+reported; `null` means the field was missing or invalid. `complete: false` and
+`unknown_fields` identify incomplete inspection. JSON text is explicitly parsed;
+an unusable response is unknown, never proof of a stopped or unbalanced account.
+A successful HTTP request alone is not a healthy-account check. See
+[the health correction and operator report](reviews/cp0-local-updates/health-inspection.md).
+
 The shared `PaperStartupIdentity.ps1` contract fixes a source-confirmed mismatch:
 the installed task writer supports the project `pythonw.exe` / `service_host.py`
 host, while the old desktop-open script accepted only the older PowerShell action.
