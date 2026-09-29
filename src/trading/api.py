@@ -288,6 +288,15 @@ def create_app(
         paper: PaperRuntime | None = request.app.state.paper
         return paper.quotes() if paper else {"enabled": False, "markets": []}
 
+    @app.get("/api/readiness")
+    def live_readiness(request: Request) -> JSONResponse:
+        from trading.live_readiness import packet
+
+        paper: PaperRuntime | None = request.app.state.paper
+        return JSONResponse(
+            packet(paper.state if paper else None), headers={"Cache-Control": "no-store"}
+        )
+
     @app.get("/api/research/trials")
     def research_trials() -> dict[str, Any]:
         # Runs in FastAPI's worker pool, outside the trading event loop.

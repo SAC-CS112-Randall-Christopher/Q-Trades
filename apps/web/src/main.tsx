@@ -24,6 +24,7 @@ import { PaperPanel, type PaperSnapshot } from "./PaperPanel";
 import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
+import { ReadinessPanel } from "./ReadinessPanel";
 import { MarketStation } from "./MarketStation";
 
 type Snapshot = {
@@ -185,6 +186,7 @@ function App() {
             <FlaskConical size={18} /> Research tiers
           </a>
           <a href="#experiment-lab"><FlaskConical size={18} /> Experiments</a>
+          <a href="#live-readiness"><ShieldCheck size={18} /> Live readiness</a>
           <a href="#model-lab">
             <Cpu size={18} /> Model trials
           </a>
@@ -322,6 +324,7 @@ function App() {
           <MarketStation />
           <PaperPanel data={data?.paper} disconnected={!!networkError} />
           <ExperimentLab paper={data?.paper} />
+          <ReadinessPanel />
           <ModelTrialsPanel />
           <OptionsPanel data={data?.options} disconnected={!!networkError} />
           <section id="research" className="research-section">
