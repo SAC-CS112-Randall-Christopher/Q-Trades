@@ -381,6 +381,9 @@ def observe(state: dict[str, Any], frames: dict[str, Any], now: float) -> list[d
 def report(state: dict[str, Any], now: float, running: bool) -> dict[str, Any]:
     e = state.get("economics", {})
     accounts = {name: sample(a, now) for name, a in state["accounts"].items()}
+    for name, row in accounts.items():
+        row["campaign_id"] = state["accounts"][name].get("campaign_id")
+        row["label"] = state["accounts"][name].get("label", name)
     for row in accounts.values():
         if not running:
             row.update(fresh=False, unrealized=None, net_pnl=None, nav=None)

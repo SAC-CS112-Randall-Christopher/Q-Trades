@@ -1,3 +1,17 @@
+# CP3 campaign implementation and audit
+
+Read docs/CP3_PAPER_CAMPAIGNS.md and docs/reviews/cp3-paper-campaigns/README.md.
+One ten-account campaign extends the existing deterministic engine and exclusive
+writer. Preserve the original trial/comparisons, funding, costs, stops and failed
+attempts. Campaign strategy/cost assumptions are frozen; clearing an entry pause
+does not lift a hard stop or replenish cash. Keep shared observations causal and
+financial mutations atomic. A rolled-back processing failure may isolate one
+account; already committed financial corruption must still stop the writer.
+Keep history readable and paged through the normal UI, with account-scoped records.
+Synthetic QA, short load measurements, hosted checks, approved merges and native
+installation are distinct evidence. CP4's protected experiment registry remains
+next; CP3 is not ten independent discoveries or an installed application.
+
 # CP2 implementation and audit
 
 Read docs/CP2_ACCOUNT_ECONOMICS.md and its implementation audit. Compare complete

@@ -1,0 +1,141 @@
+{
+  "contract": {
+    "accounts": [
+      1,
+      10
+    ],
+    "ticks_per_case": 120,
+    "ticks_per_second": 4,
+    "symbols": [
+      "BTCUSD",
+      "ETHUSD"
+    ],
+    "commit_p95_limit_ms": 250,
+    "commit_max_limit_ms": 2000,
+    "rss_limit_mib": 512,
+    "rss_growth_limit_mib": 64,
+    "queue_peak_limit": 2
+  },
+  "fixture": "Synthetic shared books; accelerated bar signals",
+  "host": "MAIN",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "logical_processors": 12,
+  "python": "3.12.10",
+  "observed_at": 1790714615.7916305,
+  "cases": [
+    {
+      "accounts": 1,
+      "elapsed_seconds": 29.753708200063556,
+      "cpu_seconds": 0.0,
+      "process_cpu_one_core_percent": 0.0,
+      "rss_mib": {
+        "mean": 60.59850260416667,
+        "p95": 60.859375,
+        "p99": 60.859375,
+        "max": 60.859375
+      },
+      "rss_growth_mib": 0.5625,
+      "decision_ms": {
+        "mean": 0.5575716708942006,
+        "p95": 0.9636000031605363,
+        "p99": 1.0202000848948956,
+        "max": 1.2730000307783484
+      },
+      "transaction_commit_ms": {
+        "mean": 3.895468330786874,
+        "p95": 6.303400034084916,
+        "p99": 7.311500026844442,
+        "max": 10.078999912366271
+      },
+      "queue_lag_ms": {
+        "mean": 0.20115833322051913,
+        "p95": 0.31539995688945055,
+        "p99": 0.3530000103637576,
+        "max": 1.8454999662935734
+      },
+      "queue_peak_observed": 1,
+      "postgres_connections": 2,
+      "market_connections": 0,
+      "shared_observations": 240,
+      "state_growth_bytes": 5079,
+      "storage_growth": {
+        "database_bytes": 917504,
+        "candles": 0,
+        "events": 22,
+        "journal_lines": 16,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 40960
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "elapsed_seconds": 29.7687278999947,
+      "cpu_seconds": 1.15625,
+      "process_cpu_one_core_percent": 3.8841095389911025,
+      "rss_mib": {
+        "mean": 61.25198567708333,
+        "p95": 61.27734375,
+        "p99": 61.27734375,
+        "max": 61.27734375
+      },
+      "rss_growth_mib": 0.14453125,
+      "decision_ms": {
+        "mean": 3.206657500898776,
+        "p95": 5.875700036995113,
+        "p99": 6.169900065287948,
+        "max": 6.721499958075583
+      },
+      "transaction_commit_ms": {
+        "mean": 11.074672502581961,
+        "p95": 17.670599976554513,
+        "p99": 26.53549995739013,
+        "max": 35.49349994864315
+      },
+      "queue_lag_ms": {
+        "mean": 0.2032391649360458,
+        "p95": 0.3203999949619174,
+        "p99": 0.385899911634624,
+        "max": 0.8221000898629427
+      },
+      "queue_peak_observed": 1,
+      "postgres_connections": 2,
+      "market_connections": 0,
+      "shared_observations": 240,
+      "state_growth_bytes": 33753,
+      "storage_growth": {
+        "database_bytes": 1105920,
+        "candles": 0,
+        "events": 192,
+        "journal_lines": 160,
+        "candle_table_bytes": 0,
+        "journal_table_bytes": 204800
+      },
+      "reconciliation": {
+        "balanced": true,
+        "imbalanced_events": 0,
+        "projection_errors": [],
+        "revision": 121
+      },
+      "passed": true
+    }
+  ],
+  "hardware": {
+    "processor": [
+      {
+        "Name": "Intel(R) Xeon(R) W-2235 CPU @ 3.80GHz",
+        "NumberOfCores": 6,
+        "NumberOfLogicalProcessors": 12,
+        "MaxClockSpeed": 3792
+      }
+    ],
+    "physical_memory_mib": 97987.7
+  },
+  "postgresql": "PostgreSQL 17.2 on x86_64-windows, compiled by msvc-19.41.34123, 64-bit"
+}

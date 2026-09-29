@@ -10,6 +10,7 @@ from typing import Any
 
 from trading.execution_profiles import PROFILES, execution
 from trading.market import parse_book, parse_instruments
+from trading.paper_campaigns import CampaignSpec, control_account, create_campaign
 from trading.paper_economics import report as economics_report
 from trading.paper_engine import SYMBOLS, PaperEngine, filters, fresh_frame, risk_summary
 from trading.paper_store import PaperStore
@@ -235,6 +236,7 @@ class PaperRuntime:
             "promotions": self.state["promotion_count"],
             "features": self.state["features"],
             "accounts": accounts,
+            "campaigns": list(self.state.get("campaigns", {}).values()),
             "economics": economics_report(
                 self.state, now, self.running and not stale and self.error is None
             ),
@@ -263,6 +265,8 @@ class PaperRuntime:
 
     def set_paused(self, value: bool) -> None:
         def apply(engine: PaperEngine) -> None:
+            if engine.state["paused"] == value:
+                return
             engine.state["paused"] = value
             engine.emit("entry_control", "primary", {"paused": value})
             if value:
@@ -272,6 +276,31 @@ class PaperRuntime:
                             engine.cancel(name, a, symbol, "Operator paused entries")
 
         self.state = self.store.transact(time.time(), apply)
+
+    def control_frames(self) -> dict[str, dict[str, Any]]:
+        return self.books
+
+    def campaign_create(self, spec: CampaignSpec) -> dict[str, Any]:
+        self.require_healthy_control()
+        result: dict[str, Any] = {}
+        self.state = self.store.transact(
+            time.time(), lambda engine: result.update(create_campaign(engine, spec))
+        )
+        return result
+
+    def require_healthy_control(self) -> None:
+        if not self.running or self.error or not 0 <= time.time() - self.state["last_tick"] <= 10:
+            raise ValueError("Paper worker unavailable or stale; wait for fresh status")
+
+    def account_control(self, name: str, action: str, version: int) -> dict[str, Any]:
+        self.require_healthy_control()
+        result: dict[str, Any] = {}
+        frames = self.control_frames() if action == "recover" else {}
+        self.state = self.store.transact(
+            time.time(),
+            lambda engine: result.update(control_account(engine, name, action, version, frames)),
+        )
+        return {**result, "account": name}
 
     def risk_control(self, name: str, action: str, stop_id: int) -> dict[str, Any]:
         if not self.running or self.error or not 0 <= time.time() - self.state["last_tick"] <= 10:

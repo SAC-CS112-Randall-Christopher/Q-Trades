@@ -1,6 +1,7 @@
 import { PaperEconomicsPanel, type EconomicsSnapshot, type ExecutionProfile } from "./PaperEconomicsPanel";
 import { useState } from "react";
 import { PaperRiskPanel, type RiskStatus } from "./PaperRiskPanel";
+import { PaperCampaignPanel } from "./PaperCampaignPanel";
 import { FeedPanel, type FeedDetails } from "./FeedPanel";
 import { FuturesPanel, type FuturesSnapshot } from "./FuturesPanel";
 import {
@@ -21,7 +22,12 @@ type Position = {
   exit_blocked?: string;
 };
 type Decision = { symbol: string; at: number; reason: string; version: string };
-type Account = {
+export type Account = {
+  label?: string;
+  campaign_id?: string;
+  entries_paused?: boolean;
+  control_version?: number;
+  fault?: { at: number; code: string; reason: string };
   starting_capital?: string;
   risk?: RiskStatus;
   cash: string;
@@ -74,6 +80,7 @@ export type PaperSnapshot = Partial<FeedDetails> & {
   bars_studied: number;
   gaps: number;
   accounts: Record<string, Account>;
+  campaigns?: { id: string; name: string; accounts: string[]; created_at: number }[];
   events: Event[];
   journal: { balanced?: boolean };
   repeatability: {
@@ -296,11 +303,12 @@ export function PaperPanel({
           {pending
             ? "Confirming…"
             : data.paused
-              ? "Clear operator pause"
-              : "Pause paper entries"}
+              ? "Clear global entry pause"
+              : "Pause all paper entries"}
         </button>
       </div>
-      <PaperRiskPanel accounts={data.accounts} unavailable={stale || !data.running || !!data.error} />
+      <PaperCampaignPanel data={data} unavailable={stale || !data.running || !!data.error} />
+      <PaperRiskPanel accounts={Object.fromEntries(Object.entries(data.accounts).filter(([, a]) => !a.campaign_id))} unavailable={stale || !data.running || !!data.error} />
       <PaperEconomicsPanel data={data.economics} profiles={data.execution_profiles} unavailable={stale || !data.running || !!data.error} />
       <div className="learning-grid">
         <article className="learning-card">

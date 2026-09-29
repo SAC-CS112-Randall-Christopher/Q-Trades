@@ -1,0 +1,64 @@
+{
+  "fixture": "Synthetic observations, disposable PostgreSQL schema, compiled UI and TieredPaperRuntime",
+  "checks": [
+    {
+      "name": "Normal UI launches ten separate accounts",
+      "passed": true
+    },
+    {
+      "name": "Individual pause is visible",
+      "passed": true
+    },
+    {
+      "name": "Account inspection preserves unknown operating costs",
+      "passed": true
+    },
+    {
+      "name": "Global entry pause reaches campaign accounts",
+      "passed": true
+    },
+    {
+      "name": "Reload retains ten campaign accounts",
+      "passed": true
+    },
+    {
+      "name": "Processing failure has a visible recovery action",
+      "passed": true
+    },
+    {
+      "name": "Account recovery clears the processing fault",
+      "passed": true
+    },
+    {
+      "name": "Hard stop cannot be cleared below the existing limit",
+      "passed": true
+    },
+    {
+      "name": "Readable account history includes retained initial funding",
+      "passed": true
+    },
+    {
+      "name": "Unavailable worker disables account mutation",
+      "passed": true
+    },
+    {
+      "name": "Unavailable marks are labeled",
+      "passed": true
+    },
+    {
+      "name": "Next history page advances without repeating initial funding",
+      "passed": true
+    },
+    {
+      "name": "Healthy siblings retain their own funding after a peer stop",
+      "passed": true
+    }
+  ],
+  "notVerified": [
+    "native installed application",
+    "live feed timing",
+    "profitability",
+    "independent evidence",
+    "twenty accounts"
+  ]
+}

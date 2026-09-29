@@ -1,6 +1,9 @@
 """Deterministic cash-only simulator. Every mutation is committed with its evidence."""
 
+import hashlib
+import json
 import math
+from copy import deepcopy
 from decimal import Decimal
 from typing import Any
 
@@ -62,6 +65,10 @@ def entry_reason(a: dict[str, Any], paused: bool, now: float) -> str | None:
         return "Unknown risk policy; entries require inspection."
     if paused:
         return "Operator paused entries; position exits remain enabled."
+    if a.get("fault"):
+        return "Account processing stopped; inspect its recovery panel. Sibling accounts continue."
+    if a.get("entries_paused"):
+        return "Operator paused this account's entries; position exits remain enabled."
     if not a["valuation_fresh"] or not fresh_frame({"observed": a.get("valuation_at")}, now):
         issues = a.get("valuation_issues", {})
         detail = "; ".join(f"{symbol}: {reason}" for symbol, reason in issues.items())
@@ -86,6 +93,7 @@ def entry_reason(a: dict[str, Any], paused: bool, now: float) -> str | None:
 def risk_summary(a: dict[str, Any], paused: bool, now: float) -> dict[str, Any]:
     reason = entry_reason(a, paused, now)
     recovery = recovery_reason(a, now)
+    controls_blocked = paused or bool(a.get("entries_paused")) or bool(a.get("fault"))
     return {
         "policy": policy(a),
         "legacy": policy(a) == LEGACY_POLICY,
@@ -93,8 +101,8 @@ def risk_summary(a: dict[str, Any], paused: bool, now: float) -> dict[str, Any]:
         "reason": reason or "Entries permitted when the strategy and cash checks qualify.",
         "valuation_issues": dict(a.get("valuation_issues", {})),
         "stop_id": a.get("risk_stop_id", 0),
-        "recoverable": recovery is None and not paused,
-        "recovery_reason": ("Clear the operator pause first." if paused else recovery),
+        "recoverable": recovery is None and not controls_blocked,
+        "recovery_reason": (reason if controls_blocked else recovery),
         "last_recovery": a.get("risk_recovery"),
         "risk_reference": a["risk_peak"],
         "stop_equity": str(D(a["risk_peak"]) * D("0.65")),
@@ -964,7 +972,102 @@ class PaperEngine:
         self.state["next_review"] = self.now + REVIEW_SECONDS
         self.state["review_history"] = (self.state["review_history"] + [result])[-12:]
 
+    def campaign_frames(self, frames: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        """One durable causal gate also protects CP2's shared comparison controls."""
+        marks = self.state.setdefault("campaign_observation_watermarks", {})
+        accepted = dict(frames)
+        for symbol in SYMBOLS:
+            frame = frames.get(symbol)
+            if not frame or not fresh_frame(frame, self.now):
+                accepted.pop(symbol, None)
+                continue
+            stamp, sequence = frame["observed"], frame["book"].update_id
+            digest = hashlib.sha256(json.dumps(frame["raw"], sort_keys=True).encode()).hexdigest()
+            previous = marks.get(symbol)
+            if previous and (
+                stamp < previous["observed"]
+                or sequence < previous["sequence"]
+                or (sequence == previous["sequence"] and digest != previous["sha256"])
+            ):
+                accepted.pop(symbol, None)
+                continue
+            marks[symbol] = {"observed": stamp, "sequence": sequence, "sha256": digest}
+        return accepted
+
+    def tick_account(
+        self, name: str, a: dict[str, Any], frames: dict[str, dict[str, Any]], study: dict[str, Any]
+    ) -> None:
+        stop_before = a.get("risk_stop_id", 0)
+        self.value(a, frames)
+        for symbol in list(a["pending"]):
+            frame = frames.get(symbol)
+            reason = entry_reason(a, self.state["paused"], self.now)
+            if a["pending"][symbol]["side"] == "buy" and reason:
+                self.cancel(name, a, symbol, reason)
+                continue
+            if self.now - a["pending"][symbol]["created_at"] > 15:
+                self.cancel(name, a, symbol, "Expired across data gap or restart")
+            elif frame and fresh_frame(frame, self.now):
+                self.fill(name, a, symbol, frame, frames)
+        fresh = self.value(a, frames)
+        if fresh and D(a["equity"]) < 5:
+            a["failure_pending"] = True
+            for symbol, order in list(a["pending"].items()):
+                if order["side"] == "buy":
+                    self.cancel(name, a, symbol, "Account failure; entry cancelled")
+        if fresh and D(a["equity"]) >= 1000 and a["attempt"]["outcome"] == "open":
+            a["attempt"]["outcome"] = "won"
+            a["attempt"]["ended_at"] = self.now
+            a["attempt_wins"] += 1
+            self.emit(
+                "attempt_won", name, {**a["attempt"], "equity": a["equity"], "target": "1000"}
+            )
+        for symbol in list(a["positions"]):
+            frame = frames.get(symbol)
+            if frame and fresh_frame(frame, self.now):
+                feature = study.get(symbol, {}).get(a["positions"][symbol]["version"], {})
+                self.exit_position(name, a, symbol, frame, feature)
+        if a["failure_pending"]:
+            self.failure_review(name, a)
+        if a.get("risk_stop_id", 0) != stop_before:
+            self.emit(
+                "drawdown_stop",
+                name,
+                {
+                    "stop_id": a["risk_stop_id"],
+                    "risk_policy": policy(a),
+                    "equity": a["risk_stopped_equity"],
+                    "risk_reference": a["risk_stopped_reference"],
+                },
+            )
+        if not fresh:
+            return
+        for symbol in a.get("symbols", SYMBOLS):
+            frame = frames.get(symbol)
+            feature = study.get(symbol, {}).get(a["version"])
+            if not frame or not feature or not fresh_frame(frame, self.now):
+                continue
+            bar_id = feature.get("bar_open_ms")
+            last_bar = a["last_decision"].get(symbol, {}).get("bar")
+            if bar_id is None or (last_bar is not None and bar_id <= last_bar):
+                continue
+            reason = self.enter(name, a, symbol, frame, feature)
+            decision = {
+                "symbol": symbol,
+                "bar": bar_id,
+                "at": self.now,
+                "version": a["version"],
+                "reason": reason,
+                "features": feature,
+            }
+            a["last_decision"][symbol] = decision
+            self.emit("decision", name, decision)
+
     def tick(self, frames: dict[str, dict[str, Any]], study: dict[str, Any]) -> None:
+        if self.now < self.state["last_tick"]:
+            return  # A delayed dispatcher cannot rewind the durable financial clock.
+        if self.state.get("campaigns"):
+            frames = self.campaign_frames(frames)
         gap = self.now - self.state["last_tick"]
         if gap > 30:
             self.state["gaps"] += 1
@@ -976,70 +1079,30 @@ class PaperEngine:
         self.state["last_tick"] = self.now
         self.state["features"] = study
         for name, a in self.state["accounts"].items():
-            stop_before = a.get("risk_stop_id", 0)
-            self.value(a, frames)
-            for symbol in list(a["pending"]):
-                frame = frames.get(symbol)
-                reason = entry_reason(a, self.state["paused"], self.now)
-                if a["pending"][symbol]["side"] == "buy" and reason:
-                    self.cancel(name, a, symbol, reason)
-                    continue
-                if self.now - a["pending"][symbol]["created_at"] > 15:
-                    self.cancel(name, a, symbol, "Expired across data gap or restart")
-                elif frame and fresh_frame(frame, self.now):
-                    self.fill(name, a, symbol, frame, frames)
-            fresh = self.value(a, frames)
-            if fresh and D(a["equity"]) < 5:
-                a["failure_pending"] = True
-                for symbol, order in list(a["pending"].items()):
-                    if order["side"] == "buy":
-                        self.cancel(name, a, symbol, "Account failure; entry cancelled")
-            if fresh and D(a["equity"]) >= 1000 and a["attempt"]["outcome"] == "open":
-                a["attempt"]["outcome"] = "won"
-                a["attempt"]["ended_at"] = self.now
-                a["attempt_wins"] += 1
-                self.emit(
-                    "attempt_won", name, {**a["attempt"], "equity": a["equity"], "target": "1000"}
-                )
-            for symbol in list(a["positions"]):
-                frame = frames.get(symbol)
-                if frame and fresh_frame(frame, self.now):
-                    feature = study.get(symbol, {}).get(a["positions"][symbol]["version"], {})
-                    self.exit_position(name, a, symbol, frame, feature)
-            if a["failure_pending"]:
-                self.failure_review(name, a)
-            if a.get("risk_stop_id", 0) != stop_before:
-                self.emit(
-                    "drawdown_stop",
-                    name,
-                    {
-                        "stop_id": a["risk_stop_id"],
-                        "risk_policy": policy(a),
-                        "equity": a["risk_stopped_equity"],
-                        "risk_reference": a["risk_stopped_reference"],
-                    },
-                )
-            if not fresh:
+            if not a.get("campaign_id"):
+                self.tick_account(name, a, frames, study)
                 continue
-            for symbol in a.get("symbols", SYMBOLS):
-                frame = frames.get(symbol)
-                feature = study.get(symbol, {}).get(a["version"])
-                if not frame or not feature or not fresh_frame(frame, self.now):
-                    continue
-                bar_id = feature.get("bar_open_ms")
-                if bar_id is None or a["last_decision"].get(symbol, {}).get("bar") == bar_id:
-                    continue
-                reason = self.enter(name, a, symbol, frame, feature)
-                decision = {
-                    "symbol": symbol,
-                    "bar": bar_id,
+            # Existing financial corruption must still stop the writer. Only the
+            # proposed work of a valid account can be rolled back independently.
+            self.assert_account(a)
+            if a.get("fault"):
+                continue
+            saved, offset = deepcopy(a), len(self.events)
+            try:
+                self.tick_account(name, a, frames, study)
+                self.assert_account(a)
+            except (ValueError, KeyError, ArithmeticError) as exc:
+                self.events[offset:] = []
+                saved["fault"] = {
                     "at": self.now,
-                    "version": a["version"],
-                    "reason": reason,
-                    "features": feature,
+                    "code": type(exc).__name__,
+                    "reason": "Account step rolled back. Inspect data and retry recovery.",
                 }
-                a["last_decision"][symbol] = decision
-                self.emit("decision", name, decision)
+                saved["valuation_fresh"] = False
+                saved["control_version"] = saved.get("control_version", 0) + 1
+                saved.pop("last_control", None)
+                self.state["accounts"][name] = saved
+                self.emit("account_fault", name, dict(saved["fault"]))
         for observation in observe_economics(self.state, frames, self.now):
             self.emit(observation["kind"], "system", observation["body"])
         if self.now >= self.state["next_review"]:
@@ -1069,6 +1132,8 @@ class PaperEngine:
         self, name: str, profile: str, daily_usd: str | None, expected_version: int
     ) -> dict[str, Any]:
         a = self.state["accounts"][name]
+        if a.get("campaign_id"):
+            raise ValueError("Campaign strategy and cost assumptions are frozen at launch")
         if profile not in PROFILES:
             raise ValueError("Select a supported paper fee scenario")
         if daily_usd is not None:
@@ -1137,7 +1202,7 @@ class PaperEngine:
         if not a["drawdown_pause"] and last and last["stop_id"] == stop_id:
             return {"status": "already_applied", "stop_id": stop_id}
         reason = recovery_reason(a, self.now)
-        if self.state["paused"]:
+        if self.state["paused"] or a.get("entries_paused") or a.get("fault"):
             reason = "Clear the operator pause first; the loss limit is unchanged."
         if reason:
             raise ValueError(reason)
@@ -1152,11 +1217,15 @@ class PaperEngine:
         self.emit("risk_recovered", name, dict(a["risk_recovery"]))
         return {"status": "recovered", "stop_id": stop_id}
 
+    @staticmethod
+    def assert_account(a: dict[str, Any]) -> None:
+        reserve = sum((D(o["reserved"]) for o in a["pending"].values()), D(0))
+        if D(a["cash"]) < 0 or reserve < 0 or reserve > D(a["cash"]):
+            raise ValueError("Cash conservation or reservation invariant failed")
+        for pos in a["positions"].values():
+            if D(pos["quantity"]) <= 0 or D(pos["cost"]) < 0:
+                raise ValueError("Inventory invariant failed")
+
     def assert_invariants(self) -> None:
         for a in self.state["accounts"].values():
-            reserve = sum((D(o["reserved"]) for o in a["pending"].values()), D(0))
-            if D(a["cash"]) < 0 or reserve < 0 or reserve > D(a["cash"]):
-                raise ValueError("Cash conservation or reservation invariant failed")
-            for pos in a["positions"].values():
-                if D(pos["quantity"]) <= 0 or D(pos["cost"]) < 0:
-                    raise ValueError("Inventory invariant failed")
+            self.assert_account(a)

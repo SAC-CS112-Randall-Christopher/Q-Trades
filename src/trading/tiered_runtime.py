@@ -71,6 +71,9 @@ class TieredPaperRuntime(PaperRuntime):
             for s in set(a["positions"]) | set(a["pending"])
         }
 
+    def control_frames(self) -> dict[str, dict[str, Any]]:
+        return self.current_frames()[0]
+
     def constrained(self) -> bool:
         return (
             time.monotonic() < self._constrained_until
