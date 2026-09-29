@@ -1,161 +1,154 @@
 # GitHub main to the local application
 
-## Status: check and preparation implemented; activation not connected
+## Status
 
-GitHub `SAC-CS112-Randall-Christopher/Q-Trades` **main** is the authority for
-accepted code. Local databases and retained research evidence remain the authority
-for account and experiment history. A pushed branch or merged PR does not itself
-change the executing Windows service.
+The implementation now includes **check, prepare, explicit activation, and recovery**.
+GitHub main supplies accepted code; the workstation retains the existing accounts,
+configuration and research evidence. No Git push or merge itself deploys anything.
+Automatic activation remains disabled. The new native activation/recovery driver
+has been tested using disposable Git/database state and mocked Windows APIs, not
+applied to the operating Windows installation. CP0 remains open until that native
+acceptance and the authorized first cutover are observed.
 
-This CP0 follow-up provides a main-only check, isolated release preparation, version
-visibility in the app, a read-only Windows installation inspector, and explicit
-support for keeping an existing runtime's data outside a new code release. It does
-**not** register/repoint a task, stop/restart an operating worker, activate a release,
-change the desktop executable, migrate a database, or enable automatic updates.
-CP0 remains open until the native activation/recovery handoff is implemented and
-verified on the actual Windows installation. Do not describe this PR as deployment.
-
-## Operator-visible behavior
-
-The **Code version & updates** panel shows the source commit captured at process
-startup, whether the checkout was modified, the last successfully checked main
-commit and check time, and the last update phase. **Check GitHub main** is an
-explicit local-operator action; ordinary refreshes never call GitHub. Git runs off
-the application event loop. No model call or signing credential is involved.
-
-`GET /api/installation` is read-only and no-store. The check POST requires the same
-local-operator header and same-origin validation as existing controls; duplicate
-checks are throttled and the updater has an OS-released operation lock. Failed or
-offline checks retain the last successful main identity without relabeling it as
-fresh. Local startup does not require network access to GitHub. Missing local Git
-leaves the source unidentified, rather than preventing the application from starting.
-
-A source identity is not a health check or proof of trading correctness. The usual
-paper-account panels retain reconciliation information. A prepared release is not
-an installed release. The panel deliberately says activation is not connected.
-
-## Registered installation identified
-
-Chris supplied the actual task working directory:
+The operating data root reported by Chris is:
 `C:\Users\chris.t0\Documents\Codex\2026-09-27\we-are-starting-a-new-project`.
-The task executable is that directory's `.venv\Scripts\pythonw.exe`. Native source
-was inspected through the read-only mount; newer engine diagnostics and tests absent
-from the ZIP have been preserved in this PR. See
-[the source-preservation and native handoff record](reviews/cp0-local-updates/native-handoff.md).
-This establishes the registered root and observed source, not current worker health.
+`C:\Projects\Q-Trades` is a separate development checkout. Never copy runtime
+credentials or databases into Git, or pull source into an executing worker.
 
-The windowless host, supervisor, process/task identity checks and desktop launcher
-now accept the existing runtime root separately from the release code directory.
-The host forwards `--runtime-root` only for paper, never to the model service.
-The supervisor retains the original Compose/data/log/PID location while running
-Python from the chosen release. Existing default commands remain supported.
-These are launch-path prerequisites: a native activation/rollback driver has **not**
-been implemented or installed, and no task has been repointed by this PR.
+## One supported Windows entry point
 
-## Inspect the actual Windows installation first
-
-From this PR's source checkout in Windows PowerShell:
+Use the current reviewed source checkout, not the operating source directory. Set
+`$runtime` to the registered existing root above. The helper reuses its existing
+Python interpreter to operate the updater; each prepared release has its own new
+environment. Git authentication stays local. No token should be pasted into chat.
 
 ```powershell
-.\scripts\Get-QTradesInstallation.ps1
+.\scripts\Update-QTrades.ps1 -Action Verify -RuntimeRoot $runtime
+.\scripts\Update-QTrades.ps1 -Action Check -RuntimeRoot $runtime
+.\scripts\Update-QTrades.ps1 -Action Prepare -RuntimeRoot $runtime
 ```
 
-This reads only the named `TradingResearch-Paper-20260927` task, its working
-directory, expected startup-command identity, presence of the existing data files,
-and the paper-port listener identity and current read-only health when ownership verifies. It does not read database passwords, enumerate
-unrelated process command lines, alter a task, or restart a service. A listener PID
-alone is explicitly **not** proof of ownership; executable, command, timestamp and parentage
-are checked before the health request. Do not assume the runtime root is
-`C:\Projects\Q-Trades` just because that is the Git checkout.
+Verify runs the read-only installation inspector, isolated tests and a build-only
+launcher compilation. It does not install the executable or change startup tasks.
+Prepare requires the application/update changes to be merged into main; it creates
+an isolated exact-main release under the user's LocalAppData QTrades releases folder.
+An unmerged branch cannot become accepted code by supplying its commit manually.
+A restricted single-branch clone is supported: fetches name main explicitly.
 
-Health values are tri-state: `true` and `false` mean those Boolean values were
-reported; `null` means the field was missing or invalid. `complete: false` and
-`unknown_fields` identify incomplete inspection. JSON text is explicitly parsed;
-an unusable response is unknown, never proof of a stopped or unbalanced account.
-A successful HTTP request alone is not a healthy-account check. See
-[the health correction and operator report](reviews/cp0-local-updates/health-inspection.md).
-
-The shared `PaperStartupIdentity.ps1` contract fixes a source-confirmed mismatch:
-the installed task writer supports the project `pythonw.exe` / `service_host.py`
-host, while the old desktop-open script accepted only the older PowerShell action.
-Both exact historical actions are recognized; foreign paths, arguments and multiple
-actions remain rejected. This change is not installed on Windows by a Git push.
-
-## Check and prepare from the operator's terminal
-
-Python 3.12+, Git authenticated locally for this private repository, and Node/npm
-are required. Do not paste credentials into chat or the repository. First verify
-that the source import and this follow-up are actually merged into main. The
-preparer refuses a main branch without the release contract.
-
-After obtaining the real runtime root from the inspector, set `$runtimeRoot` to
-that value; this is not a guessed or automatically created data directory:
+After reviewing the prepared release and approving the local cutover:
 
 ```powershell
-python .\scripts\qtrades_update.py check --runtime-root $runtimeRoot
-python .\scripts\qtrades_update.py prepare --runtime-root $runtimeRoot `
-  --releases "$env:LOCALAPPDATA\RandallAutomationWorks\QTrades\releases"
+.\scripts\Update-QTrades.ps1 -Action Activate -RuntimeRoot $runtime
+# The first command is a preflight. The next command applies the approved cutover.
+.\scripts\Update-QTrades.ps1 -Action Activate -RuntimeRoot $runtime -Apply
 ```
 
-Preparation fetches the expected origin's `main`, pins the exact commit, and clones
-a separate detached release. It never switches or resets the development checkout,
-checks out a PR branch as accepted code, overwrites the running source folder, or
-copies runtime data. Dirty/unexpected source checkouts, unsupported contracts,
-tracked runtime/credential files, source symlinks, inadequate disk space, failed
-commands, source/commit changes during a build and missing dashboard output stop
-preparation. Pattern checks are not a universal secret-detection guarantee.
+Without `-Apply`, activation/recovery do not mutate tasks, processes or the desktop.
+The exact prepared path/commit come from the last successful local preparation
+receipt and are verified again against Git and main. A main check at the same
+commit does not lose that prepared release. Changed source, unsupported releases,
+unverified ownership, incomplete health or unresolved earlier updates stop the path.
 
-Each release has its own Python environment, pinned dependencies and compiled web
-assets. Environments are built at their final paths, not moved afterwards. npm
-installation disables dependency lifecycle scripts; the reviewed application build
-still runs. A receipt records the selected commit/tree and dashboard asset hashes.
-Modified prepared assets cannot claim a clean prepared identity. Failed preparations
-and previous releases are retained, never pruned automatically. The running account
-files, account permissions and funding are not mutated by either action.
+## Activation order and data protection
 
-`main-update-status.json` and the operation lock live in the existing runtime's
-ignored `data/` directory. Receipts are small atomic file replacements. The dashboard
-exposes only validated IDs/times and fixed messages, not paths, raw subprocess output,
-credentials or arbitrary text inserted into those receipts.
+1. Revalidate release source, prepared web assets, main membership, installed-task
+   identity and current account reconciliation. Record the previous source hashes,
+   original task action/settings signature, configuration binding and desktop hash.
+   Compile the new launcher and preserve a verified copy of the old launcher before
+   interrupting anything. A foreign desktop executable is not overwritten.
+2. Persist a recovery receipt **before** native side effects. Disable and stop only
+   the named paper task. Retain OS process handles after verifying executable,
+   command, creation-time receipt and parentage; stop only those verified processes.
+   Refuse a remaining listener, supervisor mutex or financial writer. PID reuse is
+   not authority to terminate an unrelated process. The model task is never changed.
+3. Once writers are stopped, read a fresh, consistent financial checkpoint. It
+   includes full state hashes (balances, positions, reservations and policies),
+   event counts/last IDs and the ordered financial-journal digest. It includes any
+   trades that naturally committed during preflight. Configuration and database
+   bindings must remain unchanged. Nothing restores, deletes or resets a database.
+4. Change only the existing task action to the prepared release's windowless host,
+   retaining its principal, triggers/settings and original runtime data root.
+   Before scheduling any market/financial worker, the new application holds both
+   financial writer locks and verifies the exact saved checkpoint and source ID.
+   Unknown/mismatched state prevents worker startup; missing history never creates
+   a replacement account. Absent historical options state is not newly initialized.
+5. Start the selected task and require owned-process identity, an acknowledgment of
+   checkpoint preservation, the expected process-start commit and current paper
+   health/reconciliation. Historical options replay has no live `stale` flag: its
+   running worker and balanced ledger are required, not fresh live options data.
+6. Install the verified new desktop launcher without overwriting a file changed
+   since preflight. Record successful installation and verification time. Repeating
+   activation for an already running identical release does not restart it.
 
-### Existing runtime storage support
+Updates can briefly interrupt market observation. Normal gap handling remains in
+force; no trades are invented during an outage. Checkpoints do not copy raw market
+history or credentials into Git. Event counts and a journal digest are not described
+as a cryptographic digest of every raw market-data/evidence row.
 
-`trading serve --experiment --runtime-root <existing-project>` uses that project's
-existing monitor database, paper database settings, application configuration and
-research evidence while the code and compiled UI come from the selected code
-working directory. Missing monitor/history settings fail instead of silently
-starting a new account. The paper ledger is read and reconciled before application
-startup; existing collector and exclusive financial-writer protections still apply.
+The existing monitor database, paper database configuration, Compose volume, logs,
+PID files, and research evidence remain at the original runtime root. Code/Python
+and compiled UI come from the prepared release. A software update is not permission
+to change frozen financial policies, refill losing accounts, or enable live trading.
 
-This option is a prerequisite for managed activation, **not an instruction to launch
-a second service beside the running worker**. Do not use it to bypass the pending
-native task/worker ownership checks. No new-model or frozen-policy activation is
-implied by a code update.
+## Recovery and rollback
 
-## Remaining CP0 native activation work
+```powershell
+.\scripts\Update-QTrades.ps1 -Action Recover -RuntimeRoot $runtime
+.\scripts\Update-QTrades.ps1 -Action Recover -RuntimeRoot $runtime -Apply
+```
 
-1. Inspect the actual task, desktop launcher, worker identity, source drift and data
-   ownership; retain any local-only work and active/frozen research artifacts.
-2. Bind a stable, project-owned local launcher to a verified prepared release while
-   retaining the old runtime data/configuration/evidence roots and model runtime.
-3. Prepare before interruption; perform an explicitly authorized, identity-checked
-   cutover without duplicate writers or pulling into an executing worker.
-4. Verify schema compatibility and before/after financial history, reservations,
-   balances, positions, policies and reconciliation; show the actual active commit
-   and successful health verification in the UI.
-5. Exercise interruption/restart, failed activation and compatible code rollback.
-   Never restore an old database over newer trades merely to roll code back.
-6. Demonstrate the normal desktop launch and subsequent main update on Windows.
-   Auto-activation remains disabled unless separately authorized as a policy.
+A failed or interrupted update leaves an explicit recovery receipt, never a success
+claim. Recovery re-inspects the actual task/worker rather than assuming a timeout
+meant nothing happened. It stops only the verified installation, captures the
+**current** account checkpoint, restores the previous verified task/launcher and
+checks health again. Newly recorded trades are not rolled back with the code.
+Previous code and failed/prepared releases are retained. No automatic pruning.
 
-No `activate` CLI action, HTTP activation route, background GitHub poller or task
-rewriter is included in this preparation PR. Those missing operations are not
-reported as completed merely because preparation or Linux tests passed.
+Before interruption, this initial activation contract rejects differing core financial
+modules rather than installing a change with no established recovery path.
+The recovery contract also refuses changed previous source, changed runtime
+configuration, an unrelated desktop replacement, or differing core financial
+modules. It supplies no schema/policy downgrade or database-restore facility. A
+future checkpoint changing those financial modules needs an explicit tested
+compatibility/recovery policy; do not bypass the refusal to make deployment pass.
+A repeated successful recovery is idempotent. If process identity, disk, files or
+compatibility cannot be established, preserve the receipt and inspect the failure.
+No blind force-kill, force-push, clean/reset, volume deletion or restore is a remedy.
 
-## References checked September 28, 2026
+`local-activation.json` and per-phase records live in ignored local `data/` storage.
+They are operational evidence, not a second financial ledger. The same updater lock
+serializes check/preparation/activation/recovery. A crashed updater leaves enough
+information for explicit recovery. A managed worker cannot start through an
+incomplete update without the required account/source checkpoint.
 
-- Git fetch semantics: https://git-scm.com/docs/git-fetch
-- Isolated working trees: https://git-scm.com/docs/git-worktree
-- Virtual environments and non-portability: https://docs.python.org/3/library/venv.html
-- Windows task inspection: https://learn.microsoft.com/en-us/powershell/module/scheduledtasks/get-scheduledtask
-- Windows task updates: https://learn.microsoft.com/en-us/powershell/module/scheduledtasks/set-scheduledtask
+## UI and offline behavior
+
+The Code version & updates panel shows source captured at process startup, last
+checked main, activation/recovery status and last verified installation time.
+Missing/invalid inspection fields remain unknown, not false financial failures.
+Ordinary polling is read-only and never contacts GitHub. Check GitHub main is an
+explicit same-origin/local-operator action running off the financial event loop.
+There is no HTTP activation or recovery route. Manual terminal activation is the
+only installation path in this checkpoint. Local startup does not require GitHub
+availability; already installed code keeps operating through a GitHub outage.
+
+The last successful installation check is historical evidence, not a continuously
+healthy-account assertion. Current paper panels show live freshness and financial
+reconciliation separately. Unavailable and recovery-needed states remain visible.
+
+## Remaining acceptance before closing CP0
+
+- Execute the new driver tests on Windows (earlier 21 native passes predate it).
+- After explicit merge/cutover approval, prepare and activate the approved main
+  release on the actual workstation. Retain the before/startup/after receipts.
+- Verify the normal desktop launch, correct process-start commit, retained accounts,
+  subsequent main-update path, and compatible recovery on native Windows.
+- Do not start CP1 activation or autonomous research merely because Linux tests pass.
+
+## Primary references
+
+Checked September 28, 2026: Microsoft Learn `Set-ScheduledTask`,
+`Disable-ScheduledTask`, and `.NET Process.Kill`; Python subprocess documentation;
+PostgreSQL transaction isolation / repeatable-read documentation. Task-definition
+changes do not replace an already running task instance. Native acceptance remains
+necessary; Linux mocks are not a substitute for Windows process behavior.

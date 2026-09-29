@@ -11,6 +11,9 @@ type Installation = {
   same_commit: boolean;
   message: string;
   activation: string;
+  activation_phase: string;
+  last_activation_verified_at: number | null;
+  active_release_matches: boolean;
   automatic_activation: boolean;
 };
 
@@ -87,12 +90,18 @@ export function InstallationPanel({ disconnected }: { disconnected: boolean }) {
         <div><dt>Last checked main</dt><dd>{short(data?.main_commit ?? null)}</dd></div>
         <div><dt>Last GitHub check</dt><dd>{data?.checked_at
           ? new Date(data.checked_at * 1000).toLocaleString("en-US", { timeZone: "America/Denver" }) + " Denver" : "Not checked"}</dd></div>
+        <div><dt>Installation status</dt><dd>{data?.activation_phase?.replaceAll("_", " ") ?? "Not activated"}</dd></div>
+        <div><dt>Last verified installation</dt><dd>{data?.last_activation_verified_at
+          ? new Date(data.last_activation_verified_at * 1000).toLocaleString("en-US", { timeZone: "America/Denver" }) + " Denver" : "Not verified"}</dd></div>
         <div><dt>Automatic installation</dt><dd>Not enabled</dd></div>
       </dl>
       <p>{data?.message ?? "Loading local version information…"}</p>
       {data?.same_commit && <p>Startup code matches the last checked commit. This is not a fresh GitHub or account-health check.</p>}
       <p className="fine-print">A check never installs code or restarts trading. Preparation builds a separate release;
-        controlled activation is not connected yet. Account reconciliation is shown with the paper accounts.</p>
+        installation requires the explicit local activate command. Failed or interrupted updates use recover, never a database reset. Current account reconciliation is shown with the paper accounts.</p>
+      {data?.activation_phase === "recovery_required" && <p className="error-banner" role="alert">
+        The last update needs recovery. Preserve the local data and run the local recover command; do not reinstall or reset accounts.
+      </p>}
       {(busy || now < retryAt) && <p className="fine-print">
         {busy ? "One update operation at a time; paper trading continues independently." : "Checks have a 30-second cooldown."}
       </p>}

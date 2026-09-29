@@ -85,6 +85,7 @@ def main() -> None:
             paper_database=args.paper_database if args.experiment else None,
             research_evidence=runtime / "docs/evidence" if runtime else None,
             source_root=Path.cwd(),
+            preserve_existing=bool(runtime),
         )
         uvicorn.run(app, host="127.0.0.1", port=args.port, workers=1, access_log=False)
 

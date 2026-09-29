@@ -1,14 +1,17 @@
 # Next: complete CP0 native local activation
 
-The source import is draft PR #2. The local-update follow-up provides main checks,
-separate release preparation, process-start version visibility and read-only Windows
-inspection. See [the exact scope and remaining acceptance](LOCAL_UPDATES.md).
+The source import remains draft PR #2. PR #3 now includes main checking, isolated
+preparation, explicit activation/recovery, account checkpoint verification before
+worker startup, desktop preservation and installation status. See
+[the operation and remaining acceptance](LOCAL_UPDATES.md).
 
-First inspect the actual installed Windows task/runtime path and reconcile local
-source drift, then implement the controlled activation/recovery path. Neither the
-Windows task nor desktop launcher has been repointed. Keep the existing accounts and
-model runtime untouched. CP1 regression groundwork remains on its separate branch;
-do not declare its risk defects fixed or advance to autonomous search yet.
+The registered native path and newer source diagnostics were inspected and preserved.
+The remaining steps are native execution of the new isolated tests and, after explicit
+merge/cutover approval, the actual main-release installation and normal desktop/recovery
+acceptance. No task, desktop launcher, account or model runtime was changed by this
+implementation. Use scripts/Update-QTrades.ps1; do not repeat ZIP imports.
+CP1 regression groundwork remains on its separate branch and its risk defects are
+not fixed by CP0. Do not close CP0 or claim local deployment from passing Linux tests.
 
 ---
 

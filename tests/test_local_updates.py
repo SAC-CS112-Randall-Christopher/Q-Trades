@@ -421,3 +421,12 @@ def test_receipt_cannot_read_arbitrary_file_paths(tmp_path):
     secret = tmp_path / "credential.txt"
     secret.write_text("not a real credential")
     assert u.artifacts_match(tmp_path, {"assets": {"../credential.txt": "a" * 64}}) is False
+
+
+def test_main_recheck_retains_same_prepared_release_for_explicit_activation(repository):
+    updater, _, _, releases = repository
+    prepared = updater.prepare(releases, fake_build)
+    result = updater.check()
+    assert result["phase"] == "prepared"
+    assert result["prepared_directory"] == prepared["release_directory"]
+    assert result["prepared_commit"] == prepared["commit"]

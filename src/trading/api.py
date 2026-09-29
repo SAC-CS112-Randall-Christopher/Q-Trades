@@ -17,6 +17,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
+from trading.activation_state import verify_startup
 from trading.config import Settings
 from trading.local_updates import STATUS_NAME, MainUpdates, public_status, source_identity
 from trading.model_trials import ModelTrials
@@ -53,6 +54,7 @@ def create_app(
     paper_database: Path | None = None,
     research_evidence: Path | None = None,
     source_root: Path | None = None,
+    preserve_existing: bool = False,
 ) -> FastAPI:
     source = (source_root or Path(__file__).resolve().parents[2]).resolve()
     updates = MainUpdates(source, database.parent)
@@ -92,33 +94,59 @@ def create_app(
                 app.state.tool_journal = tool_journal
                 store.set("config:" + settings.fingerprint, settings.model_dump())
                 app.state.monitor = Monitor(settings, store, public_venue)
-                task = asyncio.create_task(app.state.monitor.run()) if background else None
                 app.state.paper = None
                 app.state.options = None
                 app.state.options_error = None
                 if paper_database is not None:
                     paper_store = PaperStore(load_dsn(paper_database), owner=True)
-                    paper_store.initialize(time.time())
+                    if preserve_existing:
+                        paper_store.read()
+                    else:
+                        paper_store.initialize(time.time())
                     if not paper_store.reconcile()["balanced"]:
                         raise RuntimeError("Paper journal reconciliation failed at startup")
                     paper_venue = PublicVenue(3)
                     app.state.paper = PaperRuntime(
                         paper_store, paper_venue, database.parent / "paper-stream.sqlite"
                     )
-                    paper_task = asyncio.create_task(app.state.paper.run()) if background else None
                     try:
-                        options_store = OptionsStore(load_dsn(paper_database))
-                        options_store.initialize(time.time())
-                        if not options_store.reconcile()["balanced"]:
+                        present = paper_store.connection.execute(
+                            "SELECT to_regclass('options_paper.paper_state') IS NOT NULL AS present"
+                        ).fetchone()
+                        if not preserve_existing or (present and present["present"]):
+                            options_store = OptionsStore(load_dsn(paper_database))
+                        if options_store is not None:
+                            if preserve_existing:
+                                options_store.read()
+                            else:
+                                options_store.initialize(time.time())
+                        if options_store and not options_store.reconcile()["balanced"]:
                             raise RuntimeError("Options journal reconciliation failed")
-                        app.state.options = OptionsRuntime(options_store)
-                        options_task = (
-                            asyncio.create_task(app.state.options.run()) if background else None
-                        )
+                        if options_store:
+                            app.state.options = OptionsRuntime(options_store)
                     except Exception:
+                        if preserve_existing:
+                            raise
                         app.state.options_error = (
                             "Options account needs attention; spot trading continues"
                         )
+                if preserve_existing:
+                    if paper_store is None:
+                        raise RuntimeError("Managed updates require an existing paper account")
+                    verify_startup(
+                        source,
+                        database.parent.parent,
+                        app.state.source_at_start,
+                        paper_store,
+                        options_store,
+                    )
+                # The account checkpoint must pass before any feed or financial worker starts.
+                if background:
+                    task = asyncio.create_task(app.state.monitor.run())
+                    if app.state.paper:
+                        paper_task = asyncio.create_task(app.state.paper.run())
+                    if app.state.options:
+                        options_task = asyncio.create_task(app.state.options.run())
                 yield
             finally:
                 if tool_journal:

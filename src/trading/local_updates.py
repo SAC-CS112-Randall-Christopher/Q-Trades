@@ -179,7 +179,52 @@ def public_status(started: dict[str, Any], status_path: Path) -> dict[str, Any]:
     )
     if stale_operation:
         phase = "failed"
+    activation = read_record(status_path.with_name("local-activation.json"))
+    activation_phase = activation.get("phase")
+    known = {
+        "planned",
+        "stopping",
+        "stopped",
+        "starting",
+        "verified",
+        "recovering",
+        "recovering_start",
+        "recovered",
+        "recovery_required",
+        "cancelled",
+    }
+    if not isinstance(activation_phase, str) or activation_phase not in known:
+        activation_phase = "not_activated"
+    verified_at = (
+        activation.get("updated_at") if activation_phase in {"verified", "recovered"} else None
+    )
+    if (
+        not isinstance(verified_at, (float, int))
+        or isinstance(verified_at, bool)
+        or not math.isfinite(verified_at)
+    ):
+        verified_at = None
+    active_commit = activation.get("launch", {})
+    if not isinstance(active_commit, dict):
+        active_commit = {}
+    matches = (
+        active_commit.get("commit") == started.get("commit")
+        and started.get("commit") is not None
+        and started.get("dirty") is False
+    )
+    message = messages[phase]
+    if activation_phase in {"verified", "recovered"} and matches:
+        message = (
+            "This release passed installation checks. Current account health is shown separately."
+        )
+    elif activation_phase == "recovery_required":
+        message = (
+            "The last update needs explicit local recovery. Do not reset the account database."
+        )
     return {
+        "activation_phase": activation_phase,
+        "last_activation_verified_at": verified_at,
+        "active_release_matches": matches,
         "running_commit": started.get("commit"),
         "running_source_dirty": started.get("dirty"),
         "running_source_kind": started.get("kind", "unversioned"),
@@ -189,8 +234,8 @@ def public_status(started: dict[str, Any], status_path: Path) -> dict[str, Any]:
         "same_commit": bool(
             available and available == started.get("commit") and not started.get("dirty")
         ),
-        "message": messages[phase],
-        "activation": "not_connected",
+        "message": message,
+        "activation": "manual",
         "automatic_activation": False,
     }
 
@@ -268,10 +313,22 @@ class MainUpdates:
             "mode": "paper",
             "automatic_activation": False,
         }
+        previous = read_record(self.status_path)
+        prepared = (
+            ready
+            and previous.get("prepared_commit") == commit
+            and isinstance(previous.get("prepared_directory"), str)
+        )
+        retained: dict[str, Any] = {
+            key: previous[key]
+            for key in ("prepared_directory", "prepared_at", "prepared_commit")
+            if key in previous
+        }
         write_record(
             self.status_path,
             {
-                "phase": "available" if ready else "no_release",
+                **retained,
+                "phase": "prepared" if prepared else "available" if ready else "no_release",
                 "main_commit": commit,
                 "checked_at": time.time(),
                 "activation": "not_connected",
@@ -320,7 +377,7 @@ class MainUpdates:
                     "Source checkout has local changes; preserve and review before preparation"
                 )
             commit = self._check()
-            if read_record(self.status_path).get("phase") != "available":
+            if read_record(self.status_path).get("phase") not in {"available", "prepared"}:
                 raise UpdateError(
                     "The application and local-update PRs must be merged into main first"
                 )
@@ -350,6 +407,9 @@ class MainUpdates:
                 releases,
                 180,
             )
+            # The release uses repository bytes, independent of the user's Windows defaults.
+            # Local to this new release: never change the user's/global Git configuration.
+            git(destination, "config", "core.autocrlf", "false")
             git(destination, "checkout", "--detach", commit)
             if git(destination, "rev-parse", "HEAD") != commit:
                 raise UpdateError("Prepared source commit does not match the selected main commit")
@@ -381,7 +441,13 @@ class MainUpdates:
             write_record(destination / RECEIPT_NAME, receipt)
             write_record(
                 self.status_path,
-                {**status, "phase": "prepared", "prepared_at": receipt["prepared_at"]},
+                {
+                    **status,
+                    "phase": "prepared",
+                    "prepared_at": receipt["prepared_at"],
+                    "prepared_directory": str(destination),
+                    "prepared_commit": commit,
+                },
             )
             return {**receipt, "release_directory": str(destination)}
         except Exception:

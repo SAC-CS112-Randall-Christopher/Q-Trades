@@ -1,8 +1,8 @@
 # Current work order: CP0 local delivery first
 
 Chris's latest direction is GitHub main -> verified local installation, then CP1 and
-later checkpoints in issue #1. Read `docs/LOCAL_UPDATES.md`. The current update code
-checks/prepares releases only; native activation is not connected. Preserve the
+later checkpoints in issue #1. Read `docs/LOCAL_UPDATES.md`. The update code now
+supports explicit activation/recovery; the native cutover is not yet installed or verified. Preserve the
 operating Windows service and account/evidence roots. A PR merge is not a verified
 local deployment. Do not enable automatic activation, change a task, move a database,
 or restart a worker without the ownership/compatibility checks and authorization.

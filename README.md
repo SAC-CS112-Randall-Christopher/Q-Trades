@@ -1,8 +1,9 @@
 # Local delivery checkpoint
 
 GitHub `main` is the intended accepted-code authority. The new [local-update path](docs/LOCAL_UPDATES.md)
-checks main and builds isolated releases; the dashboard distinguishes process-start
-code from the last checked main version. **Native activation is not connected yet.**
+checks main, prepares isolated releases, and supports explicit native activation/recovery.
+The dashboard distinguishes process-start code from accepted main and installation status.
+**The activation driver is implemented but not yet installed or verified on the operating workstation.**
 No Git push/merge by itself updates or restarts the operating Windows application.
 
 The imported snapshot description below is historical. Follow issue #1, the current
