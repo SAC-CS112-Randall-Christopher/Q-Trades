@@ -1,0 +1,42 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_____ test_ranking_accounts_for_operating_cost_relative_to_window_capital ______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x70ad39845400>
+
+    def test_ranking_accounts_for_operating_cost_relative_to_window_capital(monkeypatch):
+        monkeypatch.setattr(eco,"WINDOW_SECONDS",10)
+        state=initial_state(START)
+        for a in state["accounts"].values():a["operating_daily_usd"]="8640"  # $1 per 10s fixture.
+        state["accounts"]["responsive-v1"].update(cash="200",realized="100")
+        PaperEngine(state,START).tick(frames(START),{})
+        state["accounts"]["responsive-v1"].update(cash="200.98",realized="100.98")
+        state["accounts"]["selective-v1"].update(cash="100.50",realized="0.50")
+        for i in range(1,11):PaperEngine(state,START+i).tick(frames(START+i,i+1),{})
+        r=state["economics"]["completed"][0]["scores"]
+        assert D(r["selective-v1"]["return"])>D(r["responsive-v1"]["return"])
+>       assert r["responsive-v1"]["rank"]<r["selective-v1"]["rank"]
+E       assert 2 < 1
+
+tests/test_paper_economics.py:343: AssertionError
+________ test_two_window_selection_compounds_instead_of_adding_returns _________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x70ad39845310>
+
+    def test_two_window_selection_compounds_instead_of_adding_returns(monkeypatch):
+        state=windows(monkeypatch)
+        for v,returns in [("selective-v1",["0.50","0.01"]),("responsive-v1",["0.25","0.25"])]:
+            for window,r in zip(state["economics"]["completed"],returns,strict=True):
+                window["scores"][v].update({"return":r,"total_return":r,"total_pnl":"1"})
+        PaperEngine(state,START+20).review()
+>       assert state["accounts"]["primary"]["version"]=="responsive-v1"
+E       AssertionError: assert 'selective-v1' == 'responsive-v1'
+E
+E         - responsive-v1
+E         + selective-v1
+
+tests/test_paper_economics.py:352: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_paper_economics.py::test_ranking_accounts_for_operating_cost_relative_to_window_capital
+FAILED tests/test_paper_economics.py::test_two_window_selection_compounds_instead_of_adding_returns
+2 failed, 25 deselected in 0.09s

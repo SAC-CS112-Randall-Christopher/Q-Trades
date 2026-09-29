@@ -1,0 +1,15 @@
+{
+  "cp1_base": "ca92d5bfa3659d8284d7ff22db07c1dd65a428a2",
+  "cp2_implementation": "90db4f774e367a2d45042bd4524866bcded0a037",
+  "verified_code_with_table_polish": "63fa3e26c21172b63643e5eb1d7b01f80f628993",
+  "cp0_updater_byte_unchanged": {
+    "scripts/Update-QTrades.ps1": true,
+    "Update Q-Trades.cmd": true,
+    "scripts/PaperStartupIdentity.ps1": true,
+    "scripts/qtrades_health.py": true
+  },
+  "retained_public_capture_sha256": "d1aa6e60f3b06a5545f7a2ba98fc0f33dec3da090e1546e06f0a6a222a6916d2",
+  "native_installation_verified": false,
+  "windows_ci_executed": false,
+  "financial_state_used": "Dedicated disposable Linux PostgreSQL schemas and synthetic in-memory browser accounts"
+}
