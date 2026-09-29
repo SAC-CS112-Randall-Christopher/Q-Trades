@@ -23,6 +23,7 @@ import "./style.css";
 import { PaperPanel, type PaperSnapshot } from "./PaperPanel";
 import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
+import { ExperimentLab } from "./ExperimentLab";
 import { MarketStation } from "./MarketStation";
 
 type Snapshot = {
@@ -319,6 +320,7 @@ function App() {
 
           <MarketStation />
           <PaperPanel data={data?.paper} disconnected={!!networkError} />
+          <ExperimentLab />
           <ModelTrialsPanel />
           <OptionsPanel data={data?.options} disconnected={!!networkError} />
           <section id="research" className="research-section">

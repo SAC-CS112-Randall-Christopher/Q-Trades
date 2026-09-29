@@ -20,6 +20,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from trading.config import Settings
+from trading.experiment_lab import ExperimentLab
+from trading.experiment_registry import ExperimentPlan
 from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
@@ -102,6 +104,8 @@ def create_app(
             paper_store = None
             paper_venue = None
             tool_journal = None
+            lab = None
+            lab_task = None
             try:
                 app.state.tool_busy = False
                 app.state.last_tool_at = 0.0
@@ -149,8 +153,29 @@ def create_app(
                             app.state.options_error = (
                                 "Options account needs attention; spot trading continues"
                             )
+                def research_ready() -> bool:
+                    paper = app.state.paper
+                    return bool(paper and paper.running and not paper.error
+                                and time.time() - paper.state["last_tick"] < 10
+                                and not paper.constrained())
+
+                try:
+                    lab = ExperimentLab(
+                        database.parent / "experiments.sqlite3",
+                        load_dsn(paper_database) if paper_database else None, research_ready,
+                    )
+                except (sqlite3.Error, OSError):
+                    app.state.lab_error = "Research storage unavailable; paper management continues"
+                app.state.lab = lab
+                lab_task = asyncio.create_task(lab.run()) if background and lab else None
                 yield
             finally:
+                if lab_task:
+                    lab_task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await lab_task
+                if lab:
+                    lab.registry.close()
                 if tool_journal:
                     tool_journal.close()
                 if options_task:
@@ -239,6 +264,51 @@ def create_app(
     def research_trials() -> dict[str, Any]:
         # Runs in FastAPI's worker pool, outside the trading event loop.
         return model_trials.snapshot()
+
+    def lab_operator(request: Request) -> ExperimentLab:
+        origin = request.headers.get("origin")
+        if request.headers.get("x-local-operator") != "1" or (origin and (
+            urlsplit(origin).scheme != "http"
+            or urlsplit(origin).netloc != request.headers.get("host")
+        )):
+            raise HTTPException(403, "Local operator request required")
+        lab: ExperimentLab | None = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research registry unavailable; paper management continues")
+        return lab
+
+    @app.get("/api/lab")
+    def research_lab(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:
+        lab: ExperimentLab | None = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research registry unavailable; paper management continues")
+        return lab.snapshot(before)
+
+    @app.post("/api/lab/experiments")
+    def research_launch(plan: ExperimentPlan, request: Request) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return lab.enqueue(plan)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/lab/experiments/{request_id}")
+    def research_result(request_id: str, request: Request) -> dict[str, Any]:
+        lab: ExperimentLab | None = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research registry unavailable")
+        result = lab.registry.get(request_id)
+        if result is None:
+            raise HTTPException(404, "Experiment not found")
+        return result
+
+    @app.post("/api/lab/experiments/{request_id}/cancel")
+    def research_cancel(request_id: str, request: Request) -> dict[str, Any]:
+        lab = lab_operator(request)
+        if lab.registry.status(request_id) is None:
+            raise HTTPException(404, "Experiment not found")
+        lab.registry.cancel(request_id)
+        return {"status": lab.registry.status(request_id)}
 
     @app.get("/api/station/live")
     async def station_live(

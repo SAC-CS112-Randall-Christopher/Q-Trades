@@ -1,0 +1,33 @@
+{
+  "fixture": "Synthetic copies in a disposable schema",
+  "checks": [
+    {
+      "name": "Normal UI freezes the selected hypothesis and dates",
+      "passed": true
+    },
+    {
+      "name": "Numerical worker completes a retained rejection",
+      "passed": true
+    },
+    {
+      "name": "UI exposes sample counts and numerical cost hurdle",
+      "passed": true
+    },
+    {
+      "name": "Synthetic QA and correlated evidence are explicit",
+      "passed": true
+    },
+    {
+      "name": "Changed feature cannot reuse consumed window",
+      "passed": true
+    },
+    {
+      "name": "Refused plan can be edited without erasing the result",
+      "passed": true
+    },
+    {
+      "name": "Page reopen preserves the experiment and export link",
+      "passed": true
+    }
+  ]
+}

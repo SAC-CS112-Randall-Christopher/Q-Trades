@@ -1,3 +1,11 @@
+# CP4 protected research
+
+Read docs/CP4_PROTECTED_RESEARCH.md. Preserve the imported consumed boundary and
+all frozen plans/inputs/results/attempts. Research runs outside financial execution;
+there is no arbitrary-code or provider prerequisite. Unknown/negative evidence must
+remain a rejection or unresolved result. Continue CP5–CP9 as separate draft steps
+and audit the whole stack; merges, paid calls and installation still need authority.
+
 # CP3 campaign implementation and audit
 
 Read docs/CP3_PAPER_CAMPAIGNS.md and docs/reviews/cp3-paper-campaigns/README.md.
