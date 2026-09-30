@@ -12,6 +12,7 @@ from typing import Any
 
 from trading.experiment_registry import ExperimentPlan, ExperimentRegistry
 from trading.experiment_worker import code_fingerprint
+from trading.memory_dataset import corpus_snapshot
 from trading.numerical_resources import child_rss, constrain_child
 from trading.research_campaigns import ResearchCampaigns
 from trading.research_data import quote_snapshot
@@ -36,13 +37,18 @@ class ExperimentLab:
         if receipt["retry"]:
             return receipt
         try:
-            if not self.dsn:
+            if plan.experiment_mode == "memory_entry":
+                snapshot = corpus_snapshot(
+                    self.registry.path.parent / "research-evidence.sqlite", plan.as_of
+                )
+            elif not self.dsn:
                 raise ValueError("Public quote journal is not enabled")
-            snapshot = quote_snapshot(self.dsn, plan.as_of)
+            else:
+                snapshot = quote_snapshot(self.dsn, plan.as_of)
             self.registry.inputs(plan.request_id, snapshot)
         except Exception:
             self.registry.fail_inputs(
-                plan.request_id, "Quote snapshot unavailable; no financial state changed"
+                plan.request_id, "Declared research inputs unavailable; no financial state changed"
             )
         job = self.registry.get(plan.request_id)
         return {**receipt, "status": job["status"] if job else "failed"}

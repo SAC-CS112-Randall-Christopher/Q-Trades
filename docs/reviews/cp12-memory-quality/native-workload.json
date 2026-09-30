@@ -1,0 +1,2127 @@
+{
+  "scope": "Native two-processor child; synthetic labels; linked fills tested separately",
+  "checked_at": "2026-09-30",
+  "contract": {
+    "version": "memory-entry-v1",
+    "family": "memory_entry",
+    "symbol": "BTCUSD",
+    "horizon_seconds": 2700,
+    "neighbors": 5,
+    "minimum_groups": 5,
+    "minimum_train": 12,
+    "minimum_calibration": 6,
+    "minimum_test": 8,
+    "library_max": 128,
+    "maximum_concentration": 0.2,
+    "unfamiliar_distance": 3.0,
+    "weak_distance": 2.0,
+    "minimum_net_bps": 5.0,
+    "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+    "fallback": "No additional signal; unchanged baseline entry and deterministic exits",
+    "normalization": "Per-coordinate training-only mean/std with explicit zero-variance rejection",
+    "evaluation": "Chronological training/calibration/protected test; 3300-second purge",
+    "minimum_worthwhile_account_return": 0.001,
+    "stopping": "One frozen comparison; insufficient or negative evidence is retained"
+  },
+  "source_sha256": "613b07a8ade2543d50a1cd480413591b65ff7f6fe069308dbefc69367eb0360a",
+  "fixtures_sha256": "2dd601d6658c65584dbaa16785ce7cf375daf52dee72d7569b6c02e5c90b4460",
+  "driver_sha256": "6f167c2ebac9ac4c4a76f0924be864f1871659aca2b5cbd0d507e937a8d96b0a",
+  "resources": {
+    "gpu": false,
+    "logical_processors_max": 2,
+    "paid_usd": "0",
+    "peak_rss_bytes": 35119104,
+    "wall_seconds": 0.8429999999934807
+  },
+  "os_identity": {
+    "priority_class": 64,
+    "processors_allowed": 2
+  },
+  "inference_ms": {
+    "p50": 0.28339994605630636,
+    "p95": 0.4856999730691314,
+    "p99": 0.543600064702332,
+    "max": 0.6165999220684171
+  },
+  "checks": {
+    "completed": true,
+    "synthetic_cannot_qualify": true,
+    "wall_budget": true,
+    "memory_budget": true,
+    "processors": true
+  },
+  "result": {
+    "calibration_samples": 6,
+    "candidate_group": [
+      {
+        "arm": "B",
+        "artifact": {
+          "arm": "B",
+          "calibration": [
+            {
+              "count": 0,
+              "probability": null
+            },
+            {
+              "count": 2,
+              "probability": 0.25
+            },
+            {
+              "count": 4,
+              "probability": 0.8333333333333334
+            }
+          ],
+          "calibration_end": 1790671927.9698553,
+          "contract": {
+            "evaluation": "Chronological training/calibration/protected test; 3300-second purge",
+            "fallback": "No additional signal; unchanged baseline entry and deterministic exits",
+            "family": "memory_entry",
+            "horizon_seconds": 2700,
+            "library_max": 128,
+            "maximum_concentration": 0.2,
+            "minimum_calibration": 6,
+            "minimum_groups": 5,
+            "minimum_net_bps": 5.0,
+            "minimum_test": 8,
+            "minimum_train": 12,
+            "minimum_worthwhile_account_return": 0.001,
+            "neighbors": 5,
+            "normalization": "Per-coordinate training-only mean/std with explicit zero-variance rejection",
+            "stopping": "One frozen comparison; insufficient or negative evidence is retained",
+            "symbol": "BTCUSD",
+            "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+            "unfamiliar_distance": 3.0,
+            "version": "memory-entry-v1",
+            "weak_distance": 2.0
+          },
+          "evidence_kind": "synthetic_qa",
+          "family": "memory_entry",
+          "library": [
+            {
+              "at": 1790000427.9698553,
+              "available_at": 1790003128.9698553,
+              "end": 1790003127.9698553,
+              "episode": "episode-0",
+              "group": "BTCUSD:542424",
+              "net_bps": -40.0,
+              "record_id": null,
+              "x": [
+                -0.04123458085826336,
+                1.1901280904965659,
+                1.3926170527969692,
+                0.24879160676042097,
+                -1.059053025603824,
+                -1.4552743722578059,
+                -0.45473120365399455,
+                0.9097861905334083,
+                1.4857006027624553,
+                0.654511109318947
+              ]
+            },
+            {
+              "at": 1790005427.9698553,
+              "available_at": 1790008128.9698553,
+              "end": 1790008127.9698553,
+              "episode": "episode-1",
+              "group": "BTCUSD:542425",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                1.1405562374370493,
+                1.2841353548162446,
+                0.2750691529805202,
+                -1.022430623023751,
+                -1.3380078788579353,
+                -0.4712649980156397,
+                0.8818254700890913,
+                1.367481517719438,
+                0.6551020460046094,
+                -0.7206796341185719
+              ]
+            },
+            {
+              "at": 1790010427.9698553,
+              "available_at": 1790013128.9698553,
+              "end": 1790013127.9698553,
+              "episode": "episode-2",
+              "group": "BTCUSD:542427",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                1.235814027499243,
+                0.21944353991327967,
+                -1.0312324686537457,
+                -1.3085819312671414,
+                -0.4001956765898431,
+                0.884756400591831,
+                1.356230157596863,
+                0.5725883819301077,
+                -0.7207009075284231,
+                -1.3764881396801896
+              ]
+            },
+            {
+              "at": 1790015427.9698553,
+              "available_at": 1790018128.9698553,
+              "end": 1790018127.9698553,
+              "episode": "episode-3",
+              "group": "BTCUSD:542428",
+              "net_bps": -40.0,
+              "record_id": null,
+              "x": [
+                0.15695921644894306,
+                -1.025074609668412,
+                -1.325280125493865,
+                -0.34657612482514666,
+                0.892163367377725,
+                1.3660700032979778,
+                0.5323173770039832,
+                -0.7440721336273851,
+                -1.3768013671987667,
+                -0.7099670917684322
+              ]
+            },
+            {
+              "at": 1790020427.9698553,
+              "available_at": 1790023128.9698553,
+              "end": 1790023127.9698553,
+              "episode": "episode-4",
+              "group": "BTCUSD:542430",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                -1.104114057828077,
+                -1.3052148465929239,
+                -0.33672775791127896,
+                0.9791230943765418,
+                1.350880308040076,
+                0.5301583034661722,
+                -0.8324112608809151,
+                -1.3719684230405491,
+                -0.7099835961478,
+                0.666087131985928
+              ]
+            },
+            {
+              "at": 1790025427.9698553,
+              "available_at": 1790028128.9698553,
+              "end": 1790028127.9698553,
+              "episode": "episode-5",
+              "group": "BTCUSD:542431",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                -1.387980842698895,
+                -0.36341752896475404,
+                1.0255541462814004,
+                1.4496739779790766,
+                0.5542129056338017,
+                -0.8544453370825358,
+                -1.483230540155028,
+                -0.7338155335150186,
+                0.6666832221079244,
+                1.4865366242623186
+              ]
+            },
+            {
+              "at": 1790030427.9698553,
+              "available_at": 1790033128.9698553,
+              "end": 1790033127.9698553,
+              "episode": "episode-6",
+              "group": "BTCUSD:542433",
+              "net_bps": -40.0,
+              "record_id": null,
+              "x": [
+                -0.04123458085826336,
+                1.1901280904965659,
+                1.3926170527969692,
+                0.24879160676042097,
+                -1.059053025603824,
+                -1.4552743722578059,
+                -0.45473120365399455,
+                0.9097861905334083,
+                1.4857006027624553,
+                0.654511109318947
+              ]
+            },
+            {
+              "at": 1790035427.9698553,
+              "available_at": 1790038128.9698553,
+              "end": 1790038127.9698553,
+              "episode": "episode-7",
+              "group": "BTCUSD:542434",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                1.1405562374370493,
+                1.2841353548162446,
+                0.2750691529805202,
+                -1.022430623023751,
+                -1.3380078788579353,
+                -0.4712649980156397,
+                0.8818254700890913,
+                1.367481517719438,
+                0.6551020460046094,
+                -0.7206796341185719
+              ]
+            },
+            {
+              "at": 1790040427.9698553,
+              "available_at": 1790043128.9698553,
+              "end": 1790043127.9698553,
+              "episode": "episode-8",
+              "group": "BTCUSD:542436",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                1.235814027499243,
+                0.21944353991327967,
+                -1.0312324686537457,
+                -1.3085819312671414,
+                -0.4001956765898431,
+                0.884756400591831,
+                1.356230157596863,
+                0.5725883819301077,
+                -0.7207009075284231,
+                -1.3764881396801896
+              ]
+            },
+            {
+              "at": 1790045427.9698553,
+              "available_at": 1790048128.9698553,
+              "end": 1790048127.9698553,
+              "episode": "episode-9",
+              "group": "BTCUSD:542438",
+              "net_bps": -40.0,
+              "record_id": null,
+              "x": [
+                0.15695921644894306,
+                -1.025074609668412,
+                -1.325280125493865,
+                -0.34657612482514666,
+                0.892163367377725,
+                1.3660700032979778,
+                0.5323173770039832,
+                -0.7440721336273851,
+                -1.3768013671987667,
+                -0.7099670917684322
+              ]
+            },
+            {
+              "at": 1790050427.9698553,
+              "available_at": 1790053128.9698553,
+              "end": 1790053127.9698553,
+              "episode": "episode-10",
+              "group": "BTCUSD:542439",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                -1.104114057828077,
+                -1.3052148465929239,
+                -0.33672775791127896,
+                0.9791230943765418,
+                1.350880308040076,
+                0.5301583034661722,
+                -0.8324112608809151,
+                -1.3719684230405491,
+                -0.7099835961478,
+                0.666087131985928
+              ]
+            },
+            {
+              "at": 1790055427.9698553,
+              "available_at": 1790058128.9698553,
+              "end": 1790058127.9698553,
+              "episode": "episode-11",
+              "group": "BTCUSD:542441",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                -1.387980842698895,
+                -0.36341752896475404,
+                1.0255541462814004,
+                1.4496739779790766,
+                0.5542129056338017,
+                -0.8544453370825358,
+                -1.483230540155028,
+                -0.7338155335150186,
+                0.6666832221079244,
+                1.4865366242623186
+              ]
+            }
+          ],
+          "lookback": 10,
+          "maximum_hold_seconds": 2700,
+          "means": [
+            0.029360274953729795,
+            0.1827910252539088,
+            0.35204362757239094,
+            0.5653870975386743,
+            0.8105535104023225,
+            1.0460170744720823,
+            1.2391727524908216,
+            1.3963131825239032,
+            1.5568432555418787,
+            1.7570514403871267
+          ],
+          "progress_seconds": 600,
+          "scales": [
+            0.7120303963959422,
+            0.721502136123612,
+            0.6873776228222374,
+            0.7063458161207932,
+            0.7245680689810022,
+            0.6905511210068864,
+            0.7006078494937888,
+            0.726185364286012,
+            0.694968413664021,
+            0.6952778010569617
+          ],
+          "sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+          "symbol": "BTCUSD",
+          "train_end": 1790067127.9698553,
+          "version": "memory-entry-v1"
+        },
+        "family": "memory_entry",
+        "metrics": {
+          "brier": 0.027777777777777766,
+          "mean_absolute_net_error_bps": 21.0,
+          "missed_positive_opportunities": 0,
+          "queries": 8,
+          "rejected_entries": 3,
+          "supported": 8
+        },
+        "name": "Numerical history",
+        "predictions": [
+          {
+            "episode": "episode-18",
+            "net_bps": -40.0,
+            "prediction": {
+              "action": "reject_entry",
+              "artifact_sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+              "available_at": 1790676227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790676227.9698553,
+              "dispersion_bps": 29.393876913398138,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790676227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": -4.0,
+              "expires_at": 1790676317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-1"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-6",
+                  "group": "BTCUSD:542433",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9946551526314845,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9946551526314845,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 1.178558401886951,
+                  "episode": "episode-5",
+                  "group": "BTCUSD:542431",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": null,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.6,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-19",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+              "available_at": 1790681227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790681227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790681227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790681317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-1"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9396312272992223,
+                  "episode": "episode-2",
+                  "group": "BTCUSD:542427",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9396312272992223,
+                  "episode": "episode-8",
+                  "group": "BTCUSD:542436",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9946551526314845,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-20",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+              "available_at": 1790686227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790686227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790686227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790686317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-2"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-3"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-2",
+                  "group": "BTCUSD:542427",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-8",
+                  "group": "BTCUSD:542436",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9396312272992223,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9396312272992223,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9441224661293718,
+                  "episode": "episode-3",
+                  "group": "BTCUSD:542428",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-21",
+            "net_bps": -40.0,
+            "prediction": {
+              "action": "reject_entry",
+              "artifact_sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+              "available_at": 1790691227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790691227.9698553,
+              "dispersion_bps": 29.393876913398138,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790691227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": -4.0,
+              "expires_at": 1790691317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-2"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-3"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-3",
+                  "group": "BTCUSD:542428",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-9",
+                  "group": "BTCUSD:542438",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9441224661293718,
+                  "episode": "episode-2",
+                  "group": "BTCUSD:542427",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9441224661293718,
+                  "episode": "episode-8",
+                  "group": "BTCUSD:542436",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9953681395380756,
+                  "episode": "episode-4",
+                  "group": "BTCUSD:542430",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": null,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.6,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-22",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+              "available_at": 1790696227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790696227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790696227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790696317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-4"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-3"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-4",
+                  "group": "BTCUSD:542430",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-10",
+                  "group": "BTCUSD:542439",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9484594136608879,
+                  "episode": "episode-5",
+                  "group": "BTCUSD:542431",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9484594136608879,
+                  "episode": "episode-11",
+                  "group": "BTCUSD:542441",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9953681395380756,
+                  "episode": "episode-3",
+                  "group": "BTCUSD:542428",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-23",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+              "available_at": 1790701227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790701227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790701227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790701317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-5"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-5",
+                  "group": "BTCUSD:542431",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-11",
+                  "group": "BTCUSD:542441",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9484594136608879,
+                  "episode": "episode-4",
+                  "group": "BTCUSD:542430",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9484594136608879,
+                  "episode": "episode-10",
+                  "group": "BTCUSD:542439",
+                  "record_id": null
+                },
+                {
+                  "distance": 1.178558401886951,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-24",
+            "net_bps": -40.0,
+            "prediction": {
+              "action": "reject_entry",
+              "artifact_sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+              "available_at": 1790706227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790706227.9698553,
+              "dispersion_bps": 29.393876913398138,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790706227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": -4.0,
+              "expires_at": 1790706317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-1"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-6",
+                  "group": "BTCUSD:542433",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9946551526314845,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9946551526314845,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 1.178558401886951,
+                  "episode": "episode-5",
+                  "group": "BTCUSD:542431",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": null,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.6,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-25",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "537f8c62968ac9a1426972dc52ebb16fbbcffefeb880dd244895979157f7d354",
+              "available_at": 1790711227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790711227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790711227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790711317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-1"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9396312272992223,
+                  "episode": "episode-2",
+                  "group": "BTCUSD:542427",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9396312272992223,
+                  "episode": "episode-8",
+                  "group": "BTCUSD:542436",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9946551526314845,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          }
+        ],
+        "status": "research_artifact",
+        "test_samples": 8,
+        "train_samples": 12
+      },
+      {
+        "arm": "C",
+        "artifact": {
+          "arm": "C",
+          "calibration": [
+            {
+              "count": 0,
+              "probability": null
+            },
+            {
+              "count": 2,
+              "probability": 0.25
+            },
+            {
+              "count": 4,
+              "probability": 0.8333333333333334
+            }
+          ],
+          "calibration_end": 1790671927.9698553,
+          "contract": {
+            "evaluation": "Chronological training/calibration/protected test; 3300-second purge",
+            "fallback": "No additional signal; unchanged baseline entry and deterministic exits",
+            "family": "memory_entry",
+            "horizon_seconds": 2700,
+            "library_max": 128,
+            "maximum_concentration": 0.2,
+            "minimum_calibration": 6,
+            "minimum_groups": 5,
+            "minimum_net_bps": 5.0,
+            "minimum_test": 8,
+            "minimum_train": 12,
+            "minimum_worthwhile_account_return": 0.001,
+            "neighbors": 5,
+            "normalization": "Per-coordinate training-only mean/std with explicit zero-variance rejection",
+            "stopping": "One frozen comparison; insufficient or negative evidence is retained",
+            "symbol": "BTCUSD",
+            "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+            "unfamiliar_distance": 3.0,
+            "version": "memory-entry-v1",
+            "weak_distance": 2.0
+          },
+          "evidence_kind": "synthetic_qa",
+          "family": "memory_entry",
+          "library": [
+            {
+              "at": 1790000427.9698553,
+              "available_at": 1790003128.9698553,
+              "end": 1790003127.9698553,
+              "episode": "episode-0",
+              "group": "BTCUSD:542424",
+              "net_bps": -40.0,
+              "record_id": null,
+              "x": [
+                -0.04123458085826336,
+                1.1901280904965659,
+                1.3926170527969692,
+                0.24879160676042097,
+                -1.059053025603824,
+                -1.4552743722578059,
+                -0.45473120365399455,
+                0.9097861905334083,
+                1.4857006027624553,
+                0.654511109318947,
+                -1.4638501094227998,
+                -1.4638501094227998,
+                -0.04123458085826336
+              ]
+            },
+            {
+              "at": 1790005427.9698553,
+              "available_at": 1790008128.9698553,
+              "end": 1790008127.9698553,
+              "episode": "episode-1",
+              "group": "BTCUSD:542425",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                1.1405562374370493,
+                1.2841353548162446,
+                0.2750691529805202,
+                -1.022430623023751,
+                -1.3380078788579353,
+                -0.4712649980156397,
+                0.8818254700890913,
+                1.367481517719438,
+                0.6551020460046094,
+                -0.7206796341185719,
+                -0.8783100656536794,
+                -0.8783100656536794,
+                1.1405562374370497
+              ]
+            },
+            {
+              "at": 1790010427.9698553,
+              "available_at": 1790013128.9698553,
+              "end": 1790013127.9698553,
+              "episode": "episode-2",
+              "group": "BTCUSD:542427",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                1.235814027499243,
+                0.21944353991327967,
+                -1.0312324686537457,
+                -1.3085819312671414,
+                -0.4001956765898431,
+                0.884756400591831,
+                1.356230157596863,
+                0.5725883819301077,
+                -0.7207009075284231,
+                -1.3764881396801896,
+                -0.29277002188456025,
+                -0.29277002188456025,
+                1.2358140274992433
+              ]
+            },
+            {
+              "at": 1790015427.9698553,
+              "available_at": 1790018128.9698553,
+              "end": 1790018127.9698553,
+              "episode": "episode-3",
+              "group": "BTCUSD:542428",
+              "net_bps": -40.0,
+              "record_id": null,
+              "x": [
+                0.15695921644894306,
+                -1.025074609668412,
+                -1.325280125493865,
+                -0.34657612482514666,
+                0.892163367377725,
+                1.3660700032979778,
+                0.5323173770039832,
+                -0.7440721336273851,
+                -1.3768013671987667,
+                -0.7099670917684322,
+                0.29277002188456025,
+                0.29277002188456025,
+                0.15695921644894306
+              ]
+            },
+            {
+              "at": 1790020427.9698553,
+              "available_at": 1790023128.9698553,
+              "end": 1790023127.9698553,
+              "episode": "episode-4",
+              "group": "BTCUSD:542430",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                -1.104114057828077,
+                -1.3052148465929239,
+                -0.33672775791127896,
+                0.9791230943765418,
+                1.350880308040076,
+                0.5301583034661722,
+                -0.8324112608809151,
+                -1.3719684230405491,
+                -0.7099835961478,
+                0.666087131985928,
+                0.8783100656536794,
+                0.8783100656536794,
+                -1.1041140578280773
+              ]
+            },
+            {
+              "at": 1790025427.9698553,
+              "available_at": 1790028128.9698553,
+              "end": 1790028127.9698553,
+              "episode": "episode-5",
+              "group": "BTCUSD:542431",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                -1.387980842698895,
+                -0.36341752896475404,
+                1.0255541462814004,
+                1.4496739779790766,
+                0.5542129056338017,
+                -0.8544453370825358,
+                -1.483230540155028,
+                -0.7338155335150186,
+                0.6666832221079244,
+                1.4865366242623186,
+                1.4638501094227998,
+                1.4638501094227998,
+                -1.387980842698895
+              ]
+            },
+            {
+              "at": 1790030427.9698553,
+              "available_at": 1790033128.9698553,
+              "end": 1790033127.9698553,
+              "episode": "episode-6",
+              "group": "BTCUSD:542433",
+              "net_bps": -40.0,
+              "record_id": null,
+              "x": [
+                -0.04123458085826336,
+                1.1901280904965659,
+                1.3926170527969692,
+                0.24879160676042097,
+                -1.059053025603824,
+                -1.4552743722578059,
+                -0.45473120365399455,
+                0.9097861905334083,
+                1.4857006027624553,
+                0.654511109318947,
+                -1.4638501094227998,
+                -1.4638501094227998,
+                -0.04123458085826336
+              ]
+            },
+            {
+              "at": 1790035427.9698553,
+              "available_at": 1790038128.9698553,
+              "end": 1790038127.9698553,
+              "episode": "episode-7",
+              "group": "BTCUSD:542434",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                1.1405562374370493,
+                1.2841353548162446,
+                0.2750691529805202,
+                -1.022430623023751,
+                -1.3380078788579353,
+                -0.4712649980156397,
+                0.8818254700890913,
+                1.367481517719438,
+                0.6551020460046094,
+                -0.7206796341185719,
+                -0.8783100656536794,
+                -0.8783100656536794,
+                1.1405562374370497
+              ]
+            },
+            {
+              "at": 1790040427.9698553,
+              "available_at": 1790043128.9698553,
+              "end": 1790043127.9698553,
+              "episode": "episode-8",
+              "group": "BTCUSD:542436",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                1.235814027499243,
+                0.21944353991327967,
+                -1.0312324686537457,
+                -1.3085819312671414,
+                -0.4001956765898431,
+                0.884756400591831,
+                1.356230157596863,
+                0.5725883819301077,
+                -0.7207009075284231,
+                -1.3764881396801896,
+                -0.29277002188456025,
+                -0.29277002188456025,
+                1.2358140274992433
+              ]
+            },
+            {
+              "at": 1790045427.9698553,
+              "available_at": 1790048128.9698553,
+              "end": 1790048127.9698553,
+              "episode": "episode-9",
+              "group": "BTCUSD:542438",
+              "net_bps": -40.0,
+              "record_id": null,
+              "x": [
+                0.15695921644894306,
+                -1.025074609668412,
+                -1.325280125493865,
+                -0.34657612482514666,
+                0.892163367377725,
+                1.3660700032979778,
+                0.5323173770039832,
+                -0.7440721336273851,
+                -1.3768013671987667,
+                -0.7099670917684322,
+                0.29277002188456025,
+                0.29277002188456025,
+                0.15695921644894306
+              ]
+            },
+            {
+              "at": 1790050427.9698553,
+              "available_at": 1790053128.9698553,
+              "end": 1790053127.9698553,
+              "episode": "episode-10",
+              "group": "BTCUSD:542439",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                -1.104114057828077,
+                -1.3052148465929239,
+                -0.33672775791127896,
+                0.9791230943765418,
+                1.350880308040076,
+                0.5301583034661722,
+                -0.8324112608809151,
+                -1.3719684230405491,
+                -0.7099835961478,
+                0.666087131985928,
+                0.8783100656536794,
+                0.8783100656536794,
+                -1.1041140578280773
+              ]
+            },
+            {
+              "at": 1790055427.9698553,
+              "available_at": 1790058128.9698553,
+              "end": 1790058127.9698553,
+              "episode": "episode-11",
+              "group": "BTCUSD:542441",
+              "net_bps": 20.0,
+              "record_id": null,
+              "x": [
+                -1.387980842698895,
+                -0.36341752896475404,
+                1.0255541462814004,
+                1.4496739779790766,
+                0.5542129056338017,
+                -0.8544453370825358,
+                -1.483230540155028,
+                -0.7338155335150186,
+                0.6666832221079244,
+                1.4865366242623186,
+                1.4638501094227998,
+                1.4638501094227998,
+                -1.387980842698895
+              ]
+            }
+          ],
+          "lookback": 10,
+          "maximum_hold_seconds": 2700,
+          "means": [
+            0.029360274953729795,
+            0.1827910252539088,
+            0.35204362757239094,
+            0.5653870975386743,
+            0.8105535104023225,
+            1.0460170744720823,
+            1.2391727524908216,
+            1.3963131825239032,
+            1.5568432555418787,
+            1.7570514403871267,
+            1.25,
+            1.25,
+            0.005872054990745959
+          ],
+          "progress_seconds": 600,
+          "scales": [
+            0.7120303963959422,
+            0.721502136123612,
+            0.6873776228222374,
+            0.7063458161207932,
+            0.7245680689810022,
+            0.6905511210068864,
+            0.7006078494937888,
+            0.726185364286012,
+            0.694968413664021,
+            0.6952778010569617,
+            0.1707825127659933,
+            0.1707825127659933,
+            0.14240607927918844
+          ],
+          "sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+          "symbol": "BTCUSD",
+          "train_end": 1790067127.9698553,
+          "version": "memory-entry-v1"
+        },
+        "family": "memory_entry",
+        "metrics": {
+          "brier": 0.027777777777777766,
+          "mean_absolute_net_error_bps": 21.0,
+          "missed_positive_opportunities": 0,
+          "queries": 8,
+          "rejected_entries": 3,
+          "supported": 8
+        },
+        "name": "Local context history",
+        "predictions": [
+          {
+            "episode": "episode-18",
+            "net_bps": -40.0,
+            "prediction": {
+              "action": "reject_entry",
+              "artifact_sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+              "available_at": 1790676227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790676227.9698553,
+              "dispersion_bps": 29.393876913398138,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790676227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": -4.0,
+              "expires_at": 1790676317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-1"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-6",
+                  "group": "BTCUSD:542433",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9597969557105057,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9597969557105057,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 1.589547146522268,
+                  "episode": "episode-5",
+                  "group": "BTCUSD:542431",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": null,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.6,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-19",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+              "available_at": 1790681227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790681227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790681227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790681317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-1"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8559231078621061,
+                  "episode": "episode-2",
+                  "group": "BTCUSD:542427",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8559231078621061,
+                  "episode": "episode-8",
+                  "group": "BTCUSD:542436",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9597969557105057,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-20",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+              "available_at": 1790686227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790686227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790686227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790686317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-2"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-3"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-2",
+                  "group": "BTCUSD:542427",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-8",
+                  "group": "BTCUSD:542436",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8559231078621061,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8559231078621061,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9099160696520199,
+                  "episode": "episode-3",
+                  "group": "BTCUSD:542428",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-21",
+            "net_bps": -40.0,
+            "prediction": {
+              "action": "reject_entry",
+              "artifact_sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+              "available_at": 1790691227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790691227.9698553,
+              "dispersion_bps": 29.393876913398138,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790691227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": -4.0,
+              "expires_at": 1790691317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-2"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-3"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-3",
+                  "group": "BTCUSD:542428",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-9",
+                  "group": "BTCUSD:542438",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9099160696520199,
+                  "episode": "episode-2",
+                  "group": "BTCUSD:542427",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9099160696520199,
+                  "episode": "episode-8",
+                  "group": "BTCUSD:542436",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9680908023561294,
+                  "episode": "episode-4",
+                  "group": "BTCUSD:542430",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": null,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.6,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-22",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+              "available_at": 1790696227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790696227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790696227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790696317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-4"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-3"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-4",
+                  "group": "BTCUSD:542430",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-10",
+                  "group": "BTCUSD:542439",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8665602749192985,
+                  "episode": "episode-5",
+                  "group": "BTCUSD:542431",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8665602749192985,
+                  "episode": "episode-11",
+                  "group": "BTCUSD:542441",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9680908023561294,
+                  "episode": "episode-3",
+                  "group": "BTCUSD:542428",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-23",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+              "available_at": 1790701227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790701227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790701227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790701317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-5"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-5",
+                  "group": "BTCUSD:542431",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-11",
+                  "group": "BTCUSD:542441",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8665602749192985,
+                  "episode": "episode-4",
+                  "group": "BTCUSD:542430",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8665602749192985,
+                  "episode": "episode-10",
+                  "group": "BTCUSD:542439",
+                  "record_id": null
+                },
+                {
+                  "distance": 1.589547146522268,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-24",
+            "net_bps": -40.0,
+            "prediction": {
+              "action": "reject_entry",
+              "artifact_sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+              "available_at": 1790706227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790706227.9698553,
+              "dispersion_bps": 29.393876913398138,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790706227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": -4.0,
+              "expires_at": 1790706317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-1"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-6",
+                  "group": "BTCUSD:542433",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9597969557105057,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9597969557105057,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 1.589547146522268,
+                  "episode": "episode-5",
+                  "group": "BTCUSD:542431",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": null,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.6,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          },
+          {
+            "episode": "episode-25",
+            "net_bps": 20.0,
+            "prediction": {
+              "action": "accept",
+              "artifact_sha256": "006e02482b627724b344a4e50740af11f4a9aee013f9d25fd5d0a66119bffaa8",
+              "available_at": 1790711227.9698553,
+              "contract": "memory-entry-v1",
+              "costs_already_embedded": true,
+              "cutoff": 1790711227.9698553,
+              "dispersion_bps": 24.0,
+              "distinct_days": 2,
+              "distinct_groups": 5,
+              "downside_bps": -40.0,
+              "earliest_action_at": 1790711227.9698553,
+              "economic_evidence": "Matched whole-account net comparison still required",
+              "expected_net_bps": 8.0,
+              "expires_at": 1790711317.9698553,
+              "financial_authority": false,
+              "horizon_seconds": 2700,
+              "illustrations": {
+                "favorable": [
+                  "episode-1"
+                ],
+                "scope": "Illustrations only; distribution uses every selected neighbor",
+                "unfavorable": [
+                  "episode-0"
+                ]
+              },
+              "maximum_weight": 0.2,
+              "neighbors": [
+                {
+                  "distance": 0.0,
+                  "episode": "episode-1",
+                  "group": "BTCUSD:542425",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.0,
+                  "episode": "episode-7",
+                  "group": "BTCUSD:542434",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8559231078621061,
+                  "episode": "episode-2",
+                  "group": "BTCUSD:542427",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.8559231078621061,
+                  "episode": "episode-8",
+                  "group": "BTCUSD:542436",
+                  "record_id": null
+                },
+                {
+                  "distance": 0.9597969557105057,
+                  "episode": "episode-0",
+                  "group": "BTCUSD:542424",
+                  "record_id": null
+                }
+              ],
+              "normalization_source": "Frozen training partition",
+              "probability_scope": "Small chronological calibration; later reliability unverified",
+              "profit_probability": 0.8333333333333334,
+              "range_bps": [
+                -40.0,
+                20.0
+              ],
+              "raw_positive_fraction": 0.8,
+              "reason": "Frozen net-quality rule; baseline risk authority still applies",
+              "recognition_confidence": null,
+              "status": "supported",
+              "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+              "uncertainty": "Five separated groups are descriptive; independence unverified"
+            }
+          }
+        ],
+        "status": "research_artifact",
+        "test_samples": 8,
+        "train_samples": 12
+      }
+    ],
+    "cash_control": null,
+    "contract": {
+      "evaluation": "Chronological training/calibration/protected test; 3300-second purge",
+      "fallback": "No additional signal; unchanged baseline entry and deterministic exits",
+      "family": "memory_entry",
+      "horizon_seconds": 2700,
+      "library_max": 128,
+      "maximum_concentration": 0.2,
+      "minimum_calibration": 6,
+      "minimum_groups": 5,
+      "minimum_net_bps": 5.0,
+      "minimum_test": 8,
+      "minimum_train": 12,
+      "minimum_worthwhile_account_return": 0.001,
+      "neighbors": 5,
+      "normalization": "Per-coordinate training-only mean/std with explicit zero-variance rejection",
+      "stopping": "One frozen comparison; insufficient or negative evidence is retained",
+      "symbol": "BTCUSD",
+      "target": "Recorded filled-trade net return on filled cost; execution costs embedded once",
+      "unfamiliar_distance": 3.0,
+      "version": "memory-entry-v1",
+      "weak_distance": 2.0
+    },
+    "contributions": [
+      {
+        "changed_decisions": [
+          "episode-18",
+          "episode-21",
+          "episode-24"
+        ],
+        "conclusion": "inconclusive",
+        "exposure": null,
+        "forecast_coverage": 8,
+        "from": "A",
+        "marginal_cost_usd": null,
+        "opportunity_denominator": 8,
+        "paired_account_effect": null,
+        "to": "B",
+        "turnover": null,
+        "uncertainty": "Matched account effect unavailable; correlations are not economic support"
+      },
+      {
+        "changed_decisions": [],
+        "conclusion": "inconclusive",
+        "exposure": null,
+        "forecast_coverage": 8,
+        "from": "B",
+        "marginal_cost_usd": null,
+        "opportunity_denominator": 8,
+        "paired_account_effect": null,
+        "to": "C",
+        "turnover": null,
+        "uncertainty": "Matched account effect unavailable; correlations are not economic support"
+      }
+    ],
+    "decision": "reject",
+    "eligible_for_forward_review": false,
+    "evidence_kind": "synthetic_qa",
+    "exposure_control": null,
+    "independent_validation": false,
+    "limitations": [
+      "Taken-trade targets retain selection bias; missing counterfactuals remain unknown",
+      "Trade diagnostics do not establish whole-account advantage or permit promotion",
+      "Minute-price outcomes are never substituted for executable net targets"
+    ],
+    "next_action": "Retain this rejection; obtain a later untouched window before another evaluation",
+    "reason": "Prototype retained; matched account effect and marginal costs unverified",
+    "resources": {
+      "common_baseline_allocation": "CP7 allocation unchanged; costs already in net labels",
+      "cpu_seconds": 0.0,
+      "elapsed_seconds": 0.014290299965068698,
+      "marginal_operating_usd": null,
+      "paid_usd": "0"
+    },
+    "selection_treatment": "Fixed B/C comparison; retained attempts; outcome-blind neighbors",
+    "small_baselines": {
+      "A_no_filter": {
+        "mean_net_trade_bps": -2.5,
+        "taken_trade_count": 8
+      },
+      "cash": {
+        "trading_return": 0,
+        "whole_account_return": null
+      },
+      "complex_model": "Deferred until small baselines and executable coverage justify it",
+      "exposure": {
+        "reason": "Matched executable exposure history unavailable",
+        "whole_account_return": null
+      },
+      "simple_direction_filter": {
+        "accepted": 8,
+        "rule": "Sum of as-seen ten returns is positive"
+      }
+    },
+    "status": "inconclusive",
+    "target_coverage": {
+      "available": 26,
+      "opportunities": 26,
+      "unknown": 0,
+      "unknown_examples": []
+    },
+    "test_samples": 8,
+    "train_samples": 12,
+    "whole_account_effect": null
+  },
+  "limits": "Repeated inference adds no market samples; monetary effects unknown"
+}

@@ -33,8 +33,8 @@ class ExperimentPlan(BaseModel):
     mechanism: str = Field(min_length=12, max_length=1000)
     falsification: str = Field(min_length=12, max_length=1000)
     feature: Literal["momentum_1", "momentum_5", "volatility_5", "spread_bps"] = "momentum_5"
-    experiment_mode: Literal["quote_ridge", "distinct_families"] = "quote_ridge"
-    horizon_minutes: Literal[5, 15, 60] = 5
+    experiment_mode: Literal["quote_ridge", "distinct_families", "memory_entry"] = "quote_ridge"
+    horizon_minutes: Literal[5, 15, 45, 60] = 5
     as_of: float
     test_start: float
     test_end: float
@@ -42,6 +42,8 @@ class ExperimentPlan(BaseModel):
 
     @model_validator(mode="after")
     def boundaries(self) -> Self:
+        if (self.experiment_mode == "memory_entry") != (self.horizon_minutes == 45):
+            raise ValueError("Memory uses the original 45-minute horizon; other modes keep theirs")
         if self.experiment_mode == "distinct_families" and self.horizon_minutes != 60:
             raise ValueError("The common family group reserves the longest 60-minute horizon")
         if not all(math.isfinite(v) for v in (self.as_of, self.test_start, self.test_end)):

@@ -232,6 +232,13 @@ def evaluate_families(
 
 
 def validate_artifact(artifact: dict[str, Any]) -> None:
+    if not isinstance(artifact, dict):
+        raise ValueError("Frozen artifact is unavailable")
+    if artifact.get("version") == "memory-entry-v1":
+        from trading.memory_quality import validate_artifact as validate_memory
+
+        validate_memory(artifact)
+        return
     body = {k: v for k, v in artifact.items() if k != "sha256"}
     if fingerprint(body) != artifact.get("sha256") or artifact.get("version") != VERSION:
         raise ValueError("Frozen artifact fingerprint/version mismatch")

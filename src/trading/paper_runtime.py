@@ -48,12 +48,21 @@ class PaperRuntime:
         self._numerical_minute = -1
         self._numerical_rows: list[dict[str, Any]] = []
 
+    def memory_book(self, symbol: str) -> dict[str, Any] | None:
+        return self.books.get(symbol)
+
     def numerical_study(self, now: float, study: dict[str, Any]) -> None:
-        candidates = [a for a in self.state["accounts"].values() if a.get("numerical_artifact")]
+        candidates = [
+            a
+            for a in self.state["accounts"].values()
+            if a.get("numerical_artifact") or a.get("memory_entry_contract") == "memory-entry-v1"
+        ]
         if not candidates:
             return
         minute = int(now // 60)
-        if minute != self._numerical_minute:
+        if minute != self._numerical_minute and any(
+            not a.get("memory_entry_contract") for a in candidates
+        ):
             try:
                 self._numerical_rows = self.store.numerical_inputs(now)
             except psycopg.Error:
@@ -61,14 +70,65 @@ class PaperRuntime:
             self._numerical_minute = minute
         for a in candidates:
             try:
-                feature = signal(
-                    self._numerical_rows, now, a["numerical_artifact"], a["admitted_at"]
-                )
+                artifact = a["numerical_artifact"]
+                if a.get("memory_entry_contract") == "memory-entry-v1":
+                    from trading.evidence_runtime import frozen_bars
+                    from trading.memory_quality import filtered_feature
+                    from trading.pattern_memory import descriptor
+                    from trading.research_evidence import book_features
+
+                    base = study.get("BTCUSD", {}).get("breakout-v1", {})
+                    book = self.memory_book("BTCUSD")
+                    memory_input: dict[str, Any] = {
+                        "bars": frozen_bars(self.history.get("BTCUSD", [])[-11:], now),
+                        "cutoff": now,
+                        "context": {"book": book_features(book, now) if book else None},
+                        "data_mode": "forward-paper",
+                    }
+                    d = descriptor(
+                        memory_input["bars"], now, memory_input["context"], "forward-paper"
+                    )
+                    started = time.perf_counter()
+                    feature = filtered_feature(base, d, artifact, now)
+                    completed = time.time()
+                    feature["memory_evidence"].update(
+                        available_at=completed,
+                        earliest_action_at=completed,
+                        inference_ms=(time.perf_counter() - started) * 1000,
+                    )
+                    if d.get("expires_at") is not None and completed > d["expires_at"]:
+                        feature = {
+                            **base,
+                            "memory_evidence": {
+                                "status": "result_too_late",
+                                "action": "no_additional_signal",
+                                "available_at": completed,
+                                "earliest_action_at": completed,
+                            },
+                        }
+                    feature["memory_descriptor"] = d
+                    feature["memory_input"] = memory_input
+                    if d.get("cutoff", now) <= a["admitted_at"]:
+                        feature.update(
+                            eligible=False, reason="Awaiting a subsequent memory opportunity"
+                        )
+                else:
+                    feature = signal(self._numerical_rows, now, artifact, a["admitted_at"])
             except (ValueError, KeyError, TypeError, ArithmeticError):
-                feature = {
-                    "eligible": False,
-                    "reason": "Frozen numerical input/model needs attention",
-                }
+                if a.get("memory_entry_contract") == "memory-entry-v1":
+                    feature = {
+                        **study.get("BTCUSD", {}).get("breakout-v1", {}),
+                        "memory_evidence": {
+                            "status": "invalid_input",
+                            "action": "no_additional_signal",
+                            "reason": "Optional memory unavailable; baseline rules apply",
+                        },
+                    }
+                else:
+                    feature = {
+                        "eligible": False,
+                        "reason": "Frozen numerical input/model needs attention",
+                    }
             study.setdefault("BTCUSD", {})[a["version"]] = feature
 
     def forward_admit(
@@ -197,6 +257,9 @@ class PaperRuntime:
                 now = time.time()
 
                 self.numerical_study(now, study)
+                now = (
+                    time.time()
+                )  # A completed optional calculation is never backdated to dispatch.
 
                 def apply(
                     engine: PaperEngine,

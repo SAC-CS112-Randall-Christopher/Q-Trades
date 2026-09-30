@@ -346,7 +346,7 @@ def seed_memory(recorder, now):
     recorder.status = recorder._archive.snapshot()
 
 
-def serve(port, *, replay=False):
+def serve(port, *, replay=False, research=False):
     verify_database()
     with tempfile.TemporaryDirectory(prefix="cp10-ui-") as folder:
         data = Path(folder)
@@ -400,6 +400,7 @@ def serve(port, *, replay=False):
 
                     worker = asyncio.create_task(feed())
                     replay_worker = asyncio.create_task(app.state.replay.run()) if replay else None
+                    research_worker = asyncio.create_task(app.state.lab.run()) if research else None
                     print(
                         json.dumps({"qa_only": True, "port": port, "evidence_path": str(data)}),
                         flush=True,
@@ -407,6 +408,12 @@ def serve(port, *, replay=False):
                     try:
                         yield
                     finally:
+                        if research_worker:
+                            research_worker.cancel()
+                            try:
+                                await research_worker
+                            except asyncio.CancelledError:
+                                pass
                         if replay_worker:
                             replay_worker.cancel()
                             try:

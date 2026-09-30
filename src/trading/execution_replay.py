@@ -55,6 +55,7 @@ def source_hashes() -> dict[str, str]:
             "paper_strategy.py",
             "execution_profiles.py",
             "numerical_candidates.py",
+            "memory_quality.py",
             "execution_replay.py",
             "market.py",
             "paper_economics.py",
@@ -126,6 +127,8 @@ def checked_packet(record: dict[str, Any], current: dict[str, str]) -> dict[str,
     required = {"paper_engine.py", "paper_strategy.py", "execution_profiles.py"}
     if any(a.get("numerical_artifact") for a in packet["state_before"]["accounts"].values()):
         required.add("numerical_candidates.py")
+    if any(a.get("memory_entry_contract") for a in packet["state_before"]["accounts"].values()):
+        required.add("memory_quality.py")
     if any(packet["source_files"].get(name) != current[name] for name in required):
         raise ValueError(
             "Recorded engine/artifact source differs; original-version replay required"

@@ -737,7 +737,9 @@ class PaperEngine:
                     artifact["progress_seconds"],
                 )
             except (ValueError, KeyError, TypeError, ArithmeticError):
-                invalid_artifact = True
+                # Missing optional memory supplies no entry signal. Position management
+                # keeps the baseline stop/progress/hold policy, without a model-driven exit.
+                invalid_artifact = a.get("memory_entry_contract") != "memory-entry-v1"
         reason = ""
         if a["failure_pending"]:
             reason = "Account below $5: failure liquidation"
