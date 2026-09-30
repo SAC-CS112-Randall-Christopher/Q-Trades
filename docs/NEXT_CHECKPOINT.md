@@ -1,3 +1,12 @@
+# Next: CP15 independent exit, sizing and observation research
+
+Complete independent bounded shadow comparisons before combining anything.
+Then perform CP16 finite integration/recovery, full performance/UI audit, authorized
+stack merge and native updater/relaunch. Preserve six original accounts/history,
+protected windows, risk limits and the unchanged CP7 28-day human policy.
+
+# Historical handoff
+
 # Next: CP15 independent exit, sizing and observation experiments
 
 Use supported CP11 paths for exit changes, conservative discrete size bands under

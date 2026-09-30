@@ -1,3 +1,13 @@
+# CP14 source complete; CP15 next
+
+455 passed, no skips (97.39s), seven focused final API/learning checks, lint/types/
+build and native/browser checks passed. Reopen retains 24 predictions, 24 scores
+and nine declared research updates. No adaptive account or market advantage.
+CP13 hosted run 36693626930 passed 224 tests/33 DB skips/build. Merge/install and
+prospective acceptance remain separate.
+
+# Prior status
+
 # CP13 source completed; CP14 next
 
 CP13 has independent context/flow shadow workflows, a finite taxonomy, explicit
