@@ -1,5 +1,18 @@
 # Source status - September 30, 2026 UTC
 
+CP11 adds isolated, persisted replay from the same protected inputs, exact baseline
+state/event reconciliation, modeled three-second delay and condition cost stress,
+finite path diagnostics and ordinary UI comparison. The final local PostgreSQL
+suite passed **432 tests, no skips, 89.92 seconds**; lint, strict types (53 source
+files) and dashboard build passed. See CP11_EXECUTION_REPLAY.md and the retained
+review receipts. Its source draft/native/browser/hosted stages are separate from
+installation, complete real execution coverage and prospective market acceptance.
+CP12's after-cost memory estimator/entry-filter challenger is next; CP13-CP16 follow.
+
+CP10 is draft PR #16, e009347a8b54fa966767712e0aed1ac900089feb. Exact-head
+Windows-native run 36673024899 passed: 195 tests, 33 database skips and dashboard
+build. This hosted scope is separate from the full local database suite below.
+
 CP10 implements the bounded episode/descriptor/local-lookup/delayed-outcome/reopen
 workflow against the hardened GitHub roadmap. Source checks: full PostgreSQL suite
 420 passed, no skips, 83.31 seconds; lint, strict types and dashboard build passed.
@@ -9,7 +22,7 @@ as twenty; both are retained with scope corrections. The final case verified twe
 Browser proof and the current hosted verification status are recorded in
 `reviews/cp10-durable-evidence/README.md`. CP11 execution replay is next; CP12-CP16
 remain sequential work. Source completion is not a strategy advantage or installed
-CP10 acceptance. The CP10 branch is being prepared as a bounded draft.
+CP10 acceptance. CP10 is published as a bounded draft; CP11 extends it in a separate branch.
 
 PRs #2-#15 are merged; current main is cb6994561589433a68eae731e48a2b5a5a86ab81.
 The ordinary manual updater successfully relaunched the original application, with
