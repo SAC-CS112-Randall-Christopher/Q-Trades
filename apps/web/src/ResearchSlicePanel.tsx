@@ -4,21 +4,24 @@ type Comparison = {episode:string;status:string;action:string;later_net_trade_bp
 type Run = {request_id:string;status:string;reason?:string;manifest?:{execution_status?:string};result?:{
   mode:string;status:string;reason:string;evidence_kind:string;opportunities:number;labeled:number;unknown_outcomes:number;
   changed_decisions:number;missed_positive_taken_trades:number;comparisons:Comparison[];
+  metrics?:Record<string,unknown>;journal?:Record<string,number>;drift_alarms?:unknown[];
   optional_D?:{status:string;reason:string};resources:{elapsed_seconds:number;paid_usd:string};
 }};
+type LearningPage={records:{seq:number;at:number;kind:string;sha256:string;body:{prediction_at?:number;outcome_available_at?:number;residual_bps?:number|null;model_before?:string;model?:{sha256:string};prediction?:{status:string}}}[];next_cursor:number|null};
 export function ResearchSlicePanel({requestId,readonly=false}:{requestId?:string;readonly?:boolean}) {
   const [mode,setMode]=useState("context_regime");const [start,setStart]=useState("");const [end,setEnd]=useState("");
   const [run,setRun]=useState<Run|null>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState("");
   const [id,setId]=useState(localStorage.getItem("qtrades-slice-request")??"");
   const [pending,setPending]=useState(localStorage.getItem("qtrades-slice-pending"));const current=useRef("");
+  const [learning,setLearning]=useState<LearningPage|null>(null);
   useEffect(()=>{if(requestId)void inspect(requestId);return()=>{current.current="";};},[requestId]);
   async function inspect(target=id){current.current=target;setBusy(true);setError("");try{
     const r=await fetch(`/api/lab/experiments/${encodeURIComponent(target)}`,{cache:"no-store",signal:AbortSignal.timeout(10000)});
     if(!r.ok)throw new Error("Saved research is unavailable; retained evidence stays visible.");
-    const value=await r.json() as Run;if(current.current===target)setRun(value);
+    const value=await r.json() as Run;if(current.current===target){setRun(value);setLearning(null);}
   }catch(e){setError(e instanceof Error?e.message:"Research unavailable");}finally{setBusy(false);}}
   async function launch(){setBusy(true);setError("");try{
-    const body=pending??JSON.stringify({request_id:crypto.randomUUID(),name:mode==="context_regime"?"Local condition comparison":"Independent entry-timing comparison",
+    const body=pending??JSON.stringify({request_id:crypto.randomUUID(),name:mode==="context_regime"?"Local condition comparison":mode==="growing_memory"?"Controlled learning comparison":"Independent entry-timing comparison",
       experiment_mode:mode,horizon_minutes:45,as_of:Date.now()/1000,test_start:new Date(start).getTime()/1000,test_end:new Date(end).getTime()/1000,
       mechanism:"Frozen observable conditions may improve entries under the existing strategy and unchanged financial controls.",
       falsification:"Retain unknown or negative evidence without supported executable costs and matched whole-account improvement."});
@@ -28,11 +31,17 @@ export function ResearchSlicePanel({requestId,readonly=false}:{requestId?:string
     if(!r.ok){const v=await r.json() as {detail?:string};throw new Error(v.detail??"Plan could not be frozen");}
     setPending(null);localStorage.removeItem("qtrades-slice-pending");await inspect(target);
   }catch(e){setError(e instanceof Error?e.message:"Research unavailable");}finally{setBusy(false);}}
+  async function inspectLearning(before=0){if(!run)return;const request=run.request_id;setBusy(true);setError("");try{
+    const r=await fetch(`/api/lab/experiments/${encodeURIComponent(request)}/learning?before=${before}`,{cache:"no-store",signal:AbortSignal.timeout(10000)});
+    if(!r.ok)throw new Error("Learning snapshots are unavailable; prior evidence stays retained.");
+    const value=await r.json() as LearningPage;if(current.current===request)setLearning(value);
+  }catch(e){setError(e instanceof Error?e.message:"Learning snapshots unavailable");}finally{setBusy(false);}}
   return <section className="workspace-card" aria-label="Independent research comparisons">
-    <p className="eyebrow">LOCAL RESEARCH · SHADOW</p><h2>Conditions and entry timing</h2>
-    <p>Test one contribution at a time. Local conditions describe the observed beginning; order-flow timing requires valid books and observed trade direction.</p>
+    <p className="eyebrow">LOCAL RESEARCH · SHADOW</p><h2>Independent research and learning</h2>
+    <p>Test one contribution at a time. Local conditions describe the observed beginning; order-flow timing requires valid books and observed trade direction. Learning persists the forecast before separately mature outcomes can score and update research memory.</p>
     {!readonly&&<><label>Contribution<select disabled={!!pending} value={mode} onChange={e=>setMode(e.target.value)}>
-      <option value="context_regime">Local market conditions</option><option value="order_flow">Order-flow entry timing</option></select></label>
+      <option value="context_regime">Local market conditions</option><option value="order_flow">Order-flow entry timing</option>
+      <option value="growing_memory">Frozen, batch and growing memory</option></select></label>
       <div className="lab-form-row"><label>Untouched test start<input disabled={!!pending} type="datetime-local" value={start} onInput={e=>setStart(e.currentTarget.value)} onChange={e=>setStart(e.target.value)}/></label>
       <label>Untouched test end<input disabled={!!pending} type="datetime-local" value={end} onInput={e=>setEnd(e.currentTarget.value)} onChange={e=>setEnd(e.target.value)}/></label></div>
       <button className="button" disabled={busy||!pending&&(!start||!end)} onClick={()=>void launch()}>{pending?"Retry frozen contribution":"Freeze independent comparison"}</button>
@@ -40,11 +49,21 @@ export function ResearchSlicePanel({requestId,readonly=false}:{requestId?:string
       <button className="button secondary" disabled={busy||!id} onClick={()=>void inspect()}>Reopen contribution</button></>}
     {error&&<p role="alert" className="error-banner">{error}</p>}
     {run&&<article><h3>Saved contribution · {run.status}</h3><p>Reference {run.request_id.slice(0,12)} · {run.reason??run.result?.reason??"Waiting for the bounded worker"}</p>
-      <p>{run.manifest?.execution_status}</p>{run.result&&<><p>{run.result.evidence_kind==="synthetic_qa"?"Synthetic test data":"Observed paper evidence"} · {run.result.mode.replaceAll("_"," ")}</p>
+      <p>{run.manifest?.execution_status}</p>{run.result&&<><p>{run.result.evidence_kind==="synthetic_qa"?"Synthetic test data":"Observed paper evidence"} · {run.result.mode.replaceAll("_"," ")} · {run.result.status.replaceAll("_"," ")}</p>
         <dl className="summary-values"><div><dt>Observed opportunities</dt><dd>{run.result.opportunities}</dd></div><div><dt>Executable labels</dt><dd>{run.result.labeled}</dd></div>
           <div><dt>Unknown outcomes</dt><dd>{run.result.unknown_outcomes}</dd></div><div><dt>Changed entries</dt><dd>{run.result.changed_decisions}</dd></div></dl>
         <p>Whole-account effect, turnover and marginal monetary value remain unavailable. Fees in net labels are counted once. No account is promoted or funded.</p>
         {run.result.optional_D&&<p>Optional Decisions: {run.result.optional_D.status} · {run.result.optional_D.reason}</p>}
+        {run.result.metrics&&<><h4>Retained learning diagnostics</h4><p>Updates change research memory only. More updates do not establish more independent evidence or an improved account.</p>
+          <pre className="evidence-raw">{JSON.stringify(run.result.metrics,null,2)}</pre>
+          <p>Persisted stages: {JSON.stringify(run.result.journal)} · drift diagnoses: {run.result.drift_alarms?.length??0}.</p>
+          <button className="button secondary" disabled={busy} onClick={()=>void inspectLearning()}>Inspect learning snapshots</button>
+          {learning&&<><table className="market-table" aria-label="Saved learning stages"><thead><tr><th>Stage</th><th>Recorded time</th><th>Original forecast / model</th><th>Residual</th></tr></thead>
+            <tbody>{learning.records.map(s=><tr key={s.seq}><td>#{s.seq} · {s.kind}</td><td>{new Date(s.at*1000).toLocaleString()}</td>
+              <td>{s.body.prediction?.status??s.body.model?.sha256.slice(0,16)??s.body.model_before?.slice(0,16)??"Original score"}<small>{s.sha256.slice(0,16)}</small></td>
+              <td>{s.body.residual_bps==null?"Unavailable":`${s.body.residual_bps.toFixed(2)} bps`}</td></tr>)}</tbody></table>
+            <button className="button secondary" disabled={busy||!learning.next_cursor} onClick={()=>void inspectLearning(learning.next_cursor!)}>Older learning snapshots</button></>}
+          </>}
         {run.result.comparisons.slice(0,12).map(q=><details key={q.episode}><summary>{q.episode.slice(0,20)} · {q.status.replaceAll("_"," ")} · {q.action.replaceAll("_"," ")}</summary>
           <p>Later net trade result: {q.later_net_trade_bps==null?"Unavailable":`${q.later_net_trade_bps.toFixed(2)} bps`}. Recognition confidence and profit probability are separate and unverified.</p>
           <pre className="evidence-raw">{JSON.stringify(q.evidence,null,2)}</pre></details>)}

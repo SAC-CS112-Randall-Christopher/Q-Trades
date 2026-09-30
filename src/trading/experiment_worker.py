@@ -14,6 +14,7 @@ from trading.experiment_registry import (
     ExperimentRegistry,
     fingerprint,
 )
+from trading.incremental_memory import LearningJournal, evaluate_incremental
 from trading.memory_dataset import mature_snapshot
 from trading.memory_quality import evaluate_memory
 from trading.numerical_candidates import evaluate_families
@@ -34,6 +35,7 @@ def code_fingerprint() -> str:
                 "memory_quality.py",
                 "memory_dataset.py",
                 "context_flow.py",
+                "incremental_memory.py",
             )
         )
     ).hexdigest()
@@ -52,7 +54,7 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
         or row.get("descriptor", {}).get("data_mode") == "synthetic"
         for row in rows
     )
-    local_modes = {"memory_entry", "context_regime", "order_flow"}
+    local_modes = {"memory_entry", "context_regime", "order_flow", "growing_memory"}
     if plan.experiment_mode not in local_modes and any(
         not 0 <= r["at"] <= plan.as_of for r in rows
     ):
@@ -62,11 +64,16 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
             plan.model_copy(update={"evidence_kind": "synthetic_qa"}) if synthetic else plan
         )
         mature = mature_snapshot(snapshot, plan.as_of)
-        result = (
-            evaluate_memory(mature, effective_plan)
-            if plan.experiment_mode == "memory_entry"
-            else evaluate_context(mature, snapshot["records"], effective_plan)
-        )
+        if plan.experiment_mode == "memory_entry":
+            result = evaluate_memory(mature, effective_plan)
+        elif plan.experiment_mode == "growing_memory":
+            registry = ExperimentRegistry(Path(job["registry_path"]))
+            try:
+                result = evaluate_incremental(mature, effective_plan, LearningJournal(registry))
+            finally:
+                registry.close()
+        else:
+            result = evaluate_context(mature, snapshot["records"], effective_plan)
     elif plan.experiment_mode == "distinct_families":
         result = evaluate_families(rows, plan.test_start, plan.test_end, plan.as_of)
     else:
@@ -111,6 +118,7 @@ def main() -> None:
         # Registry.get exposes parsed objects; the evaluator also verifies their canonical hashes.
         job["plan"] = json.dumps(job["plan"])
         job["snapshot"] = json.dumps(job["snapshot"])
+        job["registry_path"] = str(args.registry)
         try:
             result = evaluate(job)
             registry.finish(args.request, args.lease, result, None)
