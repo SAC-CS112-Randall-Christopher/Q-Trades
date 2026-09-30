@@ -583,7 +583,7 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
                   : "Observed research inputs; prospective qualification is separate"}
                 .
               </p>
-              {!detail.result.candidate_group && !["context_regime","order_flow","growing_memory"].includes(detail.plan.experiment_mode??"") && (
+              {!detail.result.candidate_group && !["context_regime","order_flow","growing_memory","component_exit","component_size","observation_priority"].includes(detail.plan.experiment_mode??"") && (
                 <p>
                   Training examples:{" "}
                   {detail.result.train_samples ?? "insufficient"}; test
@@ -607,7 +607,7 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
             </>
           )}
           {detail.plan.experiment_mode==="memory_entry" && <MemoryQualityPanel requestId={detail.request_id} readonly/>}
-          {["context_regime","order_flow","growing_memory"].includes(detail.plan.experiment_mode??"") && <ResearchSlicePanel requestId={detail.request_id} readonly/>}
+          {["context_regime","order_flow","growing_memory","component_exit","component_size","observation_priority"].includes(detail.plan.experiment_mode??"") && <ResearchSlicePanel requestId={detail.request_id} readonly/>}
           {detail.plan.experiment_mode!=="memory_entry" && detail.result?.candidate_group && (
             <>
               <h4>Frozen candidate families</h4>

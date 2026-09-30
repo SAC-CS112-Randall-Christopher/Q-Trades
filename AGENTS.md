@@ -1,3 +1,13 @@
+# CP15 independent components; CP16 next
+
+Read docs/CP15_INDEPENDENT_COMPONENTS.md. Keep exit, conservative sizing and
+observation comparisons independent. No qualified memory entry or combined
+account benefit is established. Complete CP16 finite integration, retention and
+performance/UI repairs, then authorized stack merge and original-app update.
+Preserve six accounts/history, all failures and CP7 matched controls/28-day policy.
+
+# Historical instructions
+
 # CP14 controlled research and next CP15
 
 Read docs/CP14_CONTROLLED_LEARNING.md. Predictions, original scores and model

@@ -1,3 +1,12 @@
+# Next: CP16 integrated acceptance and completion
+
+Implement prospective frozen review, repair measured retention/UI inefficiencies,
+run finite native recovery/load and final gates. Merge the authorized stack and
+use the existing manual updater, preserving original six accounts/history.
+Software success need not establish an economic edge; CP7 authority remains.
+
+# Historical handoff
+
 # Next: CP15 independent exit, sizing and observation research
 
 Complete independent bounded shadow comparisons before combining anything.

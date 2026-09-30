@@ -143,6 +143,7 @@ class Universe:
             "policy": POLICY,
             "scan_seconds": 60,
             "scanned_at": self.scanned_at,
+            "metadata_at": self.metadata_at,
             "markets_scanned": len(self.rows),
             "selected": self.selected,
             "rows": self.rows,

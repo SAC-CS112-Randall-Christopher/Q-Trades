@@ -1,3 +1,12 @@
+# CP15 source complete; CP16 integrated audit next
+
+460 full local tests passed before the final availability correction; 17 affected
+checks and the final native replay passed afterward. Independent component work
+remains shadow only. CP14 exact-head Windows run 36696273824 passed. CP16 finite
+integration, final audit, authorized merge/install and prospective evidence remain.
+
+# Prior status
+
 # CP14 source complete; CP15 next
 
 455 passed, no skips (97.39s), seven focused final API/learning checks, lint/types/
