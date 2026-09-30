@@ -6,6 +6,7 @@ import time
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from typing import Any
 
+from trading.chart_indicators import overlays
 from trading.execution_profiles import LEGACY_EXECUTION, PROFILES, execution
 from trading.paper_engine import filters, fresh_frame
 from trading.paper_strategy import VARIANTS
@@ -123,6 +124,7 @@ def market_detail(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
             for b in history
         ],
         "candle_gaps": gaps,
+        "indicators": overlays(runtime.history.get(symbol, [])[-600:]),
         "candles_stale": bool(history and time.time() * 1000 - history[-1].close_ms > 90000),
         "history_scope": "Up to 120 closed minute candles; bootstrap history is not paper trading",
         "strategy": strategy_evidence(runtime, symbol),

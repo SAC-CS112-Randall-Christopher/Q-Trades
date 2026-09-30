@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import sqlite3
 import time
 import uuid
 from collections import deque
@@ -14,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from trading.compact_memory import CompactMemory, prefix
+from trading.outcome_continuation import OutcomeContinuation
 from trading.paper_strategy import VARIANTS, Bar, features
 from trading.research_evidence import (
     MAX_PACKET,
@@ -23,6 +25,7 @@ from trading.research_evidence import (
     book_features,
     digest,
 )
+from trading.research_storage import ResearchStorage, load_plan
 
 
 def plain(value: Any) -> Any:
@@ -187,6 +190,11 @@ class EvidenceRecorder:
         self._compact: CompactMemory | None = None
         self.compact_status: dict[str, Any] = {"state": "starting"}
         self.compact_dropped = 0
+        self._storage: ResearchStorage | None = None
+        self._external_expected = (path.parent / "research-storage.json").exists()
+        self.storage_status: dict[str, Any] = {"state": "not_configured"}
+        self._maturity: OutcomeContinuation | None = None
+        self.maturity_status: dict[str, Any] = {"state": "starting"}
 
     def compact(self, packet: dict[str, Any]) -> None:
         if len(self.compact_pending) >= 8 or len(canonical_compact(packet)) > 65536:
@@ -387,6 +395,77 @@ class EvidenceRecorder:
     def _write_batch(
         self, compact: list[dict[str, Any]], packets: list[dict[str, Any]], disk_available: bool
     ) -> None:
+        if self._external_expected:
+            maturity_checked = False
+            try:
+                queued_at = time.perf_counter()
+                for packet in packets:
+                    if "queued_mono" in packet:
+                        packet["queue_wait_ms"] = max(
+                            0, (queued_at - packet.pop("queued_mono")) * 1000
+                        )
+                if self._storage is None:
+                    plan = load_plan(self.path.parent)
+                    if plan is None:
+                        raise ValueError("Configured research plan was removed; no fallback")
+                    self._storage = ResearchStorage(plan)
+                    self._storage.continue_legacy(self.path)
+                    compact_target = self._storage.continue_compact(
+                        self.path.with_name("memory-episodes.sqlite")
+                    )
+                    self._compact = CompactMemory(compact_target, storage_bytes=plan.research_bytes)
+                for packet in compact:
+                    self._storage.admission(len(canonical_compact(packet)) * 3 + 65536, "research")
+                    assert self._compact is not None
+                    self._compact.append(packet)
+                self._mature_due(packets)
+                maturity_checked = True
+                refs = self._storage.append(packets, time.time())
+                self._storage.housekeeping(time.time())
+                prior_reference = self.storage_status.get("latest_reference")
+                self.storage_status = self._storage.snapshot()
+                self.storage_status["latest_reference"] = refs[-1] if refs else prior_reference
+                self.storage_status["receipt_at"] = time.time()
+                self.storage_status["full_omitted"] = self.dropped
+                self.storage_status["compact_omitted"] = self.compact_dropped
+                self.storage_status["queued_packets"] = len(self.pending)
+                self.storage_status["maturity"] = self.maturity_status
+                self.status = {
+                    "state": "recording",
+                    "version": "research-tiers-v2",
+                    "latest_at": self.storage_status.get("last_capture"),
+                    "latest_reference": refs[-1] if refs else self.status.get("latest_reference"),
+                    "financial_authority": False,
+                }
+                self.compact_status = (
+                    self._compact.snapshot() if self._compact else {"state": "starting"}
+                )
+            except (OSError, ValueError, sqlite3.Error) as exc:
+                if not maturity_checked:
+                    self._mature_due(packets)
+                self.dropped += len(packets)
+                self.compact_dropped += len(compact)
+                self.status = {
+                    "state": "unavailable",
+                    "reason": str(exc)[:250],
+                    "financial_authority": False,
+                }
+                self.storage_status = {**self.storage_status, **self.status, "fallback": False}
+                self.storage_status["maturity"] = self.maturity_status
+                if self._compact is not None:
+                    self._compact.close()
+                    self._compact = None
+                if self._storage is not None:
+                    self._storage.close()
+                    self._storage = None
+                if self._maturity is not None:
+                    self._maturity.close()
+                    self._maturity = None
+            receipt = self.path.parent / "research-storage-status.json"
+            partial = receipt.with_suffix(".partial")
+            partial.write_text(json.dumps(self.storage_status, default=str), encoding="utf-8")
+            partial.replace(receipt)
+            return
         # One off-thread write batch serves both bounded archives. No SQLite work
         # or extra executor round trips run in financial/event-loop processing.
         if compact:
@@ -411,6 +490,43 @@ class EvidenceRecorder:
         except Exception:
             self.dropped += len(packets)
             raise
+        finally:
+            self._mature_due(packets, disk_available)
+
+    def _mature_due(self, packets: list[dict[str, Any]], disk_available: bool = True) -> None:
+        # Acquisition failure is not the maturity gate. New receipt storage and
+        # original input availability are checked independently, outside finance.
+        try:
+            directory = self._storage.research if self._storage else self.path.parent
+            if self._external_expected and self._storage is None:
+                raise OSError("Configured outcome volume unavailable; no local fallback")
+
+            def admit(amount: int) -> None:
+                if not disk_available:
+                    raise OSError("Outcome storage free-space guard; existing due work is pending")
+                if self._storage:
+                    self._storage.admission(amount, "research", maturity=True)
+
+            if self._maturity is None:
+                admit(131072)
+                self._maturity = OutcomeContinuation(
+                    directory,
+                    self._storage.plan.research_bytes if self._storage else 64 * 1024**2,
+                )
+            compact_path = directory / "memory-episodes.sqlite"
+            if not compact_path.exists() and self._external_expected:
+                compact_path = self.path.with_name("memory-episodes.sqlite")
+            self.maturity_status = self._maturity.process(
+                self.path, compact_path, packets, time.time(), admit
+            )
+        except (OSError, ValueError, sqlite3.Error) as exc:
+            self.maturity_status = {
+                "state": "pending",
+                "reason": str(exc)[:250],
+                "checked_at": time.time(),
+                "next_check_at": time.time() + 30,
+                "financial_authority": False,
+            }
 
     async def run(self, disk_check: Callable[[], bool]) -> None:
         try:
@@ -432,10 +548,14 @@ class EvidenceRecorder:
                     self.pending.clear()
                 await asyncio.sleep(0.25)
         finally:
+            if self._storage is not None:
+                self._storage.close()
             if self._archive is not None:
                 self._archive.close()
             if self._compact is not None:
                 self._compact.close()
+            if self._maturity is not None:
+                self._maturity.close()
 
     def snapshot(self) -> dict[str, Any]:
         return {
@@ -444,6 +564,8 @@ class EvidenceRecorder:
             "queue_limit": self.queue_limit,
             "queue_dropped": self.dropped,
             "selection": asdict(self.plan),
+            "storage": self.storage_status,
+            "maturity": self.maturity_status,
             "compact_memory": {
                 **self.compact_status,
                 "queue": len(self.compact_pending),

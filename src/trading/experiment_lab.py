@@ -17,6 +17,7 @@ from trading.memory_dataset import corpus_snapshot
 from trading.numerical_resources import child_rss, constrain_child
 from trading.research_campaigns import ResearchCampaigns
 from trading.research_data import quote_snapshot
+from trading.research_storage import compact_path
 
 WALL_SECONDS = 25
 
@@ -30,6 +31,7 @@ class ExperimentLab:
         self.running = False
         self.blocked_reason: str | None = None
         self.child: subprocess.Popen[bytes] | None = None
+        self.autonomous: Any = None
         self.campaigns = ResearchCampaigns(self.registry, self.enqueue, code_fingerprint)
         from trading.prospective_review import ProspectiveReview
 
@@ -51,28 +53,28 @@ class ExperimentLab:
                 "component_size",
                 "observation_priority",
             }:
-                compact_path = self.registry.path.parent / "memory-episodes.sqlite"
+                memory_path = compact_path(self.registry.path.parent)
                 if plan.account_comparison:
                     snapshot = corpus_snapshot(
                         self.registry.path.parent / "research-evidence.sqlite",
                         plan.as_of,
                         plan=plan,
                     )
-                    if compact_path.exists():
-                        memory = compact_snapshot(compact_path, plan.as_of)
+                    if memory_path.exists():
+                        memory = compact_snapshot(memory_path, plan.as_of)
                         snapshot["rows"] = memory["rows"]
                         snapshot["manifest"]["memory_archive"] = memory["manifest"]
                     else:
                         snapshot["manifest"]["memory_status"] = (
                             "Compact training history unavailable"
                         )
-                elif compact_path.exists() and plan.experiment_mode not in {
+                elif memory_path.exists() and plan.experiment_mode not in {
                     "component_exit",
                     "component_size",
                     "observation_priority",
                     "order_flow",
                 }:
-                    snapshot = compact_snapshot(compact_path, plan.as_of)
+                    snapshot = compact_snapshot(memory_path, plan.as_of)
                     from trading.execution_replay import source_hashes
 
                     snapshot["source_files"] = source_hashes()
@@ -200,6 +202,8 @@ class ExperimentLab:
         self.running = True
         try:
             while True:
+                if self.autonomous is not None:
+                    await asyncio.to_thread(self.autonomous.step)
                 if self.can_research():
                     await asyncio.to_thread(self.campaigns.step, time.time())
                 await self.run_once()

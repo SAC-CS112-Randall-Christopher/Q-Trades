@@ -1,0 +1,1403 @@
+{
+  "contract": {
+    "accounts": [
+      1,
+      10,
+      20
+    ],
+    "research": [
+      false,
+      true
+    ],
+    "seconds_per_case": 30,
+    "ticks_per_second": 4,
+    "commit_p95_ms": 100,
+    "commit_p99_ms": 250,
+    "loop_p95_ms": 100,
+    "dispatch_p99_ms": 250,
+    "rss_mib": 512,
+    "growth_mib": 64,
+    "parent_cpu_one_core_percent": 50,
+    "child_rss_mib": 256,
+    "scope": "Full replay bundle plus compact memory; synthetic books, not network/GIS latency",
+    "authority": "Disposable schemas only; no provider/GPU or original-account mutation"
+  },
+  "declared_at": 1790798171.378885,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.10",
+  "driver_sha256": "6d326297c8f495250fa428043023bace12cb533f2259fc64da717b83fc070a01",
+  "cases": [
+    {
+      "accounts": 1,
+      "research_busy": false,
+      "ticks": 120,
+      "wall_seconds": 29.765106200007722,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.08410005830228329,
+          "p95": 0.18969993107020855,
+          "p99": 0.22380007430911064,
+          "max": 0.31379982829093933
+        },
+        "feature_batch_compute": {
+          "p50": 4.657299956306815,
+          "p95": 11.198299936950207,
+          "p99": 12.631600024178624,
+          "max": 14.222599798813462
+        },
+        "prepare": {
+          "p50": 7.489100098609924,
+          "p95": 17.28900009766221,
+          "p99": 18.69469997473061,
+          "max": 22.950700018554926
+        },
+        "transaction": {
+          "p50": 3.5515998024493456,
+          "p95": 8.522799937054515,
+          "p99": 12.795499991625547,
+          "max": 29.408000176772475
+        },
+        "evidence_write": {
+          "p50": 3.0451000202447176,
+          "p95": 7.225800072774291,
+          "p99": 7.921899901703,
+          "max": 9.604500140994787
+        },
+        "total_before_validation": {
+          "p50": 14.479200122877955,
+          "p95": 29.216499999165535,
+          "p99": 32.89769985713065,
+          "max": 37.497099954634905
+        },
+        "queue_wait": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.3782999701797962,
+        "p95": 0.9840999264270067,
+        "p99": 2.182000083848834,
+        "max": 11.798500083386898
+      },
+      "rss_mib": 75.671875,
+      "rss_growth_mib": 5.55859375,
+      "parent_cpu_one_core_percent": 12.861116551295915,
+      "raw_archive": {
+        "state": "recording",
+        "version": "research-tiers-v2",
+        "latest_at": 1790798259.9135263,
+        "latest_reference": "capture-v2:7:6:1956864bbbe07e22b61e79c41ea0ac8fea25df725f7c2f7abde33a572e3c829d",
+        "financial_authority": false,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "storage": {
+          "version": "research-tiers-v2",
+          "state": "recording",
+          "plan": {
+            "version": "research-tiers-v2",
+            "root": "<owned disposable test path>",
+            "volume_identity": "<redacted private identity>",
+            "temporary_bytes": 536870912,
+            "research_bytes": 536870912,
+            "free_reserve_bytes": 5368709120,
+            "scratch_bytes": 67108864,
+            "segment_bytes": 16777216,
+            "housekeeping_seconds": 7200,
+            "temporary_retention_seconds": 604800
+          },
+          "temporary_path": "<owned disposable test path>",
+          "research_path": "<owned disposable test path>",
+          "temporary_bytes": 86282240,
+          "research_bytes": 39720325,
+          "free_bytes": 1184211980288,
+          "protected_bytes": 0,
+          "pending_segments": 2,
+          "capture_bytes_per_second": 975458.4544243378,
+          "estimated_temporary_runway_seconds": 461.9250260800833,
+          "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+          "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+          "id": 1,
+          "next_due": 1790805429.525458,
+          "last_success": 1790798229.525458,
+          "reason": "Verified maintenance; no eligible temporary space reclaimed",
+          "read_bytes": 1593344,
+          "written_bytes": 898518,
+          "reclaimed_bytes": 0,
+          "rows": 640,
+          "last_capture": 1790798259.9135263,
+          "started": 1790798173.8465466,
+          "latest_reference": "capture-v2:7:6:1956864bbbe07e22b61e79c41ea0ac8fea25df725f7c2f7abde33a572e3c829d",
+          "receipt_at": 1790798261.787067,
+          "full_omitted": 0,
+          "compact_omitted": 0,
+          "queued_packets": 0,
+          "maturity": {
+            "version": "delayed-outcome-continuation-v2",
+            "state": "observed",
+            "checked_at": 1790798260.7837281,
+            "processed_this_pass": 0,
+            "unavailable_this_pass": 0,
+            "reason": "Bounded due-outcome check is independent of acquisition admission",
+            "latest_available_at": null,
+            "next_check_at": 1790798290.7837281
+          }
+        },
+        "maturity": {
+          "version": "delayed-outcome-continuation-v2",
+          "state": "observed",
+          "checked_at": 1790798260.7837281,
+          "processed_this_pass": 0,
+          "unavailable_this_pass": 0,
+          "reason": "Bounded due-outcome check is independent of acquisition admission",
+          "latest_available_at": null,
+          "next_check_at": 1790798290.7837281
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+            "storage_version": "research-tiers-v2"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+          "storage_version": "research-tiers-v2"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 185216,
+      "postgres": {
+        "database_bytes": 13888659,
+        "candles": 0,
+        "events": 38,
+        "journal_lines": 66,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 163840
+      },
+      "balanced": true,
+      "queue_peak": 5,
+      "capture_errors": [],
+      "capture_drain_seconds": 2.411419899901375,
+      "capture_drained": true,
+      "preexisting_synthetic_history": {
+        "version": "research-tiers-v2",
+        "state": "recording",
+        "plan": {
+          "version": "research-tiers-v2",
+          "root": "<owned disposable test path>",
+          "volume_identity": "<redacted private identity>",
+          "temporary_bytes": 536870912,
+          "research_bytes": 536870912,
+          "free_reserve_bytes": 5368709120,
+          "scratch_bytes": 67108864,
+          "segment_bytes": 16777216,
+          "housekeeping_seconds": 7200,
+          "temporary_retention_seconds": 604800
+        },
+        "temporary_path": "<owned disposable test path>",
+        "research_path": "<owned disposable test path>",
+        "temporary_bytes": 68538368,
+        "research_bytes": 39654525,
+        "free_bytes": 1184229810176,
+        "protected_bytes": 0,
+        "pending_segments": 0,
+        "capture_bytes_per_second": 1211050.5914487282,
+        "estimated_temporary_runway_seconds": 386.7159202983863,
+        "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+        "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+        "id": 1,
+        "next_due": 1790805429.525458,
+        "last_success": 1790798229.525458,
+        "reason": "Verified maintenance; no eligible temporary space reclaimed",
+        "read_bytes": 1593344,
+        "written_bytes": 898518,
+        "reclaimed_bytes": 0,
+        "rows": 520,
+        "last_capture": 1790712339.4101508,
+        "started": 1790798173.8465466,
+        "preload_maintenance_wall_seconds": 9.036326200002804
+      },
+      "passed": true
+    },
+    {
+      "accounts": 1,
+      "research_busy": true,
+      "ticks": 120,
+      "wall_seconds": 29.763673899928108,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.07970002479851246,
+          "p95": 0.1642000861465931,
+          "p99": 0.2158998977392912,
+          "max": 3.130599856376648
+        },
+        "feature_batch_compute": {
+          "p50": 4.543700022622943,
+          "p95": 7.926000049337745,
+          "p99": 9.420499904081225,
+          "max": 14.328199904412031
+        },
+        "prepare": {
+          "p50": 7.452300051227212,
+          "p95": 12.94800010509789,
+          "p99": 15.959899872541428,
+          "max": 19.100300036370754
+        },
+        "transaction": {
+          "p50": 3.566599916666746,
+          "p95": 6.882400019094348,
+          "p99": 13.83529999293387,
+          "max": 30.151400016620755
+        },
+        "evidence_write": {
+          "p50": 3.075700020417571,
+          "p95": 5.431000143289566,
+          "p99": 7.308299886062741,
+          "max": 10.184099897742271
+        },
+        "total_before_validation": {
+          "p50": 14.835800044238567,
+          "p95": 24.092599982395768,
+          "p99": 30.951200053095818,
+          "max": 39.09970005042851
+        },
+        "queue_wait": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.3309999592602253,
+        "p95": 0.6520000752061605,
+        "p99": 2.4198999162763357,
+        "max": 6.93110004067421
+      },
+      "rss_mib": 77.02734375,
+      "rss_growth_mib": 0.84375,
+      "parent_cpu_one_core_percent": 11.864294750281246,
+      "raw_archive": {
+        "state": "recording",
+        "version": "research-tiers-v2",
+        "latest_at": 1790798349.1693943,
+        "latest_reference": "capture-v2:7:6:8b26062493bd8c5395fab033bd278751143389c0e827ab702638ba3f36396ef4",
+        "financial_authority": false,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "storage": {
+          "version": "research-tiers-v2",
+          "state": "recording",
+          "plan": {
+            "version": "research-tiers-v2",
+            "root": "<owned disposable test path>",
+            "volume_identity": "<redacted private identity>",
+            "temporary_bytes": 536870912,
+            "research_bytes": 536870912,
+            "free_reserve_bytes": 5368709120,
+            "scratch_bytes": 67108864,
+            "segment_bytes": 16777216,
+            "housekeeping_seconds": 7200,
+            "temporary_retention_seconds": 604800
+          },
+          "temporary_path": "<owned disposable test path>",
+          "research_path": "<owned disposable test path>",
+          "temporary_bytes": 86286336,
+          "research_bytes": 39699668,
+          "free_bytes": 1184211980288,
+          "protected_bytes": 0,
+          "pending_segments": 2,
+          "capture_bytes_per_second": 1000419.4168271632,
+          "estimated_temporary_runway_seconds": 450.39567247608204,
+          "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+          "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+          "id": 1,
+          "next_due": 1790805518.909353,
+          "last_success": 1790798318.909353,
+          "reason": "Verified maintenance; no eligible temporary space reclaimed",
+          "read_bytes": 1593344,
+          "written_bytes": 898501,
+          "reclaimed_bytes": 0,
+          "rows": 640,
+          "last_capture": 1790798349.1693943,
+          "started": 1790798264.7815402,
+          "latest_reference": "capture-v2:7:6:8b26062493bd8c5395fab033bd278751143389c0e827ab702638ba3f36396ef4",
+          "receipt_at": 1790798350.5239813,
+          "full_omitted": 0,
+          "compact_omitted": 0,
+          "queued_packets": 0,
+          "maturity": {
+            "version": "delayed-outcome-continuation-v2",
+            "state": "observed",
+            "checked_at": 1790798349.6825376,
+            "processed_this_pass": 0,
+            "unavailable_this_pass": 0,
+            "reason": "Bounded due-outcome check is independent of acquisition admission",
+            "latest_available_at": null,
+            "next_check_at": 1790798379.6825376
+          }
+        },
+        "maturity": {
+          "version": "delayed-outcome-continuation-v2",
+          "state": "observed",
+          "checked_at": 1790798349.6825376,
+          "processed_this_pass": 0,
+          "unavailable_this_pass": 0,
+          "reason": "Bounded due-outcome check is independent of acquisition admission",
+          "latest_available_at": null,
+          "next_check_at": 1790798379.6825376
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+            "storage_version": "research-tiers-v2"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+          "storage_version": "research-tiers-v2"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 185216,
+      "postgres": {
+        "database_bytes": 13959695,
+        "candles": 0,
+        "events": 41,
+        "journal_lines": 66,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 163840
+      },
+      "balanced": true,
+      "queue_peak": 5,
+      "capture_errors": [],
+      "capture_drain_seconds": 1.5689593001734465,
+      "capture_drained": true,
+      "preexisting_synthetic_history": {
+        "version": "research-tiers-v2",
+        "state": "recording",
+        "plan": {
+          "version": "research-tiers-v2",
+          "root": "<owned disposable test path>",
+          "volume_identity": "<redacted private identity>",
+          "temporary_bytes": 536870912,
+          "research_bytes": 536870912,
+          "free_reserve_bytes": 5368709120,
+          "scratch_bytes": 67108864,
+          "segment_bytes": 16777216,
+          "housekeeping_seconds": 7200,
+          "temporary_retention_seconds": 604800
+        },
+        "temporary_path": "<owned disposable test path>",
+        "research_path": "<owned disposable test path>",
+        "temporary_bytes": 68538368,
+        "research_bytes": 39633868,
+        "free_bytes": 1184229879808,
+        "protected_bytes": 0,
+        "pending_segments": 0,
+        "capture_bytes_per_second": 1248776.4910036472,
+        "estimated_temporary_runway_seconds": 375.03312031731076,
+        "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+        "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+        "id": 1,
+        "next_due": 1790805518.909353,
+        "last_success": 1790798318.909353,
+        "reason": "Verified maintenance; no eligible temporary space reclaimed",
+        "read_bytes": 1593344,
+        "written_bytes": 898501,
+        "reclaimed_bytes": 0,
+        "rows": 520,
+        "last_capture": 1790712429.4849546,
+        "started": 1790798264.7815402,
+        "preload_maintenance_wall_seconds": 8.335291299968958
+      },
+      "child": {
+        "wall_seconds": 32.013751700054854,
+        "cpu_seconds": 26.484375,
+        "peak_rss_mib": 59.27734375,
+        "fits": 1325,
+        "limits": {
+          "pid": 42588,
+          "processors_allowed": 2,
+          "priority_class": 64
+        },
+        "paid_usd": "0"
+      },
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "research_busy": false,
+      "ticks": 120,
+      "wall_seconds": 29.777497100178152,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.08350005373358727,
+          "p95": 0.1870999112725258,
+          "p99": 0.3027000930160284,
+          "max": 1.2481000740081072
+        },
+        "feature_batch_compute": {
+          "p50": 6.097099976614118,
+          "p95": 10.430899914354086,
+          "p99": 14.384099980816245,
+          "max": 17.603399930521846
+        },
+        "prepare": {
+          "p50": 9.49570001102984,
+          "p95": 19.281200133264065,
+          "p99": 23.513700114563107,
+          "max": 54.73340000025928
+        },
+        "transaction": {
+          "p50": 11.143999872729182,
+          "p95": 27.614599792286754,
+          "p99": 56.77930009551346,
+          "max": 63.44550009816885
+        },
+        "evidence_write": {
+          "p50": 5.197199992835522,
+          "p95": 7.300199940800667,
+          "p99": 9.302400052547455,
+          "max": 10.042800102382898
+        },
+        "total_before_validation": {
+          "p50": 26.730400044471025,
+          "p95": 52.808300126343966,
+          "p99": 76.90460002049804,
+          "max": 82.50169991515577
+        },
+        "queue_wait": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.4156001377850771,
+        "p95": 4.072600044310093,
+        "p99": 14.910400146618485,
+        "max": 17.78230001218617
+      },
+      "rss_mib": 78.6953125,
+      "rss_growth_mib": 2.3125,
+      "parent_cpu_one_core_percent": 20.67416874994228,
+      "raw_archive": {
+        "state": "recording",
+        "version": "research-tiers-v2",
+        "latest_at": 1790798439.628273,
+        "latest_reference": "capture-v2:7:33:db411282f82215c24eac7e21fad2f886aa00718c1b22407b32a361ad224482d4",
+        "financial_authority": false,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "storage": {
+          "version": "research-tiers-v2",
+          "state": "recording",
+          "plan": {
+            "version": "research-tiers-v2",
+            "root": "<owned disposable test path>",
+            "volume_identity": "<redacted private identity>",
+            "temporary_bytes": 536870912,
+            "research_bytes": 536870912,
+            "free_reserve_bytes": 5368709120,
+            "scratch_bytes": 67108864,
+            "segment_bytes": 16777216,
+            "housekeeping_seconds": 7200,
+            "temporary_retention_seconds": 604800
+          },
+          "temporary_path": "<owned disposable test path>",
+          "research_path": "<owned disposable test path>",
+          "temporary_bytes": 91549696,
+          "research_bytes": 39749049,
+          "free_bytes": 1184206651392,
+          "protected_bytes": 0,
+          "pending_segments": 2,
+          "capture_bytes_per_second": 1072285.0954127025,
+          "estimated_temporary_runway_seconds": 415.30113391029107,
+          "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+          "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+          "id": 1,
+          "next_due": 1790805609.3842444,
+          "last_success": 1790798409.3842444,
+          "reason": "Verified maintenance; no eligible temporary space reclaimed",
+          "read_bytes": 1593344,
+          "written_bytes": 898511,
+          "reclaimed_bytes": 0,
+          "rows": 640,
+          "last_capture": 1790798439.628273,
+          "started": 1790798355.7673905,
+          "latest_reference": "capture-v2:7:33:db411282f82215c24eac7e21fad2f886aa00718c1b22407b32a361ad224482d4",
+          "receipt_at": 1790798440.730695,
+          "full_omitted": 0,
+          "compact_omitted": 0,
+          "queued_packets": 0,
+          "maturity": {
+            "version": "delayed-outcome-continuation-v2",
+            "state": "observed",
+            "checked_at": 1790798440.0243587,
+            "processed_this_pass": 0,
+            "unavailable_this_pass": 0,
+            "reason": "Bounded due-outcome check is independent of acquisition admission",
+            "latest_available_at": null,
+            "next_check_at": 1790798470.0243587
+          }
+        },
+        "maturity": {
+          "version": "delayed-outcome-continuation-v2",
+          "state": "observed",
+          "checked_at": 1790798440.0243587,
+          "processed_this_pass": 0,
+          "unavailable_this_pass": 0,
+          "reason": "Bounded due-outcome check is independent of acquisition admission",
+          "latest_available_at": null,
+          "next_check_at": 1790798470.0243587
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+            "storage_version": "research-tiers-v2"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+          "storage_version": "research-tiers-v2"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 234656,
+      "postgres": {
+        "database_bytes": 12201107,
+        "candles": 0,
+        "events": 155,
+        "journal_lines": 300,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 335872
+      },
+      "balanced": true,
+      "queue_peak": 6,
+      "capture_errors": [],
+      "capture_drain_seconds": 1.306914099957794,
+      "capture_drained": true,
+      "preexisting_synthetic_history": {
+        "version": "research-tiers-v2",
+        "state": "recording",
+        "plan": {
+          "version": "research-tiers-v2",
+          "root": "<owned disposable test path>",
+          "volume_identity": "<redacted private identity>",
+          "temporary_bytes": 536870912,
+          "research_bytes": 536870912,
+          "free_reserve_bytes": 5368709120,
+          "scratch_bytes": 67108864,
+          "segment_bytes": 16777216,
+          "housekeeping_seconds": 7200,
+          "temporary_retention_seconds": 604800
+        },
+        "temporary_path": "<owned disposable test path>",
+        "research_path": "<owned disposable test path>",
+        "temporary_bytes": 68538368,
+        "research_bytes": 39633809,
+        "free_bytes": 1184229814272,
+        "protected_bytes": 0,
+        "pending_segments": 0,
+        "capture_bytes_per_second": 1260520.3295541343,
+        "estimated_temporary_runway_seconds": 371.5390644795523,
+        "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+        "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+        "id": 1,
+        "next_due": 1790805609.3842444,
+        "last_success": 1790798409.3842444,
+        "reason": "Verified maintenance; no eligible temporary space reclaimed",
+        "read_bytes": 1593344,
+        "written_bytes": 898511,
+        "reclaimed_bytes": 0,
+        "rows": 520,
+        "last_capture": 1790712519.3262281,
+        "started": 1790798355.7673905,
+        "preload_maintenance_wall_seconds": 8.796054899925366
+      },
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "research_busy": true,
+      "ticks": 120,
+      "wall_seconds": 29.769035800127313,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.07830001413822174,
+          "p95": 0.12690015137195587,
+          "p99": 0.19080005586147308,
+          "max": 0.27750013396143913
+        },
+        "feature_batch_compute": {
+          "p50": 5.2553999703377485,
+          "p95": 8.442099904641509,
+          "p99": 10.500299977138638,
+          "max": 17.00010010972619
+        },
+        "prepare": {
+          "p50": 8.584400173276663,
+          "p95": 14.064500108361244,
+          "p99": 16.255400143563747,
+          "max": 33.846399979665875
+        },
+        "transaction": {
+          "p50": 11.01869996637106,
+          "p95": 23.604299873113632,
+          "p99": 47.53489978611469,
+          "max": 54.909100057557225
+        },
+        "evidence_write": {
+          "p50": 4.737999988719821,
+          "p95": 8.505600038915873,
+          "p99": 10.261999908834696,
+          "max": 14.595399843528867
+        },
+        "total_before_validation": {
+          "p50": 25.12339991517365,
+          "p95": 43.45120000652969,
+          "p99": 59.83439995907247,
+          "max": 81.26290002837777
+        },
+        "queue_wait": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.4010000266134739,
+        "p95": 2.19590007327497,
+        "p99": 3.761500120162964,
+        "max": 6.199000170454383
+      },
+      "rss_mib": 79.82421875,
+      "rss_growth_mib": 0.6953125,
+      "parent_cpu_one_core_percent": 16.586025940345987,
+      "raw_archive": {
+        "state": "recording",
+        "version": "research-tiers-v2",
+        "latest_at": 1790798527.1022015,
+        "latest_reference": "capture-v2:7:33:4a3de43dcdb2e57ba91904d5fe5481cb71094c8a4ba3df997e14a40caa7d6392",
+        "financial_authority": false,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "storage": {
+          "version": "research-tiers-v2",
+          "state": "recording",
+          "plan": {
+            "version": "research-tiers-v2",
+            "root": "<owned disposable test path>",
+            "volume_identity": "<redacted private identity>",
+            "temporary_bytes": 536870912,
+            "research_bytes": 536870912,
+            "free_reserve_bytes": 5368709120,
+            "scratch_bytes": 67108864,
+            "segment_bytes": 16777216,
+            "housekeeping_seconds": 7200,
+            "temporary_retention_seconds": 604800
+          },
+          "temporary_path": "<owned disposable test path>",
+          "research_path": "<owned disposable test path>",
+          "temporary_bytes": 91553792,
+          "research_bytes": 39745046,
+          "free_bytes": 1184206647296,
+          "protected_bytes": 0,
+          "pending_segments": 2,
+          "capture_bytes_per_second": 1078669.5826646576,
+          "estimated_temporary_runway_seconds": 412.83923006332003,
+          "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+          "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+          "id": 1,
+          "next_due": 1790805696.799409,
+          "last_success": 1790798496.799409,
+          "reason": "Verified maintenance; no eligible temporary space reclaimed",
+          "read_bytes": 1593344,
+          "written_bytes": 898518,
+          "reclaimed_bytes": 0,
+          "rows": 640,
+          "last_capture": 1790798527.1022015,
+          "started": 1790798443.2700527,
+          "latest_reference": "capture-v2:7:33:4a3de43dcdb2e57ba91904d5fe5481cb71094c8a4ba3df997e14a40caa7d6392",
+          "receipt_at": 1790798527.7352118,
+          "full_omitted": 0,
+          "compact_omitted": 0,
+          "queued_packets": 0,
+          "maturity": {
+            "version": "delayed-outcome-continuation-v2",
+            "state": "observed",
+            "checked_at": 1790798527.1982107,
+            "processed_this_pass": 0,
+            "unavailable_this_pass": 0,
+            "reason": "Bounded due-outcome check is independent of acquisition admission",
+            "latest_available_at": null,
+            "next_check_at": 1790798527.3613896
+          }
+        },
+        "maturity": {
+          "version": "delayed-outcome-continuation-v2",
+          "state": "observed",
+          "checked_at": 1790798527.1982107,
+          "processed_this_pass": 0,
+          "unavailable_this_pass": 0,
+          "reason": "Bounded due-outcome check is independent of acquisition admission",
+          "latest_available_at": null,
+          "next_check_at": 1790798527.3613896
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+            "storage_version": "research-tiers-v2"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+          "storage_version": "research-tiers-v2"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 234656,
+      "postgres": {
+        "database_bytes": 14060691,
+        "candles": 0,
+        "events": 185,
+        "journal_lines": 300,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 360448
+      },
+      "balanced": true,
+      "queue_peak": 7,
+      "capture_errors": [],
+      "capture_drain_seconds": 0.9066217001527548,
+      "capture_drained": true,
+      "preexisting_synthetic_history": {
+        "version": "research-tiers-v2",
+        "state": "recording",
+        "plan": {
+          "version": "research-tiers-v2",
+          "root": "<owned disposable test path>",
+          "volume_identity": "<redacted private identity>",
+          "temporary_bytes": 536870912,
+          "research_bytes": 536870912,
+          "free_reserve_bytes": 5368709120,
+          "scratch_bytes": 67108864,
+          "segment_bytes": 16777216,
+          "housekeeping_seconds": 7200,
+          "temporary_retention_seconds": 604800
+        },
+        "temporary_path": "<owned disposable test path>",
+        "research_path": "<owned disposable test path>",
+        "temporary_bytes": 68538368,
+        "research_bytes": 39633926,
+        "free_bytes": 1184229879808,
+        "protected_bytes": 0,
+        "pending_segments": 0,
+        "capture_bytes_per_second": 1261424.8802178572,
+        "estimated_temporary_runway_seconds": 371.2726388583009,
+        "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+        "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+        "id": 1,
+        "next_due": 1790805696.799409,
+        "last_success": 1790798496.799409,
+        "reason": "Verified maintenance; no eligible temporary space reclaimed",
+        "read_bytes": 1593344,
+        "written_bytes": 898518,
+        "reclaimed_bytes": 0,
+        "rows": 520,
+        "last_capture": 1790712607.3596969,
+        "started": 1790798443.2700527,
+        "preload_maintenance_wall_seconds": 8.402287499979138
+      },
+      "child": {
+        "wall_seconds": 32.0000637001358,
+        "cpu_seconds": 24.0,
+        "peak_rss_mib": 59.21484375,
+        "fits": 1184,
+        "limits": {
+          "pid": 58168,
+          "processors_allowed": 2,
+          "priority_class": 64
+        },
+        "paid_usd": "0"
+      },
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "research_busy": false,
+      "ticks": 120,
+      "wall_seconds": 29.78453049995005,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.08399994112551212,
+          "p95": 0.1959002111107111,
+          "p99": 0.30720001086592674,
+          "max": 0.5135999526828527
+        },
+        "feature_batch_compute": {
+          "p50": 4.395100055262446,
+          "p95": 10.188299929723144,
+          "p99": 11.20389997959137,
+          "max": 11.958800023421645
+        },
+        "prepare": {
+          "p50": 7.434000028297305,
+          "p95": 15.577600104734302,
+          "p99": 17.803099937736988,
+          "max": 47.05350007861853
+        },
+        "transaction": {
+          "p50": 19.060900202021003,
+          "p95": 38.16849994473159,
+          "p99": 88.43869995325804,
+          "max": 107.38719999790192
+        },
+        "evidence_write": {
+          "p50": 5.8154999278485775,
+          "p95": 10.912399971857667,
+          "p99": 14.616900123655796,
+          "max": 15.067999949678779
+        },
+        "total_before_validation": {
+          "p50": 33.63540000282228,
+          "p95": 62.62700003571808,
+          "p99": 113.19060018286109,
+          "max": 131.74350000917912
+        },
+        "queue_wait": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.3963999915868044,
+        "p95": 2.8472000267356634,
+        "p99": 8.094599936157465,
+        "max": 11.086399899795651
+      },
+      "rss_mib": 83.42578125,
+      "rss_growth_mib": 5.40234375,
+      "parent_cpu_one_core_percent": 23.554593214124242,
+      "raw_archive": {
+        "state": "recording",
+        "version": "research-tiers-v2",
+        "latest_at": 1790798618.435583,
+        "latest_reference": "capture-v2:7:52:cfde87df9409ceac73f61e3a7287d40724dbf1f807c270bbe063773627aed02c",
+        "financial_authority": false,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "storage": {
+          "version": "research-tiers-v2",
+          "state": "recording",
+          "plan": {
+            "version": "research-tiers-v2",
+            "root": "<owned disposable test path>",
+            "volume_identity": "<redacted private identity>",
+            "temporary_bytes": 536870912,
+            "research_bytes": 536870912,
+            "free_reserve_bytes": 5368709120,
+            "scratch_bytes": 67108864,
+            "segment_bytes": 16777216,
+            "housekeeping_seconds": 7200,
+            "temporary_retention_seconds": 604800
+          },
+          "temporary_path": "<owned disposable test path>",
+          "research_path": "<owned disposable test path>",
+          "temporary_bytes": 97570816,
+          "research_bytes": 39781980,
+          "free_bytes": 1184200040448,
+          "protected_bytes": 0,
+          "pending_segments": 2,
+          "capture_bytes_per_second": 1127254.0815429133,
+          "estimated_temporary_runway_seconds": 389.7081440580939,
+          "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+          "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+          "id": 1,
+          "next_due": 1790805788.130806,
+          "last_success": 1790798588.130806,
+          "reason": "Verified maintenance; no eligible temporary space reclaimed",
+          "read_bytes": 1593344,
+          "written_bytes": 898493,
+          "reclaimed_bytes": 0,
+          "rows": 640,
+          "last_capture": 1790798618.435583,
+          "started": 1790798533.627878,
+          "latest_reference": "capture-v2:7:52:cfde87df9409ceac73f61e3a7287d40724dbf1f807c270bbe063773627aed02c",
+          "receipt_at": 1790798619.7983477,
+          "full_omitted": 0,
+          "compact_omitted": 0,
+          "queued_packets": 0,
+          "maturity": {
+            "version": "delayed-outcome-continuation-v2",
+            "state": "observed",
+            "checked_at": 1790798619.066036,
+            "processed_this_pass": 0,
+            "unavailable_this_pass": 0,
+            "reason": "Bounded due-outcome check is independent of acquisition admission",
+            "latest_available_at": null,
+            "next_check_at": 1790798649.066036
+          }
+        },
+        "maturity": {
+          "version": "delayed-outcome-continuation-v2",
+          "state": "observed",
+          "checked_at": 1790798619.066036,
+          "processed_this_pass": 0,
+          "unavailable_this_pass": 0,
+          "reason": "Bounded due-outcome check is independent of acquisition admission",
+          "latest_available_at": null,
+          "next_check_at": 1790798649.066036
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+            "storage_version": "research-tiers-v2"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+          "storage_version": "research-tiers-v2"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 263496,
+      "postgres": {
+        "database_bytes": 13921427,
+        "candles": 0,
+        "events": 285,
+        "journal_lines": 560,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 532480
+      },
+      "balanced": true,
+      "queue_peak": 8,
+      "capture_errors": [],
+      "capture_drain_seconds": 1.4825799998361617,
+      "capture_drained": true,
+      "preexisting_synthetic_history": {
+        "version": "research-tiers-v2",
+        "state": "recording",
+        "plan": {
+          "version": "research-tiers-v2",
+          "root": "<owned disposable test path>",
+          "volume_identity": "<redacted private identity>",
+          "temporary_bytes": 536870912,
+          "research_bytes": 536870912,
+          "free_reserve_bytes": 5368709120,
+          "scratch_bytes": 67108864,
+          "segment_bytes": 16777216,
+          "housekeeping_seconds": 7200,
+          "temporary_retention_seconds": 604800
+        },
+        "temporary_path": "<owned disposable test path>",
+        "research_path": "<owned disposable test path>",
+        "temporary_bytes": 68538368,
+        "research_bytes": 39637900,
+        "free_bytes": 1184229355520,
+        "protected_bytes": 0,
+        "pending_segments": 0,
+        "capture_bytes_per_second": 1238964.141724998,
+        "estimated_temporary_runway_seconds": 378.00330794718974,
+        "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+        "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+        "id": 1,
+        "next_due": 1790805788.130806,
+        "last_success": 1790798588.130806,
+        "reason": "Verified maintenance; no eligible temporary space reclaimed",
+        "read_bytes": 1593344,
+        "written_bytes": 898493,
+        "reclaimed_bytes": 0,
+        "rows": 520,
+        "last_capture": 1790712697.9571328,
+        "started": 1790798533.627878,
+        "preload_maintenance_wall_seconds": 9.164672899991274
+      },
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "research_busy": true,
+      "ticks": 120,
+      "wall_seconds": 29.809748800005764,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.07720012217760086,
+          "p95": 0.1425000373274088,
+          "p99": 0.19189994782209396,
+          "max": 0.21740002557635307
+        },
+        "feature_batch_compute": {
+          "p50": 4.671300062909722,
+          "p95": 8.045399794355035,
+          "p99": 9.93419997394085,
+          "max": 11.62589993327856
+        },
+        "prepare": {
+          "p50": 7.869499968364835,
+          "p95": 13.128999853506684,
+          "p99": 15.767799923196435,
+          "max": 19.069500034675002
+        },
+        "transaction": {
+          "p50": 21.656899945810437,
+          "p95": 111.70469992794096,
+          "p99": 145.0379998423159,
+          "max": 169.3399001378566
+        },
+        "evidence_write": {
+          "p50": 6.352399941533804,
+          "p95": 16.379500040784478,
+          "p99": 17.974199960008264,
+          "max": 18.840800039470196
+        },
+        "total_before_validation": {
+          "p50": 36.913199815899134,
+          "p95": 135.80030016601086,
+          "p99": 160.98070004954934,
+          "max": 196.63420016877353
+        },
+        "queue_wait": {
+          "p50": 0,
+          "p95": 0,
+          "p99": 0,
+          "max": 0
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.33909990452229977,
+        "p95": 3.043700009584427,
+        "p99": 4.070699913427234,
+        "max": 11.297399876639247
+      },
+      "rss_mib": 84.1484375,
+      "rss_growth_mib": 2.1953125,
+      "parent_cpu_one_core_percent": 27.780341443193908,
+      "raw_archive": {
+        "state": "recording",
+        "version": "research-tiers-v2",
+        "latest_at": 1790798706.9778976,
+        "latest_reference": "capture-v2:7:52:54ff85d69f604dd6fe406cc941d052d4161fa6e83307ac1d03dcf7bb6cb4241d",
+        "financial_authority": false,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "storage": {
+          "version": "research-tiers-v2",
+          "state": "recording",
+          "plan": {
+            "version": "research-tiers-v2",
+            "root": "<owned disposable test path>",
+            "volume_identity": "<redacted private identity>",
+            "temporary_bytes": 536870912,
+            "research_bytes": 536870912,
+            "free_reserve_bytes": 5368709120,
+            "scratch_bytes": 67108864,
+            "segment_bytes": 16777216,
+            "housekeeping_seconds": 7200,
+            "temporary_retention_seconds": 604800
+          },
+          "temporary_path": "<owned disposable test path>",
+          "research_path": "<owned disposable test path>",
+          "temporary_bytes": 97611776,
+          "research_bytes": 39773766,
+          "free_bytes": 1184199999488,
+          "protected_bytes": 0,
+          "pending_segments": 2,
+          "capture_bytes_per_second": 1131735.8002570723,
+          "estimated_temporary_runway_seconds": 388.12869213841503,
+          "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+          "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+          "id": 1,
+          "next_due": 1790805876.7107935,
+          "last_success": 1790798676.7107935,
+          "reason": "Verified maintenance; no eligible temporary space reclaimed",
+          "read_bytes": 1593344,
+          "written_bytes": 898505,
+          "reclaimed_bytes": 0,
+          "rows": 640,
+          "last_capture": 1790798706.9778976,
+          "started": 1790798622.358287,
+          "latest_reference": "capture-v2:7:52:54ff85d69f604dd6fe406cc941d052d4161fa6e83307ac1d03dcf7bb6cb4241d",
+          "receipt_at": 1790798708.2118337,
+          "full_omitted": 0,
+          "compact_omitted": 0,
+          "queued_packets": 0,
+          "maturity": {
+            "version": "delayed-outcome-continuation-v2",
+            "state": "observed",
+            "checked_at": 1790798707.5669172,
+            "processed_this_pass": 0,
+            "unavailable_this_pass": 0,
+            "reason": "Bounded due-outcome check is independent of acquisition admission",
+            "latest_available_at": null,
+            "next_check_at": 1790798737.5669172
+          }
+        },
+        "maturity": {
+          "version": "delayed-outcome-continuation-v2",
+          "state": "observed",
+          "checked_at": 1790798707.5669172,
+          "processed_this_pass": 0,
+          "unavailable_this_pass": 0,
+          "reason": "Bounded due-outcome check is independent of acquisition admission",
+          "latest_available_at": null,
+          "next_check_at": 1790798737.5669172
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+            "storage_version": "research-tiers-v2"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "Versioned shared research-tier physical quota; no lifetime prefix/event cap",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative",
+          "storage_version": "research-tiers-v2"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 263496,
+      "postgres": {
+        "database_bytes": 17116307,
+        "candles": 0,
+        "events": 345,
+        "journal_lines": 560,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 565248
+      },
+      "balanced": true,
+      "queue_peak": 6,
+      "capture_errors": [],
+      "capture_drain_seconds": 1.3719780000392348,
+      "capture_drained": true,
+      "preexisting_synthetic_history": {
+        "version": "research-tiers-v2",
+        "state": "recording",
+        "plan": {
+          "version": "research-tiers-v2",
+          "root": "<owned disposable test path>",
+          "volume_identity": "<redacted private identity>",
+          "temporary_bytes": 536870912,
+          "research_bytes": 536870912,
+          "free_reserve_bytes": 5368709120,
+          "scratch_bytes": 67108864,
+          "segment_bytes": 16777216,
+          "housekeeping_seconds": 7200,
+          "temporary_retention_seconds": 604800
+        },
+        "temporary_path": "<owned disposable test path>",
+        "research_path": "<owned disposable test path>",
+        "temporary_bytes": 68538368,
+        "research_bytes": 39633782,
+        "free_bytes": 1184229351424,
+        "protected_bytes": 0,
+        "pending_segments": 0,
+        "capture_bytes_per_second": 1243360.922515877,
+        "estimated_temporary_runway_seconds": 376.66661024889953,
+        "retained_lifecycle": "Exact lossless segments retained; capacity stops rather than deleting protected/history inputs",
+        "rollups": "60/300/3600-second sampled midpoint min/max/last; descriptive, not exchange OHLC or executable replay",
+        "id": 1,
+        "next_due": 1790805876.7107935,
+        "last_success": 1790798676.7107935,
+        "reason": "Verified maintenance; no eligible temporary space reclaimed",
+        "read_bytes": 1593344,
+        "written_bytes": 898505,
+        "reclaimed_bytes": 0,
+        "rows": 520,
+        "last_capture": 1790712784.6619318,
+        "started": 1790798622.358287,
+        "preload_maintenance_wall_seconds": 10.885534000117332
+      },
+      "child": {
+        "wall_seconds": 32.00390839995816,
+        "cpu_seconds": 28.609375,
+        "peak_rss_mib": 59.68359375,
+        "fits": 1534,
+        "limits": {
+          "pid": 49444,
+          "processors_allowed": 2,
+          "priority_class": 64
+        },
+        "paid_usd": "0"
+      },
+      "passed": false
+    }
+  ],
+  "asynchronous_capture": true,
+  "original_receipt_sha256": "6b9472c47fa6f7786dbcdcd6b1aeae65946b536f76b2c3aa96f0f122e104e620",
+  "synthetic": true,
+  "published_scope": "Disposable software checks; installed finance, actual markets, qualification and 24-hour reliability are not tested here"
+}

@@ -629,6 +629,16 @@ class PaperEngine:
             return "Position or pending order already exists"
         if self.now < a["cooldowns"].get(symbol, 0):
             return "Ten-minute symbol cooldown"
+        if a.get("rule_spec"):
+            available = feature.get("input_available_at")
+            if (
+                not isinstance(available, (int, float))
+                or isinstance(available, bool)
+                or not math.isfinite(available)
+                or not a["admitted_at"] < available <= self.now
+                or self.now - available > 90
+            ):
+                return "Awaiting a fresh subsequent closed candle for this trial"
         if not feature["eligible"]:
             return str(feature["reason"])
         profile = execution(a)
@@ -688,7 +698,11 @@ class PaperEngine:
             "created_at": self.now,
             "features": feature,
             "reason": (
-                "Frozen numerical signal" if a.get("numerical_artifact") else "Closed-bar breakout"
+                "Frozen numerical signal"
+                if a.get("numerical_artifact")
+                else "Reviewed range excursion"
+                if a.get("rule_spec", {}).get("family") == "range_reversion"
+                else "Closed-bar breakout"
             ),
             "risk_policy": policy(a),
             "execution_profile": profile.id,
@@ -727,6 +741,11 @@ class PaperEngine:
         artifact = a.get("numerical_artifact")
         invalid_artifact = False
         maximum_hold, progress_seconds = 2700, 600
+        if a.get("rule_spec"):
+            from trading.autonomous_spec import RuleSpec
+
+            timing = RuleSpec.model_validate(a["rule_spec"]).timing
+            maximum_hold, progress_seconds = timing["maximum_hold"], timing["progress"]
         if artifact:
             from trading.numerical_candidates import validate_artifact
 
@@ -743,16 +762,24 @@ class PaperEngine:
         reason = ""
         if a["failure_pending"]:
             reason = "Account below $5: failure liquidation"
+        elif a.get("lab_retiring"):
+            reason = "Lab retirement: reduce remaining owned inventory"
         elif bid <= D(pos["stop"]):
             reason = "ATR stop" if not pos["one_r"] else "Trailing stop"
         elif invalid_artifact:
             reason = "Invalid frozen numerical artifact; risk reduction"
         elif elapsed >= maximum_hold:
             reason = (
-                "Frozen maximum hold" if a.get("numerical_artifact") else "45-minute maximum hold"
+                "Frozen maximum hold"
+                if a.get("numerical_artifact") or a.get("rule_spec")
+                else "45-minute maximum hold"
             )
         elif elapsed >= progress_seconds and not pos["one_r"]:
-            reason = "No 1R progress after ten minutes"
+            reason = (
+                "No 1R progress by frozen horizon checkpoint"
+                if a.get("rule_spec")
+                else "No 1R progress after ten minutes"
+            )
         if not reason:
             return
         rules = frame["rules"]
@@ -1036,6 +1063,8 @@ class PaperEngine:
         stop_before = a.get("risk_stop_id", 0)
         self.value(a, frames)
         for symbol in list(a["pending"]):
+            if a["pending"][symbol].get("uncertain") or a.get("execution_uncertain"):
+                continue  # Unknown execution cannot become cancelled/free capacity.
             frame = frames.get(symbol)
             reason = entry_reason(a, self.state["paused"], self.now)
             if a["pending"][symbol]["side"] == "buy" and reason:
@@ -1150,6 +1179,10 @@ class PaperEngine:
                 self.emit("account_fault", name, dict(saved["fault"]))
         for observation in observe_economics(self.state, frames, self.now):
             self.emit(observation["kind"], "system", observation["body"])
+        if self.state.get("autonomous_lab"):
+            from trading.autonomous_finance import observe
+
+            observe(self, frames)
         if self.now >= self.state["next_review"]:
             self.review()
         minute = int(self.now // 60)
@@ -1274,3 +1307,8 @@ class PaperEngine:
     def assert_invariants(self) -> None:
         for a in self.state["accounts"].values():
             self.assert_account(a)
+        if self.state.get("autonomous_lab"):
+            from trading.autonomous_finance import slots
+
+            if slots(self.state)["used"] > self.state["autonomous_lab"]["policy"]["slots"]:
+                raise ValueError("Concurrent managed/reserved lab capacity exceeded")

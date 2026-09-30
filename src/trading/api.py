@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
+from trading.autonomous_spec import LabControl, LabPolicy, LabProposal
 from trading.compact_memory import compact_evidence
 from trading.config import Settings
 from trading.evidence_runtime import feature_reproduction
@@ -35,6 +36,15 @@ from trading.prospective_review import ProspectiveSpec
 from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_campaigns import ResearchCampaignSpec
 from trading.research_evidence import evidence_page, evidence_record
+from trading.research_storage import (
+    StoragePlan,
+    compact_path,
+    load_plan,
+    reopen_evidence,
+    save_plan,
+    storage_snapshot,
+    volume,
+)
 from trading.runtime import Monitor
 from trading.station import TOOLS, execute_tool, market_detail, market_live
 from trading.storage import MonitorStore
@@ -117,6 +127,9 @@ def create_app(
         if research_evidence is not None
         else Path(__file__).resolve().parents[2] / "docs/evidence"
     )
+    from trading.research_activity import ResearchActivity
+
+    activity_view = ResearchActivity(database.parent)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -225,6 +238,12 @@ def create_app(
                         return value
 
                     lab.market_snapshot = research_universe
+                    if app.state.paper is not None:
+                        from trading.autonomous_lab import AutonomousLab
+
+                        lab.autonomous = AutonomousLab(
+                            lab.registry, app.state.paper, lambda: lab.can_research()
+                        )
                 lab_task = asyncio.create_task(lab.run()) if background and lab else None
                 app.state.replay = None
                 try:
@@ -282,7 +301,7 @@ def create_app(
         finally:
             ownership.release()
 
-    app = FastAPI(title="Trading Research · Public Monitor", lifespan=lifespan)
+    app = FastAPI(title="Trading Research Â· Public Monitor", lifespan=lifespan)
     app.add_middleware(
         TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1", "testserver"]
     )
@@ -355,6 +374,56 @@ def create_app(
         # Runs in FastAPI's worker pool, outside the trading event loop.
         return model_trials.snapshot()
 
+    @app.get("/api/research/activity")
+    def research_activity(request: Request) -> dict[str, Any]:
+        paper = request.app.state.paper
+        dsn = paper.store.connection.info.dsn if paper else None
+        return activity_view.snapshot(dsn, paper, request.app.state.lab)
+
+    @app.get("/api/research/storage")
+    def research_storage_status() -> dict[str, Any]:
+        return storage_snapshot(database.parent)
+
+    @app.get("/api/research/storage/target")
+    def research_storage_target(
+        root: str = Query(r"G:\Projects\Q-Trades-Data", max_length=300),
+    ) -> dict[str, Any]:
+        try:
+            return volume(Path(root))
+        except (ValueError, OSError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/storage/plan")
+    def research_storage_plan(request: Request, plan: StoragePlan) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            save_plan(database.parent, plan)
+            return {
+                "state": "declared",
+                "plan": plan.model_dump(),
+                "activation": (
+                    "Worker startup reads the frozen plan; no automatic restart o"
+                    "r historical relocation"
+                ),
+            }
+        except (ValueError, OSError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/research/storage/evidence")
+    def research_storage_evidence(reference: str = Query(max_length=160)) -> dict[str, Any]:
+        try:
+            plan = load_plan(database.parent)
+            if plan is None:
+                raise ValueError("External research storage is not configured")
+            packet = reopen_evidence(plan, reference)
+            return {
+                "reference": reference,
+                "payload": packet,
+                "reproduction": feature_reproduction(packet),
+            }
+        except (ValueError, OSError, LookupError, sqlite3.Error) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
     def lab_operator(request: Request) -> ExperimentLab:
         origin = request.headers.get("origin")
         if request.headers.get("x-local-operator") != "1" or (
@@ -376,6 +445,80 @@ def create_app(
         if lab is None:
             raise HTTPException(503, "Research registry unavailable; paper management continues")
         return lab.snapshot(before)
+
+    def autonomous(request: Request) -> Any:
+        lab = request.app.state.lab
+        if lab is None or lab.autonomous is None:
+            raise HTTPException(503, "Autonomous lab requires the paper service and registry")
+        return lab.autonomous
+
+    @app.get("/api/autonomous")
+    async def autonomous_snapshot(request: Request) -> dict[str, Any]:
+        return dict(autonomous(request).snapshot())
+
+    @app.post("/api/autonomous/start")
+    async def autonomous_start(request: Request, policy: LabPolicy) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return dict(autonomous(request).start(policy))
+        except (ValueError, RuntimeError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/autonomous/control")
+    async def autonomous_control(request: Request, body: LabControl) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return dict(autonomous(request).control(body.action, body.target))
+        except (ValueError, RuntimeError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/autonomous/bundle")
+    async def autonomous_bundle(request: Request) -> dict[str, Any]:
+        return dict(autonomous(request).bundle(time.time()))
+
+    @app.post("/api/autonomous/proposals")
+    async def autonomous_submit(request: Request, proposal: LabProposal) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return dict(autonomous(request).submit(proposal))
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/autonomous/proposals/{request_id}")
+    async def autonomous_proposal(request: Request, request_id: str) -> dict[str, Any]:
+        try:
+            controller = autonomous(request)
+            result = dict(controller.inbox.get(request_id))
+            with controller.registry.lock:
+                row = controller.registry.db.execute(
+                    "SELECT body FROM lab_bundles WHERE sha256=?",
+                    (result["body"]["evidence_bundle_sha256"],),
+                ).fetchone()
+            result["issued_bundle"] = json.loads(row["body"]) if row else None
+            return result
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/autonomous/history")
+    async def autonomous_history(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:
+        return dict(autonomous(request).paper.store.lab_history(before))
+
+    @app.get("/api/autonomous/accounts/{name}")
+    async def autonomous_account(request: Request, name: str) -> dict[str, Any]:
+        store = autonomous(request).paper.store
+        archived = store.archived_account(name)
+        if archived:
+            return dict(archived)
+        active = autonomous(request).paper.state["accounts"].get(name)
+        if active:
+            return {"account": name, "state": active, "retired_at": None}
+        raise HTTPException(404, "Unknown retained account")
+
+    @app.get("/api/autonomous/export")
+    async def autonomous_export(
+        request: Request, after: int = Query(0, ge=0), account: str | None = None
+    ) -> dict[str, Any]:
+        return dict(autonomous(request).paper.store.export(after, 500, account))
 
     @app.post("/api/lab/experiments")
     def research_launch(plan: ExperimentPlan, request: Request) -> dict[str, Any]:
@@ -886,7 +1029,7 @@ def create_app(
         sha256: str = Query(pattern=r"^[0-9a-f]{64}$"),
     ) -> dict[str, Any]:
         try:
-            return compact_evidence(database.parent / "memory-episodes.sqlite", episode, sha256)
+            return compact_evidence(compact_path(database.parent), episode, sha256)
         except LookupError as exc:
             raise HTTPException(404, str(exc)) from exc
         except (ValueError, KeyError, TypeError, sqlite3.Error) as exc:

@@ -1,0 +1,35 @@
+{
+  "synthetic": true,
+  "clock": "QA-only accelerated outcome time; no real-duration qualification",
+  "normal_ui_start": true,
+  "parent_preserved": true,
+  "distinct_family": true,
+  "child_lookback_change": {
+    "from": 10,
+    "to": 9
+  },
+  "retired_child_history_reopened": true,
+  "proposals_paused": true,
+  "entries_paused": true,
+  "slots_after_retirement": {
+    "managed": 12,
+    "reserved": 0,
+    "draining": 0,
+    "used": 12,
+    "available": 8,
+    "capacity": 20,
+    "protected_originals": 6
+  },
+  "historical_trials": 5,
+  "retired_accounts": 4,
+  "full_capture_omissions": 1,
+  "omission_scope": "One bounded capture omission around an accelerated QA clock transition; retained as unknown, not source market coverage",
+  "chart_overlays": [
+    "VWAP anchored retained window",
+    "EMA 20",
+    "SMA 20",
+    "Bollinger 20 / 2 standard deviations"
+  ],
+  "chart_zoom_and_paused_follow": true,
+  "original_rules_modified": false
+}

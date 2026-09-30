@@ -1,4 +1,24 @@
-# CP10-CP16 integrated audit corrections and authorized installation
+# Continuous autonomous paper lab assignment — September 30, 2026
+
+Read `docs/CONTINUOUS_PAPER_LAB.md` and issue #1 comment 5915529073 first.
+Apply the owner's storage/horizon extension in comment 5916756374: dedicated
+G:\Projects research tiers, 100 decimal GB each, versioned continuation,
+two-hour housekeeping, outage/identity checks and coherent slower trials.
+Implement the complete deterministic UI-to-worker-to-account lifecycle with twenty
+concurrent managed/reserved slots, protected original six accounts, frozen parents,
+declared children and matched references, safe draining and retained history.
+The old finite campaign/admission/qualification contracts remain historical and
+unchanged. Exploration and preserving an experimental parent do not confer CP7
+incumbent authority. Preserve its 28-day/human qualification policy.
+
+This assignment authorizes isolated implementation, verification, commits, push,
+issue updates and a draft PR. Leave the PR unmerged. Do not deploy, restart the
+installed application, activate its lab, make paid calls or download models.
+The earlier merge/relaunch instructions below do not authorize this rollout.
+Only synthetic/redacted verification receipts belong in this public repository.
+Declare acceptance limits before running verification; retain failed attempts.
+
+# Historical CP10-CP16 integrated audit corrections and installation
 
 Read docs/CP16_AUDIT_CORRECTIONS.md and issue #1's integrated-source audit.
 Correct availability/expiry, exact typed archive links, interval-selected inputs,

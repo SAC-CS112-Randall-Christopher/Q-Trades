@@ -2,13 +2,13 @@ import { memo, useEffect, useRef, useState } from "react";
 import { Activity, ChevronRight, Search, Wrench } from "lucide-react";
 import { StrategyLab, type Experiments } from "./StrategyLab";
 import "./station.css";
+import { MarketChart, type Candle, type Indicators } from "./MarketChart";
 
 type Quote = { symbol: string; bid: string | null; ask: string | null; state: string; source: string; valid_for_ms: number; received_age_ms: number | null };
-type Candle = { open_ms: number; close_ms: number; open: string; high: string; low: string; close: string; volume: string };
 type Trade = { id: number; price: string; quantity: string; exchange_ms: number };
 type Live = { enabled: boolean; running: boolean; error: string | null; selected_symbol: string; markets: Quote[]; book: { bids: string[][]; asks: string[][]; metrics: { spread_bps: string } } | null; trades: Trade[]; trade_gaps: number };
 type ScanRow = { symbol: string; eligible: boolean; confirmed: boolean; reason: string; change_percent?: string; quote_volume?: string };
-type Detail = { selected_symbol: string; generated_at: number; scan: { rows: ScanRow[]; total: number; omitted: number; observed_at: number; constrained: boolean; selected: string[] }; candles: Candle[]; candle_gaps: object[]; candles_stale: boolean; experiments?: Experiments; strategy: { primary_market: boolean; version: string; entries_paused: boolean; last_decision: { reason: string; at: number } | null; features?: { volume_ratio?: string; atr?: string; trend_up?: boolean } }; paper_events: { id: number; at: number; kind: string; body: { reason?: string; side?: string; price?: string; quantity?: string } }[] };
+type Detail = { selected_symbol: string; generated_at: number; scan: { rows: ScanRow[]; total: number; omitted: number; observed_at: number; constrained: boolean; selected: string[] }; candles: Candle[]; indicators?: Indicators; candle_gaps: object[]; candles_stale: boolean; experiments?: Experiments; strategy: { primary_market: boolean; version: string; entries_paused: boolean; last_decision: { reason: string; at: number } | null; features?: { volume_ratio?: string; atr?: string; trend_up?: boolean } }; paper_events: { id: number; at: number; kind: string; body: { reason?: string; side?: string; price?: string; quantity?: string } }[] };
 type Tool = { id: string; name: string; purpose: string };
 type Run = { id: number; tool: string; symbol: string; status: string; started: number; error: string | null; result?: { result: Record<string, unknown> } };
 type ToolState = { tools: Tool[]; runs: Run[]; total: number; error: string | null };
@@ -43,44 +43,6 @@ function usePoll<T>(url: string, interval: number, enabled = true) {
   }, [url, interval, enabled]);
   return { data, error, at };
 }
-
-const Candles = memo(function Candles({ bars, range }: { bars: Candle[]; range: number }) {
-  const [hovered, setHovered] = useState<number | null>(null);
-  const container = useRef<HTMLDivElement>(null);
-  const [chartWidth, setChartWidth] = useState(706);
-  useEffect(() => {
-    const observer = new ResizeObserver(entries => setChartWidth(Math.max(250, Math.round(entries[0].contentRect.width))));
-    if (container.current) observer.observe(container.current);
-    return () => observer.disconnect();
-  }, []);
-  const visible = bars.slice(-range);
-  if (!visible.length) return <div ref={container} className="station-empty">No recorded candles for this market yet.</div>;
-  const plotWidth = chartWidth - 84;
-  const low = Math.min(...visible.map(b => Number(b.low)));
-  const high = Math.max(...visible.map(b => Number(b.high)));
-  const spread = high - low || high * 0.001 || 1;
-  const axisDigits = Math.min(8, Math.max(2, Math.ceil(-Math.log10(spread / 4)) + 1));
-  const begin = visible[0].open_ms;
-  const duration = Math.max(60000, visible[visible.length - 1].open_ms - begin);
-  const x = (b: Candle) => 8 + (b.open_ms - begin) / duration * (plotWidth - 16);
-  const y = (v: string | number) => 20 + (high - Number(v)) / spread * 153;
-  const width = Math.max(1, Math.min(12, (plotWidth - 16) * 60000 / duration * 0.65));
-  const volume = Math.max(...visible.map(b => Number(b.volume)), 1);
-  const selected = visible[hovered ?? visible.length - 1] ?? visible[visible.length - 1];
-  return <div ref={container}>
-    <div className="candle-readout"><span>{time(selected.open_ms)}</span><span>O {price(selected.open)}</span><span>H {price(selected.high)}</span><span>L {price(selected.low)}</span><span>C {price(selected.close)}</span></div>
-    <svg viewBox={`0 0 ${chartWidth} 250`} role="img" aria-label="Recorded one-minute price candles and volume" onMouseLeave={() => setHovered(null)}>
-      {[0, 1, 2, 3, 4].map(i => { const p = low + spread * i / 4; return <g key={i}><line x1="0" x2={plotWidth} y1={y(p)} y2={y(p)} className="chart-grid" /><text x={plotWidth + 10} y={y(p) + 4} className="chart-label">{number(p, axisDigits)}</text></g>; })}
-      {visible.map((b, index) => <g key={b.open_ms} className={Number(b.close) >= Number(b.open) ? "candle-up" : "candle-down"}>
-        <line x1={x(b)} x2={x(b)} y1={y(b.high)} y2={y(b.low)} />
-        <rect x={x(b) - width / 2} y={Math.min(y(b.open), y(b.close))} width={width} height={Math.max(1, Math.abs(y(b.open) - y(b.close)))} />
-        <rect x={x(b) - width / 2} y={222 - Number(b.volume) / volume * 28} width={width} height={Number(b.volume) / volume * 28} opacity="0.4" />
-        <rect x={x(b) - Math.max(width, 4) / 2} y="8" width={Math.max(width, 4)} height="217" className="candle-hover" onMouseEnter={() => setHovered(index)}><title>{time(b.open_ms)} · O {b.open} H {b.high} L {b.low} C {b.close} · volume {b.volume}</title></rect>
-      </g>)}
-      <text x="8" y="245" className="chart-label">{time(visible[0].open_ms)}</text><text x={plotWidth} textAnchor="end" y="245" className="chart-label">{time(visible[visible.length - 1].open_ms)}</text>
-    </svg>
-  </div>;
-});
 
 const ToolResult = memo(function ToolResult({ run }: { run: Run }) {
   const result = run.result?.result;
@@ -175,7 +137,7 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
         {live && !quote && <p className="station-inline-note">This market is screened, but has no active quote stream. Selecting it does not override the feed's resource limits.</p>}
         <div className="station-chart">
           <div className="station-pane-title"><h3>Price &amp; volume <span>· 1-minute candles</span></h3><div className="chart-ranges" aria-label="Chart history">{[30, 60, 120].map(n => <button type="button" key={n} className={range === n ? "selected" : ""} onClick={() => setRange(n)} aria-pressed={range === n}>{n === 30 ? "30m" : n === 60 ? "1h" : "2h"}</button>)}</div></div>
-          {detail ? <Candles bars={detail.candles} range={range} /> : <div className="station-empty">Loading recorded price history…</div>}
+          {detail ? <MarketChart bars={detail.candles} range={range} indicators={detail.indicators} stale={detail.candles_stale} symbol={symbol} /> : <div className="station-empty">Loading recorded price history…</div>}
           {detail?.candles_stale && <p className="station-inline-note">Recorded candles are stale; this chart is historical.</p>}
           {!!detail?.candle_gaps.length && <p className="station-inline-note">This chart contains gaps in recorded history.</p>}
           {detailPoll.error && <p className="station-inline-note">Chart and decision evidence could not refresh.</p>}

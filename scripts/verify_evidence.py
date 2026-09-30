@@ -91,7 +91,7 @@ def percentiles(values):
     }
 
 
-def recorded_tick(store, recorder, at, sequence, *, validate=True, compact=False):
+def recorded_tick(store, recorder, at, sequence, *, validate=True, compact=False, flush=True):
     started = time.perf_counter()
     receipt_mono = time.monotonic()
     f = frames(at, sequence)
@@ -174,7 +174,8 @@ def recorded_tick(store, recorder, at, sequence, *, validate=True, compact=False
                 "events": linked_events(measured["events"], store.last_commit_receipt),
             }
         )
-    asyncio.run(recorder.flush())
+    if flush:
+        asyncio.run(recorder.flush())
     finished = time.perf_counter()
     if validate:
         original = PaperEngine(copy.deepcopy(packet["state_before"]), decision_at)

@@ -68,8 +68,10 @@ def observation_rows(rows: list[dict[str, Any]], as_of: float) -> list[dict[str,
     return sorted(result, key=lambda q: q["minute"])
 
 
-def feature_value(history: list[dict[str, Any]], family: str) -> float | None:
-    lookback = FAMILIES[family]["lookback"]
+def feature_value(
+    history: list[dict[str, Any]], family: str, *, lookback: int | None = None
+) -> float | None:
+    lookback = FAMILIES[family]["lookback"] if lookback is None else lookback
     if len(history) < lookback + 1:
         return None
     tail = history[-lookback - 1 :]

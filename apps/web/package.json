@@ -9,9 +9,10 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
+    "lightweight-charts": "5.2.1",
+    "lucide-react": "1.48.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "lucide-react": "1.48.0"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@types/react": "19.3.0",

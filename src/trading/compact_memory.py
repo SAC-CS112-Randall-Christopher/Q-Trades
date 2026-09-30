@@ -66,7 +66,7 @@ def linked_events(
 
 
 class CompactMemory:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, *, storage_bytes: int | None = None):
         path.parent.mkdir(parents=True, exist_ok=True)
         self.path = path
         self.db = sqlite3.connect(path, timeout=0.25, check_same_thread=False)
@@ -98,28 +98,53 @@ class CompactMemory:
                 CREATE TRIGGER IF NOT EXISTS {table}_delete BEFORE DELETE ON {table}
                 BEGIN SELECT RAISE(ABORT,'Memory history is retained'); END;
             """)
+        self.storage_bytes = storage_bytes
+        self.state_table = "compact_meta"
+        if storage_bytes is not None:
+            if not 256 * 1024 <= storage_bytes <= 100_000_000_000:
+                raise ValueError("Invalid versioned retained research capacity")
+            self.db.executescript(
+                "CREATE TABLE IF NOT EXISTS compact_v2_plan("
+                "id INTEGER PRIMARY KEY,bytes INTEGER NOT NULL);"
+                " CREATE TABLE IF NOT EXISTS compact_v2_state("
+                "id INTEGER PRIMARY KEY,state TEXT NOT NULL);"
+                " INSERT OR IGNORE INTO compact_v2_state VALUES(1,'recording');"
+            )
+            with self.db:
+                self.db.execute(
+                    "INSERT OR IGNORE INTO compact_v2_plan VALUES(1,?)", (storage_bytes,)
+                )
+            if self.db.execute("SELECT bytes FROM compact_v2_plan").fetchone()[0] != storage_bytes:
+                raise ValueError("Versioned compact capacity differs from its saved plan")
+            self.db.execute(f"PRAGMA max_page_count={storage_bytes // 4096}")
+            self.state_table = "compact_v2_state"
 
     def append(self, packet: dict[str, Any], *, disk_available: bool = True) -> None:
         with self.db:
-            state = self.db.execute("SELECT state FROM compact_meta").fetchone()[0]
+            state = self.db.execute(f"SELECT state FROM {self.state_table}").fetchone()[0]
             if state == "capacity":
                 return
             if not disk_available:
-                self.db.execute("UPDATE compact_meta SET state='disk_pressure'")
+                self.db.execute(f"UPDATE {self.state_table} SET state='disk_pressure'")
                 return
             size = sum(
                 p.stat().st_size for p in (self.path, Path(str(self.path) + "-wal")) if p.exists()
             )
-            if (
+            if self.storage_bytes is None and (
                 size > 60 * 1024**2
                 or self.db.execute("SELECT count(*) FROM compact_prefixes").fetchone()[0] >= 8192
                 or self.db.execute("SELECT count(*) FROM compact_events").fetchone()[0]
                 + len(packet["events"])
                 > 20000
             ):
-                self.db.execute("UPDATE compact_meta SET state='capacity'")
+                self.db.execute(f"UPDATE {self.state_table} SET state='capacity'")
                 return
-            self.db.execute("UPDATE compact_meta SET state='recording' WHERE state!='recording'")
+            if self.storage_bytes is not None and size + 262144 > self.storage_bytes:
+                self.db.execute(f"UPDATE {self.state_table} SET state='capacity'")
+                return
+            self.db.execute(
+                f"UPDATE {self.state_table} SET state='recording' WHERE state!='recording'"
+            )
             available = max(
                 packet["collected_at"],
                 time.time(),
@@ -164,6 +189,9 @@ class CompactMemory:
                 self._mature(packet["at"], available)
 
     def _mature(self, at: float, available: float) -> None:
+        # A declared continuation owns subsequent first-seen labels.
+        if (self.path.parent / "mature-outcomes-v2.sqlite").exists():
+            return
         due = self.db.execute(
             "SELECT p.* FROM compact_prefixes p LEFT JOIN compact_outcomes o "
             "ON o.episode=p.episode WHERE o.episode IS NULL AND p.cutoff+2700<=? "
@@ -173,78 +201,24 @@ class CompactMemory:
         for row in due:
             if digest(json.loads(row["body"])) != row["sha256"]:
                 raise ValueError("Prefix changed")
-            target = self._target(row["cutoff"], at, available)
+            target = journal_target(self.db, row["cutoff"], at, available)
             self.db.execute(
                 "INSERT INTO compact_outcomes VALUES(?,?,?,?)",
                 (row["episode"], available, canonical(target), digest(target)),
             )
 
-    def _target(self, cutoff: float, at: float, available: float) -> dict[str, Any]:
-        target: dict[str, Any] = {
-            "status": "unavailable",
-            "version": "executed-trade-net-v1",
-            "collection_version": CONTRACT["version"],
-            "reason": "No linked modeled closed trade by original horizon",
-            "available_at": available,
-            "net_bps": None,
-        }
-        rows = self.db.execute(
-            "SELECT * FROM compact_events WHERE available<=? "
-            "AND json_extract(body,'$.at')>=? AND json_extract(body,'$.at')<=? "
-            "ORDER BY event_id",
-            (available, cutoff, cutoff + 2700),
-        ).fetchall()
-        chosen, opened, entry = None, None, None
-        for row in rows:
-            e = json.loads(row["body"])
-            if digest(e) != row["sha256"]:
-                raise ValueError("Linked event changed")
-            b = e["body"]
-            if (
-                e["kind"] == "order_intent"
-                and b.get("side") == "buy"
-                and b.get("version") == "breakout-v1"
-                and b.get("created_at") == cutoff
-                and chosen is None
-            ):
-                chosen = e["account"]
-            if (
-                chosen == e["account"]
-                and e["kind"] == "fill"
-                and b.get("side") == "buy"
-                and b.get("created_at") == cutoff
-            ):
-                opened, entry = e["at"], e
-            if (
-                chosen == e["account"]
-                and e["kind"] == "trade_closed"
-                and opened is not None
-                and b["opened_at"] == opened
-                and b["closed_at"] <= min(at, cutoff + 2700)
-            ):
-                cost, proceeds, pnl = (Decimal(b[k]) for k in ("cost", "proceeds", "pnl"))
-                if not all(x.is_finite() for x in (cost, proceeds, pnl)) or cost <= 0:
-                    return dict(target, reason="Invalid executable target")
-                if proceeds - cost != pnl:
-                    return dict(target, reason="Net journal target does not reconcile")
-                return dict(
-                    target,
-                    status="available",
-                    reason="Linked original journal trade",
-                    net_bps=float(pnl / cost * 10000),
-                    entry=entry,
-                    exit=e,
-                    fees_embedded_once=True,
-                    horizon_seconds=2700,
-                    maturity_observed_at=at,
-                    coverage="Modeled paper fills only",
-                )
-        return target
-
     def snapshot(self) -> dict[str, Any]:
         return {
-            "contract": CONTRACT,
-            "state": self.db.execute("SELECT state FROM compact_meta").fetchone()[0],
+            "contract": CONTRACT
+            if self.storage_bytes is None
+            else {
+                **CONTRACT,
+                "capacity": (
+                    "Versioned shared research-tier physical quota; no lifetime prefix/event cap"
+                ),
+                "storage_version": "research-tiers-v2",
+            },
+            "state": self.db.execute(f"SELECT state FROM {self.state_table}").fetchone()[0],
             "prefixes": self.db.execute("SELECT count(*) FROM compact_prefixes").fetchone()[0],
             "financial_authority": False,
         }
@@ -253,7 +227,76 @@ class CompactMemory:
         self.db.close()
 
 
+def journal_target(
+    db: sqlite3.Connection, cutoff: float, at: float, available: float
+) -> dict[str, Any]:
+    target: dict[str, Any] = {
+        "status": "unavailable",
+        "version": "executed-trade-net-v1",
+        "collection_version": CONTRACT["version"],
+        "reason": "No linked modeled closed trade by original horizon",
+        "available_at": available,
+        "net_bps": None,
+    }
+    rows = db.execute(
+        "SELECT * FROM compact_events WHERE available<=? "
+        "AND json_extract(body,'$.at')>=? AND json_extract(body,'$.at')<=? "
+        "ORDER BY event_id LIMIT 4097",
+        (available, cutoff, cutoff + 2700),
+    ).fetchall()
+    if len(rows) > 4096:
+        return dict(target, reason="Linked journal dependencies exceed the bounded outcome pass")
+    chosen, opened, entry = None, None, None
+    for row in rows:
+        e = json.loads(row["body"])
+        if digest(e) != row["sha256"]:
+            raise ValueError("Linked event changed")
+        b = e["body"]
+        if (
+            e["kind"] == "order_intent"
+            and b.get("side") == "buy"
+            and b.get("version") == "breakout-v1"
+            and b.get("created_at") == cutoff
+            and chosen is None
+        ):
+            chosen = e["account"]
+        if (
+            chosen == e["account"]
+            and e["kind"] == "fill"
+            and b.get("side") == "buy"
+            and b.get("created_at") == cutoff
+        ):
+            opened, entry = e["at"], e
+        if (
+            chosen == e["account"]
+            and e["kind"] == "trade_closed"
+            and opened is not None
+            and b["opened_at"] == opened
+            and b["closed_at"] <= min(at, cutoff + 2700)
+        ):
+            cost, proceeds, pnl = (Decimal(b[k]) for k in ("cost", "proceeds", "pnl"))
+            if not all(x.is_finite() for x in (cost, proceeds, pnl)) or cost <= 0:
+                return dict(target, reason="Invalid executable target")
+            if proceeds - cost != pnl:
+                return dict(target, reason="Net journal target does not reconcile")
+            return dict(
+                target,
+                status="available",
+                reason="Linked original journal trade",
+                net_bps=float(pnl / cost * 10000),
+                entry=entry,
+                exit=e,
+                fees_embedded_once=True,
+                horizon_seconds=2700,
+                maturity_observed_at=at,
+                coverage="Modeled paper fills only",
+            )
+    return target
+
+
 def compact_snapshot(path: Path, as_of: float) -> dict[str, Any]:
+    from trading.outcome_continuation import continued_outcome
+
     with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         db.row_factory = sqlite3.Row
         rows = db.execute(
@@ -270,7 +313,14 @@ def compact_snapshot(path: Path, as_of: float) -> dict[str, Any]:
                 "SELECT * FROM compact_outcomes WHERE episode=? AND available<=?",
                 (row["episode"], as_of),
             ).fetchone()
-            label = json.loads(out["body"]) if out else {"status": "pending"}
+            label = (
+                json.loads(out["body"])
+                if out
+                else (
+                    continued_outcome(path.parent, "compact", row["episode"], row["sha256"], as_of)
+                    or {"status": "pending"}
+                )
+            )
             if out and digest(label) != out["sha256"]:
                 raise ValueError("Compact outcome changed")
             result.append(
@@ -303,6 +353,8 @@ def compact_snapshot(path: Path, as_of: float) -> dict[str, Any]:
 
 
 def compact_evidence(path: Path, episode: str, expected_sha256: str) -> dict[str, Any]:
+    from trading.outcome_continuation import continued_outcome
+
     if not path.is_file():
         raise LookupError("Compact evidence archive is unavailable")
     with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
@@ -324,6 +376,10 @@ def compact_evidence(path: Path, episode: str, expected_sha256: str) -> dict[str
             outcome = json.loads(out["body"])
             if digest(outcome) != out["sha256"]:
                 raise ValueError("Requested compact outcome fingerprint differs")
+        else:
+            outcome = continued_outcome(
+                path.parent, "compact", episode, expected_sha256, time.time()
+            )
         return {
             "archive": "compact",
             "episode": episode,
@@ -332,7 +388,7 @@ def compact_evidence(path: Path, episode: str, expected_sha256: str) -> dict[str
             "available_at": row["available"],
             "descriptor": d,
             "outcome": outcome,
-            "outcome_sha256": out["sha256"] if out else None,
-            "outcome_available_at": out["available"] if out else None,
+            "outcome_sha256": digest(outcome) if outcome else None,
+            "outcome_available_at": outcome["available_at"] if outcome else None,
             "financial_authority": False,
         }

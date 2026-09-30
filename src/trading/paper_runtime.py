@@ -47,11 +47,63 @@ class PaperRuntime:
         self._candle_errors: dict[str, str] = {}
         self._numerical_minute = -1
         self._numerical_rows: list[dict[str, Any]] = []
+        self._lab_features: dict[str, tuple[int, dict[str, Any]]] = {}
 
     def memory_book(self, symbol: str) -> dict[str, Any] | None:
         return self.books.get(symbol)
 
+    def lab_history(self, now: float, horizon: str) -> list[Bar]:
+        if horizon == "short":
+            return self.history.get("BTCUSD", [])
+        # One shared bounded 9,000-minute history per closed minute, fetched
+        # outside the financial transaction. No account duplicates or bulk loads.
+        stamp = int(now // 60)
+        cache = getattr(self, "_lab_history_cache", None)
+        if cache is None or cache[0] != stamp:
+            rows = self.store.connection.execute(
+                (
+                    "SELECT body FROM paper_bars WHERE symbol='BTCUSD' AND observ"
+                    "ed_at<=%s AND open_ms+60000<=%s ORDER BY open_ms DESC LIMIT "
+                    "9000"
+                ),
+                (now, now * 1000),
+            ).fetchall()
+            result = (
+                parse_bars([r["body"] for r in reversed(rows[:1000])], now)
+                if len(rows) <= 1000
+                else []
+            )
+            if len(rows) > 1000:
+                for start in range(0, len(rows), 1000):
+                    result.extend(
+                        parse_bars([r["body"] for r in reversed(rows[start : start + 1000])], now)
+                    )
+                result.sort(key=lambda b: b.open_ms)
+            self._lab_history_cache = stamp, result
+        return list(self._lab_history_cache[1])
+
     def numerical_study(self, now: float, study: dict[str, Any]) -> None:
+        from trading.autonomous_spec import RuleSpec, rule_feature
+
+        specs = {}
+        for a in self.state["accounts"].values():
+            if a.get("rule_spec"):
+                key = a["version"] + ":" + a["execution_profile"]
+                specs[key] = a
+        cache = getattr(self, "_lab_features", {})
+        self._lab_features = {k: v for k, v in cache.items() if k in specs}
+        for key, a in specs.items():
+            spec = RuleSpec.model_validate(a["rule_spec"])
+            bars = self.lab_history(now, spec.holding_horizon)
+            stamp = bars[-1].open_ms if bars else -1
+            cached = self._lab_features.get(key)
+            if cached is None or cached[0] != stamp:
+                calculated = rule_feature(bars, now, spec, a["execution_profile"])
+                self._lab_features[key] = stamp, calculated
+            feature = dict(self._lab_features[key][1])
+            if not bars or not 0 < now * 1000 - bars[-1].close_ms <= 90000:
+                feature.update(eligible=False, reason="Awaiting a fresh subsequent closed candle")
+            study.setdefault("BTCUSD", {})[a["version"]] = feature
         candidates = [
             a
             for a in self.state["accounts"].values()
@@ -323,6 +375,7 @@ class PaperRuntime:
         return {
             "enabled": True,
             "mode": "paper",
+            "evidence_kind": self.state.get("evidence_kind", "observed_public_market"),
             "tier": 3,
             "running": self.running,
             "error": self.error,
@@ -364,7 +417,7 @@ class PaperRuntime:
                 if primary.get("execution_profile", "paper-rest-ioc-v1") in PROFILES
                 else "Unknown execution profile"
             )
-            + " · 2 bps adverse price + 10% depth participation",
+            + " Â· 2 bps adverse price + 10% depth participation",
             "sampling": "Public REST, about 2 seconds plus request time; stops can gap",
         }
 

@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, useState } from "react";
+import { StrictMode, Suspense, lazy, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Activity,
@@ -30,9 +30,10 @@ import { ProspectivePanel } from "./ProspectivePanel";
 import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
+import { ResearchActivity } from "./ResearchActivity";
+import { AutonomousPanel } from "./AutonomousPanel";
 import { EvidencePanel } from "./EvidencePanel";
 import { ReadinessPanel } from "./ReadinessPanel";
-import { MarketStation } from "./MarketStation";
 import {
   AccountsView,
   DashboardView,
@@ -42,6 +43,8 @@ import {
   RiskOverview,
 } from "./WorkspaceViews";
 import "./theme.css";
+
+const MarketStation = lazy(() => import("./MarketStation").then(module => ({ default: module.MarketStation })));
 
 type Snapshot = {
   paper?: PaperSnapshot;
@@ -150,7 +153,7 @@ const timeLabel = (value?: string) =>
 
 function App() {
   const [page, setPage] = useState<Page>(currentPage);
-  const [labTab, setLabTab] = useState("experiments");
+  const [labTab, setLabTab] = useState("autonomous");
   const [riskTab, setRiskTab] = useState("limits");
   const [data, setData] = useState<Snapshot | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
@@ -399,6 +402,7 @@ function App() {
         </div>
       </aside>
       <main id="main" tabIndex={-1}>
+        {paper?.evidence_kind === "synthetic_qa_continuous" && <p role="status" className="warning">Synthetic QA market data · disposable software verification · no market-profit evidence</p>}
         <header className="topbar">
           <button
             className="mobile-nav"
@@ -564,8 +568,10 @@ function App() {
           )}
           {page === "ai-lab" && (
             <>
+              <ResearchActivity />
               <div className="workspace-tabs" aria-label="AI Lab views">
                 {[
+                  ["autonomous", "Continuous paper lab"],
                   ["experiments", "Numerical research"],
                   ["learning", "Forward learning"],
                   ["history", "Historical matches"],
@@ -581,6 +587,7 @@ function App() {
                   </button>
                 ))}
               </div>
+              {labTab === "autonomous" && <AutonomousPanel />}
               {labTab === "experiments" && <ExperimentLab paper={paper} />}
               {labTab === "learning" && (
                 <LearningPanel
@@ -593,7 +600,7 @@ function App() {
             </>
           )}
           {(page === "markets" || page === "strategies") && (
-            <MarketStation strategyOnly={page === "strategies"} />
+            <Suspense fallback={<p>Loading market chart…</p>}><MarketStation strategyOnly={page === "strategies"} /></Suspense>
           )}
           {page === "orders" && (
             <OrdersView paper={paper} unavailable={unavailable} />

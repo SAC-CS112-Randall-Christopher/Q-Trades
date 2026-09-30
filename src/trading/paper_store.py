@@ -5,6 +5,7 @@ import time
 from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 import psycopg
@@ -24,6 +25,15 @@ CREATE TABLE IF NOT EXISTS paper_events (
 );
 CREATE INDEX IF NOT EXISTS paper_events_recent ON paper_events(account, id DESC);
 CREATE INDEX IF NOT EXISTS paper_events_kind ON paper_events(kind, id DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS lab_proposal_once ON paper_events ((body->>'proposal_id'))
+WHERE kind='lab_trial_reserved';
+CREATE INDEX IF NOT EXISTS lab_trial_events ON paper_events ((body->>'trial_id'), id DESC)
+WHERE kind LIKE 'lab_%';
+CREATE TABLE IF NOT EXISTS paper_lab_archives (
+  account text PRIMARY KEY, trial_id text NOT NULL, retired_at double precision NOT NULL,
+  state jsonb NOT NULL
+);
+CREATE INDEX IF NOT EXISTS lab_archives_trial ON paper_lab_archives(trial_id, account);
 CREATE INDEX IF NOT EXISTS paper_learning_report ON paper_events ((body->>'request_id'))
 WHERE kind='learning_report_retained';
 CREATE TABLE IF NOT EXISTS paper_journal (
@@ -43,6 +53,8 @@ CREATE OR REPLACE TRIGGER paper_journal_immutable BEFORE UPDATE OR DELETE ON pap
 FOR EACH ROW EXECUTE FUNCTION paper_immutable();
 CREATE OR REPLACE TRIGGER paper_bars_immutable BEFORE UPDATE OR DELETE ON paper_bars
 FOR EACH ROW EXECUTE FUNCTION paper_immutable();
+CREATE OR REPLACE TRIGGER lab_archives_immutable BEFORE UPDATE OR DELETE ON paper_lab_archives
+FOR EACH ROW EXECUTE FUNCTION paper_immutable();
 """
 
 
@@ -56,6 +68,7 @@ def load_dsn(path: Path) -> str:
 
 class PaperStore:
     def __init__(self, dsn: str, *, owner: bool = False):
+        self.transaction_lock = RLock()
         self.owner = owner
         self.last_commit_receipt: dict[str, Any] | None = None
         self.connection = psycopg.connect(dsn, autocommit=True, row_factory=dict_row)
@@ -98,6 +111,28 @@ class PaperStore:
     def _append(self, engine: PaperEngine, revision: int) -> list[dict[str, Any]]:
         references = []
         for index, event in enumerate(engine.events):
+            if event["kind"] == "lab_account_archived":
+                saved = event["body"]["state"]
+                balances = self.connection.execute(
+                    "SELECT asset,bucket,sum(amount) AS amount FROM paper_journal "
+                    "WHERE account=%s GROUP BY asset,bucket",
+                    (event["account"],),
+                ).fetchall()
+                totals = {(r["asset"], r["bucket"]): r["amount"] for r in balances}
+                if (
+                    saved["positions"]
+                    or saved["pending"]
+                    or totals.get(("USD", "reserved"), Decimal(0)) != 0
+                    or totals.get(("USD", "cash"), Decimal(0)) != Decimal(saved["cash"])
+                    or totals.get(("USD", "fake_funding"), Decimal(0)) != -Decimal(saved["funding"])
+                    or totals.get(("USD", "fees"), Decimal(0)) != Decimal(saved["fees"])
+                    or any(r["amount"] != 0 for r in balances if r["bucket"] == "inventory")
+                ):
+                    raise ValueError("Financial closure does not reconcile; slot remains managed")
+                self.connection.execute(
+                    "INSERT INTO paper_lab_archives VALUES (%s,%s,%s,%s)",
+                    (event["account"], event["body"]["trial_id"], event["at"], Jsonb(saved)),
+                )
             row = self.connection.execute(
                 "INSERT INTO paper_events(revision, at, kind, account, body) "
                 "VALUES (%s,%s,%s,%s,%s) RETURNING id",
@@ -128,6 +163,10 @@ class PaperStore:
         return references
 
     def transact(self, now: float, work: Callable[[PaperEngine], None]) -> dict[str, Any]:
+        with self.transaction_lock:
+            return self._transact(now, work)
+
+    def _transact(self, now: float, work: Callable[[PaperEngine], None]) -> dict[str, Any]:
         self.require_owner()
         self.last_commit_receipt = None
         with self.connection.transaction():
@@ -173,6 +212,54 @@ class PaperStore:
         if not row:
             raise RuntimeError("Missing paper account")
         return {**row["body"], "revision": row["revision"]}
+
+    def lab_reserve(self, now: float, proposal: Any) -> dict[str, Any]:
+        from trading.autonomous_finance import reserve
+
+        result: dict[str, Any] = {}
+
+        def apply(engine: PaperEngine) -> None:
+            prior = self.connection.execute(
+                "SELECT body FROM paper_events WHERE kind='lab_trial_reserved' "
+                "AND body->>'proposal_id'=%s ORDER BY id LIMIT 1",
+                (proposal.request_id,),
+            ).fetchone()
+            if prior:
+                if prior["body"]["contract"]["proposal"] != proposal.model_dump():
+                    raise ValueError("Accepted proposal retry differs from its permanent intent")
+                result.update(status="already_reserved", trial_id=prior["body"]["id"])
+            else:
+                result.update(reserve(engine, proposal))
+
+        self.transact(now, apply)
+        return result
+
+    def lab_history(self, before: int = 0, limit: int = 20) -> dict[str, Any]:
+        rows = self.connection.execute(
+            "SELECT id,at,body FROM paper_events WHERE kind='lab_trial_reserved' "
+            "AND (%s=0 OR id<%s) ORDER BY id DESC LIMIT %s",
+            (before, before, limit + 1),
+        ).fetchall()
+        page = rows[:limit]
+        for row in page:
+            terminal = self.connection.execute(
+                "SELECT kind,at,body FROM paper_events WHERE kind IN "
+                "('lab_trial_scored','lab_trial_retired') AND body->>'trial_id'=%s "
+                "ORDER BY id DESC LIMIT 2",
+                (row["body"]["id"],),
+            ).fetchall()
+            row["decisions"] = terminal
+        return {
+            "trials": page,
+            "has_more": len(rows) > limit,
+            "next_before": page[-1]["id"] if page else before,
+        }
+
+    def archived_account(self, name: str) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            "SELECT * FROM paper_lab_archives WHERE account=%s", (name,)
+        ).fetchone()
+        return dict(row) if row else None
 
     def learning_report(self, request_id: str, sha256: str) -> dict[str, Any] | None:
         from trading.paper_learning import verify_report
@@ -303,6 +390,17 @@ class PaperStore:
                 expected = inventory.get(base, Decimal(0))
                 if balances.get((name, base, "inventory"), Decimal(0)) != expected:
                     errors.append(f"{name}: {base} inventory mismatch")
+        archived_errors = self.connection.execute(
+            "WITH balances AS (SELECT account,asset,bucket,sum(amount) AS amount "
+            "FROM paper_journal GROUP BY account,asset,bucket) "
+            "SELECT DISTINCT a.account FROM paper_lab_archives a LEFT JOIN balances b "
+            "ON b.account=a.account WHERE (b.bucket='cash' AND "
+            "b.amount<>(a.state->>'cash')::numeric) OR (b.bucket='reserved' AND b.amount<>0) "
+            "OR (b.bucket='inventory' AND b.amount<>0) OR (b.bucket='fees' AND "
+            "b.amount<>(a.state->>'fees')::numeric) OR (b.bucket='fake_funding' AND "
+            "b.amount<>-(a.state->>'funding')::numeric) LIMIT 20"
+        ).fetchall()
+        errors.extend(f"{r['account']}: archived financial state mismatch" for r in archived_errors)
         return {
             "balanced": bool(imbalanced and imbalanced["n"] == 0) and not errors,
             "imbalanced_events": imbalanced["n"] if imbalanced else None,

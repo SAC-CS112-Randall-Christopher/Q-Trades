@@ -91,9 +91,9 @@ export function ModelTrialsPanel() {
       <span className="pill caution"><FlaskConical size={13} /> Evaluation only</span>
     </div>
     <p className="lab-intro">Follow real model tests for research, training coordination, and review.
-      These synthetic checks assess method and instruction handling. Research agents remain disabled during qualification.</p>
+      These retained qualification runs assess method and instruction handling. Their dates identify historical results, not current market collection or ongoing strategy learning. Research agents remain disabled during qualification.</p>
     <div className="lab-status"><Cpu size={15} /><span>Local inference · Trading operates independently</span>
-      <span>{data ? `Snapshot ${localTime(data.generated_at)} Denver` : disconnected ? "Trial history unavailable" : "Loading trial history…"}</span></div>
+      <span>{data ? `History queried ${localTime(data.generated_at)} Denver` : disconnected ? "Trial history unavailable" : "Loading trial history…"}</span></div>
     {disconnected && <p className="lab-warning" role="alert">Trial view disconnected. Any results below are the last received snapshot.</p>}
     {data?.warnings.map((warning, i) => <p className="lab-warning" role="status" key={i}>{warning}</p>)}
     {data && data.runs.length === 0 && <p className="lab-empty">No trials for the current test contract are available in this view.</p>}
