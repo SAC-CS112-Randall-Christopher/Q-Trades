@@ -1,0 +1,176 @@
+native	Verify Windows PowerShell and isolated native behavior	﻿2026-09-30T00:23:43.3570203Z ##[group]Run $PSVersionTable.PSVersion.ToString()
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3570747Z ^[[36;1m$PSVersionTable.PSVersion.ToString()^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3571230Z ^[[36;1mif ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Requires Windows PowerShell 5.1' }^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3571769Z ^[[36;1mpython -B -m pytest -q -p no:cacheprovider --tb=long `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3572292Z ^[[36;1m  tests/test_simple_update.py tests/test_simple_health.py tests/test_paper_update_shutdown.py `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3572845Z ^[[36;1m  tests/test_windows_supervision.py tests/test_paper_engine.py `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3573284Z ^[[36;1m  tests/test_paper_risk.py tests/test_paper_risk_store.py `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3573700Z ^[[36;1m  tests/test_paper_economics.py tests/test_economics_store.py `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3574168Z ^[[36;1m  tests/test_paper_runtime.py tests/test_api.py tests/test_paper_store.py `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3574633Z ^[[36;1m  tests/test_paper_campaigns.py tests/test_campaign_store.py `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3575125Z ^[[36;1m  tests/test_experiment_registry.py tests/test_numerical_candidates.py `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3575587Z ^[[36;1m  tests/test_research_campaigns.py tests/test_paper_learning.py `^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3576106Z ^[[36;1m  tests/test_lab_resilience.py tests/test_live_readiness.py tests/test_efficiency_contracts.py^[[0m
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3643637Z shell: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3644050Z env:
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3644376Z   QTRADES_POWERSHELL: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3644778Z   PYTHONDONTWRITEBYTECODE: 1
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3645016Z   PIP_DISABLE_PIP_VERSION_CHECK: 1
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3645332Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.12.10\x64
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3645759Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.12.10\x64/lib/pkgconfig
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3646178Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3646570Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3646951Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.12.10\x64
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.3647262Z ##[endgroup]
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:23:43.5744106Z 5.1.26100.33438
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:24.8484622Z ...........................F........................................ssss [ 36%]
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:25.6839118Z ...........................ssssssssss....ssssssss.................ssssss [ 73%]
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4031139Z ...................s..........ss..........s..........                    [100%]
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4032946Z ================================== FAILURES ===================================
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4033715Z _ test_detached_tree_stops_only_owned_processes_and_rejects_changed_identity __
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4034192Z
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4034800Z tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/test_detached_tree_stops_only_0')
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4035312Z
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4035573Z     def test_detached_tree_stops_only_owned_processes_and_rejects_changed_identity(tmp_path):
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4036017Z         runtime = tmp_path / "paper workspace"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4036358Z         for name in ("data", "scripts", ".venv/Scripts", "trading"):
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4036733Z             (runtime / name).mkdir(parents=True, exist_ok=True)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4037141Z         shutil.copy2(sys.executable, runtime / ".venv/Scripts/python.exe")
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4037566Z         (runtime / ".venv/pyvenv.cfg").write_text(
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4038015Z             f"home = {sys.base_prefix}\ninclude-system-site-packages = false\n", encoding="utf-8"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4038426Z         )
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4038700Z         (runtime / "trading/__init__.py").write_text("", encoding="utf-8")
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4039447Z         (runtime / "trading/__main__.py").write_text(
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4039775Z             "import os,time\nfrom pathlib import Path\n"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4042417Z             "Path('data/worker-ready.pid').write_text(str(os.getpid()))\ntime.sleep(60)\n",
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4042838Z             encoding="utf-8",
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4043055Z         )
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4043308Z         runner = runtime / "scripts/Run-PaperExperiment.ps1"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4043635Z         runner.write_text(
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4043888Z             r"""$ErrorActionPreference='Stop'
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4044196Z     $root=Split-Path -Parent $PSScriptRoot
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4044586Z     $PID | Set-Content -LiteralPath (Join-Path $root 'data/supervisor.pid')
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4045001Z     $python=Join-Path $root '.venv/Scripts/python.exe'
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4045456Z     $child=Start-Process -FilePath $python -ArgumentList '-m trading serve --experiment' `
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4045942Z         -WorkingDirectory $root -WindowStyle Hidden -PassThru
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4046369Z     $child.Id | Set-Content -LiteralPath (Join-Path $root 'data/server.pid')
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4046753Z     Wait-Process -Id $child.Id
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4046999Z     """,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4047202Z             encoding="utf-8",
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4047416Z         )
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4047615Z         driver = tmp_path / "stop-tree.ps1"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4047884Z         driver.write_text(
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4048212Z             r"""param($Helper,$Root,$ForeignId)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4048551Z     $ErrorActionPreference='Stop'
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4048793Z     . $Helper
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4049025Z     $owned=@(Get-PaperUpdateProcessSnapshot $Root)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4049466Z     if($owned.Count -ne 3){throw 'Expected supervisor, base worker and venv launcher'}
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4049999Z     if($owned.ProcessId -contains [int]$ForeignId){throw 'Foreign process was captured'}
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4050487Z     $record=Get-Item -LiteralPath (Join-Path $Root 'data/server.pid')
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4050932Z     $originalId=(Get-Content -LiteralPath $record.FullName -Raw).Trim()
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4051315Z     $originalTime=$record.LastWriteTimeUtc
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4051683Z     $foreign=Get-CimInstance Win32_Process -Filter "ProcessId=$ForeignId"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4052169Z     [IO.File]::WriteAllText($record.FullName,[string]$ForeignId)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4052703Z     [IO.File]::SetLastWriteTimeUtc($record.FullName,([DateTime]$foreign.CreationDate).ToUniversalTime())
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4053316Z     try{Get-PaperUpdateProcessSnapshot $Root;throw 'Foreign PID record was accepted'}
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4053892Z     catch{
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4054096Z         if($_.Exception.Message -ne
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4054470Z             'Recorded launcher is not this paper runtime; preserving it.'){throw}
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4054828Z     }finally{
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4055071Z         [IO.File]::WriteAllText($record.FullName,$originalId)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4055447Z         [IO.File]::SetLastWriteTimeUtc($record.FullName,$originalTime)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4055770Z     }
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4056114Z     $changed=@($owned | Select-Object ProcessId,ExecutablePath,CommandLine,CreationDate)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4057122Z     $changed[0].CreationDate=([DateTime]$changed[0].CreationDate).AddSeconds(1)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4057738Z     try{Stop-VerifiedPaperUpdateProcesses $changed;throw 'Changed lifetime was not rejected'}
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4058166Z     catch{
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4058365Z         if($_.Exception.Message -ne
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4058736Z             'Paper process identity changed during shutdown; preserving it.'){throw}
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4059107Z     }
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4059298Z     $missing=@($owned|Where-Object {
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4059655Z         -not (Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4060008Z     })
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4060247Z     if($missing.Count){throw 'Mismatch stopped a process'}
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4060592Z     Stop-VerifiedPaperUpdateProcesses $owned
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4061566Z     Start-Sleep -Milliseconds 250
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4061835Z     $remaining=@($owned|Where-Object {
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4062168Z         Get-Process -Id $_.ProcessId -ErrorAction SilentlyContinue
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4062494Z     })
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4062740Z     if($remaining.Count){throw 'Owned process still running'}
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4063194Z     if(-not (Get-Process -Id $ForeignId -ErrorAction SilentlyContinue)){
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4063568Z         throw 'Foreign process was stopped'
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4063835Z     }
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4064092Z     @{owned_count=$owned.Count;changed_identity_preserved=$true;
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4064492Z         foreign_preserved=$true;foreign_pid_record_rejected=$true}|
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4064834Z         ConvertTo-Json -Compress
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4065058Z     """,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4065237Z             encoding="utf-8",
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4065452Z         )
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4065647Z         flags = subprocess.CREATE_NO_WINDOW
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4065932Z         foreign = subprocess.Popen(
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4066306Z             [sys._base_executable, "-c", "import time; time.sleep(60)"], creationflags=flags
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4066689Z         )
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4066879Z         supervisor = subprocess.Popen(
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4067211Z             [SHELL, "-NoProfile", "-NonInteractive", "-File", str(runner)],
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4067549Z             creationflags=flags,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4067795Z             stdout=subprocess.DEVNULL,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4068053Z             stderr=subprocess.DEVNULL,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4068283Z         )
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4068449Z         try:
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4068651Z             deadline = time.monotonic() + 15
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4068949Z             marker = runtime / "data/worker-ready.pid"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4069309Z             while not marker.exists() and time.monotonic() < deadline:
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4069790Z                 assert supervisor.poll() is None, "Disposable supervisor exited before worker startup"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4070210Z                 time.sleep(0.05)
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4070522Z             assert marker.exists(), "Disposable paper tree did not start"
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4070865Z             result = subprocess.run(
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4071126Z                 [
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4071331Z                     SHELL,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4071556Z                     "-NoProfile",
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4071798Z                     "-NonInteractive",
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4072186Z                     "-File",
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4072420Z                     str(driver),
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4072706Z                     str(ROOT / "scripts/PaperUpdateShutdown.ps1"),
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4073017Z                     str(runtime),
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4073262Z                     str(foreign.pid),
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4073504Z                 ],
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4073706Z                 capture_output=True,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4073967Z                 text=True,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4074182Z                 timeout=30,
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4074395Z             )
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4074666Z >           assert result.returncode == 0, result.stdout + result.stderr
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4075122Z E           AssertionError: Expected supervisor, base worker and venv launcher
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4075480Z E             At
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4075958Z E             C:\Users\runneradmin\AppData\Local\Temp\pytest-of-runneradmin\pytest-0\test_detached_tree_stops_only_0\stop-tree.ps1:5
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4076493Z E             char:24
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4077183Z E             + ... ount -ne 3){throw 'Expected supervisor, base worker and venv launcher ...
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4077725Z E             +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4078263Z E                 + CategoryInfo          : OperationStopped: (Expected superv...d venv launcher:String) [], RuntimeException
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4079041Z E                 + FullyQualifiedErrorId : Expected supervisor, base worker and venv launcher
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4079429Z E
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4079623Z E
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4079815Z E           assert 1 == 0
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4080750Z E            +  where 1 = CompletedProcess(args=['C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-NoProfile', '-NonInteractiv...r:String) [], RuntimeException\n    + FullyQualifiedErrorId : Expected supervisor, base worker and venv launcher\n \n").returncode
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4081668Z
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4081823Z tests\test_paper_update_shutdown.py:177: AssertionError
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4082186Z ============================== warnings summary ===============================
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4082646Z C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\fastapi\testclient.py:1
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4083567Z   C:\hostedtoolcache\windows\Python\3.12.10\x64\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4084445Z     from starlette.testclient import TestClient as TestClient  # noqa
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4084720Z
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4084933Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4085346Z =========================== short test summary info ===========================
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4086148Z FAILED tests/test_paper_update_shutdown.py::test_detached_tree_stops_only_owned_processes_and_rejects_changed_identity - AssertionError: Expected supervisor, base worker and venv launcher
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4086863Z   At
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4087307Z   C:\Users\runneradmin\AppData\Local\Temp\pytest-of-runneradmin\pytest-0\test_detached_tree_stops_only_0\stop-tree.ps1:5
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4087818Z   char:24
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4088111Z   + ... ount -ne 3){throw 'Expected supervisor, base worker and venv launcher ...
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4088520Z   +                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4089036Z       + CategoryInfo          : OperationStopped: (Expected superv...d venv launcher:String) [], RuntimeException
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4089620Z       + FullyQualifiedErrorId : Expected supervisor, base worker and venv launcher
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4089983Z
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4090151Z
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.4090319Z assert 1 == 0
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.5089365Z  +  where 1 = CompletedProcess(args=['C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-NoProfile', '-NonInteractiv...r:String) [], RuntimeException\n    + FullyQualifiedErrorId : Expected supervisor, base worker and venv launcher\n \n").returncode
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.5092311Z 1 failed, 164 passed, 32 skipped, 1 warning in 53.96s
+native	Verify Windows PowerShell and isolated native behavior	2026-09-30T00:24:38.7335736Z ##[error]Process completed with exit code 1.

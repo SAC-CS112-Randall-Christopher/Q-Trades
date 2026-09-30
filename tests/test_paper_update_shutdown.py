@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import time
+import venv
 from pathlib import Path
 
 import pytest
@@ -71,10 +72,9 @@ def test_detached_tree_stops_only_owned_processes_and_rejects_changed_identity(t
     runtime = tmp_path / "paper workspace"
     for name in ("data", "scripts", ".venv/Scripts", "trading"):
         (runtime / name).mkdir(parents=True, exist_ok=True)
-    shutil.copy2(sys.executable, runtime / ".venv/Scripts/python.exe")
-    (runtime / ".venv/pyvenv.cfg").write_text(
-        f"home = {sys.base_prefix}\ninclude-system-site-packages = false\n", encoding="utf-8"
-    )
+    # Hosted Python is a base interpreter; local Python is already a venv launcher.
+    # Build the same real venv on both, rather than copying different executables.
+    venv.EnvBuilder(with_pip=False).create(runtime / ".venv")
     (runtime / "trading/__init__.py").write_text("", encoding="utf-8")
     (runtime / "trading/__main__.py").write_text(
         "import os,time\nfrom pathlib import Path\n"

@@ -34,6 +34,13 @@ a read-only CIM property. That receipt is retained in `initial-focused-tests.txt
 The fixture now copies its snapshot before changing the lifetime; the corrected
 native checks and complete suite pass. This does not relabel the earlier run.
 
+Hosted run 36650027797 then reported **one failed, 164 passed, 32 database skips**.
+The disposable fixture copied `sys.executable`, which is a venv redirector locally
+but a base interpreter on the runner; the latter produced a two-process tree.
+The fixture now creates a real virtual environment without pip/network access on
+both hosts. The updater's process-identity and shutdown code did not change for
+this fixture correction. The hosted red log remains in the review evidence.
+
 The actual installed runtime's three still-running paper processes were separately
 verified read-only against their executable, command and PID-file creation time.
 Hosted exact-head checks, merge, final-main checks and a successful native updater
