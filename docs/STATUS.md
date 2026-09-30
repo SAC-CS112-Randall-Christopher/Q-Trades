@@ -1,5 +1,13 @@
 # Source status — September 29, 2026
 
+PRs #2–#14 are merged. Final-main run 36647938351 passed for 66fb978, including
+158 Windows checks, 32 database skips and the production web build. The first
+native updater attempt refused to copy because verified detached paper processes
+outlived the scheduled host. Its failed private transcript and backup are retained.
+The targeted CP0 shutdown repair passed the full local PostgreSQL suite: 389 tests,
+no skips, 85.99 seconds. See `reviews/updater-paper-shutdown/README.md`. Its exact-head
+gate, merge, final-main gate and successful native retry remain separate stages.
+
 The reference UI is implemented on the audited stack. The full local PostgreSQL
 suite passed again: 382 tests, no skips, 78.53 seconds; lint, strict types and the
 production dashboard build passed. Actual synthetic browser workflows and native

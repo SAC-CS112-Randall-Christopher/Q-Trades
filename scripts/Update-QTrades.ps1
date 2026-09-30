@@ -78,6 +78,7 @@ try {
     Write-Host 'Local diagnostic log. Review before sharing; dependency output may contain private details.'
     Write-Stage 'Validate the existing installation'
     . (Join-Path $PSScriptRoot 'PaperStartupIdentity.ps1')
+    . (Join-Path $PSScriptRoot 'PaperUpdateShutdown.ps1')
     $updateMutex = New-Object Threading.Mutex($false, 'Local\QTradesManualUpdate')
     try { $updateHeld = $updateMutex.WaitOne(0) } catch [Threading.AbandonedMutexException] { $updateHeld = $true }
     if (-not $updateHeld) { throw 'Another Q-Trades update is running.' }
@@ -146,9 +147,11 @@ try {
     $task = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
     if (-not (Test-PaperStartupAction $task $runtime)) { throw 'Startup task changed during preparation.' }
     $wasEnabled = $task.Settings.Enabled
+    $paperProcesses = @(Get-PaperUpdateProcessSnapshot $runtime)
     Disable-ScheduledTask -TaskName $taskName | Out-Null
     $disabled = $true
     if ($task.State -eq 'Running') { Stop-ScheduledTask -TaskName $taskName }
+    Stop-VerifiedPaperUpdateProcesses $paperProcesses
     for ($attempt = 0; $attempt -lt 15; $attempt++) {
         $task = Get-ScheduledTask -TaskName $taskName
         $listeners = @(Get-NetTCPConnection -LocalPort 8780 -State Listen -ErrorAction SilentlyContinue)

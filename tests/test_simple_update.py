@@ -136,7 +136,12 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
         p = source / relative
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text("old fixture")
-    for name in ("Update-QTrades.ps1", "PaperStartupIdentity.ps1"):
+    for name in (
+        "Update-QTrades.ps1",
+        "PaperStartupIdentity.ps1",
+        "PaperUpdateShutdown.ps1",
+        "PaperProcessOwnership.ps1",
+    ):
         text = (ROOT / "scripts" / name).read_text()
         # The actual supervisor mutex is never acquired by a test.
         text = text.replace(
