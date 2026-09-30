@@ -67,7 +67,8 @@ class AccountControl(BaseModel):
 
 class ForwardAdmission(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    family: Literal["slow_trend", "volatility_breakout", "range_reversion"]
+    family: Literal["slow_trend", "volatility_breakout", "range_reversion", "memory_entry"]
+    arm: Literal["B", "C"] | None = None
     starting_cash: Literal["50", "100"]
     operating_daily_usd: str | None = Field(default=None, pattern=r"^\d{1,4}(\.\d{1,6})?$")
 
@@ -210,8 +211,8 @@ def create_app(
                     )
                     app.state.replay = replay_lab
                     if lab:
-                        lab.can_research = lambda: research_ready() and not (
-                            replay_lab and replay_lab.busy
+                        lab.can_research = lambda: (
+                            research_ready() and not (replay_lab and replay_lab.busy)
                         )
                     replay_task = asyncio.create_task(replay_lab.run()) if background else None
                 except (sqlite3.Error, OSError):
@@ -448,11 +449,19 @@ def create_app(
                 c
                 for c in experiment["result"].get("candidate_group", [])
                 if c["family"] == admission.family
+                and (admission.family != "memory_entry" or c.get("arm") == admission.arm)
             ),
             None,
         )
         if not candidate or not candidate.get("artifact"):
             raise HTTPException(409, "This family has no frozen fitted artifact")
+        if admission.family == "memory_entry" and (
+            experiment["result"].get("evidence_kind") == "synthetic_qa"
+            or not experiment["result"].get("eligible_for_forward_review")
+        ):
+            raise HTTPException(
+                409, "Memory remains shadow research; matched whole-account qualification required"
+            )
         try:
             return paper.forward_admit(
                 request_id,

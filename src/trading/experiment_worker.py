@@ -13,6 +13,8 @@ from trading.experiment_registry import (
     ExperimentRegistry,
     fingerprint,
 )
+from trading.memory_dataset import mature_snapshot
+from trading.memory_quality import evaluate_memory
 from trading.numerical_candidates import evaluate_families
 from trading.numerical_resources import constrain_child, own_limits
 from trading.research_experiment import run_experiment
@@ -28,6 +30,8 @@ def code_fingerprint() -> str:
                 "experiment_registry.py",
                 "experiment_worker.py",
                 "numerical_candidates.py",
+                "memory_quality.py",
+                "memory_dataset.py",
             )
         )
     ).hexdigest()
@@ -41,9 +45,19 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
     if fingerprint(snapshot) != job["snapshot_sha256"]:
         raise ValueError("Frozen input fingerprint mismatch")
     rows = snapshot["rows"]
-    if any(not 0 <= r["at"] <= plan.as_of for r in rows):
+    synthetic = plan.evidence_kind == "synthetic_qa" or any(
+        row.get("body", {}).get("synthetic_qa")
+        or row.get("descriptor", {}).get("data_mode") == "synthetic"
+        for row in rows
+    )
+    if plan.experiment_mode != "memory_entry" and any(not 0 <= r["at"] <= plan.as_of for r in rows):
         raise ValueError("Input availability exceeds the declared observation cutoff")
-    if plan.experiment_mode == "distinct_families":
+    if plan.experiment_mode == "memory_entry":
+        effective_plan = (
+            plan.model_copy(update={"evidence_kind": "synthetic_qa"}) if synthetic else plan
+        )
+        result = evaluate_memory(mature_snapshot(snapshot, plan.as_of), effective_plan)
+    elif plan.experiment_mode == "distinct_families":
         result = evaluate_families(rows, plan.test_start, plan.test_end, plan.as_of)
     else:
         result = run_experiment(
@@ -56,9 +70,6 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
         )
     result["decision"] = result.get("decision") or (
         "forward_review_only" if result.get("eligible_for_forward_review") else "reject"
-    )
-    synthetic = plan.evidence_kind == "synthetic_qa" or any(
-        row["body"].get("synthetic_qa") for row in rows
     )
     result["evidence_kind"] = "synthetic_qa" if synthetic else plan.evidence_kind
     if synthetic:

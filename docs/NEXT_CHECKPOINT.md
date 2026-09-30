@@ -1,3 +1,20 @@
+# Next: CP13 local context and independent order-flow research
+
+CP12 shadow memory workflow is implemented and documented in CP12_AFTER_COST_MEMORY.md.
+Its full local database suite passed 443 tests, no skips (93.40s), with lint/types/build
+and bounded native/browser proof. It has no qualified memory strategy or demonstrated
+whole-account benefit. Exact-head hosted source, merge/install and prospective
+acceptance remain separate. Read the GitHub hardening addenda before extending it.
+
+Freeze a finite outcome-blind contextual taxonomy, explicit unknowns/hard negatives,
+and evaluate context/flow independently. Decisions D is an optional unverified arm;
+local A/B/C must work without it. Preserve original risk/sizing/exits, protected
+windows, all failed trials, component costs and the CP7 account/admission/28-day rules.
+Resolve the known CP12 QA forced-stop teardown by verified ownership, not broad
+cleanup. Original installed main cb699456 and six accounts/history stay intact.
+
+# Historical handoff
+
 # Next: CP12 after-cost memory estimator and entry-filter challenger
 
 Read CP11_EXECUTION_REPLAY.md and its retained review receipts. CP11 calls the

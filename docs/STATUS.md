@@ -1,3 +1,21 @@
+# Source status - CP12, September 30, 2026 UTC
+
+CP12 adds the bounded after-cost memory shadow comparison, executable-label boundary,
+chronological calibration/protected scoring, B/C artifacts and support/fallback UI.
+Final local PostgreSQL proof: 443 passed, no skips (93.40s); lint, strict types
+(55 source files), dashboard build and finite native/browser checks passed.
+See CP12_AFTER_COST_MEMORY.md and reviews/cp12-memory-quality/README.md for scope.
+No qualified memory account or whole-account advantage has been established.
+A forced-stop QA teardown remains privately retained for integrated ownership cleanup.
+
+CP11 is draft #17, 752dd14; exact-head Windows run 36680786710 passed
+207 tests, 33 database skips and dashboard build. CP10 draft #16 remains its parent.
+Both source and CP12 are uninstalled. The original main cb699456 application still
+passes read-only health and preserves the six active accounts Chris confirmed.
+CP13 context/provider boundary is next, followed by CP14-CP16 and integrated audit.
+
+# Historical source snapshot
+
 # Source status - September 30, 2026 UTC
 
 CP11 adds isolated, persisted replay from the same protected inputs, exact baseline

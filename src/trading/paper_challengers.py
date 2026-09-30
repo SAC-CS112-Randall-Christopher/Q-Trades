@@ -22,6 +22,8 @@ def admit(
     validate_artifact(artifact)
     admissions = engine.state.setdefault("challengers", {})
     key = experiment + ":" + artifact["family"]
+    if artifact["family"] == "memory_entry":
+        key += ":" + artifact["arm"]
     digest = fingerprint(
         {
             "experiment": experiment,
@@ -44,8 +46,14 @@ def admit(
     a = account("numeric-" + artifact["sha256"][:24], engine.now, cash)
     a.update(
         numerical_artifact=deepcopy(artifact),
+        memory_entry_contract=artifact["version"] if artifact["family"] == "memory_entry" else None,
         experiment_id=experiment,
-        label=FAMILIES[artifact["family"]]["name"] + " · exploratory",
+        label=(
+            "Historical entry filter"
+            if artifact["family"] == "memory_entry"
+            else FAMILIES[artifact["family"]]["name"]
+        )
+        + " · exploratory",
         campaign_id="forward-research",
         symbols=["BTCUSD"],
         benchmark_symbols=["BTCUSD"],

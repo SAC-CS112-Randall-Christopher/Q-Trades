@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { PaperSnapshot } from "./PaperPanel";
+import { MemoryQualityPanel } from "./MemoryQualityPanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
 import {
   ResearchCampaignPanel,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 
 type Plan = {
+  experiment_mode?: string;
   name: string;
   mechanism: string;
   falsification: string;
@@ -603,7 +605,8 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
               ))}
             </>
           )}
-          {detail.result?.candidate_group && (
+          {detail.plan.experiment_mode==="memory_entry" && <MemoryQualityPanel requestId={detail.request_id} readonly/>}
+          {detail.plan.experiment_mode!=="memory_entry" && detail.result?.candidate_group && (
             <>
               <h4>Frozen candidate families</h4>
               <p>{detail.result.selection_treatment}</p>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { HistoricalMatches, type Episode, type MarketOutcome } from "./HistoricalMatches";
 import { ReplayPanel } from "./ReplayPanel";
+import { MemoryQualityPanel } from "./MemoryQualityPanel";
 
 export type EvidenceStatus = {
   state: string; rows?: number; bytes?: number; physical_bytes?: number;
@@ -144,5 +145,6 @@ export function EvidencePanel({ status }: { status?: EvidenceStatus }) {
       {showRaw && <pre className="evidence-raw">{JSON.stringify(detail,null,2)}</pre>}
     </section>}
     <ReplayPanel recordId={detail?.payload.kind==="decision"?detail.id:undefined}/>
+    <MemoryQualityPanel onOpenEvidence={id=>void open(id)}/>
   </section>;
 }

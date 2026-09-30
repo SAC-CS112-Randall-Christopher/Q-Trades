@@ -78,6 +78,15 @@ class TieredPaperRuntime(PaperRuntime):
     def control_frames(self) -> dict[str, dict[str, Any]]:
         return self.current_frames()[0]
 
+    def memory_book(self, symbol: str) -> dict[str, Any] | None:
+        book = self.stream.fresh_books().get(symbol)
+        if book:
+            return book
+        fallback = self._fallback.get(symbol)
+        if fallback and time.monotonic() - fallback["received_mono"] <= 1:
+            return fallback
+        return None
+
     def constrained(self) -> bool:
         return (
             time.monotonic() < self._constrained_until

@@ -93,6 +93,43 @@ def feature_reproduction(packet: dict[str, Any]) -> dict[str, Any]:
             "reproduced": variants,
             "recorded": expected,
         }
+        for a in packet["state_before"].get("accounts", {}).values():
+            if symbol != "BTCUSD" or a.get("memory_entry_contract") != "memory-entry-v1":
+                continue
+            from trading.memory_quality import filtered_feature
+            from trading.pattern_memory import descriptor
+
+            recorded = packet["study"].get(symbol, {}).get(a["version"], {})
+            try:
+                inputs = recorded["memory_input"]
+                d = descriptor(
+                    inputs["bars"], inputs["cutoff"], inputs["context"], inputs["data_mode"]
+                )
+                available = recorded["memory_evidence"]["available_at"]
+                prediction = filtered_feature(
+                    variants["breakout-v1"], d, a["numerical_artifact"], available
+                )
+                comparable = [
+                    "status",
+                    "action",
+                    "neighbors",
+                    "expected_net_bps",
+                    "profit_probability",
+                    "artifact_sha256",
+                ]
+                matched = (
+                    d == recorded["memory_descriptor"]
+                    and inputs["cutoff"] <= available <= at
+                    and all(
+                        prediction["memory_evidence"].get(k) == recorded["memory_evidence"].get(k)
+                        for k in comparable
+                    )
+                    and prediction["eligible"] == recorded["eligible"]
+                )
+            except (KeyError, ValueError, TypeError, ArithmeticError):
+                matched = False
+            closed_results[symbol]["memory_matched"] = matched
+            closed_results[symbol]["matched"] = closed_results[symbol]["matched"] and matched
     return {
         "status": "reproduced",
         "books": book_results,
@@ -116,6 +153,7 @@ class EvidenceRecorder:
                 "pattern_memory.py",
                 "execution_profiles.py",
                 "numerical_candidates.py",
+                "memory_quality.py",
             )
         }
         self.pending: deque[dict[str, Any]] = deque()

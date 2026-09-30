@@ -1,3 +1,24 @@
+# CP12 memory prototype and CP13 context/provider boundary
+
+Read docs/CP12_AFTER_COST_MEMORY.md and its review receipts. The local registry/UI
+retains insufficient and fitted B/C shadow comparisons. Actual net labels require
+linked fills/closing trades and a separately observed mature horizon; price-only
+outcomes and missing full dependency coverage are unavailable. No qualified memory
+paper account or paired whole-account benefit has been established. Preserve the
+existing frozen artifacts, cutoff/availability, support/unknown diagnostics, CP7
+matched allocations, separate marginal costs and human 28-day role policy.
+
+Continue CP13 local taxonomy/order-flow experiments separately, then CP14-CP16.
+Refresh main/active PRs and runtime ownership before proceeding. Provider access,
+contract/privacy/budget remain unverified; do not invent a Decisions schema, spend
+or connect credentials to prove the local workflow. Optional failure supplies no
+additional signal. Original six-account main remains healthy and unchanged.
+CP12 forced-stop QA teardown left its known disposable temporary path; preserve
+its private receipts and resolve exact schema ownership during integrated cleanup.
+Do not remove unrelated schemas, processes or data to make teardown appear green.
+
+# Historical: prior checkpoint agreements
+
 # CP11 replay and the next CP12 memory challenger
 
 Read docs/CP11_EXECUTION_REPLAY.md and its review receipt. The original engine is
