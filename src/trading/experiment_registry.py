@@ -19,6 +19,9 @@ MAX_JOBS = 512
 MAX_QUEUE = 8
 MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024
 MAX_RESULT_BYTES = 256 * 1024
+# Complete CP13 shadow cohorts have per-prefix classification/match receipts.
+# This extension keeps old modes' limits and the 512-MiB physical registry ceiling.
+SHADOW_RESULT_BYTES = 2 * 1024 * 1024
 TERMINAL = {"completed", "failed", "cancelled", "rejected"}
 
 
@@ -33,7 +36,9 @@ class ExperimentPlan(BaseModel):
     mechanism: str = Field(min_length=12, max_length=1000)
     falsification: str = Field(min_length=12, max_length=1000)
     feature: Literal["momentum_1", "momentum_5", "volatility_5", "spread_bps"] = "momentum_5"
-    experiment_mode: Literal["quote_ridge", "distinct_families", "memory_entry"] = "quote_ridge"
+    experiment_mode: Literal[
+        "quote_ridge", "distinct_families", "memory_entry", "context_regime", "order_flow"
+    ] = "quote_ridge"
     horizon_minutes: Literal[5, 15, 45, 60] = 5
     as_of: float
     test_start: float
@@ -42,7 +47,9 @@ class ExperimentPlan(BaseModel):
 
     @model_validator(mode="after")
     def boundaries(self) -> Self:
-        if (self.experiment_mode == "memory_entry") != (self.horizon_minutes == 45):
+        if (self.experiment_mode in {"memory_entry", "context_regime", "order_flow"}) != (
+            self.horizon_minutes == 45
+        ):
             raise ValueError("Memory uses the original 45-minute horizon; other modes keep theirs")
         if self.experiment_mode == "distinct_families" and self.horizon_minutes != 60:
             raise ValueError("The common family group reserves the longest 60-minute horizon")
@@ -278,7 +285,16 @@ class ExperimentRegistry:
         self, request_id: str, token: str, result: dict[str, Any] | None, reason: str | None
     ) -> bool:
         body = json.dumps(result, sort_keys=True, allow_nan=False) if result is not None else None
-        if body and len(body.encode()) > MAX_RESULT_BYTES:
+        row = self.db.execute(
+            "SELECT json_extract(plan,'$.experiment_mode') FROM experiments WHERE request_id=?",
+            (request_id,),
+        ).fetchone()
+        limit = (
+            SHADOW_RESULT_BYTES
+            if row and row[0] in {"context_regime", "order_flow"}
+            else MAX_RESULT_BYTES
+        )
+        if body and len(body.encode()) > limit:
             body, reason = None, "Result exceeds the evidence-size budget"
         status = "failed" if reason else "completed"
         with self.transaction():

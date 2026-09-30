@@ -1,3 +1,15 @@
+# CP13 local context/flow and next CP14
+
+Read docs/CP13_CONTEXT_AND_FLOW.md and its review receipts. Independent shadow
+context and sampled flow preserve unknowns, outcome-blind matches, fixed controls,
+expiry and optional Decisions no-signal fallback. No provider transport/spending
+or whole-account advantage is established. Full local proof: 449 tests, no skips.
+Continue CP14 predict/persist/mature/score/update with exact-once restart and
+frozen/batch comparisons, then CP15/CP16. Preserve all original accounts/history,
+protected windows, financial authority and the CP7 28-day human policy.
+
+# Historical checkpoint instructions
+
 # CP12 memory prototype and CP13 context/provider boundary
 
 Read docs/CP12_AFTER_COST_MEMORY.md and its review receipts. The local registry/UI
@@ -71,7 +83,7 @@ manual updater. Preserve the original trial, funding/history and private config.
 Keep private installation receipts/logs ignored. Never treat this authorization
 as permission for live orders, paid providers, model/GIS changes or trial resets.
 
-# UI work after the completed CP0–CP9 audit
+# UI work after the completed CP0â€“CP9 audit
 
 Chris requested a UI based on the three images in `C:\Projects\Q-Trades UI Inspo`.
 Use actual retained account/research evidence for every metric and chart; unknown
@@ -80,7 +92,7 @@ Preserve existing controls, review/export workflows and the paper-only boundary.
 The measured audit is complete; retain its receipts and source proof separately
 from UI changes, merge/install and prospective market acceptance.
 
-# CP0–CP9 efficiency audit
+# CP0â€“CP9 efficiency audit
 
 Read docs/CP0_CP9_EFFICIENCY_AUDIT.md and its retained measurements. Full receipts
 stay in immutable journals; compact projections grant no independent authority.
@@ -94,7 +106,7 @@ the simple updater or model/GIS runtimes to demonstrate success.
 Read docs/CP9_LIVE_READINESS.md. The source-dated normal UI/export concludes not
 ready: no live candidate, capital or authority. Separate published facts from
 private account evidence, paper from broker fills, and planned risk from loss
-guarantees. The measured CP0–CP9 audit is complete; preserve all prior receipts.
+guarantees. The measured CP0â€“CP9 audit is complete; preserve all prior receipts.
 
 # CP8 integrated acceptance
 
@@ -102,7 +114,7 @@ Read docs/CP8_INTEGRATED_ACCEPTANCE.md and its receipt. Preserve finite predecla
 SLO scopes, actual crash/backup checks and all failed evidence. Supervise the real
 Windows worker process, not a virtual-environment redirector. Source/database/UI
 and synthetic soak evidence do not authorize installation, 24/7 claims or live
-execution. Complete CP9's source-dated readiness packet and the CP0–CP9 efficiency
+execution. Complete CP9's source-dated readiness packet and the CP0â€“CP9 efficiency
 audit; keep original trial, updater, models and private data intact.
 
 # CP7 forward learning
@@ -122,7 +134,7 @@ including originals and exploratory accounts. Finite research has frozen family
 coverage, windows, attempt allocation and expiry; it cannot fund/admit/promote.
 Preserve every rejection and consumed window across restarts. Keep numerical child
 limits separate from the approved advisory-model/GIS resource monitor. Continue
-CP7–CP9 and the measured full-stack audit; source drafts are not installation.
+CP7â€“CP9 and the measured full-stack audit; source drafts are not installation.
 
 # CP5 numerical challengers
 
@@ -130,14 +142,14 @@ Read docs/CP5_NUMERICAL_CHALLENGERS.md. Preserve common-holdout search groups, a
 parameter trials and input availability. Exploratory admission is not promotion or
 profitability proof. Use exact minute-quote semantics and the existing cash-only
 engine; missing historical books must not be fabricated for execution replay.
-Continue CP6–CP9, then perform the measured full-stack audit.
+Continue CP6â€“CP9, then perform the measured full-stack audit.
 
 # CP4 protected research
 
 Read docs/CP4_PROTECTED_RESEARCH.md. Preserve the imported consumed boundary and
 all frozen plans/inputs/results/attempts. Research runs outside financial execution;
 there is no arbitrary-code or provider prerequisite. Unknown/negative evidence must
-remain a rejection or unresolved result. Continue CP5–CP9 as separate draft steps
+remain a rejection or unresolved result. Continue CP5â€“CP9 as separate draft steps
 and audit the whole stack; merges, paid calls and installation still need authority.
 
 # CP3 campaign implementation and audit

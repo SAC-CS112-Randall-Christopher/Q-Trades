@@ -1,3 +1,14 @@
+# CP13 source completed; CP14 next
+
+CP13 has independent context/flow shadow workflows, a finite taxonomy, explicit
+unknowns and an unverified optional provider boundary. Full local suite: 449 passed,
+no skips (94.37s); lint/types/build and bounded synthetic worker/browser checks
+passed. No executable paired-account benefit, provider access or new paper role.
+CP12 exact-head Windows run 36690319469 passed 218 tests/33 DB skips/build.
+Hosted CP13, stack merge, installation and subsequent outcomes are separate.
+
+# Prior status
+
 # Source status - CP12, September 30, 2026 UTC
 
 CP12 adds the bounded after-cost memory shadow comparison, executable-label boundary,
@@ -52,9 +63,9 @@ source has not been installed. CP9 still concludes not ready for live.
 
 # Historical delivery snapshot
 
-# Source status — September 29, 2026
+# Source status â€” September 29, 2026
 
-PRs #2–#14 are merged. Final-main run 36647938351 passed for 66fb978, including
+PRs #2â€“#14 are merged. Final-main run 36647938351 passed for 66fb978, including
 158 Windows checks, 32 database skips and the production web build. The first
 native updater attempt refused to copy because verified detached paper processes
 outlived the scheduled host. Its failed private transcript and backup are retained.
@@ -75,7 +86,7 @@ prospective market acceptance remains pending; the live decision is not ready.
 
 ## Audit source checkpoint before UI
 
-CP4–CP9 and the CP0–CP9 efficiency audit are complete as stacked draft PRs #7–#13.
+CP4â€“CP9 and the CP0â€“CP9 efficiency audit are complete as stacked draft PRs #7â€“#13.
 The audit's final implementation is 06ca527: local PostgreSQL suite 382 passed
 without skips, lint/types/dashboard build passed, seven synthetic normal-browser
 checks passed, and hosted run 36642583198 passed (158 tests, 32 database skips).
@@ -90,7 +101,7 @@ pending; CP9's live-readiness packet concludes not ready.
 
 ---
 
-# Historical operational status — September 28, 2026
+# Historical operational status â€” September 28, 2026
 
 Latest operational check: **16:25 Denver**. The paper worker remains running, fresh,
 unpaused and reconciled (read-only audit revision 161826). Primary equity is still
@@ -374,7 +385,7 @@ that the earlier supervisor-exit condition is repaired. Preserve that uncertaint
 
 Prior checkpoints follow, with their original evidence and limitations.
 
-At approximately 07:34–07:36 Denver, the dashboard's single **Live bid & ask** panel
+At approximately 07:34â€“07:36 Denver, the dashboard's single **Live bid & ask** panel
 was verified against the running paper feed. It shows actual bid/ask prices, actual
 WebSocket or REST-fallback source, receipt age, exchange timestamps where available,
 and explicit stale/unavailable states. Browser refresh is approximately one second;
@@ -417,7 +428,7 @@ the paper launcher PID remained 21356. Cold-start recovery was not exercised by
 stopping the running experiment. No engine/frontend code or model configuration
 changed, and the earlier Python/frontend test results were not rerun for this launcher.
 
-**WebSocket restored at approximately 07:04–07:05 Denver.** After Chris allowed Japan
+**WebSocket restored at approximately 07:04â€“07:05 Denver.** After Chris allowed Japan
 on SonicWall, verified TLS and a live depth message succeeded. The running app
 automatically switched BTC/ETH to fresh, sequence-validated WebSocket books, with
 advancing timestamps/counters across three observations. No restart was needed.

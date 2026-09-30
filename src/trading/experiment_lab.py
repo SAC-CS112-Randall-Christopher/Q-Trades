@@ -37,7 +37,7 @@ class ExperimentLab:
         if receipt["retry"]:
             return receipt
         try:
-            if plan.experiment_mode == "memory_entry":
+            if plan.experiment_mode in {"memory_entry", "context_regime", "order_flow"}:
                 snapshot = corpus_snapshot(
                     self.registry.path.parent / "research-evidence.sqlite", plan.as_of
                 )
