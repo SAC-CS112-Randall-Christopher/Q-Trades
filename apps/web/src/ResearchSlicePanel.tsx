@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 type Comparison = {episode:string;status:string;action:string;later_net_trade_bps:number|null;evidence:Record<string,unknown>};
 type Run = {request_id:string;status:string;reason?:string;manifest?:{execution_status?:string};result?:{
   mode:string;status:string;reason:string;evidence_kind:string;opportunities:number;labeled:number;unknown_outcomes:number;
-  changed_decisions:number;missed_positive_taken_trades:number;comparisons:Comparison[];
+  changed_decisions:number|null;missed_positive_taken_trades:number|null;comparisons:Comparison[];
+  decision_change_metric?:{label:string;value:number|null;unit?:string;baseline?:string};
   metrics?:Record<string,unknown>;journal?:Record<string,number>;drift_alarms?:unknown[];
   optional_D?:{status:string;reason:string};resources:{elapsed_seconds:number;paid_usd:string};
 }};
@@ -55,7 +56,7 @@ export function ResearchSlicePanel({requestId,readonly=false}:{requestId?:string
     {run&&<article><h3>Saved contribution · {run.status}</h3><p>Reference {run.request_id.slice(0,12)} · {run.reason??run.result?.reason??"Waiting for the bounded worker"}</p>
       <p>{run.manifest?.execution_status}</p>{run.result&&<><p>{run.result.evidence_kind==="synthetic_qa"?"Synthetic test data":"Observed paper evidence"} · {contributionName(run.result.mode)} · {run.result.status.replaceAll("_"," ")}</p>
         <dl className="summary-values"><div><dt>Observed opportunities</dt><dd>{run.result.opportunities}</dd></div><div><dt>Executable labels</dt><dd>{run.result.labeled}</dd></div>
-          <div><dt>Unknown outcomes</dt><dd>{run.result.unknown_outcomes}</dd></div><div><dt>Changed entries</dt><dd>{run.result.changed_decisions}</dd></div></dl>
+          <div><dt>Unknown outcomes</dt><dd>{run.result.unknown_outcomes}</dd></div><div><dt>{run.result.decision_change_metric?.label??"Changed shadow filters"}</dt><dd>{(run.result.decision_change_metric?.value??run.result.changed_decisions)==null?"Not applicable":run.result.decision_change_metric?.value??run.result.changed_decisions}</dd></div></dl>
         <p>Whole-account effect, turnover and marginal monetary value remain unavailable. Fees in net labels are counted once. No account is promoted or funded.</p>
         {run.result.optional_D&&<p>Optional Decisions: {run.result.optional_D.status} · {run.result.optional_D.reason}</p>}
         {run.result.metrics&&<><h4>Retained learning diagnostics</h4><p>Updates change research memory only. More updates do not establish more independent evidence or an improved account.</p>

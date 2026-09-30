@@ -291,6 +291,33 @@ def component_replay(records: list[dict[str, Any]], mode: str, plan: Any) -> dic
         else ([b[:3] for b in buys] == [b[:3] for b in original_entries])
     )
     baseline_accounts = {a["account"]: a for a in base["scenarios"][0]["accounts"]}
+    original_sells = {
+        (e["account"], e["body"].get("symbol"), e["at"], e["body"].get("quantity"))
+        for p in packets
+        for e in p["events"]
+        if e["kind"] == "fill" and e["body"].get("side") == "sell"
+    }
+    changed_sells = {
+        (e["account"], e["body"].get("symbol"), e["at"], e["body"].get("quantity"))
+        for e in events
+        if e["kind"] == "fill" and e["body"].get("side") == "sell"
+    }
+    original_sizes = {b[:3]: b[3] for b in original_entries}
+    changed_sizes = {b[:3]: b[3] for b in buys}
+    change_metric = {
+        "label": "Different sell events"
+        if mode == "component_exit"
+        else "Changed order quantities",
+        "value": len(original_sells ^ changed_sells)
+        if mode == "component_exit"
+        else sum(D(q) != D(changed_sizes[k]) for k, q in original_sizes.items())
+        if matched
+        else None,
+        "baseline": "Reconciled original execution slice",
+        "unit": "Symmetric difference of sell events"
+        if mode == "component_exit"
+        else "Matched buy intents with different quantities",
+    }
     accounts = []
     for name, a in state["accounts"].items():
         final = sample(a, packets[-1]["at"])
@@ -328,6 +355,7 @@ def component_replay(records: list[dict[str, Any]], mode: str, plan: Any) -> dic
         boundary=base["coverage"],
         observed_post_entry_paths=base["scenarios"][0]["observed_paths"],
         fees_already_embedded_once=True,
+        decision_change_metric=change_metric,
     )
 
 
@@ -352,8 +380,16 @@ def evaluate_components(
         "opportunities": len(rows),
         "labeled": 0,
         "unknown_outcomes": len(rows),
-        "changed_decisions": 0,
-        "missed_positive_taken_trades": 0,
+        "changed_decisions": None,
+        "missed_positive_taken_trades": None,
+        "decision_change_metric": evidence.get(
+            "decision_change_metric",
+            {
+                "label": "Entry changes",
+                "value": None,
+                "reason": "This component does not measure paired entry-filter changes",
+            },
+        ),
         "whole_account_effect": None,
         "comparisons": [
             {

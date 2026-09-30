@@ -1,5 +1,11 @@
 # CP16 integrated research and finite operator acceptance
 
+The integrated audit found six defects/delivery gaps in this original procedure.
+See CP16_AUDIT_CORRECTIONS.md for timing, exact evidence, bounded acquisition,
+separated support, summary corrections and the missing paired-account handoff.
+The following original delivery receipts do not by themselves prove that workflow
+or measured memory advantage. Preserve them alongside the correction receipts.
+
 The normal Historical matches workflow now covers retained evidence, independent
 hypotheses, result/rejection, original learning stages and a frozen subsequent
 system review. Four permanent plans reserve untouched, nonoverlapping 28-day

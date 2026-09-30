@@ -7,6 +7,8 @@ from typing import Any
 
 from trading.market import parse_book
 from trading.research_evidence import book_features, digest
+from trading.research_support import separated
+from trading.research_timing import actionable, prediction_time
 
 VERSION = "context-flow-v1"
 TAXONOMY: dict[str, Any] = {
@@ -219,7 +221,12 @@ def flow_features(records: list[dict[str, Any]], cutoff: float) -> dict[str, Any
             r
             for r in records
             if cutoff - 10 <= r["at"] <= cutoff
-            and r["payload"].get("committed_at", math.inf) <= cutoff
+            and (
+                r["payload"].get("financial_commit", {}).get("committed_at")
+                if r["payload"].get("financial_commit")
+                else r["payload"].get("committed_at", math.inf)
+            )
+            <= cutoff
         ]
         if not 2 <= len(eligible) <= 64:
             raise ValueError("Need two to sixty-four permitted book snapshots")
@@ -334,10 +341,14 @@ def context_neighbors(query: dict[str, Any], rows: list[dict[str, Any]]) -> dict
         else:
             candidates.append((distance, d["cutoff"], row))
     candidates.sort(key=lambda c: (c[0], c[1]))
-    selected, groups = [], set()
+    selected: list[tuple[float, dict[str, Any]]] = []
+    groups: set[str] = set()
     for distance, _, row in candidates:
         d = row["descriptor"]
-        if d["group_id"] in groups:
+        if d["group_id"] in groups or not separated(row, [r for _, r in selected]):
+            exclusions.append(
+                {"episode": row["episode"], "reason": "Overlapping separated support"}
+            )
             continue
         groups.add(d["group_id"])
         selected.append((distance, row))
@@ -411,6 +422,11 @@ def evaluate_context(
             evidence.pop("contract", None)
             rejection = evidence["action"] == "wait_entry"
             status = evidence["status"]
+        on_time = actionable(row)
+        if not on_time:
+            status = (
+                "result_too_late" if math.isfinite(prediction_time(row)) else "timing_unavailable"
+            )
         label = row.get("executable_label") or {}
         target = None
         if (
@@ -423,7 +439,12 @@ def evaluate_context(
                 "episode": row["episode"],
                 "cutoff": d["cutoff"],
                 "status": status,
-                "action": "reject_entry" if rejection else "no_additional_signal",
+                "action": "reject_entry" if rejection and on_time else "no_additional_signal",
+                "available_at": prediction_time(row)
+                if math.isfinite(prediction_time(row))
+                else None,
+                "expires_at": d.get("expires_at"),
+                "timing_scope": "Recorded input availability plus declared shadow delay",
                 "evidence": evidence,
                 "ablations": {
                     "without_component": "unchanged_baseline",
@@ -433,11 +454,11 @@ def evaluate_context(
                 "latency_sensitivity": [
                     {
                         "delay_seconds": delay,
-                        "status": "result_too_late"
-                        if d["cutoff"] + delay > d.get("expires_at", d["cutoff"])
-                        else status,
-                        "changes_entry": rejection
-                        and d["cutoff"] + delay <= d.get("expires_at", 0),
+                        "status": "result_too_late" if not actionable(row, delay) else status,
+                        "changes_entry": rejection and actionable(row, delay),
+                        "available_at": prediction_time(row, delay)
+                        if math.isfinite(prediction_time(row, delay))
+                        else None,
                     }
                     for delay in FLOW["delays_seconds"]
                 ],

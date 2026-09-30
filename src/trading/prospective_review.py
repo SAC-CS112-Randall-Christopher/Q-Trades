@@ -37,6 +37,7 @@ class ProspectiveSpec(BaseModel):
     days: Literal[28] = 28
     component_requests: list[str] = Field(default_factory=list, max_length=8)
     candidate: str | None = None
+    purpose: Literal["baseline_review", "exploratory_memory"] = "baseline_review"
     paid_budget_usd: Literal["0"] = "0"
 
 
@@ -62,7 +63,11 @@ class ProspectiveReview:
             ).fetchone()
             if old:
                 body: dict[str, Any] = json.loads(old["body"])
-                if digest(body) != old["sha256"] or body["spec"] != spec.model_dump():
+                if (
+                    digest(body) != old["sha256"]
+                    or ProspectiveSpec.model_validate(body["spec"]).model_dump()
+                    != spec.model_dump()
+                ):
                     raise ValueError("Retry must preserve original prospective rules")
                 return body
             now = time.time()
@@ -79,18 +84,49 @@ class ProspectiveReview:
                 (end, spec.starts_at - 3300),
             ).fetchone():
                 raise ValueError("Prospective comparison overlaps an earlier frozen plan")
+            candidate = state["accounts"].get(spec.candidate or "")
+            exploratory = spec.purpose == "exploratory_memory"
+            if exploratory and (
+                not candidate
+                or candidate.get("memory_entry_contract") != "memory-entry-v1"
+                or spec.component_requests != [candidate.get("experiment_id")]
+            ):
+                raise ValueError(
+                    "Select one admitted memory arm and its exact account-comparison receipt"
+                )
             components = []
             for request in spec.component_requests:
                 job = r.get(request)
                 result = job.get("result") if job else None
                 if (
                     not result
-                    or not result.get("eligible_for_forward_review")
+                    or not result.get(
+                        "eligible_for_exploratory_paper"
+                        if exploratory
+                        else "eligible_for_forward_review"
+                    )
                     or result.get("evidence_kind") == "synthetic_qa"
                 ):
                     raise ValueError("Combine only independently qualified components")
+                if exploratory:
+                    assert candidate is not None
+                    matching = next(
+                        (
+                            c
+                            for c in result.get("candidate_group", [])
+                            if c.get("artifact", {}).get("sha256")
+                            == candidate["numerical_artifact"]["sha256"]
+                        ),
+                        None,
+                    )
+                    if (
+                        not matching
+                        or result.get("account_comparison", {}).get("status") != "complete"
+                    ):
+                        raise ValueError(
+                            "Admitted memory artifact differs from paired-account evidence"
+                        )
                 components.append({"request": request, "result_sha256": digest(result)})
-            candidate = state["accounts"].get(spec.candidate or "")
             if spec.candidate and (
                 not candidate
                 or not candidate.get("numerical_artifact")
@@ -107,6 +143,8 @@ class ProspectiveReview:
                 "configurations": {name: config(a) for name, a in state["accounts"].items()},
                 "policy": POLICY,
                 "controls": ["unchanged_baseline", "cash", "simple_exposure"],
+                "candidate_control": state.get("forward_controls", {}).get(spec.candidate or ""),
+                "qualification": "Exploratory paper review; no qualification or promotion granted",
                 "stopping": "28 days fixed; drift/missing coverage retains no-promotion",
                 "update_procedure": "Frozen; research updates remain separate shadows",
                 "authority": "No funding, account creation, promotion or live execution",
@@ -117,6 +155,36 @@ class ProspectiveReview:
             )
             r.event(spec.request_id, "prospective_frozen", {"sha256": digest(body)})
             return body
+
+    def candidates(self, state: dict[str, Any]) -> list[dict[str, Any]]:
+        result = []
+        for name, candidate in state.get("accounts", {}).items():
+            control = state.get("forward_controls", {}).get(name)
+            if (
+                candidate.get("memory_entry_contract") != "memory-entry-v1"
+                or control not in state["accounts"]
+            ):
+                continue
+            job = self.registry.get(candidate.get("experiment_id", ""))
+            receipt = job.get("result") if job else None
+            if (
+                receipt
+                and receipt.get("eligible_for_exploratory_paper")
+                and any(
+                    c.get("artifact", {}).get("sha256") == candidate["numerical_artifact"]["sha256"]
+                    for c in receipt.get("candidate_group", [])
+                )
+            ):
+                result.append(
+                    {
+                        "account": name,
+                        "label": candidate.get("label", name),
+                        "control": control,
+                        "component_request": candidate["experiment_id"],
+                        "purpose": "exploratory_memory",
+                    }
+                )
+        return result
 
     def plans(self) -> list[dict[str, Any]]:
         with self.registry.lock:

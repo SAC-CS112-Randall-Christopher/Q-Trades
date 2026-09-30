@@ -47,6 +47,7 @@ def memory_fixture():
         rows.append(
             {
                 "episode": f"episode-{i}",
+                "available_at": at,
                 "descriptor": d,
                 "executable_label": {
                     "status": "available",

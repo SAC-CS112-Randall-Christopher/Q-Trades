@@ -325,7 +325,9 @@ class EvidenceRecorder:
         packet.update(
             events=plain(events),
             dispatch_accounts=list(packet["state_before"].get("accounts", {})),
-            after_tick_sha256=digest(plain(after)),
+            # The committed engine state is already JSON-compatible. Hash it directly;
+            # the digest owns its serialization and retains no mutable state reference.
+            after_tick_sha256=digest(after),
             event_timing=timing,
             stages_ms=stages,
             receipt_to_dispatch_ms={

@@ -8,6 +8,7 @@ import time
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
+from decimal import Decimal
 from pathlib import Path
 from threading import RLock
 from typing import Any, Literal, Self
@@ -52,9 +53,30 @@ class ExperimentPlan(BaseModel):
     test_start: float
     test_end: float
     evidence_kind: Literal["observed_public_quotes", "synthetic_qa"] = "observed_public_quotes"
+    account_comparison: bool = False
+    starting_cash: Literal["50", "100"] = "100"
+    common_daily_usd: str | None = Field(default=None, max_length=32)
+    numerical_daily_usd: str | None = Field(default=None, max_length=32)
+    contextual_daily_usd: str | None = Field(default=None, max_length=32)
+    cpu_hour_usd: str | None = Field(default=None, max_length=32)
 
     @model_validator(mode="after")
     def boundaries(self) -> Self:
+        if self.account_comparison and self.experiment_mode != "memory_entry":
+            raise ValueError("Account comparison is the existing A/B/C memory experiment")
+        for rate in (
+            self.common_daily_usd,
+            self.numerical_daily_usd,
+            self.contextual_daily_usd,
+            self.cpu_hour_usd,
+        ):
+            if rate is not None:
+                try:
+                    value = Decimal(rate)
+                except ArithmeticError as exc:
+                    raise ValueError("Declare a finite nonnegative operating cost") from exc
+                if not value.is_finite() or not 0 <= value <= 10000:
+                    raise ValueError("Operating costs must be between zero and 10000 USD")
         if (
             self.experiment_mode
             in {
@@ -313,21 +335,25 @@ class ExperimentRegistry:
     ) -> bool:
         body = json.dumps(result, sort_keys=True, allow_nan=False) if result is not None else None
         row = self.db.execute(
-            "SELECT json_extract(plan,'$.experiment_mode') FROM experiments WHERE request_id=?",
+            "SELECT json_extract(plan,'$.experiment_mode'), "
+            "json_extract(plan,'$.account_comparison') FROM experiments WHERE request_id=?",
             (request_id,),
         ).fetchone()
         limit = (
             SHADOW_RESULT_BYTES
             if row
-            and row[0]
-            in {
-                "context_regime",
-                "order_flow",
-                "growing_memory",
-                "component_exit",
-                "component_size",
-                "observation_priority",
-            }
+            and (
+                row[1]
+                or row[0]
+                in {
+                    "context_regime",
+                    "order_flow",
+                    "growing_memory",
+                    "component_exit",
+                    "component_size",
+                    "observation_priority",
+                }
+            )
             else MAX_RESULT_BYTES
         )
         if body and len(body.encode()) > limit:

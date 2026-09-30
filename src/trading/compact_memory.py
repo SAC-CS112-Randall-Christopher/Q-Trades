@@ -277,6 +277,12 @@ def compact_snapshot(path: Path, as_of: float) -> dict[str, Any]:
                 {
                     "episode": row["episode"],
                     "record_id": row["seq"],
+                    "evidence_reference": {
+                        "archive": "compact",
+                        "episode": row["episode"],
+                        "record_id": row["seq"],
+                        "sha256": row["sha256"],
+                    },
                     "available_at": row["available"],
                     "descriptor": d,
                     "executable_label": label,
@@ -293,4 +299,40 @@ def compact_snapshot(path: Path, as_of: float) -> dict[str, Any]:
                 "selection": CONTRACT["snapshot"],
                 "older_rows_omitted": len(rows) > 512,
             },
+        }
+
+
+def compact_evidence(path: Path, episode: str, expected_sha256: str) -> dict[str, Any]:
+    if not path.is_file():
+        raise LookupError("Compact evidence archive is unavailable")
+    with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
+        db.row_factory = sqlite3.Row
+        db.execute("BEGIN")
+        row = db.execute("SELECT * FROM compact_prefixes WHERE episode=?", (episode,)).fetchone()
+        if row is None:
+            raise LookupError("Requested compact episode is not retained")
+        d = json.loads(row["body"])
+        if (
+            row["sha256"] != expected_sha256
+            or digest(d) != expected_sha256
+            or row["episode"] != episode
+        ):
+            raise ValueError("Requested compact episode fingerprint differs")
+        out = db.execute("SELECT * FROM compact_outcomes WHERE episode=?", (episode,)).fetchone()
+        outcome = None
+        if out:
+            outcome = json.loads(out["body"])
+            if digest(outcome) != out["sha256"]:
+                raise ValueError("Requested compact outcome fingerprint differs")
+        return {
+            "archive": "compact",
+            "episode": episode,
+            "record_id": row["seq"],
+            "sha256": expected_sha256,
+            "available_at": row["available"],
+            "descriptor": d,
+            "outcome": outcome,
+            "outcome_sha256": out["sha256"] if out else None,
+            "outcome_available_at": out["available"] if out else None,
+            "financial_authority": False,
         }

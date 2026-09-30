@@ -3,6 +3,7 @@ import { HistoricalMatches, type Episode, type MarketOutcome } from "./Historica
 import { ReplayPanel } from "./ReplayPanel";
 import { MemoryQualityPanel } from "./MemoryQualityPanel";
 import { ResearchSlicePanel } from "./ResearchSlicePanel";
+import type { EvidenceReference } from "./EvidenceReference";
 
 export type EvidenceStatus = {
   state: string; rows?: number; bytes?: number; physical_bytes?: number;
@@ -13,6 +14,12 @@ export type EvidenceStatus = {
 };
 type EvidenceRow = { id: number; at: number; kind: string; sha256: string; bytes: number };
 type Page = { records: EvidenceRow[]; has_more: boolean; next_before: number | null };
+type CompactDetail = {
+  archive:"compact";episode:string;record_id:number;sha256:string;available_at:number;
+  descriptor:{cutoff:number;start_at?:number;horizon_at?:number;raw_closes?:string[];returns_bps?:number[];data_mode?:string};
+  outcome:null|{status:string;reason?:string;net_bps?:number;fees_embedded_once?:boolean;coverage?:string};
+  outcome_available_at:number|null;outcome_sha256:string|null;
+};
 type Detail = {
   id: number; sha256: string;
   payload: {
@@ -39,6 +46,7 @@ const ms = (value: number | undefined) => value == null ? "Unavailable" : `${val
 export function EvidencePanel({ status }: { status?: EvidenceStatus }) {
   const [page,setPage] = useState<Page | null>(null);
   const [detail,setDetail] = useState<Detail | null>(null);
+  const [compactDetail,setCompactDetail] = useState<CompactDetail|null>(null);
   const [kind,setKind] = useState("decision");
   const [pending,setPending] = useState(false);
   const [error,setError] = useState<string | null>(null);
@@ -47,11 +55,11 @@ export function EvidencePanel({ status }: { status?: EvidenceStatus }) {
   const selected = useRef<HTMLElement | null>(null);
   useEffect(() => () => request.current?.abort(), []);
   useEffect(() => {
-    if (detail) {
+    if (detail || compactDetail) {
       selected.current?.scrollIntoView({block:"start", behavior:"auto"});
       selected.current?.focus({preventScroll:true});
     }
-  },[detail]);
+  },[detail,compactDetail]);
   async function load(before=0, filter=kind) {
     request.current?.abort();
     const abort = new AbortController(); request.current=abort;
@@ -61,21 +69,32 @@ export function EvidencePanel({ status }: { status?: EvidenceStatus }) {
         {signal:AbortSignal.any([abort.signal,AbortSignal.timeout(7000)]),cache:"no-store"});
       if (!response.ok) throw new Error("Recorded evidence could not load. Earlier inputs stay preserved.");
       const value=await response.json() as Page;
-      if (!abort.signal.aborted) {setPage(value); setDetail(null); setShowRaw(false);}
+      if (!abort.signal.aborted) {setPage(value); setDetail(null); setCompactDetail(null); setShowRaw(false);}
     } catch {if (!abort.signal.aborted) setError("Recorded evidence is unavailable. Reconnect and refresh; earlier inputs stay preserved.");}
     finally {if (!abort.signal.aborted) setPending(false);}
   }
   useEffect(() => {void load(0,kind);},[kind]);
-  async function open(id: number) {
+  async function open(id: number | EvidenceReference) {
     request.current?.abort();
     const abort=new AbortController(); request.current=abort;
-    setPending(true); setError(null); setDetail(null); setShowRaw(false);
+    setPending(true); setError(null); setDetail(null); setCompactDetail(null); setShowRaw(false);
     try {
-      const response=await fetch(`/api/evidence/${id}`,
+      const reference=typeof id==="object"?id:null;
+      const url=reference?.archive==="compact"
+        ? `/api/evidence/compact/${encodeURIComponent(reference.episode)}?sha256=${reference.sha256}`
+        : `/api/evidence/${reference?.record_id??id}${reference?`?sha256=${reference.sha256}&episode=${encodeURIComponent(reference.episode)}`:""}`;
+      const response=await fetch(url,
         {signal:AbortSignal.any([abort.signal,AbortSignal.timeout(10000)]),cache:"no-store"});
       if (!response.ok) throw new Error("This evidence is missing or corrupt. No substitute was inferred.");
-      const value=await response.json() as Detail;
-      if (!abort.signal.aborted) setDetail(value);
+      if(reference?.archive==="compact") {
+        const value=await response.json() as CompactDetail;
+        if(value.archive!=="compact"||value.episode!==reference.episode||value.sha256!==reference.sha256||value.record_id!==reference.record_id) throw new Error("Evidence identity differs");
+        if(!abort.signal.aborted)setCompactDetail(value);
+      } else {
+        const value=await response.json() as Detail;
+        if(reference&&(value.id!==reference.record_id||value.sha256!==reference.sha256)) throw new Error("Evidence identity differs");
+        if(!abort.signal.aborted)setDetail(value);
+      }
     } catch {if (!abort.signal.aborted) setError("This evidence could not be opened. It may be unavailable or damaged; no substitute was inferred.");}
     finally {if (!abort.signal.aborted) setPending(false);}
   }
@@ -117,6 +136,17 @@ export function EvidencePanel({ status }: { status?: EvidenceStatus }) {
     <div className="heading-actions"><button className="button secondary small" disabled={pending}
       onClick={()=>void load()}>Latest evidence</button><button className="button secondary small"
       disabled={pending || !page?.has_more} onClick={()=>void load(page?.next_before ?? 0)}>Older evidence</button></div>
+    {compactDetail&&<section ref={selected} tabIndex={-1} aria-label="Selected compact memory evidence">
+      <h3>Retained compact prefix · {compactDetail.episode.slice(0,16)}</h3>
+      <p className="fine-print">Compact archive · SHA-256 {compactDetail.sha256}</p>
+      <p>Market cutoff {when(compactDetail.descriptor.cutoff)} · first available {when(compactDetail.available_at)}.</p>
+      <p>Original closes: {compactDetail.descriptor.raw_closes?.join(", ")??"Unavailable"}</p>
+      <p>Original returns: {compactDetail.descriptor.returns_bps?.map(x=>x.toFixed(4)).join(", ")??"Unavailable"} bps.</p>
+      <p>Subsequent executable outcome: {compactDetail.outcome?.status??"Pending"}. {compactDetail.outcome?.reason}</p>
+      {compactDetail.outcome?.net_bps!=null&&<p>Linked net return {compactDetail.outcome.net_bps.toFixed(2)} bps · execution fees embedded once.</p>}
+      <p className="fine-print">{compactDetail.outcome?.coverage??"Modeled paper evidence; no broker execution proof."}</p>
+      <details><summary>Exact stored prefix and subsequent links</summary><pre>{JSON.stringify(compactDetail,null,2)}</pre></details>
+    </section>}
     {detail && <section ref={selected} tabIndex={-1} aria-label="Selected decision evidence">
       <h3>Retained input #{detail.id}</h3><p className="fine-print">SHA-256 {detail.sha256}</p>
       <p>{detail.payload.coverage ?? "Selected raw observation only"}</p><p>{detail.payload.scope}</p>

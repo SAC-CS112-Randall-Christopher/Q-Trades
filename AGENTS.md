@@ -1,3 +1,16 @@
+# CP10-CP16 integrated audit corrections and authorized installation
+
+Read docs/CP16_AUDIT_CORRECTIONS.md and issue #1's integrated-source audit.
+Correct availability/expiry, exact typed archive links, interval-selected inputs,
+nonoverlapping support and measured summaries. A/B/C whole-account scenarios and
+explicit exploratory admission/review are separate from qualification. Preserve
+the unchanged CP7 28-day policy and original six-account history. Finish final
+native load, exact-head/final-main hosted gates and the authorized existing updater;
+retain every failed receipt and private preservation proof. No economic edge or
+provider transport is established. Keep unrelated checkout changes intact.
+
+# Prior source-delivery instructions
+
 # CP10-CP16 research source and authorized installation
 
 Read docs/CP16_INTEGRATED_RESEARCH.md and reviews/cp16-integrated. All seven
