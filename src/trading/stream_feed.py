@@ -137,6 +137,7 @@ class StreamFeed:
     def publish(
         self, symbol: str, local: DepthBook, event: dict[str, Any], wall: float, mono: float
     ) -> None:
+        validation_started = time.perf_counter()
         book = local.apply(event)
         if book is None:
             return
@@ -156,6 +157,8 @@ class StreamFeed:
             "exchange_event_ms": event["E"],
             "event_age_ms": age,
             "clock_uncertainty_ms": self.clock.uncertainty_ms,
+            "book_validation_ms": (time.perf_counter() - validation_started) * 1000,
+            "book_available_mono": time.monotonic(),
             "raw_update": event,
             "source": "binance.us-depth-websocket",
         }
@@ -191,6 +194,8 @@ class StreamFeed:
                     "quantity": raw["q"],
                     "exchange_ms": raw["T"],
                     "received_at": wall,
+                    "buyer_is_maker": raw.get("m") if type(raw.get("m")) is bool else None,
+                    "received_mono": mono,
                 }
             )
         elif raw.get("e") == "kline":

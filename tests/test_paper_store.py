@@ -1,3 +1,4 @@
+import copy
 import uuid
 from decimal import Decimal as D
 from pathlib import Path
@@ -11,6 +12,28 @@ from test_paper_engine import START, frame, study
 
 from trading.futures_context import FuturesContext
 from trading.paper_store import PaperStore, load_dsn
+
+
+def test_exact_commit_references_and_failed_transaction_clear_stale_receipt(pg_store):
+    store, _ = pg_store
+    store.transact(START, lambda engine: engine.tick({"BTCUSD": frame()}, study()))
+    receipt = copy.deepcopy(store.last_commit_receipt)
+    assert receipt and receipt["revision"] == store.read()["revision"]
+    events = store.export(0, 1000)["records"]
+    actual = [e for e in events if e["revision"] == receipt["revision"]]
+    assert [(r["event_id"], r["account"], r["kind"]) for r in receipt["events"]] == [
+        (e["id"], e["account"], e["kind"]) for e in actual
+    ]
+    before = store.read()
+
+    def fail(engine):
+        engine.emit("uncommitted_attempt", "primary", {})
+        raise RuntimeError("Before financial commit")
+
+    with pytest.raises(RuntimeError, match="Before financial commit"):
+        store.transact(START + 1, fail)
+    assert store.last_commit_receipt is None
+    assert store.read() == before and store.export(0, 1000)["records"] == events
 
 
 class RedactedDsn(str):

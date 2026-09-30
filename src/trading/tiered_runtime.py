@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from trading.engine_diagnostics import EngineWorkDiagnostics
+from trading.evidence_runtime import EvidenceRecorder, plain
 from trading.futures_context import POLL_SECONDS, FuturesContext, FuturesPublicData
 from trading.live_quotes import quote_snapshot
 from trading.market import parse_book
@@ -34,11 +35,14 @@ class TieredPaperRuntime(PaperRuntime):
     def __init__(self, store: PaperStore, venue: PublicVenue, capture_path: Path):
         super().__init__(store, venue)
         self.capture_path = capture_path
+        self.evidence = EvidenceRecorder(capture_path.with_name("research-evidence.sqlite"))
         self.stream = StreamFeed(venue)
         self.stream._previous = {s: value[0] for s, value in self._previous_books.items()}
         self.universe = Universe()
         self.study: dict[str, Any] = {}
         self._studied: dict[str, int] = {}
+        self._feature_times: dict[str, float] = {}
+        self._feature_timing: dict[str, dict[str, Any]] = {}
         self._fallback: dict[str, dict[str, Any]] = {}
         self._fallback_at: dict[str, float] = {}
         self._rest_retry_at = 0.0
@@ -106,12 +110,19 @@ class TieredPaperRuntime(PaperRuntime):
         if self._studied.get(symbol) == stamp:
             return
         self._studied[symbol] = stamp
+        started = time.perf_counter()
+        self._feature_times[symbol] = now
         result = {v: features(bars, now, v) for v in VARIANTS}
         for feature in result.values():
             if feature.get("bar_open_ms", 0) + 60000 < self.ready_at * 1000:
                 feature.update(eligible=False, reason="Bootstrap only; awaiting new closed bar")
         self.study[symbol] = result
         self.numerical_study(now, self.study)
+        self._feature_timing[symbol] = {
+            "available_at": time.time(),
+            "available_mono": time.monotonic(),
+            "compute_ms": (time.perf_counter() - started) * 1000,
+        }
         self.stream.changed.set()
 
     def closed_stream_candle(self, symbol: str, observation: dict[str, Any]) -> None:
@@ -187,6 +198,8 @@ class TieredPaperRuntime(PaperRuntime):
                         self.history.pop(symbol, None)
                         self.study.pop(symbol, None)
                         self._studied.pop(symbol, None)
+                        self._feature_times.pop(symbol, None)
+                        self._feature_timing.pop(symbol, None)
                     plan = self.universe.plan(
                         self.study, self.held(), constrained=self.constrained()
                     )
@@ -369,6 +382,10 @@ class TieredPaperRuntime(PaperRuntime):
                 records: list[dict[str, Any]] = []
                 while self.stream.records and len(records) < 1000:
                     records.append(self.stream.records.popleft())
+                try:
+                    self.evidence.raw(records)
+                except (ValueError, TypeError, KeyError):
+                    self.evidence.dropped += len(records)
                 self._captured_bytes += sum(len(json.dumps(r).encode()) for r in records)
                 if self.disk_free < 5 * 1024**3:
                     self._capture_failure = "Raw capture paused: less than 5 GiB disk space"
@@ -430,6 +447,7 @@ class TieredPaperRuntime(PaperRuntime):
             asyncio.create_task(self._fallback_loop()),
             asyncio.create_task(self._capture_loop()),
             asyncio.create_task(self._futures_loop()),
+            asyncio.create_task(self.evidence.run(lambda: self.disk_free >= 5 * 1024**3)),
         ]
         try:
             while True:
@@ -455,6 +473,10 @@ class TieredPaperRuntime(PaperRuntime):
                 missing = sorted((set(SYMBOLS) | self.held()) - set(frames))
                 if missing:
                     current_error["missing_books"] = ", ".join(missing)
+                try:
+                    self.evidence.summary(now, frames, current_error)
+                except (ValueError, TypeError, KeyError, ArithmeticError):
+                    self.evidence.dropped += 1
                 status_key = json.dumps(
                     {"errors": current_error, "sources": sources}, sort_keys=True
                 )
@@ -473,6 +495,25 @@ class TieredPaperRuntime(PaperRuntime):
                     continue
                 added, notices = self._bars_added, self._notice_queue
                 self._bars_added, self._notice_queue = 0, []
+                evidence_tick: dict[str, Any] = {}
+                if self.evidence.selected(now, study_key != self._last_study_key):
+                    try:
+                        evidence_tick["packet"] = self.evidence.prepare(
+                            now,
+                            frames,
+                            study,
+                            self.history,
+                            self._feature_times,
+                            self.ready_at,
+                            self._candle_errors,
+                            {},
+                            self._numerical_rows,
+                            self.stream.trade_tape,
+                            self.stream.snapshot(),
+                            feature_timing=self._feature_timing,
+                        )
+                    except (ValueError, TypeError, KeyError, ArithmeticError):
+                        self.evidence.dropped += 1
 
                 def apply(
                     engine: PaperEngine,
@@ -483,6 +524,9 @@ class TieredPaperRuntime(PaperRuntime):
                     added: int = added,
                     frames: dict[str, dict[str, Any]] = frames,
                     study: dict[str, Any] = study,
+                    now: float = now,
+                    evidence_tick: dict[str, Any] = evidence_tick,
+                    study_key: str = study_key,
                 ) -> None:
                     if engine.state["model"] != FEED_MODEL:
                         previous = engine.state["model"]
@@ -515,7 +559,20 @@ class TieredPaperRuntime(PaperRuntime):
                     engine.universe_experiment(list(self.stream.plan))
                     engine.state["study_bars"] += added
                     engine.state["book_sequences"] = self._previous_books
+                    if "packet" in evidence_tick:
+                        try:
+                            evidence_tick["packet"]["state_before"] = plain(engine.state)
+                            engine.evidence_trace = []
+                            evidence_tick["event_offset"] = len(engine.events)
+                            evidence_tick["packet"]["event_offset"] = len(engine.events)
+                        except (ValueError, TypeError, KeyError, ArithmeticError):
+                            self.evidence.dropped += 1
+                            evidence_tick.pop("packet", None)
                     engine.tick(frames, study)
+                    if "packet" in evidence_tick:
+                        evidence_tick["events"] = engine.events[evidence_tick["event_offset"] :]
+                        evidence_tick["after"] = engine.state
+                        evidence_tick["trace"] = engine.evidence_trace or []
 
                 commit_started = time.monotonic()
                 measured_commit = time.perf_counter()
@@ -523,6 +580,19 @@ class TieredPaperRuntime(PaperRuntime):
                 self.state = self.store.transact(now, apply)
                 self._commit_ms.append((time.monotonic() - commit_started) * 1000)
                 stage_ms["transaction"] = (time.perf_counter() - measured_commit) * 1000
+                if "packet" in evidence_tick:
+                    try:
+                        self.evidence.complete(
+                            evidence_tick["packet"],
+                            evidence_tick["events"],
+                            evidence_tick["after"],
+                            evidence_tick["trace"],
+                            dict(stage_ms),
+                            started,
+                            self.store.last_commit_receipt,
+                        )
+                    except (ValueError, TypeError, KeyError, ArithmeticError):
+                        self.evidence.dropped += 1
                 self._last_commit, self._last_study_key = now, study_key
                 self._last_status_key, self._last_sources = status_key, sources
                 self.error = None
@@ -594,6 +664,7 @@ class TieredPaperRuntime(PaperRuntime):
                 "universe": self.universe.snapshot(),
                 "sampling": "100ms fast / 1s watch WebSocket target; explicit capped REST fallback",
                 "research_constrained": self.constrained(),
+                "research_evidence": self.evidence.snapshot(),
                 "performance": {
                     "average_cpu_percent_of_machine": round(
                         (time.process_time() - self._started_cpu)

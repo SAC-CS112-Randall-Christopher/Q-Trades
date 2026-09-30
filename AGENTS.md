@@ -1,4 +1,26 @@
-# QTrades reference UI and authorized merge/relaunch
+# CP10 durable evidence and CP11 execution replay
+
+Chris confirmed the installed application reloaded with six active accounts. It
+runs main cb6994561589433a68eae731e48a2b5a5a86ab81; CP0-CP9, the efficiency audit,
+reference UI and updater repair are merged. CP10 source is a separate bounded draft.
+Read docs/CP10_DURABLE_EVIDENCE.md, its review receipts and the current GitHub issue
+#1 with the Historical Pattern Memory/Decisions API and research-hardening addenda.
+Refresh source, active work and runtime ownership before each next checkpoint.
+
+Continue CP11-CP16 sequentially, one usable workflow and draft per checkpoint.
+CP11 must reconcile isolated replay against the existing engine before any changed
+delay/cost profile. Missing books or chronology cannot imply fills. Preserve CP10
+immutable prefixes, delayed labels, availability/expiry and explicit no-signal
+fallback, CP7's twenty retained accounts/four forward admissions/28-day policy,
+matched controls, whole-account economics, every failed attempt and consumed data.
+Provider access/schema/privacy/budget remains unverified; local research must work
+without it. No paid calls, live execution, trial resets or model/GIS changes follow
+from the roadmap. Publish only synthetic/redacted receipts to this public repository.
+Keep source, local synthetic proof, exact-head CI, installation and prospective
+market/account acceptance distinct. Existing merge/relaunch authorization applies
+when source is ready; preserve the original six accounts, funding and full history.
+
+# Historical: QTrades reference UI and authorized merge/relaunch
 
 The first native update refused to copy because the scheduled host left detached
 paper descendants. Read docs/reviews/updater-paper-shutdown/README.md. Preserve

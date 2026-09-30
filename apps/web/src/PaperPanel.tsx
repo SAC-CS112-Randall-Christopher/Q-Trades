@@ -64,6 +64,7 @@ type Event = {
   body: Record<string, unknown>;
 };
 export type PaperSnapshot = Partial<FeedDetails> & {
+  research_evidence?: import("./EvidencePanel").EvidenceStatus;
   economics?: EconomicsSnapshot;
   execution_profiles?: ExecutionProfile[];
   futures_context?: FuturesSnapshot;

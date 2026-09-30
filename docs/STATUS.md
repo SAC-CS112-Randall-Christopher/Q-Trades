@@ -1,3 +1,26 @@
+# Source status - September 30, 2026 UTC
+
+CP10 implements the bounded episode/descriptor/local-lookup/delayed-outcome/reopen
+workflow against the hardened GitHub roadmap. Source checks: full PostgreSQL suite
+420 passed, no skips, 83.31 seconds; lint, strict types and dashboard build passed.
+Finite 1/10/20-account native synthetic workloads passed after an input-preserving
+snapshot optimization. Earlier red/optimized receipts mislabeled eighteen accounts
+as twenty; both are retained with scope corrections. The final case verified twenty.
+Browser proof and the current hosted verification status are recorded in
+`reviews/cp10-durable-evidence/README.md`. CP11 execution replay is next; CP12-CP16
+remain sequential work. Source completion is not a strategy advantage or installed
+CP10 acceptance. The CP10 branch is being prepared as a bounded draft.
+
+PRs #2-#15 are merged; current main is cb6994561589433a68eae731e48a2b5a5a86ab81.
+The ordinary manual updater successfully relaunched the original application, with
+its six accounts/history preserved. Current read-only health confirms that exact
+version is ready; Chris independently confirmed six active accounts. The new CP10
+source has not been installed. CP9 still concludes not ready for live.
+
+---
+
+# Historical delivery snapshot
+
 # Source status — September 29, 2026
 
 PRs #2–#14 are merged. Final-main run 36647938351 passed for 66fb978, including

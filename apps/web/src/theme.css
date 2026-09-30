@@ -2183,3 +2183,10 @@ progress::-webkit-progress-value {
     transition-duration: 0.01ms !important;
   }
 }
+/* Recorded inputs are mounted only when explicitly opened. */
+.evidence-panel { margin-top: 1.25rem; }
+.evidence-panel .evidence-raw { max-height: 36rem; overflow: auto; font-size: .75rem; }
+.evidence-panel .fine-print { overflow-wrap: anywhere; }
+.memory-prefix, .memory-outcome { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: .75rem; }
+.memory-outcome { border-left: 3px solid #789ac7; }
+.memory-prefix details { margin-bottom: 1rem; }

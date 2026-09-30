@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
 from trading.config import Settings
+from trading.evidence_runtime import feature_reproduction
 from trading.experiment_lab import ExperimentLab
 from trading.experiment_registry import ExperimentPlan
 from trading.model_trials import ModelTrials
@@ -30,6 +31,7 @@ from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
 from trading.research_campaigns import ResearchCampaignSpec
+from trading.research_evidence import evidence_page, evidence_record
 from trading.runtime import Monitor
 from trading.station import TOOLS, execute_tool, market_detail, market_live
 from trading.storage import MonitorStore
@@ -697,6 +699,26 @@ def create_app(
         if options is None:
             raise HTTPException(409, "Options account unavailable")
         return options.store.export(after, limit)
+
+    @app.get("/api/evidence")
+    def evidence_list(
+        before: int = Query(0, ge=0),
+        limit: int = Query(20, ge=1, le=50),
+        kind: Literal["decision", "summary", "wire", "outcome", "all"] = "decision",
+    ) -> dict[str, Any]:
+        return evidence_page(database.parent / "research-evidence.sqlite", before, limit, kind)
+
+    @app.get("/api/evidence/{record_id}")
+    def decision_evidence(record_id: int) -> dict[str, Any]:
+        try:
+            record = evidence_record(database.parent / "research-evidence.sqlite", record_id)
+            return {**record, "reproduction": feature_reproduction(record["payload"])}
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except (ValueError, KeyError, TypeError) as exc:
+            raise HTTPException(
+                409, "Evidence unavailable or corrupt; no replacement inferred"
+            ) from exc
 
     @app.get("/api/capture")
     async def capture(request: Request) -> Response:

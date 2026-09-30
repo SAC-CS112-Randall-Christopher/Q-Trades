@@ -1,0 +1,18 @@
+{
+  "version": "cp10-browser-review-v1",
+  "observed_at_utc": "2026-09-30T05:17:00Z",
+  "source_base": "cb6994561589433a68eae731e48a2b5a5a86ab81",
+  "scope": "Production build, in-app browser, disposable PostgreSQL schema, synthetic six-account books and declared mixed-result simulated historical paths",
+  "private_original_accounts_used": false,
+  "checks": [
+    {"check": "AI Lab historical matches in normal navigation", "observed": "Six accounts visible; latest 20 retained decisions loaded", "passed": true},
+    {"check": "Stable bounded pagination", "observed": "Latest decision IDs 307 through 288; next page 287 through 268; no overlap", "passed": true},
+    {"check": "Selected decision focus and reproduction", "observed": "ID 307 scrolled/focused; BTCUSD and ETHUSD book and closed-bar features reproduced identically", "passed": true},
+    {"check": "Neighborhood diagnostics", "observed": "Four distinct event groups, both signs of market outcomes, recognition confidence not estimated, executable return unavailable", "passed": true},
+    {"check": "Earlier prefix and later outcome", "observed": "Negative neighbor reopened ID 4 with unchanged original lookup; later path -241.5692 bps, favorable excursion 0, adverse -285.0517 bps", "passed": true},
+    {"check": "Separate outcome filter", "observed": "Seven outcome IDs, no decision rows; outcome ID 7 resolved the earlier prefix and separate later label", "passed": true},
+    {"check": "Capacity and financial independence", "observed": "307 retained records, 300 episodes, seven outcomes, 63.94 MiB; acquisition capacity and omissions explicit; paper worker fresh; retained inputs still reopen", "passed": true},
+    {"check": "Owned QA server disconnect", "observed": "Refresh showed Recorded evidence is unavailable. Reconnect and refresh; earlier inputs stay preserved. Selected prefix/outcome remained visible", "passed": true}
+  ],
+  "limitations": ["Simulated histories are not representative market evidence", "No live fills or provider calls", "No original trial mutation or CP10 installation", "No 28-day account acceptance"]
+}

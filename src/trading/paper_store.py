@@ -1,6 +1,7 @@
 """PostgreSQL atomic projection and append-only, per-asset balanced financial journal."""
 
 import json
+import time
 from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
@@ -56,6 +57,7 @@ def load_dsn(path: Path) -> str:
 class PaperStore:
     def __init__(self, dsn: str, *, owner: bool = False):
         self.owner = owner
+        self.last_commit_receipt: dict[str, Any] | None = None
         self.connection = psycopg.connect(dsn, autocommit=True, row_factory=dict_row)
         self.connection.execute("SET statement_timeout = '5s'")
         self.connection.execute("SET lock_timeout = '3s'")
@@ -93,14 +95,24 @@ class PaperStore:
                 engine.seed()
                 self._append(engine, 0)
 
-    def _append(self, engine: PaperEngine, revision: int) -> None:
-        for event in engine.events:
+    def _append(self, engine: PaperEngine, revision: int) -> list[dict[str, Any]]:
+        references = []
+        for index, event in enumerate(engine.events):
             row = self.connection.execute(
                 "INSERT INTO paper_events(revision, at, kind, account, body) "
                 "VALUES (%s,%s,%s,%s,%s) RETURNING id",
                 (revision, event["at"], event["kind"], event["account"], Jsonb(event["body"])),
             ).fetchone()
             assert row is not None
+            references.append(
+                {
+                    "event_index": index,
+                    "event_id": row["id"],
+                    "revision": revision,
+                    "kind": event["kind"],
+                    "account": event["account"],
+                }
+            )
             for index, line in enumerate(event["lines"]):
                 self.connection.execute(
                     "INSERT INTO paper_journal VALUES (%s,%s,%s,%s,%s,%s)",
@@ -113,9 +125,11 @@ class PaperStore:
                         Decimal(line["amount"]),
                     ),
                 )
+        return references
 
     def transact(self, now: float, work: Callable[[PaperEngine], None]) -> dict[str, Any]:
         self.require_owner()
+        self.last_commit_receipt = None
         with self.connection.transaction():
             row = self.connection.execute(
                 "SELECT * FROM paper_state WHERE id=1 FOR UPDATE"
@@ -139,11 +153,17 @@ class PaperStore:
             work(engine)
             engine.assert_invariants()
             revision = row["revision"] + 1
-            self._append(engine, revision)
+            references = self._append(engine, revision)
             self.connection.execute(
                 "UPDATE paper_state SET revision=%s, body=%s WHERE id=1",
                 (revision, Jsonb(engine.state)),
             )
+        self.last_commit_receipt = {
+            "revision": revision,
+            "events": references,
+            "committed_at": time.time(),
+            "commit_mono": time.monotonic(),
+        }
         return engine.state
 
     def read(self) -> dict[str, Any]:
