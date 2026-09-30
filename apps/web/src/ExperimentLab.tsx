@@ -580,10 +580,10 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
                 Evidence:{" "}
                 {detail.result.evidence_kind === "synthetic_qa"
                   ? "Synthetic QA; never independent validation"
-                  : "Observed public quote labels; prospective qualification is separate"}
+                  : "Observed research inputs; prospective qualification is separate"}
                 .
               </p>
-              {!detail.result.candidate_group && (
+              {!detail.result.candidate_group && !["context_regime","order_flow","growing_memory"].includes(detail.plan.experiment_mode??"") && (
                 <p>
                   Training examples:{" "}
                   {detail.result.train_samples ?? "insufficient"}; test
@@ -593,7 +593,7 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
               )}
               {detail.result.metrics && (
                 <dl>
-                  {Object.entries(detail.result.metrics).map(([key, value]) => (
+                  {Object.entries(detail.result.metrics).filter(([,value])=>value==null||typeof value!=="object").map(([key, value]) => (
                     <div key={key}>
                       <dt>{key.replaceAll("_", " ")}</dt>
                       <dd>{value == null ? "Unavailable" : String(value)}</dd>
@@ -607,7 +607,7 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
             </>
           )}
           {detail.plan.experiment_mode==="memory_entry" && <MemoryQualityPanel requestId={detail.request_id} readonly/>}
-          {["context_regime","order_flow"].includes(detail.plan.experiment_mode??"") && <ResearchSlicePanel requestId={detail.request_id} readonly/>}
+          {["context_regime","order_flow","growing_memory"].includes(detail.plan.experiment_mode??"") && <ResearchSlicePanel requestId={detail.request_id} readonly/>}
           {detail.plan.experiment_mode!=="memory_entry" && detail.result?.candidate_group && (
             <>
               <h4>Frozen candidate families</h4>

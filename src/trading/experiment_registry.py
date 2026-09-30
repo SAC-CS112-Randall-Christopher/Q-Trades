@@ -37,7 +37,12 @@ class ExperimentPlan(BaseModel):
     falsification: str = Field(min_length=12, max_length=1000)
     feature: Literal["momentum_1", "momentum_5", "volatility_5", "spread_bps"] = "momentum_5"
     experiment_mode: Literal[
-        "quote_ridge", "distinct_families", "memory_entry", "context_regime", "order_flow"
+        "quote_ridge",
+        "distinct_families",
+        "memory_entry",
+        "context_regime",
+        "order_flow",
+        "growing_memory",
     ] = "quote_ridge"
     horizon_minutes: Literal[5, 15, 45, 60] = 5
     as_of: float
@@ -47,9 +52,10 @@ class ExperimentPlan(BaseModel):
 
     @model_validator(mode="after")
     def boundaries(self) -> Self:
-        if (self.experiment_mode in {"memory_entry", "context_regime", "order_flow"}) != (
-            self.horizon_minutes == 45
-        ):
+        if (
+            self.experiment_mode
+            in {"memory_entry", "context_regime", "order_flow", "growing_memory"}
+        ) != (self.horizon_minutes == 45):
             raise ValueError("Memory uses the original 45-minute horizon; other modes keep theirs")
         if self.experiment_mode == "distinct_families" and self.horizon_minutes != 60:
             raise ValueError("The common family group reserves the longest 60-minute horizon")
@@ -291,7 +297,7 @@ class ExperimentRegistry:
         ).fetchone()
         limit = (
             SHADOW_RESULT_BYTES
-            if row and row[0] in {"context_regime", "order_flow"}
+            if row and row[0] in {"context_regime", "order_flow", "growing_memory"}
             else MAX_RESULT_BYTES
         )
         if body and len(body.encode()) > limit:

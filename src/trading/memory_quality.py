@@ -190,7 +190,9 @@ def predict(
         return dict(result, reason=str(exc))
 
 
-def evaluate_memory(rows: list[dict[str, Any]], plan: Any) -> dict[str, Any]:
+def evaluate_memory(
+    rows: list[dict[str, Any]], plan: Any, *, seed_only: bool = False
+) -> dict[str, Any]:
     started, cpu = time.perf_counter(), time.process_time()
     if len(rows) > 512:
         raise ValueError("Memory corpus exceeds the declared 512-episode budget")
@@ -312,7 +314,7 @@ def evaluate_memory(rows: list[dict[str, Any]], plan: Any) -> dict[str, Any]:
             "test_samples": len(test),
         }
         result["candidate_group"].append(candidate)
-        if len(groups) < 12 or len(calibration) < 6 or len(test) < 8:
+        if len(groups) < 12 or len(calibration) < 6 or (not seed_only and len(test) < 8):
             continue
         # Fixed chronological first 128, never selected by outcome. Report the declared cap.
         usable = usable[:128]
@@ -355,6 +357,9 @@ def evaluate_memory(rows: list[dict[str, Any]], plan: Any) -> dict[str, Any]:
         artifact["calibration_end"] = plan.test_start - 3300
         artifact.pop("sha256")
         artifact["sha256"] = digest(artifact)
+        if seed_only:
+            candidate.update(status="frozen_training_seed", artifact=artifact)
+            continue
         predictions, scores = [], []
         for row in test:
             p = predict(row["descriptor"], artifact, row["descriptor"]["cutoff"])

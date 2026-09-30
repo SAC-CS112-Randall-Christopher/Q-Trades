@@ -427,6 +427,25 @@ def create_app(
             raise HTTPException(404, "Experiment not found")
         return result
 
+    @app.get("/api/lab/experiments/{request_id}/learning")
+    def learning_history(
+        request_id: str, request: Request, before: int = Query(0, ge=0)
+    ) -> dict[str, Any]:
+        from trading.incremental_memory import LearningJournal
+
+        lab: ExperimentLab | None = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research registry unavailable")
+        if lab.registry.status(request_id) is None:
+            raise HTTPException(404, "Saved research reference unavailable")
+        try:
+            with lab.registry.lock:
+                return LearningJournal(lab.registry).page(request_id, before)
+        except ValueError as exc:
+            raise HTTPException(
+                409, "Learning snapshot verification failed; evidence preserved"
+            ) from exc
+
     @app.post("/api/lab/experiments/{request_id}/cancel")
     def research_cancel(request_id: str, request: Request) -> dict[str, Any]:
         lab = lab_operator(request)
