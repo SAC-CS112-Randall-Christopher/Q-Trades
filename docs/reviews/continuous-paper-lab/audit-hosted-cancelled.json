@@ -1,0 +1,14 @@
+{
+  "run_id": 36786574122,
+  "head": "a61e8516aa4431f4a6e6cdf4cc90e7f83ccc3a3b",
+  "conclusion": "cancelled",
+  "test_seconds": 491.16,
+  "passed_before_interrupt": 183,
+  "skipped_before_interrupt": 33,
+  "suite_complete": false,
+  "frontend_ran": false,
+  "last_test": "test_failed_optional_writer_exposes_failure_instead_of_stopping_finance",
+  "trace": "Cancelling EvidenceRecorder.run; KeyboardInterrupt",
+  "raw_log_sha256": "c34f47503ca3226810266fb3aacdcb9554db5ddeb84a06b2f048f27cd2fad66f",
+  "deterministic_reproduction": "audit-cancel-old-source.txt; old cancellation/write failure exceeded one second in disposable probe"
+}

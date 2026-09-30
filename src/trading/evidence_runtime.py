@@ -535,17 +535,15 @@ class EvidenceRecorder:
                     work = asyncio.create_task(self.flush(disk_check()))
                     try:
                         await asyncio.shield(work)
-                    except asyncio.CancelledError:
-                        await work
-                        raise
+                    except asyncio.CancelledError as cancelled:
+                        try:
+                            await work
+                        except Exception:
+                            self._write_failed()
+                        # A failed shielded write must not consume the requested shutdown.
+                        raise cancelled
                 except Exception:
-                    self.status = {
-                        "state": "unavailable",
-                        "financial_authority": False,
-                        "reason": "Evidence storage failed; financial operation continues",
-                    }
-                    self.dropped += len(self.pending)
-                    self.pending.clear()
+                    self._write_failed()
                 # Yield to finance but continue queued capture without an idle delay.
                 await asyncio.sleep(0 if self.pending or self.compact_pending else 0.25)
         finally:
@@ -557,6 +555,15 @@ class EvidenceRecorder:
                 self._compact.close()
             if self._maturity is not None:
                 self._maturity.close()
+
+    def _write_failed(self) -> None:
+        self.status = {
+            "state": "unavailable",
+            "financial_authority": False,
+            "reason": "Evidence storage failed; financial operation continues",
+        }
+        self.dropped += len(self.pending)
+        self.pending.clear()
 
     def snapshot(self) -> dict[str, Any]:
         return {

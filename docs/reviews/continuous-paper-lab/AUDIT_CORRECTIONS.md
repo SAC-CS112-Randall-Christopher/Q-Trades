@@ -98,3 +98,14 @@ evaluation and expose the result; each exact-reference replay reconciles all thr
 packets. These small synthetic inputs are insufficient for economic validation.
 Synthetic captures remain synthetic even without a descriptor prefix. Reconstructed
 labels respect actual capture first-seen times rather than backdating availability.
+
+The first corrected-source hosted run `36786574122` timed out with 183 passes and
+33 skips while the optional-writer corruption test was shutting down. Its failed
+in-flight write could consume cancellation; a slow initial write also violated the
+test's assumed 100-ms completion. Preserve that cancelled run and its raw hash.
+Shutdown now awaits the protected write, retains its failure and propagates the
+requested cancellation even when that write raises. A controlled cancellation/write
+failure regression must terminate within one second, and ordinary failure waits
+for an actual receipt under a five-second bound. Do not raise the eight-minute
+workflow limit. This exceptional shutdown correction leaves measured acquisition,
+metadata, housekeeping and financial paths and all native limits unchanged.

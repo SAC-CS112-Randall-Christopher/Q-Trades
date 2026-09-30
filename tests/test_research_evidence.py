@@ -250,7 +250,10 @@ def test_failed_optional_writer_exposes_failure_instead_of_stopping_finance(tmp_
 
     async def run():
         task = asyncio.create_task(recorder.run(lambda: True))
-        await asyncio.sleep(0.1)
+        deadline = asyncio.get_running_loop().time() + 5
+        while recorder.snapshot()["state"] != "unavailable":
+            assert asyncio.get_running_loop().time() < deadline, "Failure receipt unavailable"
+            await asyncio.sleep(0.01)
         assert not task.done()
         assert recorder.snapshot()["state"] == "unavailable"
         assert recorder.snapshot()["queue_dropped"] == 1
@@ -260,3 +263,31 @@ def test_failed_optional_writer_exposes_failure_instead_of_stopping_finance(tmp_
 
     asyncio.run(run())
     assert path.read_bytes() == original
+
+
+def test_cancel_during_failed_write_terminates_and_retains_failure(tmp_path, monkeypatch):
+    recorder = EvidenceRecorder(tmp_path / "owned-optional.sqlite")
+    recorder.enqueue({"at": 1.0, "kind": "summary"})
+
+    async def run():
+        started, finish = asyncio.Event(), asyncio.Event()
+
+        async def failed_write(_disk_available=True):
+            started.set()
+            await finish.wait()
+            raise OSError("Explicit disposable failed in-flight write")
+
+        monkeypatch.setattr(recorder, "flush", failed_write)
+        task = asyncio.create_task(recorder.run(lambda: True))
+        await started.wait()
+        task.cancel()
+        await asyncio.sleep(0)
+        finish.set()
+        with pytest.raises(asyncio.CancelledError):
+            await asyncio.wait_for(task, 1)
+        assert task.done()
+        assert recorder.snapshot()["state"] == "unavailable"
+        assert recorder.snapshot()["queue_dropped"] == 1
+        assert not recorder.pending
+
+    asyncio.run(run())
