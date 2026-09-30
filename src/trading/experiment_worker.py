@@ -38,6 +38,7 @@ def code_fingerprint() -> str:
                 "context_flow.py",
                 "incremental_memory.py",
                 "portfolio_components.py",
+                "compact_memory.py",
             )
         )
     ).hexdigest()

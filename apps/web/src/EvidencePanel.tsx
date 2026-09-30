@@ -9,6 +9,7 @@ export type EvidenceStatus = {
   queue?: number; queue_limit?: number; queue_dropped?: number; dropped?: number;
   reason?: string; retention?: string;
   episodes?: number; outcomes?: number;
+  compact_memory?: {state:string;prefixes?:number;queue?:number;omitted?:number};
 };
 type EvidenceRow = { id: number; at: number; kind: string; sha256: string; bytes: number };
 type Page = { records: EvidenceRow[]; has_more: boolean; next_before: number | null };
@@ -97,6 +98,7 @@ export function EvidencePanel({ status }: { status?: EvidenceStatus }) {
     <p className="fine-print">Episodes: {status?.episodes ?? "Unavailable"} · Matured outcomes:
       {status?.outcomes ?? "Unavailable"} · Archive: {status?.physical_bytes == null ? "Unavailable"
       : `${(status.physical_bytes/1024/1024).toFixed(2)} MiB`} / 64 MiB default budget.</p>
+    {status?.compact_memory&&<p>Longer-term memory: {status.compact_memory.state} · {status.compact_memory.prefixes??0} retained beginnings · {status.compact_memory.omitted??0} omitted updates. Compact journal links continue independently of full replay storage. Unobserved or unexecuted outcomes remain unknown.</p>}
     {status?.reason && <p role="status">{status.reason}</p>}
     {error && <p role="alert" className="error-banner">{error}</p>}
     {pending && <p role="status">Loading recorded evidence…</p>}

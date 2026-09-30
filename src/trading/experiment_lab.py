@@ -10,6 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from trading.compact_memory import compact_snapshot
 from trading.experiment_registry import ExperimentPlan, ExperimentRegistry
 from trading.experiment_worker import code_fingerprint
 from trading.memory_dataset import corpus_snapshot
@@ -30,6 +31,9 @@ class ExperimentLab:
         self.blocked_reason: str | None = None
         self.child: subprocess.Popen[bytes] | None = None
         self.campaigns = ResearchCampaigns(self.registry, self.enqueue, code_fingerprint)
+        from trading.prospective_review import ProspectiveReview
+
+        self.prospective = ProspectiveReview(self.registry)
 
     def enqueue(self, plan: ExperimentPlan) -> dict[str, Any]:
         if plan.evidence_kind != "observed_public_quotes":
@@ -47,9 +51,21 @@ class ExperimentLab:
                 "component_size",
                 "observation_priority",
             }:
-                snapshot = corpus_snapshot(
-                    self.registry.path.parent / "research-evidence.sqlite", plan.as_of
-                )
+                compact_path = self.registry.path.parent / "memory-episodes.sqlite"
+                if compact_path.exists() and plan.experiment_mode not in {
+                    "component_exit",
+                    "component_size",
+                    "observation_priority",
+                    "order_flow",
+                }:
+                    snapshot = compact_snapshot(compact_path, plan.as_of)
+                    from trading.execution_replay import source_hashes
+
+                    snapshot["source_files"] = source_hashes()
+                else:
+                    snapshot = corpus_snapshot(
+                        self.registry.path.parent / "research-evidence.sqlite", plan.as_of
+                    )
             elif not self.dsn:
                 raise ValueError("Public quote journal is not enabled")
             else:

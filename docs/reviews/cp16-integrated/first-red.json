@@ -1,0 +1,850 @@
+{
+  "contract": {
+    "accounts": [
+      1,
+      10,
+      20
+    ],
+    "research": [
+      false,
+      true
+    ],
+    "seconds_per_case": 30,
+    "ticks_per_second": 4,
+    "commit_p95_ms": 100,
+    "commit_p99_ms": 250,
+    "loop_p95_ms": 100,
+    "dispatch_p99_ms": 250,
+    "rss_mib": 512,
+    "growth_mib": 64,
+    "parent_cpu_one_core_percent": 50,
+    "child_rss_mib": 256,
+    "scope": "Full replay bundle plus compact memory; synthetic books, not network/GIS latency",
+    "authority": "Disposable schemas only; no provider/GPU or original-account mutation"
+  },
+  "declared_at": 1790763356.3474057,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.10",
+  "driver_sha256": "c72379fd145158094c3c51b8cf1672a44a0bf477f666c652739e1624bd7bc222",
+  "cases": [
+    {
+      "accounts": 1,
+      "research_busy": false,
+      "ticks": 120,
+      "wall_seconds": 29.806230299989693,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.11559994891285896,
+          "p95": 0.20150002092123032,
+          "p99": 0.2212999388575554,
+          "max": 0.3151999553665519
+        },
+        "feature_batch_compute": {
+          "p50": 5.920200026594102,
+          "p95": 13.176899985410273,
+          "p99": 13.64249992184341,
+          "max": 14.214900089427829
+        },
+        "prepare": {
+          "p50": 10.219900053925812,
+          "p95": 19.52020009048283,
+          "p99": 20.530999987386167,
+          "max": 45.2947000740096
+        },
+        "transaction": {
+          "p50": 4.7574000200256705,
+          "p95": 7.76499998755753,
+          "p99": 8.687100023962557,
+          "max": 18.574199988506734
+        },
+        "evidence_write": {
+          "p50": 25.776599999517202,
+          "p95": 45.23629997856915,
+          "p99": 46.69029999058694,
+          "max": 58.962599956430495
+        },
+        "total_before_validation": {
+          "p50": 41.82759998366237,
+          "p95": 66.67860003653914,
+          "p99": 71.96400000248104,
+          "max": 82.60379999410361
+        },
+        "queue_wait": {
+          "p50": 3.619300085119903,
+          "p95": 5.400600028224289,
+          "p99": 5.904299905523658,
+          "max": 31.132500036619604
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.3556999145075679,
+        "p95": 0.5405999254435301,
+        "p99": 0.6063999608159065,
+        "max": 0.6828999612480402
+      },
+      "rss_mib": 70.44921875,
+      "rss_growth_mib": 7.4140625,
+      "parent_cpu_one_core_percent": 15.307202400571862,
+      "raw_archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 19929135,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 21024472,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 160496,
+      "postgres": {
+        "database_bytes": 17138191,
+        "candles": 0,
+        "events": 40,
+        "journal_lines": 66,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 147456
+      },
+      "balanced": true,
+      "passed": true
+    },
+    {
+      "accounts": 1,
+      "research_busy": true,
+      "ticks": 120,
+      "wall_seconds": 29.80151660006959,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.07890001870691776,
+          "p95": 0.13890000991523266,
+          "p99": 0.17060001846402884,
+          "max": 0.2114999806508422
+        },
+        "feature_batch_compute": {
+          "p50": 5.732199992053211,
+          "p95": 10.576400090940297,
+          "p99": 11.714700027368963,
+          "max": 13.147399993613362
+        },
+        "prepare": {
+          "p50": 9.222400025464594,
+          "p95": 16.707299975678325,
+          "p99": 18.01320002414286,
+          "max": 36.80739994160831
+        },
+        "transaction": {
+          "p50": 3.9862000849097967,
+          "p95": 7.099099922925234,
+          "p99": 8.196600014343858,
+          "max": 9.438999928534031
+        },
+        "evidence_write": {
+          "p50": 24.798400001600385,
+          "p95": 44.37280003912747,
+          "p99": 46.22200003359467,
+          "max": 83.47800001502037
+        },
+        "total_before_validation": {
+          "p50": 37.443799898028374,
+          "p95": 63.507999991998076,
+          "p99": 65.90739998500794,
+          "max": 96.59550001379102
+        },
+        "queue_wait": {
+          "p50": 3.507399931550026,
+          "p95": 6.382099934853613,
+          "p99": 12.228599982336164,
+          "max": 56.90349999349564
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.3369000041857362,
+        "p95": 0.5510000046342611,
+        "p99": 0.5975000094622374,
+        "max": 0.7016999879851937
+      },
+      "rss_mib": 70.31640625,
+      "rss_growth_mib": 2.55078125,
+      "parent_cpu_one_core_percent": 15.781495496068201,
+      "raw_archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 19934355,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 21049096,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 160496,
+      "postgres": {
+        "database_bytes": 17329299,
+        "candles": 0,
+        "events": 37,
+        "journal_lines": 66,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 147456
+      },
+      "balanced": true,
+      "child": {
+        "wall_seconds": 32.0008441999089,
+        "cpu_seconds": 27.59375,
+        "peak_rss_mib": 56.89453125,
+        "fits": 22538,
+        "limits": {
+          "processors_allowed": 2,
+          "priority_class": 64
+        },
+        "paid_usd": "0"
+      },
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "research_busy": false,
+      "ticks": 120,
+      "wall_seconds": 29.807775199995376,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.10800000745803118,
+          "p95": 0.19529997371137142,
+          "p99": 0.21900003775954247,
+          "max": 0.3456000704318285
+        },
+        "feature_batch_compute": {
+          "p50": 6.29100005608052,
+          "p95": 13.047799933701754,
+          "p99": 13.66779999807477,
+          "max": 14.64559999294579
+        },
+        "prepare": {
+          "p50": 10.185100021772087,
+          "p95": 19.906300003640354,
+          "p99": 21.44769998267293,
+          "max": 36.21129994280636
+        },
+        "transaction": {
+          "p50": 12.959099956788123,
+          "p95": 21.70120005030185,
+          "p99": 28.27350003644824,
+          "max": 63.440000056289136
+        },
+        "evidence_write": {
+          "p50": 28.42490002512932,
+          "p95": 45.976399909704924,
+          "p99": 54.14819996803999,
+          "max": 69.5374000351876
+        },
+        "total_before_validation": {
+          "p50": 56.34050001390278,
+          "p95": 80.99970000330359,
+          "p99": 91.02439996786416,
+          "max": 96.10379999503493
+        },
+        "queue_wait": {
+          "p50": 3.4485000651329756,
+          "p95": 5.636399961076677,
+          "p99": 8.454599999822676,
+          "max": 29.678500024601817
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.37720007821917534,
+        "p95": 0.5885000573471189,
+        "p99": 0.9178000036627054,
+        "max": 7.862700033001602
+      },
+      "rss_mib": 71.3359375,
+      "rss_growth_mib": 4.21875,
+      "parent_cpu_one_core_percent": 23.169290407158837,
+      "raw_archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 25240843,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 26493472,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 209936,
+      "postgres": {
+        "database_bytes": 18006543,
+        "candles": 0,
+        "events": 154,
+        "journal_lines": 300,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 319488
+      },
+      "balanced": true,
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "research_busy": true,
+      "ticks": 120,
+      "wall_seconds": 29.83483750000596,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.08000002708286047,
+          "p95": 0.14670006930828094,
+          "p99": 0.18500001169741154,
+          "max": 0.2020999090746045
+        },
+        "feature_batch_compute": {
+          "p50": 5.594999995082617,
+          "p95": 10.541000054217875,
+          "p99": 11.369600077159703,
+          "max": 14.908100012689829
+        },
+        "prepare": {
+          "p50": 9.03179997112602,
+          "p95": 17.47959991917014,
+          "p99": 18.780999933369458,
+          "max": 23.277100059203804
+        },
+        "transaction": {
+          "p50": 12.433500029146671,
+          "p95": 23.21390004362911,
+          "p99": 38.448199979029596,
+          "max": 54.12290000822395
+        },
+        "evidence_write": {
+          "p50": 27.57730009034276,
+          "p95": 47.27679991628975,
+          "p99": 54.86569995991886,
+          "max": 60.50690007396042
+        },
+        "total_before_validation": {
+          "p50": 48.42959996312857,
+          "p95": 81.9437000900507,
+          "p99": 89.40719999372959,
+          "max": 95.17549991142005
+        },
+        "queue_wait": {
+          "p50": 3.3121000742539763,
+          "p95": 4.958399920724332,
+          "p99": 6.42130000051111,
+          "max": 29.15650000795722
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.32899994403123856,
+        "p95": 0.5855999188497663,
+        "p99": 0.6608999101445079,
+        "max": 3.0888000037521124
+      },
+      "rss_mib": 72.3125,
+      "rss_growth_mib": 4.23828125,
+      "parent_cpu_one_core_percent": 21.943726021630557,
+      "raw_archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 25270092,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 26272240,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 209936,
+      "postgres": {
+        "database_bytes": 18189459,
+        "candles": 0,
+        "events": 184,
+        "journal_lines": 300,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 344064
+      },
+      "balanced": true,
+      "child": {
+        "wall_seconds": 32.002457899972796,
+        "cpu_seconds": 27.21875,
+        "peak_rss_mib": 56.953125,
+        "fits": 22911,
+        "limits": {
+          "processors_allowed": 2,
+          "priority_class": 64
+        },
+        "paid_usd": "0"
+      },
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "research_busy": false,
+      "ticks": 120,
+      "wall_seconds": 29.82643030001782,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.10480009950697422,
+          "p95": 0.20340003538876772,
+          "p99": 0.20680006127804518,
+          "max": 0.22719998378306627
+        },
+        "feature_batch_compute": {
+          "p50": 5.863000056706369,
+          "p95": 12.238400056958199,
+          "p99": 12.914799968712032,
+          "max": 13.345299987122416
+        },
+        "prepare": {
+          "p50": 9.803799912333488,
+          "p95": 18.974400009028614,
+          "p99": 19.448600010946393,
+          "max": 20.029300008900464
+        },
+        "transaction": {
+          "p50": 23.877999978139997,
+          "p95": 42.01539990026504,
+          "p99": 70.36429992876947,
+          "max": 127.61770002543926
+        },
+        "evidence_write": {
+          "p50": 31.022700015455484,
+          "p95": 53.61950001679361,
+          "p99": 58.89029998797923,
+          "max": 70.17409999389201
+        },
+        "total_before_validation": {
+          "p50": 68.03840002976358,
+          "p95": 98.18269999232143,
+          "p99": 130.54509996436536,
+          "max": 192.30350002180785
+        },
+        "queue_wait": {
+          "p50": 3.184800036251545,
+          "p95": 4.952099989168346,
+          "p99": 10.161700076423585,
+          "max": 33.22959993965924
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.3806999884545803,
+        "p95": 0.6410999922081828,
+        "p99": 0.7819000165909529,
+        "max": 0.9188000112771988
+      },
+      "rss_mib": 71.96484375,
+      "rss_growth_mib": 3.75390625,
+      "parent_cpu_one_core_percent": 25.355028824872424,
+      "raw_archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 31292919,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 32440264,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 234656,
+      "postgres": {
+        "database_bytes": 18500755,
+        "candles": 0,
+        "events": 284,
+        "journal_lines": 560,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 516096
+      },
+      "balanced": true,
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "research_busy": true,
+      "ticks": 120,
+      "wall_seconds": 29.84506349998992,
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.08000002708286047,
+          "p95": 0.15440001152455807,
+          "p99": 0.18229999113827944,
+          "max": 0.20810007117688656
+        },
+        "feature_batch_compute": {
+          "p50": 5.685299984179437,
+          "p95": 9.800400002859533,
+          "p99": 10.470299981534481,
+          "max": 12.1138000395149
+        },
+        "prepare": {
+          "p50": 9.25110001116991,
+          "p95": 15.64719993621111,
+          "p99": 16.368000069633126,
+          "max": 33.74530002474785
+        },
+        "transaction": {
+          "p50": 20.202099927701056,
+          "p95": 37.012499989941716,
+          "p99": 55.68670004140586,
+          "max": 94.6572000393644
+        },
+        "evidence_write": {
+          "p50": 31.698300037533045,
+          "p95": 54.57329994533211,
+          "p99": 62.1965000173077,
+          "max": 119.26229996606708
+        },
+        "total_before_validation": {
+          "p50": 63.121299957856536,
+          "p95": 105.98989995196462,
+          "p99": 129.37849992886186,
+          "max": 149.56989989150316
+        },
+        "queue_wait": {
+          "p50": 3.100200090557337,
+          "p95": 5.865700077265501,
+          "p99": 15.417300048284233,
+          "max": 31.751099973917007
+        }
+      },
+      "dispatch_lag_ms": {
+        "p50": 0.36419997923076153,
+        "p95": 0.5791999865323305,
+        "p99": 0.5964000010862947,
+        "max": 0.7785999914631248
+      },
+      "rss_mib": 72.03515625,
+      "rss_growth_mib": 4.515625,
+      "parent_cpu_one_core_percent": 27.904531012315697,
+      "raw_archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 31288384,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 32448528,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        },
+        "compact_memory": {
+          "contract": {
+            "version": "journal-linked-memory-v1",
+            "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+            "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+            "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+            "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+            "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+          },
+          "state": "recording",
+          "prefixes": 1,
+          "financial_authority": false,
+          "queue": 0,
+          "omitted": 0
+        }
+      },
+      "compact": {
+        "contract": {
+          "version": "journal-linked-memory-v1",
+          "selection": "First valid prefix per 3300-second UTC group and actual buy intents",
+          "snapshot": "Latest 512 chronological retained prefixes at the declared cutoff",
+          "capacity": "64 MiB, 8192 prefixes, 20000 linked events; stop without eviction",
+          "labels": "First dispatched linked modeled buy and closed trade, then observed 45m maturity",
+          "authority": "Read-only research; full PostgreSQL journal remains authoritative"
+        },
+        "state": "recording",
+        "prefixes": 1,
+        "financial_authority": false
+      },
+      "compact_bytes": 234656,
+      "postgres": {
+        "database_bytes": 18244111,
+        "candles": 0,
+        "events": 344,
+        "journal_lines": 560,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 548864
+      },
+      "balanced": true,
+      "child": {
+        "wall_seconds": 32.00083410006482,
+        "cpu_seconds": 27.859375,
+        "peak_rss_mib": 56.9453125,
+        "fits": 22569,
+        "limits": {
+          "processors_allowed": 2,
+          "priority_class": 64
+        },
+        "paid_usd": "0"
+      },
+      "passed": false
+    }
+  ]
+}

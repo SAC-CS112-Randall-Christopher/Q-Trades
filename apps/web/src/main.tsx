@@ -26,6 +26,7 @@ import { PaperPanel, type PaperSnapshot } from "./PaperPanel";
 import { PaperEconomicsPanel } from "./PaperEconomicsPanel";
 import { PaperRiskPanel } from "./PaperRiskPanel";
 import { LearningPanel } from "./LearningPanel";
+import { ProspectivePanel } from "./ProspectivePanel";
 import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
@@ -588,7 +589,7 @@ function App() {
                 />
               )}
               {labTab === "models" && <ModelTrialsPanel />}
-              {labTab === "history" && <EvidencePanel status={paper?.research_evidence} />}
+              {labTab === "history" && <><EvidencePanel status={paper?.research_evidence} /><ProspectivePanel /></>}
             </>
           )}
           {(page === "markets" || page === "strategies") && (

@@ -13,8 +13,9 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from trading.compact_memory import linked_events
 from trading.engine_diagnostics import EngineWorkDiagnostics
-from trading.evidence_runtime import EvidenceRecorder, plain
+from trading.evidence_runtime import EvidenceRecorder, compact_prefix, plain
 from trading.futures_context import POLL_SECONDS, FuturesContext, FuturesPublicData
 from trading.live_quotes import quote_snapshot
 from trading.market import parse_book
@@ -505,6 +506,19 @@ class TieredPaperRuntime(PaperRuntime):
                 added, notices = self._bars_added, self._notice_queue
                 self._bars_added, self._notice_queue = 0, []
                 evidence_tick: dict[str, Any] = {}
+                memory_prefix = None
+                if "BTCUSD" in frames:
+                    try:
+                        memory_prefix = compact_prefix(
+                            now,
+                            frames["BTCUSD"],
+                            self.history.get("BTCUSD", []),
+                            self._feature_timing.get("BTCUSD", {}).get("available_at", now + 1),
+                            study.get("BTCUSD", {}).get("breakout-v1"),
+                            "forward-paper",
+                        )
+                    except (ValueError, TypeError, KeyError, ArithmeticError):
+                        self.evidence.compact_dropped += 1
                 if self.evidence.selected(now, study_key != self._last_study_key):
                     try:
                         evidence_tick["packet"] = self.evidence.prepare(
@@ -578,6 +592,7 @@ class TieredPaperRuntime(PaperRuntime):
                             self.evidence.dropped += 1
                             evidence_tick.pop("packet", None)
                     engine.tick(frames, study)
+                    evidence_tick["compact_events"] = engine.events
                     if "packet" in evidence_tick:
                         evidence_tick["events"] = engine.events[evidence_tick["event_offset"] :]
                         evidence_tick["after"] = engine.state
@@ -587,6 +602,23 @@ class TieredPaperRuntime(PaperRuntime):
                 measured_commit = time.perf_counter()
                 stage_ms["prepare"] = (measured_commit - measured_start) * 1000
                 self.state = self.store.transact(now, apply)
+                try:
+                    linked = linked_events(
+                        evidence_tick.get("compact_events", []), self.store.last_commit_receipt
+                    )
+                    if study_key != self._last_study_key or linked:
+                        self.evidence.compact(
+                            {
+                                "at": now,
+                                "collected_at": time.time(),
+                                "prefix": memory_prefix,
+                                "events": linked,
+                                "fresh": "BTCUSD" in frames
+                                and now - frames["BTCUSD"]["observed"] <= 5,
+                            }
+                        )
+                except (ValueError, TypeError, KeyError, ArithmeticError):
+                    self.evidence.compact_dropped += 1
                 self._commit_ms.append((time.monotonic() - commit_started) * 1000)
                 stage_ms["transaction"] = (time.perf_counter() - measured_commit) * 1000
                 if "packet" in evidence_tick:

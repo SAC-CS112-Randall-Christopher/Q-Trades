@@ -13,6 +13,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from trading.compact_memory import CompactMemory, prefix
 from trading.paper_strategy import VARIANTS, Bar, features
 from trading.research_evidence import (
     MAX_PACKET,
@@ -26,6 +27,26 @@ from trading.research_evidence import (
 
 def plain(value: Any) -> Any:
     return json.loads(json.dumps(value, default=str, allow_nan=False))
+
+
+def compact_prefix(
+    at: float,
+    frame: dict[str, Any],
+    bars: list[Bar],
+    available: float,
+    feature: dict[str, Any] | None,
+    data_mode: str,
+) -> dict[str, Any]:
+    observed = plain({k: v for k, v in frame.items() if k != "book"})
+    return prefix(
+        at,
+        frozen_bars(bars[-11:], available),
+        {
+            "book": book_features(observed, at),
+            "closed_bar": feature,
+        },
+        data_mode,
+    )
 
 
 def frozen_bars(history: list[Bar], available_at: float) -> list[dict[str, Any]]:
@@ -162,6 +183,16 @@ class EvidenceRecorder:
         self.status: dict[str, Any] = {"state": "starting", "financial_authority": False}
         self._archive: EvidenceArchive | None = None
         self._summary_minute = -1
+        self.compact_pending: deque[dict[str, Any]] = deque()
+        self._compact: CompactMemory | None = None
+        self.compact_status: dict[str, Any] = {"state": "starting"}
+        self.compact_dropped = 0
+
+    def compact(self, packet: dict[str, Any]) -> None:
+        if len(self.compact_pending) >= 8 or len(canonical_compact(packet)) > 65536:
+            self.compact_dropped += 1
+            return
+        self.compact_pending.append(packet)
 
     def selected(self, at: float, study_changed: bool) -> bool:
         if len(self.pending) >= self.queue_limit:
@@ -347,15 +378,33 @@ class EvidenceRecorder:
                 )
 
     async def flush(self, disk_available: bool = True) -> None:
+        compact = [self.compact_pending.popleft() for _ in range(len(self.compact_pending))]
         packets = [self.pending.popleft() for _ in range(min(8, len(self.pending)))]
+        await asyncio.to_thread(self._write_batch, compact, packets, disk_available)
+
+    def _write_batch(
+        self, compact: list[dict[str, Any]], packets: list[dict[str, Any]], disk_available: bool
+    ) -> None:
+        # One off-thread write batch serves both bounded archives. No SQLite work
+        # or extra executor round trips run in financial/event-loop processing.
+        if compact:
+            try:
+                if self._compact is None:
+                    self._compact = CompactMemory(self.path.with_name("memory-episodes.sqlite"))
+                for packet in compact:
+                    self._compact.append(packet, disk_available=disk_available)
+                self.compact_status = self._compact.snapshot()
+            except Exception:
+                self.compact_dropped += len(compact)
+                self.compact_status = {"state": "unavailable"}
         try:
             if self._archive is None:
-                self._archive = await asyncio.to_thread(EvidenceArchive, self.path)
+                self._archive = EvidenceArchive(self.path)
                 self.plan = self._archive.plan
             at = time.perf_counter()
             for packet in packets:
                 packet["queue_wait_ms"] = max(0, (at - packet.pop("queued_mono")) * 1000)
-            await asyncio.to_thread(self._archive.append, packets, disk_available=disk_available)
+            self._archive.append(packets, disk_available=disk_available)
             self.status = self._archive.snapshot()
         except Exception:
             self.dropped += len(packets)
@@ -383,6 +432,8 @@ class EvidenceRecorder:
         finally:
             if self._archive is not None:
                 self._archive.close()
+            if self._compact is not None:
+                self._compact.close()
 
     def snapshot(self) -> dict[str, Any]:
         return {
@@ -391,4 +442,13 @@ class EvidenceRecorder:
             "queue_limit": self.queue_limit,
             "queue_dropped": self.dropped,
             "selection": asdict(self.plan),
+            "compact_memory": {
+                **self.compact_status,
+                "queue": len(self.compact_pending),
+                "omitted": self.compact_dropped,
+            },
         }
+
+
+def canonical_compact(packet: dict[str, Any]) -> bytes:
+    return json.dumps(packet, allow_nan=False).encode()
