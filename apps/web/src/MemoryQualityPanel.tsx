@@ -29,6 +29,7 @@ export function MemoryQualityPanel({requestId,readonly=false,onOpenEvidence}:{re
   }
   async function launch() {
     setBusy(true);setError("");
+    try {
     const body=retry ?? JSON.stringify({request_id:crypto.randomUUID(),name:"Historical entry-quality comparison",experiment_mode:"memory_entry",horizon_minutes:45,
         mechanism:"Comparable as-seen prefixes may predict subsequent filled-trade quality after embedded costs.",
         falsification:"Reject or retain inconclusive evidence without sufficient executable labels and matched whole-account improvement.",
@@ -36,7 +37,7 @@ export function MemoryQualityPanel({requestId,readonly=false,onOpenEvidence}:{re
     const id=(JSON.parse(body) as {request_id:string}).request_id;
     setRequest(id); localStorage.setItem("qtrades-memory-request",id);
     setRetry(body); localStorage.setItem("qtrades-memory-pending",body);
-    try {const response=await fetch("/api/lab/experiments",{method:"POST",headers:{"Content-Type":"application/json","X-Local-Operator":"1"},
+    const response=await fetch("/api/lab/experiments",{method:"POST",headers:{"Content-Type":"application/json","X-Local-Operator":"1"},
       body,signal:AbortSignal.timeout(20000)});
       if(!response.ok) {const body=await response.json() as {detail?:string};throw new Error(body.detail ?? "Plan could not be frozen");}
       setRetry(null);localStorage.removeItem("qtrades-memory-pending");await inspect(id);

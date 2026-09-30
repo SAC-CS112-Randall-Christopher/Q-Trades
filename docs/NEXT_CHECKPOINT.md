@@ -1,3 +1,15 @@
+# Next: untouched evidence and ordinary operator review
+
+CP10-CP16 bounded source workflows and finite software acceptance are complete.
+Finish delivery gates/authorized main update if still pending, then inspect current
+installed health and private preservation receipts. Do not reset trials or history.
+Use the compact memory and frozen system review to collect permitted subsequent
+inputs; unsupported outcomes stay unknown. No justified combined candidate exists.
+Existing CP7 evidence and human paper-role policy govern any future admission or
+role change. Provider transport/access and live execution remain unverified.
+
+# Historical handoff
+
 # Next: CP16 integrated acceptance and completion
 
 Implement prospective frozen review, repair measured retention/UI inefficiencies,

@@ -30,6 +30,7 @@ from trading.ownership import CollectorLock
 from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
+from trading.prospective_review import ProspectiveSpec
 from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_campaigns import ResearchCampaignSpec
 from trading.research_evidence import evidence_page, evidence_record
@@ -380,6 +381,38 @@ def create_app(
         lab = lab_operator(request)
         try:
             return lab.enqueue(plan)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/lab/prospective")
+    def prospective_plans(request: Request) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research registry unavailable")
+        return {"plans": lab.prospective.plans(), "financial_authority": False}
+
+    @app.post("/api/lab/prospective")
+    def prospective_freeze(spec: ProspectiveSpec, request: Request) -> dict[str, Any]:
+        lab = lab_operator(request)
+        paper = request.app.state.paper
+        if paper is None:
+            raise HTTPException(409, "Paper experiment unavailable")
+        try:
+            return lab.prospective.freeze(spec, paper.state)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/lab/prospective/{request_id}/inspect")
+    def prospective_inspect(request_id: str, request: Request) -> dict[str, Any]:
+        lab = lab_operator(request)
+        paper = request.app.state.paper
+        if paper is None:
+            raise HTTPException(409, "Paper experiment unavailable")
+        try:
+            now = time.time()
+            return lab.prospective.report(
+                request_id, paper.state, paper.store.forward_windows(now), now
+            )
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
 

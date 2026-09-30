@@ -8,6 +8,7 @@ import time
 from contextlib import closing
 from dataclasses import asdict, dataclass
 from decimal import Decimal
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,25 @@ def canonical(value: Any) -> str:
 
 def digest(value: Any) -> str:
     return hashlib.sha256(canonical(value).encode()).hexdigest()
+
+
+@lru_cache(maxsize=128)
+def _small_descriptor(body: str, sha256: str) -> dict[str, Any]:
+    value: dict[str, Any] = json.loads(body)
+    if digest(value) != sha256:
+        raise ValueError("Episode descriptor corrupted; no replacement inferred")
+    return value
+
+
+def _descriptor(body: str, sha256: str) -> dict[str, Any]:
+    # Both immutable text and hash form the key; a changed row cannot hit an old
+    # cached validation. Cap keys at eight KiB and 128 entries (one MiB of text).
+    if len(body) <= 8192:
+        return _small_descriptor(body, sha256)
+    value: dict[str, Any] = json.loads(body)
+    if digest(value) != sha256:
+        raise ValueError("Episode descriptor corrupted; no replacement inferred")
+    return value
 
 
 @dataclass(frozen=True)
@@ -204,8 +224,7 @@ class EvidenceArchive:
             "SELECT * FROM evidence_episodes WHERE available_at<=? AND cutoff<=? ORDER BY episode",
             (cutoff, cutoff),
         ):
-            if digest(json.loads(row["descriptor"])) != row["descriptor_sha256"]:
-                raise ValueError("Episode descriptor corrupted; no replacement inferred")
+            d = _descriptor(row["descriptor"], row["descriptor_sha256"])
             outcome = None
             if row["outcome_id"] is not None:
                 saved = self.connection.execute(
@@ -219,7 +238,7 @@ class EvidenceArchive:
                     "episode": row["episode"],
                     "record_id": row["record_id"],
                     "available_at": row["available_at"],
-                    "descriptor": json.loads(row["descriptor"]),
+                    "descriptor": d,
                     "descriptor_sha256": row["descriptor_sha256"],
                     "outcome": outcome,
                 }

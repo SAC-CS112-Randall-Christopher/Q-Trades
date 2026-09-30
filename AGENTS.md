@@ -1,3 +1,18 @@
+# CP10-CP16 research source and authorized installation
+
+Read docs/CP16_INTEGRATED_RESEARCH.md and reviews/cp16-integrated. All seven
+research workflows are implemented as bounded local evidence/shadow procedures.
+No justified combined candidate, provider access or trading edge is established.
+Preserve compact first-seen availability, immutable original full packets/ledger,
+all failed load samples, chronological holds and CP7 matched-control/28-day policy.
+Merge/relaunch authorization persists: complete exact-head/final-main hosted checks,
+then use the existing CP0 updater and retain private before/after account/history
+proof. Preserve original six accounts, funding/attempts, models/GIS and private
+configuration. Refresh source, ownership and installed health before later work.
+Future market/paper-role acceptance and live readiness remain separate decisions.
+
+# Historical checkpoint instructions
+
 # CP15 independent components; CP16 next
 
 Read docs/CP15_INDEPENDENT_COMPONENTS.md. Keep exit, conservative sizing and

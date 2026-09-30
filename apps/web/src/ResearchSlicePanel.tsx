@@ -8,6 +8,8 @@ type Run = {request_id:string;status:string;reason?:string;manifest?:{execution_
   optional_D?:{status:string;reason:string};resources:{elapsed_seconds:number;paid_usd:string};
 }};
 type LearningPage={records:{seq:number;at:number;kind:string;sha256:string;body:{prediction_at?:number;outcome_available_at?:number;residual_bps?:number|null;model_before?:string;model?:{sha256:string};prediction?:{status:string}}}[];next_cursor:number|null};
+type LearningMetric={scored_independent_groups?:number;mean_absolute_net_error_bps?:number|null;brier?:number|null;updates?:number};
+const contributionName=(mode:string)=>({context_regime:"Local market conditions",order_flow:"Order-flow entry timing",growing_memory:"Controlled learning",component_exit:"Independent exits",component_size:"Conservative sizing",observation_priority:"Market observation"}[mode]??mode.replaceAll("_"," "));
 export function ResearchSlicePanel({requestId,readonly=false}:{requestId?:string;readonly?:boolean}) {
   const [mode,setMode]=useState("context_regime");const [start,setStart]=useState("");const [end,setEnd]=useState("");
   const [run,setRun]=useState<Run|null>(null);const [busy,setBusy]=useState(false);const [error,setError]=useState("");
@@ -21,7 +23,7 @@ export function ResearchSlicePanel({requestId,readonly=false}:{requestId?:string
     const value=await r.json() as Run;if(current.current===target){setRun(value);setLearning(null);}
   }catch(e){setError(e instanceof Error?e.message:"Research unavailable");}finally{setBusy(false);}}
   async function launch(){setBusy(true);setError("");try{
-    const body=pending??JSON.stringify({request_id:crypto.randomUUID(),name:mode==="context_regime"?"Local condition comparison":mode==="growing_memory"?"Controlled learning comparison":"Independent entry-timing comparison",
+    const body=pending??JSON.stringify({request_id:crypto.randomUUID(),name:contributionName(mode)+" comparison",
       experiment_mode:mode,horizon_minutes:45,as_of:Date.now()/1000,test_start:new Date(start).getTime()/1000,test_end:new Date(end).getTime()/1000,
       mechanism:"Frozen observable conditions may improve entries under the existing strategy and unchanged financial controls.",
       falsification:"Retain unknown or negative evidence without supported executable costs and matched whole-account improvement."});
@@ -51,14 +53,14 @@ export function ResearchSlicePanel({requestId,readonly=false}:{requestId?:string
       <button className="button secondary" disabled={busy||!id} onClick={()=>void inspect()}>Reopen contribution</button></>}
     {error&&<p role="alert" className="error-banner">{error}</p>}
     {run&&<article><h3>Saved contribution · {run.status}</h3><p>Reference {run.request_id.slice(0,12)} · {run.reason??run.result?.reason??"Waiting for the bounded worker"}</p>
-      <p>{run.manifest?.execution_status}</p>{run.result&&<><p>{run.result.evidence_kind==="synthetic_qa"?"Synthetic test data":"Observed paper evidence"} · {run.result.mode.replaceAll("_"," ")} · {run.result.status.replaceAll("_"," ")}</p>
+      <p>{run.manifest?.execution_status}</p>{run.result&&<><p>{run.result.evidence_kind==="synthetic_qa"?"Synthetic test data":"Observed paper evidence"} · {contributionName(run.result.mode)} · {run.result.status.replaceAll("_"," ")}</p>
         <dl className="summary-values"><div><dt>Observed opportunities</dt><dd>{run.result.opportunities}</dd></div><div><dt>Executable labels</dt><dd>{run.result.labeled}</dd></div>
           <div><dt>Unknown outcomes</dt><dd>{run.result.unknown_outcomes}</dd></div><div><dt>Changed entries</dt><dd>{run.result.changed_decisions}</dd></div></dl>
         <p>Whole-account effect, turnover and marginal monetary value remain unavailable. Fees in net labels are counted once. No account is promoted or funded.</p>
         {run.result.optional_D&&<p>Optional Decisions: {run.result.optional_D.status} · {run.result.optional_D.reason}</p>}
         {run.result.metrics&&<><h4>Retained learning diagnostics</h4><p>Updates change research memory only. More updates do not establish more independent evidence or an improved account.</p>
-          <pre className="evidence-raw">{JSON.stringify(run.result.metrics,null,2)}</pre>
-          <p>Persisted stages: {JSON.stringify(run.result.journal)} · drift diagnoses: {run.result.drift_alarms?.length??0}.</p>
+          <table className="market-table" aria-label="Learning comparisons"><thead><tr><th>Procedure</th><th>Scored groups</th><th>Net forecast error</th><th>Probability error</th><th>Updates</th></tr></thead><tbody>{Object.entries(run.result.metrics).map(([name,value])=>{const m=value as LearningMetric;return <tr key={name}><td>{name}</td><td>{m.scored_independent_groups??0}</td><td>{m.mean_absolute_net_error_bps==null?"Unavailable":`${m.mean_absolute_net_error_bps.toFixed(2)} bps`}</td><td>{m.brier==null?"Unavailable":m.brier.toFixed(4)}</td><td>{m.updates??0}</td></tr>;})}</tbody></table>
+          <p>Drift diagnoses: {run.result.drift_alarms?.length??0}. Original forecasts and model references remain in the saved stages.</p>
           <button className="button secondary" disabled={busy} onClick={()=>void inspectLearning()}>Inspect learning snapshots</button>
           {learning&&<><table className="market-table" aria-label="Saved learning stages"><thead><tr><th>Stage</th><th>Recorded time</th><th>Original forecast / model</th><th>Residual</th></tr></thead>
             <tbody>{learning.records.map(s=><tr key={s.seq}><td>#{s.seq} · {s.kind}</td><td>{new Date(s.at*1000).toLocaleString()}</td>

@@ -1,3 +1,16 @@
+# CP10-CP16 source workflows delivered; prospective outcomes pending
+
+CP16 adds frozen subsequent system reviews, compact journal-linked memory and the
+integrated performance/UI repairs. Final native six-case limits passed, including
+90.787/96.869 ms idle/busy twenty-account loop p95. Failed receipts remain retained.
+Local release suite: 464 passed/no skips (95.42s), plus final affected checks, lint/types/build and
+normal browser review/reopen. Exact-head hosted, final-main and authorized updater
+receipts are observed separately during delivery. CP15 hosted run 36699344086 passed.
+No economic edge, combined candidate, provider access, new paper role or live
+readiness is established. The original 28-day policy and six-account history remain.
+
+# Prior status
+
 # CP15 source complete; CP16 integrated audit next
 
 460 full local tests passed before the final availability correction; 17 affected

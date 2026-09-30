@@ -23,8 +23,9 @@ from psycopg.conninfo import conninfo_to_dict
 from verify_cp3 import disposable, frames, rss_bytes
 
 from trading.api import create_app
+from trading.compact_memory import linked_events
 from trading.config import Settings
-from trading.evidence_runtime import EvidenceRecorder, frozen_bars, plain
+from trading.evidence_runtime import EvidenceRecorder, compact_prefix, frozen_bars, plain
 from trading.paper_campaigns import CampaignSpec, create_campaign
 from trading.paper_engine import PaperEngine
 from trading.paper_store import load_dsn
@@ -90,7 +91,7 @@ def percentiles(values):
     }
 
 
-def recorded_tick(store, recorder, at, sequence, *, validate=True):
+def recorded_tick(store, recorder, at, sequence, *, validate=True, compact=False):
     started = time.perf_counter()
     receipt_mono = time.monotonic()
     f = frames(at, sequence)
@@ -156,6 +157,23 @@ def recorded_tick(store, recorder, at, sequence, *, validate=True):
         receipt_mono,
         store.last_commit_receipt,
     )
+    if compact:
+        recorder.compact(
+            {
+                "at": decision_at,
+                "collected_at": time.time(),
+                "fresh": True,
+                "prefix": compact_prefix(
+                    decision_at,
+                    f["BTCUSD"],
+                    bars,
+                    feature_timing["BTCUSD"]["available_at"],
+                    study["BTCUSD"]["breakout-v1"],
+                    "synthetic",
+                ),
+                "events": linked_events(measured["events"], store.last_commit_receipt),
+            }
+        )
     asyncio.run(recorder.flush())
     finished = time.perf_counter()
     if validate:
@@ -347,7 +365,7 @@ def seed_memory(recorder, now):
     recorder.status = recorder._archive.snapshot()
 
 
-def serve(port, *, replay=False, research=False, duration=900):
+def serve(port, *, replay=False, research=False, duration=900, compact=False):
     verify_database()
     with tempfile.TemporaryDirectory(prefix="cp10-ui-") as folder:
         data = Path(folder)
@@ -381,7 +399,9 @@ def serve(port, *, replay=False, research=False, duration=900):
                         now, lambda engine: engine.universe_experiment(["BTCUSD", "ETHUSD"])
                     )
                     await asyncio.to_thread(seed_memory, runtime.evidence, now)
-                    await asyncio.to_thread(recorded_tick, store, runtime.evidence, now, 1)
+                    await asyncio.to_thread(
+                        recorded_tick, store, runtime.evidence, now, 1, compact=compact
+                    )
                     runtime.state = store.read()
                     runtime.books = frames(now, 1)
                     runtime.receipts = store.reconcile()
@@ -394,7 +414,12 @@ def serve(port, *, replay=False, research=False, duration=900):
                             at = time.time()
                             work = asyncio.create_task(
                                 asyncio.to_thread(
-                                    recorded_tick, store, runtime.evidence, at, sequence
+                                    recorded_tick,
+                                    store,
+                                    runtime.evidence,
+                                    at,
+                                    sequence,
+                                    compact=compact,
                                 )
                             )
                             try:
@@ -446,6 +471,8 @@ def serve(port, *, replay=False, research=False, duration=900):
                         except asyncio.CancelledError:
                             pass
                         runtime.evidence._archive.close()
+                        if runtime.evidence._compact:
+                            runtime.evidence._compact.close()
 
         app.router.lifespan_context = lifespan
         server = uvicorn.Server(

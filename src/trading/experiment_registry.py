@@ -198,6 +198,16 @@ class ExperimentRegistry:
             # Conservative information-domain protection spans features, hashes and instruments.
             # Labels may overlap a prior period even when their feature timestamps do not.
             protected_start = plan.test_start - plan.horizon_minutes * 60
+            if (
+                self.db.execute(
+                    "SELECT 1 FROM sqlite_master WHERE type='table' AND name='prospective_plans'"
+                ).fetchone()
+                and self.db.execute(
+                    "SELECT 1 FROM prospective_plans WHERE start<=? AND end>=? LIMIT 1",
+                    (plan.test_end, protected_start),
+                ).fetchone()
+            ):
+                raise ValueError("Evaluation overlaps a frozen prospective comparison")
             overlap = self.db.execute(
                 "SELECT request_id FROM evidence_windows WHERE start <= ? AND end >= ? LIMIT 1",
                 (plan.test_end, protected_start),
