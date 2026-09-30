@@ -13,6 +13,13 @@ The independent PR24 review exposed six additional gaps; their corrections and
 separate verification are recorded in [audit corrections](reviews/continuous-paper-lab/AUDIT_CORRECTIONS.md)
 and [the ordered complete checklist](CONTINUOUS_PAPER_LAB.md).
 
+Corrected local verification is 539 passes, no skips, with isolated PostgreSQL;
+84 affected checks, thirty audit regressions, Ruff, strict mypy and frontend build
+pass. Actual disposable browser/API receipts show exact v2 replay reconciliation
+and persistent quota pressure while paper work and due checks advance. Six USB
+cases and the restart soak pass at their separately recorded stage; final exact-head
+hosted proof is recorded in PR24 and issue #1. Failed attempts remain retained.
+
 The original source receipts remain historical. Passing local software checks do
 not establish actual-market advantage, multi-day qualification, 100-GB capacity
 stress or 24-hour reliability. PR24 remains draft/unmerged with no rollout authority.

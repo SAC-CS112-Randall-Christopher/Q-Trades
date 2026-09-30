@@ -1,0 +1,13 @@
+{
+  "run": 36788003672,
+  "source_head": "5cba53e2741309219d9ee92e9229efb49b650934",
+  "url": "https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/36788003672",
+  "conclusion": "success",
+  "passed": 288,
+  "skipped": 58,
+  "seconds": 94.23,
+  "frontend": "TypeScript/Vite passed",
+  "raw_log_sha256": "8625d3b2d3ea29f0fd3a48a37014a2d15f68d7f01c08d0377fb9f59042045315",
+  "scope": "Windows selected suite without PostgreSQL; separate from full local/native acceptance",
+  "subsequent_source": "Capacity readiness/status publication guards and their disposable regression followed this run. Final exact-head hosted result is recorded in PR24 and issue1 after push."
+}

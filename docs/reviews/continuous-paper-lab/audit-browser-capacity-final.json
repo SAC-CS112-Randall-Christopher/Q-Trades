@@ -1,0 +1,94 @@
+{
+  "source_receipt": "audit-source-manifest.json",
+  "origin": "http://127.0.0.1:8798",
+  "disposable": true,
+  "synthetic": true,
+  "limits": "Unchanged small QA tier filled by generated actual engine captures; not a 100-GB benchmark or installed application test",
+  "temporary_quota_bytes": 67108864,
+  "research_quota_bytes": 67108864,
+  "observations": [
+    {
+      "state": "unavailable",
+      "reason": "temporary tier quota reached; protected evidence preserved",
+      "receipt_queried_at": 1790810079.4693892,
+      "receipt_at": 1790810079.1764681,
+      "last_capture": 1790810050.7290022,
+      "latest_reference": "capture-v2:364:1:b746a554f50b86464182db21845efc1a64442a4dd67b00f2317cdb4713fb707a",
+      "full_omitted": 102,
+      "compact_omitted": 0,
+      "queued_packets": 0,
+      "temporary_bytes": 65626112,
+      "research_bytes": 938770,
+      "last_success": 1790810050.789696,
+      "maturity": {
+        "version": "delayed-outcome-continuation-v2",
+        "state": "observed",
+        "checked_at": 1790810079.042301,
+        "processed_this_pass": 0,
+        "unavailable_this_pass": 0,
+        "reason": "Bounded due-outcome check is independent of acquisition admission",
+        "latest_available_at": null,
+        "next_check_at": 1790810099.7629404
+      }
+    },
+    {
+      "state": "unavailable",
+      "reason": "temporary tier quota reached; protected evidence preserved",
+      "receipt_queried_at": 1790810187.17291,
+      "receipt_at": 1790810187.0763876,
+      "last_capture": 1790810050.7290022,
+      "latest_reference": "capture-v2:364:1:b746a554f50b86464182db21845efc1a64442a4dd67b00f2317cdb4713fb707a",
+      "full_omitted": 495,
+      "compact_omitted": 0,
+      "queued_packets": 0,
+      "temporary_bytes": 65626112,
+      "research_bytes": 938770,
+      "last_success": 1790810050.789696,
+      "maturity": {
+        "version": "delayed-outcome-continuation-v2",
+        "state": "observed",
+        "checked_at": 1790810187.0286963,
+        "processed_this_pass": 0,
+        "unavailable_this_pass": 0,
+        "reason": "Bounded due-outcome check is independent of acquisition admission",
+        "latest_available_at": null,
+        "next_check_at": 1790810190.443932
+      }
+    }
+  ],
+  "paper_health": [
+    {
+      "service": "running",
+      "mode": "paper",
+      "code_commit": null,
+      "paper_fresh": true,
+      "journal_balanced": true,
+      "paper_error_reported": false,
+      "feed": "idle",
+      "paper": "running",
+      "options": "stopped"
+    },
+    {
+      "service": "running",
+      "mode": "paper",
+      "code_commit": null,
+      "paper_fresh": true,
+      "journal_balanced": true,
+      "paper_error_reported": false,
+      "feed": "idle",
+      "paper": "running",
+      "options": "stopped"
+    }
+  ],
+  "ui": "AI Lab collection and storage regions retain the real capture date, unavailable quota reason, omissions and independent due-outcome checks while paper processing advances",
+  "raw_api_sha256": [
+    "7b41c44eb7326f057271030fa63e410551b88aea56f99c4163675de4d3d69661",
+    "85752267010f203976efe7eeadd86340f29f106dc80a1f3c91b48cade9aedf20"
+  ],
+  "raw_dom_sha256": "470b02b6b7b81ea13e909d3b90de15c1df583f10b5ff2953863e6af8f15e3e3d",
+  "installed_mutation": false,
+  "lab_started": false,
+  "prior_source_receipts": "Original intermittent recording state and stale omitted-counter observations retained as failed/currently superseded QA receipts; never relabelled as installed evidence",
+  "observed_runtime_sha256": "599837043668779c11b8e76d3961c657444f5e4a04c78fda59540422c82564c8",
+  "subsequent_source_note": "The validated same-plan status restoration branch was added after these running-process UI observations. Blocked restart preservation/recovery is separately covered by final disposable regression/full-suite proof; no installed restart occurred."
+}

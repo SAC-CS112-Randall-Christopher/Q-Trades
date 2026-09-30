@@ -89,9 +89,9 @@ USB outages: actual missed coverage remains explicitly unknown.
 
 ## Source checks observed
 
-The corrected full suite passes 537 tests, zero skips, one existing test-client
-warning in 147.97 seconds with owned isolated PostgreSQL 17. The affected component
-set passes 66 tests in 28.81 seconds. There are 28 new audit regressions. Ruff,
+The corrected full suite passes 539 tests, zero skips, one existing test-client
+warning in 151.15 seconds with owned isolated PostgreSQL 17. The final five-component
+set passes 84 tests in 27.04 seconds. There are 30 new audit regressions. Ruff,
 strict mypy (72 source files), TypeScript and Vite pass. Five ordinary full evaluators
 freeze all three retained packets and the selected compact prefix, run real child
 evaluation and expose the result; each exact-reference replay reconciles all three
@@ -109,3 +109,56 @@ failure regression must terminate within one second, and ordinary failure waits
 for an actual receipt under a five-second bound. Do not raise the eight-minute
 workflow limit. This exceptional shutdown correction leaves measured acquisition,
 metadata, housekeeping and financial paths and all native limits unchanged.
+
+The following hosted source run `36788003672` at `5cba53e` passes 288 selected
+Windows tests with 58 PostgreSQL/environment skips in 94.23 seconds; TypeScript/Vite
+also passes. Later capacity-status changes below followed that run. Final exact-head
+hosted proof belongs to the PR/issue delivery receipt, separate from that source run.
+
+## Capacity status and actual browser acceptance
+
+The normal disposable browser exposed an additional freshness defect under its
+unchanged 64-MiB QA quota: an empty writer pass could set acquisition back to recording
+without enough space for the declined real input. Declare the correction gate before
+verification: repeated empty retries must retain the capture date and quota reason;
+bounded maintenance and due-outcome processing must still advance. Restore readiness
+only when the real intake's required space fits, without raising quotas or deleting
+historical evidence. A disposable pressure fixture may be removed to verify recovery.
+
+An executed probe reproduced the false recording state. Empty retries now check the
+declined full/compact input requirements after one bounded maintenance pass. Startup
+uses permitted maximum input sizes until an actual declined size is known. Successful
+normal capture and the financial path are unchanged. Already-due available/unavailable
+labels still survive retries with original files, hashes and availability times intact.
+The failure receipt also had stale omitted/queue counters from the last successful
+write; another executed assertion reproduced zero reported versus one observed omission.
+Both success and failure now publish these counters and a status receipt time, separately
+from the actual capture date. Initial fixture/import/cleanup failures are retained.
+
+A further disposable restart probe reproduced loss of previously reported omissions
+and the last capture reference under persistent pressure. Startup now restores a
+bounded validated status receipt only when its frozen plan exactly matches the target;
+omission counts, capture/reference and declined-input space requirements survive.
+Unknown/malformed receipts remain unavailable. A different declared root cannot inherit
+another root's history. The regression restarts while full, retains the blocked receipt,
+then restores only fixture space and captures a genuinely subsequent input. This
+startup-only branch followed the browser observations below; its proof is a separate
+disposable restart check and the final full suite, not an installed restart.
+
+Two actual final-source API/browser observations 107.70 seconds apart retain the same
+capture/reference and unavailable quota reason. Full omissions advance 102 -> 495,
+queue stays zero, paper health stays fresh/balanced, and due-outcome check time advances.
+No new due labels were present in this browser fixture; separate available/unavailable
+tests establish bounded maturity behavior. The normal capture panel starts a one-decision
+isolated worker replay under this pressure, reports baseline reconciliation of state,
+events and balanced journal, then reopens the completed receipt from UI history. The
+flat synthetic slice has no fills, no new market evidence and no economic conclusion.
+See `audit-browser-capacity-final.json` and `audit-browser-replay.json`.
+
+The repeated post-audit native run passes all six cases with zero full/compact
+omissions and writer errors; financial-loop p95 is 23.02–62.96 ms, queue peaks 5–8.
+Its sixty-second schedule records 240 ticks, restart, twenty peak slots and retained
+balanced history. Those measurements were made at `a61e8516`, after all six original
+corrections and backlog continuation. Later cancellation/empty-recovery guards have
+final-source regression/API/UI coverage; the native benchmark was not repeated at
+the final source revision. Keep the failed first USB run and cancelled hosted run.

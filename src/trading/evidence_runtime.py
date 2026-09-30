@@ -23,6 +23,7 @@ from trading.research_evidence import (
     EvidenceArchive,
     EvidencePlan,
     book_features,
+    canonical,
     digest,
 )
 from trading.research_storage import ResearchStorage, load_plan
@@ -193,8 +194,61 @@ class EvidenceRecorder:
         self._storage: ResearchStorage | None = None
         self._external_expected = (path.parent / "research-storage.json").exists()
         self.storage_status: dict[str, Any] = {"state": "not_configured"}
+        # An empty retry must cover the declined real input, not just zero bytes.
+        # Startup uses the allowed maxima until an actual declined size is known.
+        self._capture_retry_bytes = MAX_PACKET * 3 + 65536
+        self._compact_retry_bytes = 65536 * 4
         self._maturity: OutcomeContinuation | None = None
         self.maturity_status: dict[str, Any] = {"state": "starting"}
+        if self._external_expected:
+            self._restore_external_receipt()
+
+    def _restore_external_receipt(self) -> None:
+        """Retain reported gaps/history only for the same frozen storage plan."""
+        receipt = self.path.parent / "research-storage-status.json"
+        if not receipt.exists():
+            return
+        try:
+            if receipt.stat().st_size > 65536:
+                raise ValueError("Previous research status receipt exceeds its bound")
+            cached = json.loads(receipt.read_text(encoding="utf-8"))
+            plan = load_plan(self.path.parent)
+            if not isinstance(cached, dict) or plan is None:
+                raise ValueError("Previous research status receipt is invalid")
+            if cached.get("plan") != plan.model_dump():
+                return  # A new declared target cannot inherit another root's references.
+            counters = (cached.get("full_omitted", 0), cached.get("compact_omitted", 0))
+            if any(type(n) is not int or not 0 <= n <= 2**63 - 1 for n in counters):
+                raise ValueError("Previous research omission counters are invalid")
+            capture = cached.get("capture_retry_bytes", MAX_PACKET * 3 + 65536)
+            compact = cached.get("compact_retry_bytes", 65536 * 4)
+            if (
+                type(capture) is not int
+                or not 65536 <= capture <= MAX_PACKET * 3 + 65536
+                or type(compact) is not int
+                or not 65536 <= compact <= 65536 * 4
+            ):
+                raise ValueError("Previous research intake requirements are invalid")
+            reference = cached.get("latest_reference")
+            if reference is not None:
+                ResearchStorage.parse_reference(reference)
+            self.storage_status = cached
+            self.dropped, self.compact_dropped = counters
+            self._capture_retry_bytes, self._compact_retry_bytes = capture, compact
+            self.status = {
+                "state": cached.get("state", "starting"),
+                "reason": cached.get("reason"),
+                "latest_at": cached.get("last_capture"),
+                "latest_reference": reference,
+                "financial_authority": False,
+            }
+        except (OSError, ValueError, TypeError) as exc:
+            self.status = {
+                "state": "unavailable",
+                "reason": str(exc)[:250],
+                "financial_authority": False,
+            }
+            self.storage_status = {**self.status, "fallback": False}
 
     def compact(self, packet: dict[str, Any]) -> None:
         if len(self.compact_pending) >= 8 or len(canonical_compact(packet)) > 65536:
@@ -420,15 +474,19 @@ class EvidenceRecorder:
                     self._compact.append(packet)
                 self._mature_due(packets)
                 maturity_checked = True
+                retrying_empty = not packets and self.status.get("state") != "recording"
+                if retrying_empty:
+                    # Maintenance and due outcomes can advance while intake stays
+                    # blocked. Reclaim through the same bounded verified authority.
+                    self._storage.housekeeping(time.time(), capacity_triggered=True)
+                    self._storage.admission(self._capture_retry_bytes, "temporary")
+                    self._storage.admission(self._compact_retry_bytes, "research")
                 refs = self._storage.append(packets, time.time())
-                self._storage.housekeeping(time.time())
+                if not retrying_empty:
+                    self._storage.housekeeping(time.time())
                 prior_reference = self.storage_status.get("latest_reference")
                 self.storage_status = self._storage.snapshot()
                 self.storage_status["latest_reference"] = refs[-1] if refs else prior_reference
-                self.storage_status["receipt_at"] = time.time()
-                self.storage_status["full_omitted"] = self.dropped
-                self.storage_status["compact_omitted"] = self.compact_dropped
-                self.storage_status["queued_packets"] = len(self.pending)
                 self.storage_status["maturity"] = self.maturity_status
                 self.status = {
                     "state": "recording",
@@ -441,6 +499,14 @@ class EvidenceRecorder:
                     self._compact.snapshot() if self._compact else {"state": "starting"}
                 )
             except (OSError, ValueError, sqlite3.Error) as exc:
+                if packets:
+                    self._capture_retry_bytes = max(
+                        len(canonical(packet).encode()) * 3 + 65536 for packet in packets
+                    )
+                if compact:
+                    self._compact_retry_bytes = max(
+                        len(canonical_compact(packet)) * 3 + 65536 for packet in compact
+                    )
                 if not maturity_checked:
                     self._mature_due(packets)
                 self.dropped += len(packets)
@@ -461,6 +527,14 @@ class EvidenceRecorder:
                 if self._maturity is not None:
                     self._maturity.close()
                     self._maturity = None
+            # Publish observed omissions/queue during failure as well as success.
+            # Receipt time is a status check, never a replacement capture date.
+            self.storage_status["receipt_at"] = time.time()
+            self.storage_status["full_omitted"] = self.dropped
+            self.storage_status["compact_omitted"] = self.compact_dropped
+            self.storage_status["queued_packets"] = len(self.pending)
+            self.storage_status["capture_retry_bytes"] = self._capture_retry_bytes
+            self.storage_status["compact_retry_bytes"] = self._compact_retry_bytes
             receipt = self.path.parent / "research-storage-status.json"
             partial = receipt.with_suffix(".partial")
             partial.write_text(json.dumps(self.storage_status, default=str), encoding="utf-8")

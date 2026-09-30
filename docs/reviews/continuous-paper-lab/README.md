@@ -8,17 +8,65 @@ activation, cleanup, restart or deployment was performed.
 ## Post-audit source verification
 
 The six independent findings at `bed73a1` are corrected in the working branch.
-See [corrections and predeclared gates](AUDIT_CORRECTIONS.md). The current local
-full suite passes **537 tests, zero skips, one existing test-client warning,
-147.97 seconds**, with isolated PostgreSQL. Its affected component run passes
-66 tests in 28.81 seconds; Ruff, strict mypy (72 source files) and dashboard build
-pass. Twenty-eight new audit regressions cover the six findings and boundary cases.
+See [corrections and predeclared gates](AUDIT_CORRECTIONS.md). The final local
+full suite passes **539 tests, zero skips, one existing test-client warning,
+151.15 seconds**, with isolated PostgreSQL 17. Its five affected components pass
+84 tests in 27.04 seconds; Ruff, strict mypy (72 source files) and dashboard build
+pass. Thirty new audit regressions cover the six findings, shutdown failure and
+capacity/status boundaries. Earlier 537/538/539 receipts retain their original
+source stages. [Final checks](audit-checks.json), [source hashes](audit-source-manifest.json)
+and [all correction receipts](audit-failures.json) remain distinct from original delivery.
 
 The [first post-audit USB run](audit-native-first-failure.json) is a failed receipt:
 four cases passed; ten/idle and twenty/busy each omitted one full and one compact
 input at queue eight. Financial latency limits passed and every ledger balanced.
 Backlog scheduling now continues immediately with unchanged queue/batch/durability
-limits. Corrected native, browser and hosted measurements remain separate gates.
+limits. [Corrected native measurement](audit-native-final.json) passes all six
+cases with zero full/compact omissions and writer errors, queue peaks 5–8 and
+financial-loop p95 23.02–62.96 ms under the original latency/storage limits:
+
+| Accounts | Idle financial loop p95 ms | Busy research p95 ms |
+| --- | ---: | ---: |
+| 1 | 34.30 | 23.02 |
+| 10 | 35.94 | 54.97 |
+| 20 | 61.36 | 62.96 |
+
+[Corrected controller soak](audit-soak-final.json) records 240 ticks over 59.81
+seconds, restart at thirty seconds, twenty peak slots, 43 trial histories, 72
+archived accounts and a balanced ledger; financial-loop p95 is 42.90 ms. Both
+measurements are at `a61e8516`, after the six audit fixes and backlog continuation.
+Later exceptional cancellation and empty capacity-recovery/status guards have
+final-source regression/UI coverage; these benchmarks were not repeated at final head.
+
+The [actual final browser replay](audit-browser-replay.json) opens an exact v2
+capture from the normal UI while acquisition is capacity-blocked, completes its
+isolated worker replay, reconciles the recorded state/events/journal, and reopens
+the completed receipt from UI history. The one flat synthetic decision has no fills
+or full-horizon economics. Five full evaluator tests independently capture, roll,
+retain/reclaim, acquire all three exact packets plus compact input, evaluate in the
+real worker and reconcile all three in replay; insufficient/inconclusive results
+remain such. Legacy v1, mixed deduplication, unknown availability, source checks,
+missing and oversized intervals retain truthful refusal.
+
+[Final browser capacity observations](audit-browser-capacity-final.json) retain
+the same capture/reference and unavailable quota reason 107.70 seconds apart.
+Omitted full captures advance 102 -> 495, queue stays zero, paper processing remains
+fresh/balanced and independent due checks advance. This exposed and corrected empty
+passes briefly reporting recording and stale omission counters. Disposable tests
+also verify blocked restart retaining its capture/reference, omission counts and
+intake requirements through a bounded receipt for the identical frozen plan, then
+recovery after restoring real space with every quota unchanged. That startup-only
+correction followed the browser observation; its final-source proof is the disposable
+restart regression/full suite. Separate
+available/unavailable maturity tests preserve original sources and actual label times;
+the browser fixture itself had no new due labels. Earlier browser failures are retained.
+
+[Hosted source run 36788003672](audit-hosted-source.json), at `5cba53e`, passes 288
+selected Windows tests with 58 PostgreSQL/environment skips in 94.23 seconds and
+the TypeScript/Vite build. It follows the [cancelled source run](audit-hosted-cancelled.json),
+which is retained as incomplete 183-pass/33-skip proof. Later capacity-status guards
+follow that passing run; final exact-head hosted results are recorded in PR24/issue #1
+after push, separately from the complete local PostgreSQL suite.
 
 ## Original bed73a1 delivery
 
@@ -59,7 +107,7 @@ boundary and still records a truthful unavailable due receipt. At most 16 MiB of
 declared scratch surplus is reserved for these outputs; complete-transfer scratch,
 the physical tier quota and the volume free-space floor remain enforced.
 
-## Finite native receipts
+## Original finite native receipts
 
 [Final USB load](native-final.json) uses thirty seconds per case, four financial
 ticks per second, 520 prior synthetic captures (~64 MiB payload), small 512-MiB

@@ -1,5 +1,6 @@
 import asyncio
 import sqlite3
+from pathlib import Path
 
 import pytest
 from test_paper_store import pg_store as pg_store
@@ -42,6 +43,59 @@ def plan_at(folder, **changes):
         temporary_retention_seconds=7200,
         **changes,
     )
+
+
+def test_empty_capacity_retry_cannot_report_new_capture_and_recovers_with_real_space(tmp_path):
+    config = tmp_path / "coordination"
+    plan = plan_at(tmp_path)
+    save_plan(config, plan)
+    recorder = EvidenceRecorder(config / "research-evidence.sqlite")
+    first = packet(1_800_000_000)
+    recorder.enqueue(first)
+    asyncio.run(recorder.flush())
+    reference = recorder.storage_status["latest_reference"]
+    captured = recorder.storage_status["last_capture"]
+    used = recorder.storage_status["temporary_bytes"]
+    # A small empty-pass request fits, but the declined real input does not.
+    fixture = Path(plan.root) / "temporary" / "owned-quota-fixture"
+    fixture.write_bytes(b"x" * (plan.temporary_bytes - used - plan.scratch_bytes - 131072))
+    refused = packet(1_800_000_001, sample="x" * 500000)
+    recorder.enqueue(refused)
+    asyncio.run(recorder.flush())
+    assert recorder.status["state"] == "unavailable"
+    assert recorder.dropped == 1
+    assert recorder.storage_status["full_omitted"] == 1
+    recorder.enqueue(packet(1_800_000_001.5))  # Admission still refuses under pressure.
+    assert recorder.dropped == 2
+    for _ in range(3):
+        asyncio.run(recorder.flush())
+        assert recorder.status["state"] == "unavailable"
+        assert "quota" in recorder.storage_status["reason"]
+        assert recorder.storage_status["last_capture"] == captured
+        assert recorder.storage_status["latest_reference"] == reference
+        assert recorder.maturity_status["state"] == "observed"
+        assert recorder.dropped == 2
+        assert storage_snapshot(config)["full_omitted"] == 2
+    assert reopen_evidence(plan, reference)["at"] == first["at"]
+    recorder = EvidenceRecorder(config / "research-evidence.sqlite")
+    assert recorder.dropped == 2  # Restart cannot erase durably reported omissions.
+    asyncio.run(recorder.flush())
+    resumed = storage_snapshot(config)
+    assert resumed["state"] == "unavailable" and resumed["full_omitted"] == 2
+    assert resumed["last_capture"] == captured and resumed["latest_reference"] == reference
+    # Removing only the owned pressure fixture restores space without changing
+    # quotas, clocks, accounts or retained evidence. Real acquisition can resume.
+    fixture.unlink()
+    asyncio.run(recorder.flush())
+    assert recorder.status["state"] == "recording"
+    recorder.enqueue(packet(1_800_000_002))
+    asyncio.run(recorder.flush())
+    assert recorder.storage_status["last_capture"] == 1_800_000_002
+    assert recorder.storage_status["latest_reference"] != reference
+    assert reopen_evidence(plan, reference)["at"] == first["at"]
+    recorder._compact.close()
+    recorder._storage.close()
+    recorder._maturity.close()
 
 
 def packet(at, kind="decision", **changes):
@@ -293,11 +347,16 @@ def test_blocked_acquisition_matures_due_full_and_compact_without_editing_source
             db.execute("UPDATE continued_outcomes SET available=0")
     clock[0] += 60
     asyncio.run(recorder.flush())  # retry/reopen after acquisition failure
+    assert recorder.status["state"] == "unavailable"
+    assert "quota" in recorder.storage_status["reason"]
+    assert recorder.maturity_status["state"] == "observed"
     assert compact_evidence(copy_path, episode, episode)["outcome"] == label
     assert {p.name: p.read_bytes() for p in (path, compact_source)} == before
-    recorder._compact.close()
-    recorder._storage.close()
-    recorder._maturity.close()
+    # Persistent acquisition pressure closes optional writer handles on every
+    # retry while durable due receipts remain available to read-only consumers.
+    for handle in (recorder._compact, recorder._storage, recorder._maturity):
+        if handle is not None:
+            handle.close()
 
 
 def test_due_continuation_is_bounded_and_resource_pending_survives_restart(tmp_path, monkeypatch):

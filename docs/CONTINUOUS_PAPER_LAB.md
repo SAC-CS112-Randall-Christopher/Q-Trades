@@ -165,9 +165,13 @@ The accepted requests remain in the owner's order:
    finite controller restart soak and 1/10/20-account native USB load are recorded
    in [verification evidence](reviews/continuous-paper-lab/README.md). The original
    source delivery passed 509 tests and its browser, soak and six native cases.
-   The corrected source passes **537 tests, no skips**, Ruff and strict mypy (72
-   source files); its current browser/native/hosted receipts are separate gates.
-   Hosted exact-head checks remain a separate delivery gate. Failures,
+   The corrected source passes **539 tests, no skips**, 84 affected-component
+   checks and 30 new regressions, Ruff and strict mypy (72 source files). Current
+   browser/API checks cover exact v2 replay, persistent capacity pressure, omission
+   counts and advancing independent due-outcome checks. Six post-audit native
+   cases and the finite restart soak pass at their recorded source stage; later
+   shutdown/capacity guards have separate final-source tests. Hosted exact-head
+   results remain separate and are recorded in PR24 and issue #1. Failures,
    interrupted attempts and omissions are retained. None of these synthetic checks
    establishes actual-market edge, real multi-day qualification, a 100-GB storage
    benchmark or 24-hour reliability.

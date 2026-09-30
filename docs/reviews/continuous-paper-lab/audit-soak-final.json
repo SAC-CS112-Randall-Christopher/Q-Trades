@@ -1,0 +1,70 @@
+{
+  "contract": {
+    "seconds": 60,
+    "ticks_per_second": 4,
+    "restart_at_seconds": 30,
+    "peak_slots": 20,
+    "loop_p95_ms": 100,
+    "feature_p95_ms": 100,
+    "rss_mib": 512,
+    "growth_mib": 64,
+    "queue": 4,
+    "scope": "Synthetic software/controller continuity; no 24/7 or market-profit claim",
+    "history": "36 scored trials plus 72 archived accounts; active projection remains bounded"
+  },
+  "declared_at": 1790808381.4315777,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "synthetic": true,
+  "wall_seconds": 59.8092173000332,
+  "ticks": 240,
+  "restarted": true,
+  "peak_slots": 20,
+  "peak_queue": 0,
+  "stage_ms": {
+    "financial_loop_ms": {
+      "p50": 20.426600007340312,
+      "p95": 42.90340002626181,
+      "p99": 51.113600144162774,
+      "max": 56.05149990878999
+    },
+    "features_ms": {
+      "p50": 1.9894998986274004,
+      "p95": 4.592600045725703,
+      "p99": 5.975400097668171,
+      "max": 6.950200069695711
+    },
+    "research_step_ms": {
+      "p50": 5.612900014966726,
+      "p95": 11.918799951672554,
+      "p99": 14.497800031676888,
+      "max": 64.95660007931292
+    }
+  },
+  "largest_observed_interval": 0.27901268005371094,
+  "rss_mib": 79.13671875,
+  "rss_growth_mib": 0.94140625,
+  "history_trials": 43,
+  "archived_accounts": 72,
+  "active_projection_bytes": 245164,
+  "registry_bytes": 6581896,
+  "postgres": {
+    "database_bytes": 32500883,
+    "candles": 0,
+    "events": 2180,
+    "journal_lines": 1120,
+    "candle_table_bytes": 16384,
+    "journal_table_bytes": 2056192
+  },
+  "balanced": true,
+  "budget": {
+    "day": 20728,
+    "hour": 497483,
+    "steps": 2,
+    "trials": 17,
+    "compute_seconds": 2.0,
+    "measured_seconds": 0.08069450012408197
+  },
+  "passed": true,
+  "measured_source_commit": "a61e8516aa4431f4a6e6cdf4cc90e7f83ccc3a3b",
+  "source_scope_note": "Measured after all six audit corrections and backlog continuation. Later cancellation and empty capacity-retry guards affect exceptional/empty recovery; normal full-capture and financial paths are unchanged. Not rerun as an exact-final-head native benchmark."
+}
