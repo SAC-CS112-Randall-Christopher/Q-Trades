@@ -7,6 +7,8 @@ from copy import deepcopy
 from typing import Any
 
 from trading.research_evidence import digest
+from trading.research_support import separated as separated_support
+from trading.research_timing import prediction_time
 
 VERSION = "memory-entry-v1"
 CONTRACT: dict[str, Any] = {
@@ -107,6 +109,10 @@ def predict(
         "profit_probability": None,
         "financial_authority": False,
         "contract": VERSION,
+        "available_at": available_at if math.isfinite(available_at) else None,
+        "cutoff": descriptor.get("cutoff"),
+        "expires_at": descriptor.get("expires_at"),
+        "timing_scope": "Recorded input/result availability; historical shadow evaluation",
     }
     try:
         validate_artifact(artifact)
@@ -127,7 +133,12 @@ def predict(
             candidates.append((distance, row))
         # Selection is entirely outcome-blind. Opaque IDs never break numerical ties.
         candidates.sort(key=lambda pair: (pair[0], pair[1]["at"]))
-        selected = candidates[: CONTRACT["neighbors"]]
+        selected: list[tuple[float, dict[str, Any]]] = []
+        for distance, row in candidates:
+            if separated_support(row, [r for _, r in selected]):
+                selected.append((distance, row))
+            if len(selected) == CONTRACT["neighbors"]:
+                break
         distances = [d for d, _ in selected]
         base = {
             **result,
@@ -140,6 +151,7 @@ def predict(
                 {
                     "episode": r["episode"],
                     "record_id": r.get("record_id"),
+                    "evidence_reference": r.get("evidence_reference"),
                     "group": r["group"],
                     "distance": d,
                 }
@@ -281,6 +293,7 @@ def evaluate_memory(
         ],
     }
     for arm in ("B", "C"):
+        arm_cpu_started = time.process_time()
         usable = []
         prior_end = -math.inf
         for row in train:
@@ -295,9 +308,11 @@ def evaluate_memory(
                 {
                     "episode": row["episode"],
                     "record_id": row.get("record_id"),
+                    "evidence_reference": row.get("evidence_reference"),
                     "group": d["group_id"],
                     "x": x,
                     "at": d["cutoff"],
+                    "start": d["start_at"],
                     "end": d["horizon_at"],
                     "available_at": known_at(row),
                     "net_bps": row["executable_label"]["net_bps"],
@@ -345,7 +360,7 @@ def evaluate_memory(
         artifact["sha256"] = digest(artifact)
         bins: list[list[int]] = [[], [], []]
         for row in calibration:
-            p = predict(row["descriptor"], artifact, row["descriptor"]["cutoff"])
+            p = predict(row["descriptor"], artifact, prediction_time(row))
             if p["status"] == "supported":
                 bins[min(2, int(p["raw_positive_fraction"] * 3))].append(
                     int(row["executable_label"]["net_bps"] > 0)
@@ -358,11 +373,12 @@ def evaluate_memory(
         artifact.pop("sha256")
         artifact["sha256"] = digest(artifact)
         if seed_only:
+            candidate["fit_cpu_seconds"] = time.process_time() - arm_cpu_started
             candidate.update(status="frozen_training_seed", artifact=artifact)
             continue
         predictions, scores = [], []
         for row in test:
-            p = predict(row["descriptor"], artifact, row["descriptor"]["cutoff"])
+            p = predict(row["descriptor"], artifact, prediction_time(row))
             predictions.append(
                 {
                     "episode": row["episode"],

@@ -1,3 +1,16 @@
+# Next: finish audit correction delivery, then untouched economic evidence
+
+Read CP16_AUDIT_CORRECTIONS.md and the issue #1 audit. Finish final source/native
+performance and exact-head/final-main hosted checks, then use the authorized existing
+updater with fresh private account/history/configuration preservation receipts.
+Preserve the original six accounts and all failed performance samples. Use the
+bounded priced A/B/C account experiment and explicit exploratory pair/review path
+when its chronological executable history and complete interval exist. Missing
+inputs remain unavailable; favorable historical scenarios are not qualification.
+No additional model or major feature is warranted before trustworthy account proof.
+
+# Historical handoff
+
 # Next: untouched evidence and ordinary operator review
 
 CP10-CP16 bounded source workflows and finite software acceptance are complete.

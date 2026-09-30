@@ -100,6 +100,9 @@ class EvidenceArchive:
                     cutoff REAL NOT NULL, horizon_at REAL NOT NULL, descriptor TEXT NOT NULL,
                     descriptor_sha256 TEXT NOT NULL, outcome_id INTEGER
                 );
+                CREATE INDEX IF NOT EXISTS evidence_interval ON evidence_records(kind,at,id);
+                CREATE INDEX IF NOT EXISTS episode_interval
+                    ON evidence_episodes(cutoff,available_at);
             """)
             meta = self.connection.execute("SELECT * FROM evidence_meta WHERE id=1").fetchone()
             if meta is None:
@@ -183,7 +186,8 @@ class EvidenceArchive:
 
     def _store(self, packet: dict[str, Any], disk_available: bool) -> int | None:
         body = canonical(packet)
-        size = len(body.encode())
+        encoded = body.encode()
+        size = len(encoded)
         at = packet["at"]
         if type(at) not in (float, int) or not math.isfinite(at):
             raise ValueError("Invalid local availability timestamp")
@@ -210,7 +214,7 @@ class EvidenceArchive:
         row = self.connection.execute(
             "INSERT INTO evidence_records(at,kind,payload,sha256,bytes) "
             "VALUES (?,?,?,?,?) RETURNING id",
-            (at, packet["kind"], body, hashlib.sha256(body.encode()).hexdigest(), size),
+            (at, packet["kind"], body, hashlib.sha256(encoded).hexdigest(), size),
         ).fetchone()
         self.connection.execute(
             "UPDATE evidence_meta SET rows=rows+1,bytes=bytes+?,state='recording' WHERE id=1",

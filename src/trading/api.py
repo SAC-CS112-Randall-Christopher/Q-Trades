@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field
 
+from trading.compact_memory import compact_evidence
 from trading.config import Settings
 from trading.evidence_runtime import feature_reproduction
 from trading.experiment_lab import ExperimentLab
@@ -389,7 +390,12 @@ def create_app(
         lab = request.app.state.lab
         if lab is None:
             raise HTTPException(503, "Research registry unavailable")
-        return {"plans": lab.prospective.plans(), "financial_authority": False}
+        paper = request.app.state.paper
+        return {
+            "plans": lab.prospective.plans(),
+            "candidates": lab.prospective.candidates(paper.state) if paper else [],
+            "financial_authority": False,
+        }
 
     @app.post("/api/lab/prospective")
     def prospective_freeze(spec: ProspectiveSpec, request: Request) -> dict[str, Any]:
@@ -531,18 +537,23 @@ def create_app(
             raise HTTPException(409, "This family has no frozen fitted artifact")
         if admission.family == "memory_entry" and (
             experiment["result"].get("evidence_kind") == "synthetic_qa"
-            or not experiment["result"].get("eligible_for_forward_review")
+            or not experiment["result"].get("eligible_for_exploratory_paper")
+            or experiment["result"].get("account_comparison", {}).get("status") != "complete"
         ):
             raise HTTPException(
-                409, "Memory remains shadow research; matched whole-account qualification required"
+                409,
+                "Complete observed paired-account costs required for exploratory paper admission",
             )
         try:
-            return paper.forward_admit(
+            receipt = paper.forward_admit(
                 request_id,
                 candidate["artifact"],
                 admission.starting_cash,
                 admission.operating_daily_usd,
             )
+            if admission.family == "memory_entry":
+                receipt["matched_control"] = paper.forward_control(receipt["account"])
+            return receipt
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
         except psycopg.Error as exc:
@@ -847,15 +858,40 @@ def create_app(
         return evidence_page(database.parent / "research-evidence.sqlite", before, limit, kind)
 
     @app.get("/api/evidence/{record_id}")
-    def decision_evidence(record_id: int) -> dict[str, Any]:
+    def decision_evidence(
+        record_id: int,
+        sha256: str | None = Query(None, pattern=r"^[0-9a-f]{64}$"),
+        episode: str | None = Query(None, max_length=128),
+    ) -> dict[str, Any]:
         try:
             record = evidence_record(database.parent / "research-evidence.sqlite", record_id)
+            if sha256 is not None and record["sha256"] != sha256:
+                raise ValueError("Requested full-archive fingerprint differs")
+            if episode is not None:
+                original = record.get("original_episode", record["payload"].get("episode"))
+                identity = original.get("episode") if isinstance(original, dict) else original
+                if identity != episode:
+                    raise ValueError("Requested full-archive episode differs")
             return {**record, "reproduction": feature_reproduction(record["payload"])}
         except LookupError as exc:
             raise HTTPException(404, str(exc)) from exc
         except (ValueError, KeyError, TypeError) as exc:
             raise HTTPException(
                 409, "Evidence unavailable or corrupt; no replacement inferred"
+            ) from exc
+
+    @app.get("/api/evidence/compact/{episode}")
+    def compact_prefix_evidence(
+        episode: str,
+        sha256: str = Query(pattern=r"^[0-9a-f]{64}$"),
+    ) -> dict[str, Any]:
+        try:
+            return compact_evidence(database.parent / "memory-episodes.sqlite", episode, sha256)
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except (ValueError, KeyError, TypeError, sqlite3.Error) as exc:
+            raise HTTPException(
+                409, "Compact evidence differs or is corrupt; no substitute inferred"
             ) from exc
 
     @app.get("/api/capture")

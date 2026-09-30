@@ -1,3 +1,20 @@
+# CP10–CP16 integrated audit corrections
+
+Issue #1's six findings have correction code and regression coverage. The missing
+bounded A/B/C account experiment now retains cash/open holdings, complete source
+reconciliation, common/incremental costs and a continuous interval passive control.
+The normal interface can explicitly admit an observed exploratory paper pair and
+select its exact receipt/candidate/control for a fixed 28-day review. This does not
+qualify or promote it. See CP16_AUDIT_CORRECTIONS.md for contracts and proof limits.
+Final local full suite: 478 passed/no skips in 107.56 seconds. Final native
+performance passed all six cases after removing duplicate evidence serialization:
+20-account loop p95 91.607 ms idle / 97.112 ms busy. Two earlier load failures
+remain retained. Hosted gates, authorized merge/install and preservation are
+separate release stages.
+No measured memory account advantage, provider connection or live readiness exists.
+
+# Prior status
+
 # CP10-CP16 source workflows delivered; prospective outcomes pending
 
 CP16 adds frozen subsequent system reviews, compact journal-linked memory and the

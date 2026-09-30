@@ -10,6 +10,8 @@ from typing import Any
 from trading.experiment_registry import ExperimentRegistry
 from trading.memory_quality import evaluate_memory, predict, vector
 from trading.research_evidence import digest
+from trading.research_support import separated
+from trading.research_timing import prediction_time
 
 PROCEDURE: dict[str, Any] = {
     "version": "growing-memory-v1",
@@ -118,17 +120,19 @@ def updated(artifact: dict[str, Any], additions: list[dict[str, Any]], at: float
     library = {r["group"]: r for r in result["library"]}
     for row in additions:
         d, label = row["descriptor"], row["executable_label"]
-        if d["group_id"] in library:
+        if d["group_id"] in library or not separated(row, list(library.values())):
             continue
         x = vector(d, "B")
         library[d["group_id"]] = {
             "episode": row["episode"],
             "record_id": row.get("record_id"),
+            "evidence_reference": row.get("evidence_reference"),
             "group": d["group_id"],
             "x": [
                 (v - m) / s for v, m, s in zip(x, result["means"], result["scales"], strict=True)
             ],
             "at": d["cutoff"],
+            "start": d["start_at"],
             "end": d["horizon_at"],
             "available_at": label["available_at"],
             "net_bps": label["net_bps"],
@@ -161,7 +165,9 @@ def evaluate_incremental(
     events = []
     for row in queries:
         d = row["descriptor"]
-        prediction_at = max(d["cutoff"], row.get("available_at", d["cutoff"]))
+        prediction_at = prediction_time(row)
+        if not math.isfinite(prediction_at):
+            raise ValueError("Recorded prediction availability is unavailable")
         events.append((prediction_at, 0, row))
         label = row.get("executable_label") or {}
         if label.get("status") == "available":
@@ -176,6 +182,7 @@ def evaluate_incremental(
     errors: dict[str, list[float]] = {a: [] for a in models}
     update_counts = dict.fromkeys(models, 0)
     independent = set()
+    scored_support: list[dict[str, Any]] = []
     pending_batch = []
     alarms = []
     input_errors: list[float] = []
@@ -258,9 +265,10 @@ def evaluate_incremental(
             continue
         label = row["executable_label"]
         current_group = d["group_id"]
-        novel = current_group not in independent
+        novel = current_group not in independent and separated(row, scored_support)
         independent.add(current_group)
         if novel:
+            scored_support.append(row)
             pending_batch.append(row)
         with journal.registry.transaction():
             for arm, model in list(models.items()):
@@ -279,6 +287,7 @@ def evaluate_incremental(
                     "brier": (p["profit_probability"] - int(label["net_bps"] > 0)) ** 2
                     if p.get("profit_probability") is not None
                     else None,
+                    "separated_support": novel,
                 }
                 journal.put(plan.request_id, f"{episode}:{arm}:score", at, "score", score)
                 if score["brier"] is not None and novel:
@@ -327,6 +336,27 @@ def evaluate_incremental(
         if crash_after == "update":
             raise RuntimeError("Synthetic crash after atomic score/update commit")
     scored = sum(q["later_net_trade_bps"] is not None for q in comparisons.values())
+    paired_filters = {}
+    for arm in models:
+        paired_filters[arm] = {
+            "baseline": "frozen",
+            "unit": "Recorded shadow entry-filter actions on identical queries",
+            "changed": sum(
+                q["evidence"]["arms"][arm]["prediction"]["action"]
+                != q["evidence"]["arms"]["frozen"]["prediction"]["action"]
+                for q in comparisons.values()
+            ),
+            "rejected_vs_unfiltered": sum(
+                q["evidence"]["arms"][arm]["prediction"]["action"] == "reject_entry"
+                for q in comparisons.values()
+            ),
+            "missed_positive_taken_trades": sum(
+                q["evidence"]["arms"][arm]["prediction"]["action"] == "reject_entry"
+                and q["later_net_trade_bps"] is not None
+                and q["later_net_trade_bps"] > 0
+                for q in comparisons.values()
+            ),
+        }
     return {
         "version": PROCEDURE["version"],
         "mode": "growing_memory",
@@ -338,8 +368,18 @@ def evaluate_incremental(
         "opportunities": len(queries),
         "labeled": scored,
         "unknown_outcomes": len(queries) - scored,
-        "changed_decisions": 0,
-        "missed_positive_taken_trades": 0,
+        "changed_decisions": paired_filters["incremental"]["changed"],
+        "missed_positive_taken_trades": paired_filters["incremental"][
+            "missed_positive_taken_trades"
+        ],
+        "paired_filter_changes": paired_filters,
+        "decision_change_metric": {
+            "label": "Changed shadow filters",
+            "value": paired_filters["incremental"]["changed"],
+            "baseline": "Frozen memory",
+            "arm": "incremental",
+            "unit": "Identical query actions",
+        },
         "comparisons": list(comparisons.values()),
         "whole_account_effect": None,
         "marginal_operating_usd": None,

@@ -117,16 +117,31 @@ def executable_label(
     return unavailable
 
 
-def corpus_snapshot(path: Path, as_of: float) -> dict[str, Any]:
+def corpus_snapshot(path: Path, as_of: float, *, plan: Any | None = None) -> dict[str, Any]:
     if not path.exists():
         raise ValueError("Durable episode archive is unavailable")
     with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True, timeout=1)) as db:
         db.row_factory = sqlite3.Row
         db.execute("BEGIN")
+        scoped = plan is not None and plan.experiment_mode in {
+            "order_flow",
+            "component_exit",
+            "component_size",
+            "observation_priority",
+        }
+        account_scope = plan is not None and plan.account_comparison
+        first, last, query_first, query_last = 0.0, as_of, 0.0, as_of
+        if account_scope and plan is not None:
+            first, last = plan.test_start, plan.test_end
+            query_first, query_last = first, last
+        elif scoped and plan is not None:
+            first = max(0, plan.test_start - 10)
+            last = min(as_of, plan.test_end + 2700)
+            query_first, query_last = plan.test_start, plan.test_end
         episodes = db.execute(
             "SELECT * FROM evidence_episodes WHERE cutoff<=? AND available_at<=? "
-            "ORDER BY cutoff,episode",
-            (as_of, as_of),
+            "AND cutoff>=? AND cutoff<=? ORDER BY cutoff,episode",
+            (as_of, as_of, query_first, query_last),
         ).fetchall()
         if len(episodes) > 512:
             raise ValueError("Declared corpus exceeds 512 retained episodes")
@@ -135,21 +150,45 @@ def corpus_snapshot(path: Path, as_of: float) -> dict[str, Any]:
             d = json.loads(episode["descriptor"])
             if digest(d) != episode["descriptor_sha256"]:
                 raise ValueError("Retained descriptor changed")
+            raw = db.execute(
+                "SELECT sha256 FROM evidence_records WHERE id=?", (episode["record_id"],)
+            ).fetchone()
+            if raw is None:
+                raise ValueError("Required full-archive prefix is missing")
             # Freeze raw dependencies, not price-only outcomes pretending to be net labels.
             rows.append(
                 {
                     "episode": episode["episode"],
                     "record_id": episode["record_id"],
+                    "evidence_reference": {
+                        "archive": "full",
+                        "episode": episode["episode"],
+                        "record_id": episode["record_id"],
+                        "sha256": raw["sha256"],
+                    },
                     "available_at": episode["available_at"],
                     "descriptor": d,
                     "executable_label": None,
                 }
             )
         count, total = db.execute(
-            "SELECT count(*),coalesce(sum(length(CAST(payload AS BLOB))),0) "
-            "FROM evidence_records WHERE kind='decision' AND at<=?",
-            (as_of,),
+            "SELECT count(*),coalesce(sum(bytes),0) "
+            "FROM evidence_records WHERE kind='decision' AND at>=? AND at<=?",
+            (first, last),
         ).fetchone()
+        excluded = db.execute(
+            "SELECT count(*) FROM evidence_records WHERE kind='decision' AND at<?", (first,)
+        ).fetchone()[0]
+        selection = {
+            "dependency_start": first,
+            "dependency_end": last,
+            "excluded_older_records": excluded,
+            "selection": "Complete declared account interval; no reset or first-N sampling"
+            if account_scope
+            else "Complete declared interval and ten-second/45-minute causal margins"
+            if scoped
+            else "Legacy complete corpus",
+        }
         if total > 8 * 1024**2:
             # No silent first-N subset and no financial archive/consumed-window deletion.
             return {
@@ -161,13 +200,15 @@ def corpus_snapshot(path: Path, as_of: float) -> dict[str, Any]:
                     "source_bytes": total,
                     "execution_status": "Dependencies exceed eight-MiB budget; labels unavailable",
                     "older_rows_omitted": False,
+                    **selection,
                 },
                 "source_files": source_hashes(),
             }
         records = db.execute(
-            "SELECT id,at,sha256,payload FROM evidence_records WHERE kind='decision' AND at<=? "
+            "SELECT id,at,sha256,payload FROM evidence_records "
+            "WHERE kind='decision' AND at>=? AND at<=? "
             "ORDER BY id",
-            (as_of,),
+            (first, last),
         ).fetchall()
         frozen = [
             {
@@ -178,7 +219,7 @@ def corpus_snapshot(path: Path, as_of: float) -> dict[str, Any]:
             }
             for r in records
         ]
-        return {
+        snapshot: dict[str, Any] = {
             "rows": rows,
             "records": frozen,
             "manifest": {
@@ -187,9 +228,17 @@ def corpus_snapshot(path: Path, as_of: float) -> dict[str, Any]:
                 "source_bytes": total,
                 "execution_status": "Dependencies frozen; target reconciliation pending",
                 "older_rows_omitted": False,
+                "selected_references": [{"id": r["id"], "sha256": r["sha256"]} for r in frozen],
+                **selection,
             },
             "source_files": source_hashes(),
         }
+        if len(json.dumps(snapshot, sort_keys=True, allow_nan=False).encode()) > 8 * 1024**2:
+            snapshot["records"] = []
+            snapshot["manifest"]["execution_status"] = (
+                "Selected dependency segment exceeds eight-MiB budget"
+            )
+        return snapshot
 
 
 def mature_snapshot(snapshot: dict[str, Any], as_of: float) -> list[dict[str, Any]]:
@@ -200,6 +249,10 @@ def mature_snapshot(snapshot: dict[str, Any], as_of: float) -> list[dict[str, An
     verified: dict[str, dict[str, Any]] = {}
     # Every retained episode, under the existing 512-episode / eight-MiB / 25-second limits.
     for row in rows:
+        if row.get("evidence_reference", {}).get("archive") == "compact":
+            # Compact outcomes have their own hash-verified event links and availability.
+            # A test-interval packet selection cannot replace earlier training outcomes.
+            continue
         if records:
             row["executable_label"] = executable_label(row["descriptor"], records, as_of, verified)
         elif row["executable_label"] is None:

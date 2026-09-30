@@ -52,7 +52,21 @@ class ExperimentLab:
                 "observation_priority",
             }:
                 compact_path = self.registry.path.parent / "memory-episodes.sqlite"
-                if compact_path.exists() and plan.experiment_mode not in {
+                if plan.account_comparison:
+                    snapshot = corpus_snapshot(
+                        self.registry.path.parent / "research-evidence.sqlite",
+                        plan.as_of,
+                        plan=plan,
+                    )
+                    if compact_path.exists():
+                        memory = compact_snapshot(compact_path, plan.as_of)
+                        snapshot["rows"] = memory["rows"]
+                        snapshot["manifest"]["memory_archive"] = memory["manifest"]
+                    else:
+                        snapshot["manifest"]["memory_status"] = (
+                            "Compact training history unavailable"
+                        )
+                elif compact_path.exists() and plan.experiment_mode not in {
                     "component_exit",
                     "component_size",
                     "observation_priority",
@@ -64,7 +78,9 @@ class ExperimentLab:
                     snapshot["source_files"] = source_hashes()
                 else:
                     snapshot = corpus_snapshot(
-                        self.registry.path.parent / "research-evidence.sqlite", plan.as_of
+                        self.registry.path.parent / "research-evidence.sqlite",
+                        plan.as_of,
+                        plan=plan,
                     )
             elif not self.dsn:
                 raise ValueError("Public quote journal is not enabled")

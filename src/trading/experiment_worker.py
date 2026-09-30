@@ -15,6 +15,7 @@ from trading.experiment_registry import (
     fingerprint,
 )
 from trading.incremental_memory import LearningJournal, evaluate_incremental
+from trading.memory_accounts import evaluate_account_memory
 from trading.memory_dataset import mature_snapshot
 from trading.memory_quality import evaluate_memory
 from trading.numerical_candidates import evaluate_families
@@ -39,6 +40,9 @@ def code_fingerprint() -> str:
                 "incremental_memory.py",
                 "portfolio_components.py",
                 "compact_memory.py",
+                "research_timing.py",
+                "research_support.py",
+                "memory_accounts.py",
             )
         )
     ).hexdigest()
@@ -76,7 +80,11 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
         )
         mature = mature_snapshot(snapshot, plan.as_of)
         if plan.experiment_mode == "memory_entry":
-            result = evaluate_memory(mature, effective_plan)
+            result = (
+                evaluate_account_memory(mature, snapshot, effective_plan)
+                if plan.account_comparison
+                else evaluate_memory(mature, effective_plan)
+            )
         elif plan.experiment_mode == "growing_memory":
             registry = ExperimentRegistry(Path(job["registry_path"]))
             try:
@@ -104,10 +112,13 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
     result["evidence_kind"] = "synthetic_qa" if synthetic else plan.evidence_kind
     if synthetic:
         result["eligible_for_forward_review"] = False
+        result["eligible_for_exploratory_paper"] = False
         result["decision"] = "reject"
     result["independent_validation"] = False
     result["next_action"] = (
-        "Inspect uncertainty and freeze a separate prospective paper comparison"
+        "Select a frozen arm for an exploratory paper account and control; no qualification"
+        if result.get("eligible_for_exploratory_paper")
+        else "Inspect uncertainty and freeze a separate prospective paper comparison"
         if result["decision"] == "forward_review_only"
         else "Retain this rejection; obtain a later untouched window before another evaluation"
     )
