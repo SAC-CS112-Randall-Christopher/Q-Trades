@@ -1,5 +1,12 @@
 # QTrades reference UI and authorized merge/relaunch
 
+The first native update refused to copy because the scheduled host left detached
+paper descendants. Read docs/reviews/updater-paper-shutdown/README.md. Preserve
+that failed private receipt; the fix captures executable/command/lifetime-verified
+paper processes before stopping the task and closes only that snapshot. Do not
+weaken identity checks or stop model/GIS processes. Complete its hosted/main gates
+and normal updater retry, then independently verify financial preservation.
+
 The reference UI is implemented; read docs/REFERENCE_UI.md and its synthetic
 review receipt. Chris explicitly authorized merging all outstanding Q-Trades PRs
 and relaunching the existing installed application when ready. Complete exact-head
