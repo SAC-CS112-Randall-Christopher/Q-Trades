@@ -4,14 +4,14 @@ _ test_detached_tree_stops_only_owned_processes_and_rejects_changed_identity __
 tests\test_paper_update_shutdown.py:147: in test_detached_tree_stops_only_owned_processes_and_rejects_changed_identity
     assert result.returncode == 0, result.stdout + result.stderr
 E   AssertionError: "CreationDate" is a ReadOnly property.
-E     At C:\Users\chris.t0\AppData\Local\Temp\pytest-of-chris.t0\pytest-3116\test_detached_tree_stops_only_0\stop-tree.ps1:8 
+E     At C:\Users\chris.t0\AppData\Local\Temp\pytest-of-chris.t0\pytest-3116\test_detached_tree_stops_only_0\stop-tree.ps1:8
 E     char:1
 E     + $owned[0].CreationDate=([DateTime]$saved).AddSeconds(1)
 E     + ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 E         + CategoryInfo          : NotSpecified: (:) [], ParentContainsErrorRecordException
 E         + FullyQualifiedErrorId : ReadOnlyCIMProperty
-E      
-E     
+E
+E
 E   assert 1 == 0
 E    +  where 1 = CompletedProcess(args=['C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', '-NoProfile', '-NonInteractiv...   : NotSpecified: (:) [], ParentContainsErrorRecordException\n    + FullyQualifiedErrorId : ReadOnlyCIMProperty\n \n').returncode
 ============================== warnings summary ===============================
