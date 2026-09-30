@@ -1,3 +1,14 @@
+# Next: CP14 controlled incremental research
+
+Freeze the whole update procedure and persist predictions before separately mature
+labels. Compare frozen/batch/growing memory under the same permitted information.
+Keep outcomes, scores and exact-once state snapshots in existing research storage;
+never mutate the protected incumbent or automatically promote a challenger.
+CP13 source/local/native/browser proof is complete; hosted/merge/install and market
+acceptance remain distinct. Resolve retained QA ownership at integrated cleanup.
+
+# Historical handoff
+
 # Next: CP13 local context and independent order-flow research
 
 CP12 shadow memory workflow is implemented and documented in CP12_AFTER_COST_MEMORY.md.
@@ -77,7 +88,7 @@ live adapter/account decision remain future work.
 
 # Historical: Q-Trades UI based on the September 29 inspiration
 
-CP0–CP9 source implementation and the measured audit are complete as draft changes.
+CP0â€“CP9 source implementation and the measured audit are complete as draft changes.
 Read CP0_CP9_EFFICIENCY_AUDIT.md and reviews/cp0-cp9-efficiency-audit/README.md for
 final clean-source before/after, capacity, soak, database and browser receipts.
 Chris requested the UI next, using the three local images in
@@ -89,7 +100,7 @@ separate. The original operating trial and model/GIS runtimes remain untouched.
 
 ---
 
-# Historical: measured CP0–CP9 performance and efficiency audit
+# Historical: measured CP0â€“CP9 performance and efficiency audit
 
 CP9's source-dated normal UI/read-only export now concludes not ready, with explicit
 candidate, account, funding/liability and engineering gaps. See CP9_LIVE_READINESS.md.
@@ -100,14 +111,14 @@ prospective forward evidence remain separate work.
 CP8's finite twenty-account soak, actual crash/backup recovery and normal UI checks
 passed locally; see reviews/cp8-integrated-acceptance/README.md for scopes and the
 Windows worker supervision repair. Complete CP9's source-dated paper-only readiness
-packet, then measure and improve the entire CP0–CP9 stack. Drafts remain unmerged
+packet, then measure and improve the entire CP0â€“CP9 stack. Drafts remain unmerged
 and the original application/trial remains unchanged.
 
 CP7 now retains protected forward whole-account reports, matched controls, drift,
 explicit no-promotion and reversible operator-approved paper research roles.
 See CP7_FORWARD_LEARNING.md and reviews/cp7-forward-learning/README.md. Real
 prospective evidence is still collecting after an approved installation; synthetic
-contracts do not prove advantage. Continue CP8/CP9 and audit CP0–CP9 for measured
+contracts do not prove advantage. Continue CP8/CP9 and audit CP0â€“CP9 for measured
 performance and efficiency. Merge/install/live decisions remain separate.
 
 ---
@@ -116,7 +127,7 @@ performance and efficiency. Merge/install/live decisions remain separate.
 
 CP6 now persists finite research campaigns and bounds total retained accounts at
 twenty. See CP6_BOUNDED_RESEARCH.md and reviews/cp6-bounded-research/README.md for
-restart, normal UI and six actual-host synthetic capacity cases. Continue CP7–CP9
+restart, normal UI and six actual-host synthetic capacity cases. Continue CP7â€“CP9
 and audit all checkpoints. Prospective market evidence and installation are separate.
 
 ---
@@ -127,7 +138,7 @@ CP5 adds three distinct frozen numerical families, common protected windows, hon
 history-gap rejection, train-only fitting, parameter/cost diagnostics and explicit
 $50/$100 exploratory paper admission. See CP5_NUMERICAL_CHALLENGERS.md and its
 review receipt. Historical minute quotes cannot prove execution returns without
-books; subsequent forward comparisons remain separate. Continue CP6–CP9 and the
+books; subsequent forward comparisons remain separate. Continue CP6â€“CP9 and the
 measured full-stack audit. Keep each step draft and preserve the operating trial.
 
 ---
@@ -138,7 +149,7 @@ CP4 now provides protected durable hypotheses, frozen evaluation/input/code vers
 one bounded numerical child and normal UI results/rejection/history/export. Read
 CP4_PROTECTED_RESEARCH.md and reviews/cp4-protected-research/README.md. The retained
 1790595239.9180105 window remains consumed across features/hashes/restarts. Continue
-CP5–CP9, then audit all checkpoints for measured performance/efficiency. No merge,
+CP5â€“CP9, then audit all checkpoints for measured performance/efficiency. No merge,
 paid calls, running-trial changes or installation is implied.
 
 ---

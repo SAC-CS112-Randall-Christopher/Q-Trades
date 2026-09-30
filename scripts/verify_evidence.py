@@ -18,6 +18,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import uvicorn
+from fastapi import Request
 from psycopg.conninfo import conninfo_to_dict
 from verify_cp3 import disposable, frames, rss_bytes
 
@@ -346,7 +347,7 @@ def seed_memory(recorder, now):
     recorder.status = recorder._archive.snapshot()
 
 
-def serve(port, *, replay=False, research=False):
+def serve(port, *, replay=False, research=False, duration=900):
     verify_database()
     with tempfile.TemporaryDirectory(prefix="cp10-ui-") as folder:
         data = Path(folder)
@@ -358,6 +359,14 @@ def serve(port, *, replay=False, research=False):
             research_evidence=data / "empty-qualification",
         )
         original = app.router.lifespan_context
+
+        @app.post("/qa/shutdown")
+        async def shutdown(request: Request):
+            # Disposable loopback harness only; never installed in the application.
+            if request.client.host != "127.0.0.1" or request.headers.get("X-QA-Stop") != "1":
+                return {"stopping": False}
+            server.should_exit = True
+            return {"stopping": True}
 
         @asynccontextmanager
         async def lifespan(app):
@@ -401,6 +410,12 @@ def serve(port, *, replay=False, research=False):
                     worker = asyncio.create_task(feed())
                     replay_worker = asyncio.create_task(app.state.replay.run()) if replay else None
                     research_worker = asyncio.create_task(app.state.lab.run()) if research else None
+
+                    async def end_finite_session():
+                        await asyncio.sleep(duration)
+                        server.should_exit = True
+
+                    stop_timer = asyncio.create_task(end_finite_session())
                     print(
                         json.dumps({"qa_only": True, "port": port, "evidence_path": str(data)}),
                         flush=True,
@@ -408,6 +423,11 @@ def serve(port, *, replay=False, research=False):
                     try:
                         yield
                     finally:
+                        stop_timer.cancel()
+                        try:
+                            await stop_timer
+                        except asyncio.CancelledError:
+                            pass
                         if research_worker:
                             research_worker.cancel()
                             try:
@@ -428,7 +448,11 @@ def serve(port, *, replay=False, research=False):
                         runtime.evidence._archive.close()
 
         app.router.lifespan_context = lifespan
-        uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")).run()
+        server = uvicorn.Server(
+            uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning")
+        )
+        server.run()
+    print(json.dumps({"qa_teardown": True, "temporary_path_exists": data.exists()}), flush=True)
 
 
 if __name__ == "__main__":

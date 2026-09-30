@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { HistoricalMatches, type Episode, type MarketOutcome } from "./HistoricalMatches";
 import { ReplayPanel } from "./ReplayPanel";
 import { MemoryQualityPanel } from "./MemoryQualityPanel";
+import { ResearchSlicePanel } from "./ResearchSlicePanel";
 
 export type EvidenceStatus = {
   state: string; rows?: number; bytes?: number; physical_bytes?: number;
@@ -146,5 +147,6 @@ export function EvidencePanel({ status }: { status?: EvidenceStatus }) {
     </section>}
     <ReplayPanel recordId={detail?.payload.kind==="decision"?detail.id:undefined}/>
     <MemoryQualityPanel onOpenEvidence={id=>void open(id)}/>
+    <ResearchSlicePanel/>
   </section>;
 }

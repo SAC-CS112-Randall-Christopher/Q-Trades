@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { PaperSnapshot } from "./PaperPanel";
 import { MemoryQualityPanel } from "./MemoryQualityPanel";
+import { ResearchSlicePanel } from "./ResearchSlicePanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
 import {
   ResearchCampaignPanel,
@@ -606,6 +607,7 @@ export function ExperimentLab({ paper }: { paper?: PaperSnapshot }) {
             </>
           )}
           {detail.plan.experiment_mode==="memory_entry" && <MemoryQualityPanel requestId={detail.request_id} readonly/>}
+          {["context_regime","order_flow"].includes(detail.plan.experiment_mode??"") && <ResearchSlicePanel requestId={detail.request_id} readonly/>}
           {detail.plan.experiment_mode!=="memory_entry" && detail.result?.candidate_group && (
             <>
               <h4>Frozen candidate families</h4>

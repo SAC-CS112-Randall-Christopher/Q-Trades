@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 from typing import Any
 
+from trading.context_flow import evaluate_context
 from trading.experiment_registry import (
     PREFLIGHT_END,
     ExperimentPlan,
@@ -32,6 +33,7 @@ def code_fingerprint() -> str:
                 "numerical_candidates.py",
                 "memory_quality.py",
                 "memory_dataset.py",
+                "context_flow.py",
             )
         )
     ).hexdigest()
@@ -50,13 +52,21 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
         or row.get("descriptor", {}).get("data_mode") == "synthetic"
         for row in rows
     )
-    if plan.experiment_mode != "memory_entry" and any(not 0 <= r["at"] <= plan.as_of for r in rows):
+    local_modes = {"memory_entry", "context_regime", "order_flow"}
+    if plan.experiment_mode not in local_modes and any(
+        not 0 <= r["at"] <= plan.as_of for r in rows
+    ):
         raise ValueError("Input availability exceeds the declared observation cutoff")
-    if plan.experiment_mode == "memory_entry":
+    if plan.experiment_mode in local_modes:
         effective_plan = (
             plan.model_copy(update={"evidence_kind": "synthetic_qa"}) if synthetic else plan
         )
-        result = evaluate_memory(mature_snapshot(snapshot, plan.as_of), effective_plan)
+        mature = mature_snapshot(snapshot, plan.as_of)
+        result = (
+            evaluate_memory(mature, effective_plan)
+            if plan.experiment_mode == "memory_entry"
+            else evaluate_context(mature, snapshot["records"], effective_plan)
+        )
     elif plan.experiment_mode == "distinct_families":
         result = evaluate_families(rows, plan.test_start, plan.test_end, plan.as_of)
     else:

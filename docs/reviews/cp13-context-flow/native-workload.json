@@ -1,0 +1,1473 @@
+{
+  "scope": "Native bounded synthetic local comparisons; no market or provider proof",
+  "source_sha256": "ba16671a24b8713c9ee2c73dc47d644eeca644711ae2f3e9a4be5bd8ece9ddd7",
+  "results": [
+    {
+      "mode": "context_regime",
+      "resources": {
+        "gpu": false,
+        "logical_processors_max": 2,
+        "paid_usd": "0",
+        "peak_rss_bytes": 28037120,
+        "wall_seconds": 0.8279999999795109
+      },
+      "result": {
+        "changed_decisions": 0,
+        "comparisons": [
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790679622.8439991,
+            "episode": "episode-18",
+            "evidence": {
+              "facts": {
+                "net_change_bps": 10.955209482107382,
+                "trend_strength": 1.0,
+                "volatility_ratio": 1.7924841214309981
+              },
+              "historical_comparability": {
+                "economic_probability": null,
+                "eligible_candidates": 18,
+                "exclusion_counts": {},
+                "input_library_sha256": "0281ac7cc8d9d73afaa3c46af8cac6589c0e3e08b9a4ea97ad86f17cf9df4fdf",
+                "matches": [
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-0",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-6",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-12",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [
+                        "volatility"
+                      ],
+                      "label": "partial",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6961572432360656,
+                    "episode": "episode-1",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [
+                        "volatility"
+                      ],
+                      "label": "partial",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6961572432360656,
+                    "episode": "episode-7",
+                    "net_bps": 20.0
+                  }
+                ],
+                "provider_packet": {
+                  "sha256": "14222e9beba4c8667f50df41f73d041edad310fdaef6fbbf7ade40122cbc642b",
+                  "status": "not_requested"
+                },
+                "recognition_confidence": null
+              },
+              "input_sha256": "e4227b22dc651633673f22a3e7da1fce054343e9bba392add76c989250e06b39",
+              "profit_probability": null,
+              "reason": "Descriptions of observed inputs; no outcome or causal explanation",
+              "recognition_confidence": null,
+              "tags": {
+                "flow": "unknown",
+                "liquidity": "unknown",
+                "structure": "boundary_break",
+                "trend": "up",
+                "volatility": "expanding"
+              },
+              "version": "context-flow-v1"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": -40.0,
+            "status": "observed"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790684622.8439991,
+            "episode": "episode-19",
+            "evidence": {
+              "facts": {
+                "net_change_bps": 10.41118837121801,
+                "trend_strength": 0.9428168055233267,
+                "volatility_ratio": 1.1419069468698766
+              },
+              "historical_comparability": {
+                "economic_probability": null,
+                "eligible_candidates": 19,
+                "exclusion_counts": {},
+                "input_library_sha256": "c6729598878b98ac8a215190556b99f5de35afc0d8ffc8e7bdd57f4ccc1b7536",
+                "matches": [
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-1",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-7",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-13",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6592559041089454,
+                    "episode": "episode-2",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6592559041089454,
+                    "episode": "episode-8",
+                    "net_bps": 20.0
+                  }
+                ],
+                "provider_packet": {
+                  "sha256": "2c2a3c22ba2e772e47d73e87b8e8a5ba4a4122ee37058e4ee8fbbd7d39a6d761",
+                  "status": "not_requested"
+                },
+                "recognition_confidence": null
+              },
+              "input_sha256": "3b18ac2dfa24dd87cdfa1bec44dded51c97327e459fcbc51c4ff78d870479b00",
+              "profit_probability": null,
+              "reason": "Descriptions of observed inputs; no outcome or causal explanation",
+              "recognition_confidence": null,
+              "tags": {
+                "flow": "unknown",
+                "liquidity": "unknown",
+                "structure": "boundary_break",
+                "trend": "up",
+                "volatility": "stable"
+              },
+              "version": "context-flow-v1"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "observed"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790689622.8439991,
+            "episode": "episode-20",
+            "evidence": {
+              "facts": {
+                "net_change_bps": 8.569727179859411,
+                "trend_strength": 0.85687154546583,
+                "volatility_ratio": 1.0146293624127567
+              },
+              "historical_comparability": {
+                "economic_probability": null,
+                "eligible_candidates": 20,
+                "exclusion_counts": {},
+                "input_library_sha256": "e42e4b3f4f7a65fd9fc6dd51985ea3acae471610120e6f4740b60374d3331ce7",
+                "matches": [
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-2",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-8",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-14",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6592559041089454,
+                    "episode": "episode-1",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6592559041089454,
+                    "episode": "episode-7",
+                    "net_bps": 20.0
+                  }
+                ],
+                "provider_packet": {
+                  "sha256": "b59e6fcdb03196a4cb46464362efaeada5d154c641d1aedcb2019d90298f1c4e",
+                  "status": "not_requested"
+                },
+                "recognition_confidence": null
+              },
+              "input_sha256": "b8ab9daf2998a56afcfeb18bb2779c3afa1d9539735b34da47bec50c040154f2",
+              "profit_probability": null,
+              "reason": "Descriptions of observed inputs; no outcome or causal explanation",
+              "recognition_confidence": null,
+              "tags": {
+                "flow": "unknown",
+                "liquidity": "unknown",
+                "structure": "boundary_break",
+                "trend": "up",
+                "volatility": "stable"
+              },
+              "version": "context-flow-v1"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "observed"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790694622.8439991,
+            "episode": "episode-21",
+            "evidence": {
+              "facts": {
+                "net_change_bps": 7.123856835033294,
+                "trend_strength": 0.7614773374156499,
+                "volatility_ratio": 0.6768231240715464
+              },
+              "historical_comparability": {
+                "economic_probability": null,
+                "eligible_candidates": 21,
+                "exclusion_counts": {},
+                "input_library_sha256": "ac9b6cc3a53d4d692eb953ddfdab33163b64c840df284c338a7c07a4f8668ca5",
+                "matches": [
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-3",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-9",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-15",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6750065650136686,
+                    "episode": "episode-2",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6750065650136686,
+                    "episode": "episode-8",
+                    "net_bps": 20.0
+                  }
+                ],
+                "provider_packet": {
+                  "sha256": "0c4cb843f70b1e2348dfffd52bd3679dc5bfa33e06c342540d9e1cd56f262e0b",
+                  "status": "not_requested"
+                },
+                "recognition_confidence": null
+              },
+              "input_sha256": "3c21110d7b7e7b88b517f9a4e948b40e253bc0cb8b9c7e47c684b8e354b0565b",
+              "profit_probability": null,
+              "reason": "Descriptions of observed inputs; no outcome or causal explanation",
+              "recognition_confidence": null,
+              "tags": {
+                "flow": "unknown",
+                "liquidity": "unknown",
+                "structure": "boundary_break",
+                "trend": "up",
+                "volatility": "stable"
+              },
+              "version": "context-flow-v1"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": -40.0,
+            "status": "observed"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790699622.8439991,
+            "episode": "episode-22",
+            "evidence": {
+              "facts": {
+                "net_change_bps": 7.402903863800068,
+                "trend_strength": 0.7094738638284591,
+                "volatility_ratio": 0.6128383141071868
+              },
+              "historical_comparability": {
+                "economic_probability": null,
+                "eligible_candidates": 22,
+                "exclusion_counts": {},
+                "input_library_sha256": "e4d4caddf8bdb8c72eb945c321e8adc55e2427f06611aaee4801db9c63022d5f",
+                "matches": [
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-4",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-10",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-16",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [
+                        "volatility"
+                      ],
+                      "label": "partial",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6633800387343988,
+                    "episode": "episode-5",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [
+                        "volatility"
+                      ],
+                      "label": "partial",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6633800387343988,
+                    "episode": "episode-11",
+                    "net_bps": 20.0
+                  }
+                ],
+                "provider_packet": {
+                  "sha256": "a3069bb805c6117972d0265eb5909a91523c2566140100ebe56b2f8eb2312d30",
+                  "status": "not_requested"
+                },
+                "recognition_confidence": null
+              },
+              "input_sha256": "aa52ae8a6a1bc65d4651d7826617696c833d2706f8f467638d41e20d146b32c3",
+              "profit_probability": null,
+              "reason": "Descriptions of observed inputs; no outcome or causal explanation",
+              "recognition_confidence": null,
+              "tags": {
+                "flow": "unknown",
+                "liquidity": "unknown",
+                "structure": "boundary_break",
+                "trend": "up",
+                "volatility": "contracting"
+              },
+              "version": "context-flow-v1"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "observed"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790704622.8439991,
+            "episode": "episode-23",
+            "evidence": {
+              "facts": {
+                "net_change_bps": 9.150313714802866,
+                "trend_strength": 0.8150279867873859,
+                "volatility_ratio": 1.043998230481964
+              },
+              "historical_comparability": {
+                "economic_probability": null,
+                "eligible_candidates": 23,
+                "exclusion_counts": {},
+                "input_library_sha256": "48a8c4587569ceb387e25b3294cc4733e841f347948de84ab4aeabb3dbaca76d",
+                "matches": [
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-5",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-11",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-17",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [
+                        "volatility"
+                      ],
+                      "label": "partial",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6633800387343988,
+                    "episode": "episode-4",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [
+                        "volatility"
+                      ],
+                      "label": "partial",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6633800387343988,
+                    "episode": "episode-10",
+                    "net_bps": 20.0
+                  }
+                ],
+                "provider_packet": {
+                  "sha256": "c737f704b4a2f11c9c36c8ae20966d4f12ef3fe1f7be674070069d610bccfe86",
+                  "status": "not_requested"
+                },
+                "recognition_confidence": null
+              },
+              "input_sha256": "883cedaa6b02501f7e582011f622d15b4fd4121909b33b380fa19b3dfb90a574",
+              "profit_probability": null,
+              "reason": "Descriptions of observed inputs; no outcome or causal explanation",
+              "recognition_confidence": null,
+              "tags": {
+                "flow": "unknown",
+                "liquidity": "unknown",
+                "structure": "boundary_break",
+                "trend": "up",
+                "volatility": "stable"
+              },
+              "version": "context-flow-v1"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "observed"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790709622.8439991,
+            "episode": "episode-24",
+            "evidence": {
+              "facts": {
+                "net_change_bps": 10.955209482107382,
+                "trend_strength": 1.0,
+                "volatility_ratio": 1.7924841214309981
+              },
+              "historical_comparability": {
+                "economic_probability": null,
+                "eligible_candidates": 24,
+                "exclusion_counts": {},
+                "input_library_sha256": "a858abd9e3dfcfd79dea9c730c41340dc0ab0cdd1cd9930a5a48b2c8bca077cd",
+                "matches": [
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-0",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-6",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-12",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-18",
+                    "net_bps": -40.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [
+                        "volatility"
+                      ],
+                      "label": "partial",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6961572432360656,
+                    "episode": "episode-1",
+                    "net_bps": 20.0
+                  }
+                ],
+                "provider_packet": {
+                  "sha256": "36377a8d0c7433c0822bacf219735435e78dbfd9e26aa5d649489d4106f52fdc",
+                  "status": "not_requested"
+                },
+                "recognition_confidence": null
+              },
+              "input_sha256": "d2bacfbbc23d2cedddaef025c97425ede7606b3476c0d2fa35209b0faad14333",
+              "profit_probability": null,
+              "reason": "Descriptions of observed inputs; no outcome or causal explanation",
+              "recognition_confidence": null,
+              "tags": {
+                "flow": "unknown",
+                "liquidity": "unknown",
+                "structure": "boundary_break",
+                "trend": "up",
+                "volatility": "expanding"
+              },
+              "version": "context-flow-v1"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": -40.0,
+            "status": "observed"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790714622.8439991,
+            "episode": "episode-25",
+            "evidence": {
+              "facts": {
+                "net_change_bps": 10.41118837121801,
+                "trend_strength": 0.9428168055233267,
+                "volatility_ratio": 1.1419069468698766
+              },
+              "historical_comparability": {
+                "economic_probability": null,
+                "eligible_candidates": 25,
+                "exclusion_counts": {},
+                "input_library_sha256": "5cdd3676f826ca8575ba53398ea8f60973e317e1caedd26d013192a3c6612250",
+                "matches": [
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-1",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-7",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-13",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.0,
+                    "episode": "episode-19",
+                    "net_bps": 20.0
+                  },
+                  {
+                    "classification": {
+                      "differences": [],
+                      "label": "comparable",
+                      "shared_dimensions": [
+                        "trend",
+                        "volatility",
+                        "structure"
+                      ]
+                    },
+                    "distance_bps": 0.6592559041089454,
+                    "episode": "episode-2",
+                    "net_bps": 20.0
+                  }
+                ],
+                "provider_packet": {
+                  "sha256": "e2c9d8819826a1bf3646d0d4bdb9f2820abf8778f80e2799a5ff8b8225d8f3cf",
+                  "status": "not_requested"
+                },
+                "recognition_confidence": null
+              },
+              "input_sha256": "a62b02961777336557f380789447f32fbb5871221e39f58da3bcb16db88b336d",
+              "profit_probability": null,
+              "reason": "Descriptions of observed inputs; no outcome or causal explanation",
+              "recognition_confidence": null,
+              "tags": {
+                "flow": "unknown",
+                "liquidity": "unknown",
+                "structure": "boundary_break",
+                "trend": "up",
+                "volatility": "stable"
+              },
+              "version": "context-flow-v1"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "observed"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "observed"
+          }
+        ],
+        "contract": {
+          "authority": "Shadow entry filters only; baseline exits, sizing and controls unchanged",
+          "cohort_result_max_bytes": 2097152,
+          "comparability": "At least three known shared dimensions; disagreements remain visible",
+          "flow": "Observed aggressive notional balance >0.2 buying, <-0.2 selling",
+          "liquidity": "Visible spread >10 bps is thin; <=10 is observed_narrow, not full liquidity",
+          "structure": "Last cumulative return versus prior boundary, then negative last return",
+          "trend": "Ten-return sum: up >=5 bps, down <=-5 bps, otherwise range",
+          "unknown": "Missing, nonfinite, unstable or unavailable inputs remain unknown",
+          "version": "context-flow-v1",
+          "volatility": "Last/first five-return std: expanding >=1.5, contracting <=2/3"
+        },
+        "controls": [
+          "unchanged_baseline",
+          "fixed_direction",
+          "matched_cash_unavailable"
+        ],
+        "decision": "reject",
+        "eligible_for_forward_review": false,
+        "evidence_kind": "synthetic_qa",
+        "exposure": null,
+        "independent_validation": false,
+        "labeled": 8,
+        "limitations": [
+          "No forward selection or strategy switching",
+          "Taken-trade selection bias",
+          "Condition labels are descriptive hypotheses, not causes",
+          "Sampled flow is not complete order flow or execution improvement"
+        ],
+        "marginal_operating_usd": null,
+        "missed_positive_taken_trades": 0,
+        "mode": "context_regime",
+        "next_action": "Retain this rejection; obtain a later untouched window before another evaluation",
+        "opportunities": 8,
+        "optional_D": {
+          "action": "no_additional_signal",
+          "available_at": 1790758622.8439991,
+          "historical_contamination": "Prefix hiding does not exclude pretrained event knowledge",
+          "packet_sha256": "not_requested",
+          "paid_usd": "0",
+          "reason": "Decisions access, wire contract, privacy and budget remain unverified",
+          "recognition_confidence": null,
+          "requested_at": 1790758622.8439991,
+          "status": "unavailable"
+        },
+        "reason": "Independent shadow comparison; paired-account effect unverified",
+        "resources": {
+          "cpu_seconds": 0.015625,
+          "elapsed_seconds": 0.01593300001695752,
+          "paid_usd": "0"
+        },
+        "status": "inconclusive",
+        "switching_cost": null,
+        "turnover": null,
+        "unknown_outcomes": 0,
+        "version": "context-flow-v1",
+        "whole_account_effect": null
+      }
+    },
+    {
+      "mode": "order_flow",
+      "resources": {
+        "gpu": false,
+        "logical_processors_max": 2,
+        "paid_usd": "0",
+        "peak_rss_bytes": 29011968,
+        "wall_seconds": 0.640999999945052
+      },
+      "result": {
+        "changed_decisions": 0,
+        "comparisons": [
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790637622.8439991,
+            "episode": "episode-18",
+            "evidence": {
+              "action": "no_additional_signal",
+              "reason": "Need two to sixty-four permitted book snapshots",
+              "status": "unavailable"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": -40.0,
+            "status": "unavailable"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790642622.8439991,
+            "episode": "episode-19",
+            "evidence": {
+              "action": "no_additional_signal",
+              "reason": "Need two to sixty-four permitted book snapshots",
+              "status": "unavailable"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "unavailable"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790647622.8439991,
+            "episode": "episode-20",
+            "evidence": {
+              "action": "no_additional_signal",
+              "reason": "Need two to sixty-four permitted book snapshots",
+              "status": "unavailable"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "unavailable"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790652622.8439991,
+            "episode": "episode-21",
+            "evidence": {
+              "action": "no_additional_signal",
+              "reason": "Need two to sixty-four permitted book snapshots",
+              "status": "unavailable"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": -40.0,
+            "status": "unavailable"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790657622.8439991,
+            "episode": "episode-22",
+            "evidence": {
+              "action": "no_additional_signal",
+              "reason": "Need two to sixty-four permitted book snapshots",
+              "status": "unavailable"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "unavailable"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790662622.8439991,
+            "episode": "episode-23",
+            "evidence": {
+              "action": "no_additional_signal",
+              "reason": "Need two to sixty-four permitted book snapshots",
+              "status": "unavailable"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "unavailable"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790667622.8439991,
+            "episode": "episode-24",
+            "evidence": {
+              "action": "no_additional_signal",
+              "reason": "Need two to sixty-four permitted book snapshots",
+              "status": "unavailable"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": -40.0,
+            "status": "unavailable"
+          },
+          {
+            "ablations": {
+              "fixed_direction": "accept",
+              "without_component": "unchanged_baseline"
+            },
+            "action": "no_additional_signal",
+            "cutoff": 1790672622.8439991,
+            "episode": "episode-25",
+            "evidence": {
+              "action": "no_additional_signal",
+              "reason": "Need two to sixty-four permitted book snapshots",
+              "status": "unavailable"
+            },
+            "latency_sensitivity": [
+              {
+                "changes_entry": false,
+                "delay_seconds": 0,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 3,
+                "status": "unavailable"
+              },
+              {
+                "changes_entry": false,
+                "delay_seconds": 91,
+                "status": "result_too_late"
+              }
+            ],
+            "later_net_trade_bps": 20.0,
+            "status": "unavailable"
+          }
+        ],
+        "contract": {
+          "coverage": "Sampled top-book changes are not complete event-level order flow",
+          "delays_seconds": [
+            0,
+            3,
+            91
+          ],
+          "depth_threshold": -0.2,
+          "maximum_snapshots": 64,
+          "minimum_snapshots": 2,
+          "rule": "Wait only when observed depth and aggressive-trade balance both indicate selling",
+          "trade_threshold": -0.2,
+          "version": "context-flow-v1",
+          "window_seconds": 10
+        },
+        "controls": [
+          "unchanged_baseline",
+          "fixed_direction",
+          "matched_cash_unavailable"
+        ],
+        "decision": "reject",
+        "eligible_for_forward_review": false,
+        "evidence_kind": "synthetic_qa",
+        "exposure": null,
+        "independent_validation": false,
+        "labeled": 8,
+        "limitations": [
+          "No forward selection or strategy switching",
+          "Taken-trade selection bias",
+          "Condition labels are descriptive hypotheses, not causes",
+          "Sampled flow is not complete order flow or execution improvement"
+        ],
+        "marginal_operating_usd": null,
+        "missed_positive_taken_trades": 0,
+        "mode": "order_flow",
+        "next_action": "Retain this rejection; obtain a later untouched window before another evaluation",
+        "opportunities": 8,
+        "optional_D": {
+          "action": "no_additional_signal",
+          "available_at": 1790758622.8439991,
+          "historical_contamination": "Prefix hiding does not exclude pretrained event knowledge",
+          "packet_sha256": "not_requested",
+          "paid_usd": "0",
+          "reason": "Decisions access, wire contract, privacy and budget remain unverified",
+          "recognition_confidence": null,
+          "requested_at": 1790758622.8439991,
+          "status": "unavailable"
+        },
+        "reason": "Independent shadow comparison; paired-account effect unverified",
+        "resources": {
+          "cpu_seconds": 0.0,
+          "elapsed_seconds": 0.0014301999472081661,
+          "paid_usd": "0"
+        },
+        "status": "inconclusive",
+        "switching_cost": null,
+        "turnover": null,
+        "unknown_outcomes": 0,
+        "version": "context-flow-v1",
+        "whole_account_effect": null
+      }
+    }
+  ],
+  "paid_usd": "0",
+  "whole_account_advantage": null
+}
