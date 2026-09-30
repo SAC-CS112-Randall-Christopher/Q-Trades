@@ -21,6 +21,10 @@ from trading.research_evidence import digest
 from trading.research_storage import compact_path, load_plan, storage_snapshot
 
 
+class InputWait(ValueError):
+    """Fresh causal inputs are temporarily unavailable; preserve the queued proposal."""
+
+
 class AutonomousLab:
     def __init__(
         self, registry: ExperimentRegistry, paper: PaperRuntime, can_research: Callable[[], bool]
@@ -53,17 +57,31 @@ class AutonomousLab:
             rows = sqlite_rows(
                 path,
                 "SELECT p.episode,p.cutoff,p.available,p.body,p.sha256,o.body AS outcome "
-                "FROM compact_prefixes p JOIN compact_outcomes o ON p.episode=o.episode "
-                "WHERE json_extract(o.body,'$.status')='available' ORDER BY p.seq DESC LIMIT 16",
+                ",o.sha256 AS outcome_sha FROM compact_prefixes p "
+                "LEFT JOIN compact_outcomes o ON p.episode=o.episode ORDER BY p.seq DESC LIMIT 16",
             )
             for row in rows:
-                prefix, label = json.loads(row["body"]), json.loads(row["outcome"])
+                from trading.outcome_continuation import continued_outcome
+
+                prefix = json.loads(row["body"])
+                label = (
+                    json.loads(row["outcome"])
+                    if row["outcome"]
+                    else continued_outcome(
+                        path.parent, "compact", row["episode"], row["sha256"], now
+                    )
+                )
+                if not label or label.get("status") != "available":
+                    continue
+                if row["outcome"] and digest(label) != row["outcome_sha"]:
+                    raise ValueError("Disclosed outcome checksum differs; proposal inputs blocked")
                 end = label["available_at"]
                 if max(row["available"], end) > now or digest(prefix) != row["sha256"]:
                     continue
                 with self.registry.lock:
                     protected = self.registry.db.execute(
-                        "SELECT 1 FROM evidence_windows WHERE start<=? AND end>=? LIMIT 1",
+                        "SELECT 1 FROM evidence_windows WHERE start<=? AND end>=? "
+                        "AND origin<>'lab proposer disclosure' LIMIT 1",
                         (end, row["cutoff"]),
                     ).fetchone()
                     prospective = self.registry.db.execute(
@@ -96,6 +114,7 @@ class AutonomousLab:
             "net_after_operating_usd",
             "reason",
             "window_end",
+            "window_start",
         )
         scores = [
             {k: r["body"].get(k) for k in keys} for r in recent if r["body"]["available_at"] <= now
@@ -140,7 +159,7 @@ class AutonomousLab:
             or available is None
             or not 0 <= now - available <= 90
         ):
-            raise ValueError("Awaiting contiguous causal candles and a fresh executable book")
+            raise InputWait("Awaiting contiguous causal candles and a fresh executable book")
         evaluation = {
             "status": "supported_exploratory_configuration",
             "evaluated_at": now,
@@ -162,7 +181,12 @@ class AutonomousLab:
             "profit_required": False,
             "replay": "No new historical replay claimed; compare subsequent executable accounts",
         }
-        result = self.inbox.submit(proposal, evaluation)
+        rejection = None
+        try:
+            finance.validate_parent(self.paper.state, proposal)
+        except finance.InvalidProposal as exc:
+            rejection = str(exc)
+        result = self.inbox.submit(proposal, evaluation, rejection=rejection)
         recorder = getattr(self.paper, "evidence", None)
         if recorder is not None and result["status"] == "evaluated":
             recorder.enqueue(
@@ -269,9 +293,9 @@ class AutonomousLab:
                 evidence_bundle_sha256=issued["sha256"],
             )
         scores = issued["bundle"]["evidence"]["completed_trials"]
-        # Rotate completed selection work across declared horizons. A slow active
+        # Rotate durable admissions across declared horizons. A slow active
         # trial keeps its fixed window and cannot be shortened by faster siblings.
-        horizon = horizons[len(scores) % len(horizons)]
+        horizon = horizons[lab.get("horizon_cursor", 0) % len(horizons)]
         base = RuleSpec(holding_horizon=horizon)
         if self._family_available("range_reversion", True) and not any(
             t["contract"]["proposal"]["kind"] == "independent" and t["status"] != "preserved"
@@ -448,12 +472,26 @@ class AutonomousLab:
                         60,
                     )
                     return False
-            queued = self.inbox.next()
+            queued = self.inbox.next(now)
             if queued:
                 proposal = LabProposal.model_validate(queued["body"])
-                if queued["status"] == "evaluated":
-                    self.submit(proposal, now)
-                    receipt = self.paper.store.lab_reserve(now, proposal)
+                if queued["status"] in {"evaluated", "blocked"}:
+                    try:
+                        submitted = self.submit(proposal, now)
+                        if submitted["status"] == "rejected":
+                            self._state(now, "rejected", submitted["reason"], 2)
+                            return True
+                        receipt = self.paper.store.lab_reserve(now, proposal)
+                    except finance.InvalidProposal as exc:
+                        self.inbox.update(proposal.request_id, "rejected", reason=str(exc))
+                        self._state(now, "rejected", str(exc), 2)
+                        return True
+                    except (finance.AdmissionWait, InputWait) as exc:
+                        self.inbox.defer(
+                            proposal.request_id, str(exc), now + policy.cooldown_seconds
+                        )
+                        self._state(now, "proposal_wait", str(exc), 2)
+                        return False
                     self.paper.state = self.paper.store.read()
                     self.inbox.update(proposal.request_id, "reserved", receipt["trial_id"])
                     self._state(now, "reserved", "Durable slot intent reserved; funding is next", 2)
@@ -478,6 +516,15 @@ class AutonomousLab:
                             2,
                         )
                 return True
+            retry_at = self.inbox.retry_due()
+            if retry_at is not None:
+                self._state(
+                    now,
+                    "proposal_wait",
+                    "Queued proposals await their recorded retry",
+                    max(2, retry_at - now),
+                )
+                return False
             if b["day"] == int(now // 86400) and b["trials"] >= policy.daily_trials:
                 self._state(
                     now,

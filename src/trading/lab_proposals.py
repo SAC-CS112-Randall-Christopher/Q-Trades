@@ -35,19 +35,74 @@ class LabProposals:
                   OR (OLD.evaluation IS NOT NULL AND NEW.evaluation IS NOT OLD.evaluation)
                   BEGIN SELECT RAISE(ABORT,'Proposal and evaluation are frozen'); END;
             """)
+        if "next_retry" not in {
+            row[1] for row in registry.db.execute("PRAGMA table_info(lab_proposals)")
+        }:
+            with registry.transaction():
+                registry.db.execute(
+                    "ALTER TABLE lab_proposals ADD COLUMN next_retry REAL NOT NULL DEFAULT 0"
+                )
 
     def bundle(self, body: dict[str, Any]) -> dict[str, Any]:
         encoded = json.dumps(body, sort_keys=True, allow_nan=False)
         if len(encoded.encode()) > 65536:
             raise ValueError("Permitted research bundle exceeds its declared bound")
-        sha = fingerprint(body)
         with self.registry.transaction():
+            # Serialize disclosure with the same BEGIN IMMEDIATE used by holdouts.
+            # An evaluation winning this race withholds its interval from the bundle.
+            # Previously disclosed training is reusable, but never untouched evidence.
+            body = json.loads(encoded)
+            evidence = body.get("evidence", {})
+            for key in ("training_episodes", "completed_trials"):
+                permitted = []
+                for item in evidence.get(key, []):
+                    start = item.get("cutoff", item.get("window_start"))
+                    end = item.get("available_at")
+                    if start is None or end is None:
+                        continue
+                    overlap = self.registry.db.execute(
+                        "SELECT 1 FROM evidence_windows WHERE start<=? AND end>=? "
+                        "AND origin<>'lab proposer disclosure' LIMIT 1",
+                        (end, start),
+                    ).fetchone()
+                    prospective = self.registry.db.execute(
+                        "SELECT 1 FROM sqlite_master WHERE name='prospective_plans'"
+                    ).fetchone()
+                    if prospective:
+                        prospective = self.registry.db.execute(
+                            "SELECT 1 FROM prospective_plans WHERE start<=? AND end>=? LIMIT 1",
+                            (end, start),
+                        ).fetchone()
+                    if overlap or prospective:
+                        continue
+                    exposure = "lab-exposure:" + fingerprint(
+                        {
+                            "source": key,
+                            "identity": item.get("episode", item.get("trial_id")),
+                            "start": start,
+                            "end": end,
+                        }
+                    )
+                    self.registry.db.execute(
+                        "INSERT OR IGNORE INTO evidence_windows "
+                        "VALUES(?,?,?,'lab proposer disclosure')",
+                        (exposure, start, end),
+                    )
+                    permitted.append(item)
+                if key in evidence:
+                    evidence[key] = permitted
+            if "novelty_sha256" in body:
+                body["novelty_sha256"] = fingerprint(evidence)
+            sha = fingerprint(body)
+            encoded = json.dumps(body, sort_keys=True, allow_nan=False)
             self.registry.db.execute(
                 "INSERT OR IGNORE INTO lab_bundles VALUES(?,?,?)", (sha, time.time(), encoded)
             )
         return {"sha256": sha, "bundle": body}
 
-    def submit(self, proposal: LabProposal, evaluation: dict[str, Any]) -> dict[str, Any]:
+    def submit(
+        self, proposal: LabProposal, evaluation: dict[str, Any], *, rejection: str | None = None
+    ) -> dict[str, Any]:
         r = self.registry
         digest = fingerprint(proposal.model_dump())
         rule = fingerprint(proposal.strategy.model_dump())
@@ -65,7 +120,7 @@ class LabProposals:
                 raise ValueError(
                     "Proposal must cite the exact server-issued evidence bundle it received"
                 )
-            reason = None
+            reason = rejection
             builtin = {
                 "reviewed-breakout-v1": RuleSpec(),
                 "reviewed-breakout-medium-v2": RuleSpec(holding_horizon="medium"),
@@ -83,9 +138,8 @@ class LabProposals:
                     reason = (
                         "Replication must identify completed evidence with exactly matching rules"
                     )
-            elif (
-                proposal.kind == "replication"
-                and proposal.strategy != builtin.get(proposal.replication_of or "")
+            elif proposal.kind == "replication" and proposal.strategy != builtin.get(
+                proposal.replication_of or ""
             ):
                 reason = "Reviewed breakout replication must use its exact reviewed rules"
             if proposal.kind != "replication" and self.used(rule):
@@ -94,7 +148,8 @@ class LabProposals:
                     "exact replication"
                 )
             queued = r.db.execute(
-                "SELECT count(*) FROM lab_proposals WHERE status IN ('evaluated','reserved')"
+                "SELECT count(*) FROM lab_proposals "
+                "WHERE status IN ('evaluated','reserved','blocked')"
             ).fetchone()[0]
             if queued >= 4:
                 raise ValueError(
@@ -156,26 +211,67 @@ class LabProposals:
         result["evaluation"] = json.loads(row["evaluation"]) if row["evaluation"] else None
         return result
 
-    def next(self) -> dict[str, Any] | None:
+    def next(self, now: float | None = None) -> dict[str, Any] | None:
         with self.registry.lock:
             row = self.registry.db.execute(
                 "SELECT request_id FROM lab_proposals WHERE status IN "
-                "('evaluated','reserved') ORDER BY seq LIMIT 1"
+                "('evaluated','reserved','blocked') AND next_retry<=? ORDER BY seq LIMIT 1",
+                (time.time() if now is None else now,),
             ).fetchone()
         return self.get(row["request_id"]) if row else None
 
-    def update(self, request_id: str, status: str, trial_id: str | None = None) -> None:
+    def update(
+        self,
+        request_id: str,
+        status: str,
+        trial_id: str | None = None,
+        *,
+        reason: str | None = None,
+    ) -> None:
         if status not in {"reserved", "funded", "completed", "rejected"}:
             raise ValueError("Unsupported proposal lifecycle")
         with self.registry.transaction():
-            self.registry.db.execute(
+            changed = self.registry.db.execute(
                 (
                     "UPDATE lab_proposals SET "
-                    "status=?,trial_id=COALESCE(trial_id,?),finished=? WHERE "
+                    "status=?,trial_id=COALESCE(trial_id,?),finished=?,reason=?,next_retry=0 WHERE "
                     "request_id=? AND status NOT IN ('completed','rejected')"
                 ),
-                (status, trial_id, time.time() if status == "completed" else None, request_id),
-            )
+                (
+                    status,
+                    trial_id,
+                    time.time() if status in {"completed", "rejected"} else None,
+                    reason,
+                    request_id,
+                ),
+            ).rowcount
+            if changed and status == "rejected":
+                self.registry.event(
+                    request_id,
+                    "lab_proposal_rejected",
+                    {"reason": reason, "financial_authority": False},
+                )
+
+    def defer(self, request_id: str, reason: str, next_retry: float) -> None:
+        with self.registry.transaction():
+            changed = self.registry.db.execute(
+                "UPDATE lab_proposals SET status='blocked',reason=?,next_retry=? "
+                "WHERE request_id=? AND status IN ('evaluated','blocked')",
+                (reason[:300], next_retry, request_id),
+            ).rowcount
+            if changed:
+                self.registry.event(
+                    request_id,
+                    "lab_proposal_blocked",
+                    {"reason": reason, "next_retry": next_retry, "financial_authority": False},
+                )
+
+    def retry_due(self) -> float | None:
+        with self.registry.lock:
+            due = self.registry.db.execute(
+                "SELECT min(next_retry) FROM lab_proposals WHERE status='blocked'"
+            ).fetchone()[0]
+            return float(due) if due is not None else None
 
     def unfinished_funded(self) -> list[dict[str, Any]]:
         with self.registry.lock:

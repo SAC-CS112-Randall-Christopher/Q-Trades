@@ -1,4 +1,24 @@
-# CP10–CP16 integrated audit corrections
+# Continuous paper lab — draft PR24 source
+
+The installed application remains on main `a3ed677e`. September 30's two bounded
+read-only observations showed advancing markets/closed candles and paper decisions,
+a capacity-stopped full archive, an empty research registry and historical September
+28 model-qualification cards. No installed runtime reproduction or state mutation
+was performed. See [installed investigation](reviews/continuous-paper-lab/INSTALLED_READ_ONLY.md).
+
+The branch implements the deterministic continuous lifecycle, twenty concurrent
+managed/reserved slots, protected original accounts, frozen parent/child references,
+authoritative drainage/history, chart overlays and versioned external research tiers.
+The independent PR24 review exposed six additional gaps; their corrections and
+separate verification are recorded in [audit corrections](reviews/continuous-paper-lab/AUDIT_CORRECTIONS.md)
+and [the ordered complete checklist](CONTINUOUS_PAPER_LAB.md).
+
+The original source receipts remain historical. Passing local software checks do
+not establish actual-market advantage, multi-day qualification, 100-GB capacity
+stress or 24-hour reliability. PR24 remains draft/unmerged with no rollout authority.
+No installed migration, cleanup, restart, activation, deployment or paid/model calls.
+
+# Historical CP10–CP16 integrated audit corrections
 
 Issue #1's six findings have correction code and regression coverage. The missing
 bounded A/B/C account experiment now retains cash/open holdings, complete source

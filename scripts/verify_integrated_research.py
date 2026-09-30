@@ -177,11 +177,15 @@ def benchmark(output, research_root=None, async_capture=False):
                 rows, lags = [], []
                 capture_stop = threading.Event()
                 capture_errors = []
+                capture_times = []
                 capture_thread = None
                 if async_capture:
 
                     def capture_worker(
-                        recorder=recorder, capture_stop=capture_stop, capture_errors=capture_errors
+                        recorder=recorder,
+                        capture_stop=capture_stop,
+                        capture_errors=capture_errors,
+                        capture_times=capture_times,
                     ):
                         try:
                             while (
@@ -189,8 +193,12 @@ def benchmark(output, research_root=None, async_capture=False):
                                 or recorder.pending
                                 or recorder.compact_pending
                             ):
+                                began = time.perf_counter()
                                 asyncio.run(recorder.flush())
-                                capture_stop.wait(0.25)
+                                capture_times.append((time.perf_counter() - began) * 1000)
+                                capture_stop.wait(
+                                    0 if recorder.pending or recorder.compact_pending else 0.25
+                                )
                         except Exception as exc:
                             capture_errors.append(str(exc))
 
@@ -243,6 +251,7 @@ def benchmark(output, research_root=None, async_capture=False):
                         "balanced": store.reconcile()["balanced"],
                         "queue_peak": peak_queue,
                         "capture_errors": capture_errors,
+                        "capture_batch_ms": percentiles(capture_times) if capture_times else None,
                         "capture_drain_seconds": time.perf_counter() - drain_started,
                         "capture_drained": not capture_thread or not capture_thread.is_alive(),
                     }

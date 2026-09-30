@@ -60,6 +60,7 @@ def start(engine: "PaperEngine", policy: LabPolicy) -> dict[str, Any]:
         "last_score_at": None,
         "last_work_at": None,
         "historical_trials": 0,
+        "horizon_cursor": 0,
         "initial_hypothetical_funding": "0",
         "retired_net_usd": "0",
         "retired_count": 0,
@@ -86,22 +87,49 @@ def periods(lab: dict[str, Any], now: float) -> None:
         b.update(hour=hour, steps=0, compute_seconds=0.0, measured_seconds=0.0)
 
 
+class InvalidProposal(ValueError):
+    """Frozen proposal cannot be admitted; another eligible job may proceed."""
+
+
+class AdmissionWait(ValueError):
+    """Capacity/policy wait is retryable; it grants no financial permission."""
+
+
+def validate_parent(state: dict[str, Any], proposal: LabProposal) -> None:
+    if proposal.kind != "variation":
+        return
+    parent = state["autonomous_lab"]["trials"].get(proposal.parent_trial)
+    if not parent or parent["status"] != "preserved":
+        raise InvalidProposal("Only a preserved promising trial can be an automatic parent")
+    account_state = state["accounts"].get(parent["candidate"])
+    if (
+        not account_state
+        or account_state.get("risk_stop_id")
+        or account_state.get("fault")
+        or account_state.get("lab_retiring")
+    ):
+        raise InvalidProposal("Parent risk/processing stop prevents automatic descendants")
+    if parent["contract"]["proposal"]["strategy"] != proposal.reference.model_dump():
+        raise InvalidProposal("Child reference must use its parent's frozen rules")
+
+
 def reserve(engine: "PaperEngine", proposal: LabProposal) -> dict[str, Any]:
     lab = engine.state["autonomous_lab"]
     policy = LabPolicy.model_validate(lab["policy"])
     if proposal.policy_id != policy.request_id:
-        raise ValueError("Proposal names another policy")
+        raise InvalidProposal("Proposal names another policy")
     for t in lab["trials"].values():
         if t["proposal_id"] == proposal.request_id:
             return {"status": "already_reserved", "trial_id": t["id"]}
+    validate_parent(engine.state, proposal)
     if lab["proposals_paused"] or engine.state["paused"]:
-        raise ValueError("Operator pause prevents new lab reservations")
+        raise AdmissionWait("Operator pause prevents new lab reservations")
     periods(lab, engine.now)
     if lab["budget"]["trials"] >= policy.daily_trials:
-        raise ValueError("UTC daily trial-creation budget exhausted")
+        raise AdmissionWait("UTC daily trial-creation budget exhausted")
     used = slots(engine.state)["used"]
     if used + 2 > policy.slots:
-        raise ValueError("Concurrent managed/reserved capacity is full")
+        raise AdmissionWait("Concurrent managed/reserved capacity is full")
     family = proposal.strategy.family
     family_count = sum(
         (
@@ -113,7 +141,7 @@ def reserve(engine: "PaperEngine", proposal: LabProposal) -> dict[str, Any]:
         if t["contract"]["proposal"]["strategy"]["family"] == family
     )
     if family_count + 2 > policy.family_slots:
-        raise ValueError("Per-family concurrent allocation is full")
+        raise AdmissionWait("Per-family concurrent allocation is full")
     independent = sum(
         (
             2
@@ -124,22 +152,8 @@ def reserve(engine: "PaperEngine", proposal: LabProposal) -> dict[str, Any]:
         if t["contract"]["proposal"]["kind"] == "independent"
     )
     if proposal.kind == "variation":
-        parent = lab["trials"].get(proposal.parent_trial)
-        if not parent or parent["status"] != "preserved":
-            raise ValueError("Only a preserved promising trial can be an automatic parent")
-        account_state = engine.state["accounts"].get(parent["candidate"])
-        if (
-            not account_state
-            or account_state.get("risk_stop_id")
-            or account_state.get("fault")
-            or account_state.get("lab_retiring")
-        ):
-            raise ValueError("Parent risk/processing stop prevents automatic descendants")
-        frozen = parent["contract"]["proposal"]["strategy"]
-        if frozen != proposal.reference.model_dump():
-            raise ValueError("Child reference must use its parent's frozen rules")
         if used + 2 + max(0, policy.independent_slots - independent) > policy.slots:
-            raise ValueError("Capacity is reserved for independent exploration")
+            raise AdmissionWait("Capacity is reserved for independent exploration")
     lab["sequence"] += 1
     trial_id = "lab-" + fingerprint({"policy": policy.request_id, "sequence": lab["sequence"]})[:24]
     t = {
@@ -153,6 +167,8 @@ def reserve(engine: "PaperEngine", proposal: LabProposal) -> dict[str, Any]:
         "branched": False,
     }
     lab["trials"][trial_id] = t
+    if proposal.kind == "independent":
+        lab["horizon_cursor"] = lab.get("horizon_cursor", 0) + 1
     if proposal.parent_trial:
         lab["trials"][proposal.parent_trial]["branched"] = True
     lab["historical_trials"] += 1

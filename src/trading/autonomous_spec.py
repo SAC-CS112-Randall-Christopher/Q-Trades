@@ -273,7 +273,12 @@ def rule_feature(bars: list[Bar], now: float, spec: RuleSpec, profile: str) -> d
             {"minute": b.open_ms // 60000, "mid": float(b.close), "at": b.close_ms / 1000}
             for b in bars[-spec.lookback - 1 :]
         ]
-        excursion = feature_value(quotes, "range_reversion", lookback=spec.lookback)
+        excursion = feature_value(
+            quotes,
+            "range_reversion",
+            lookback=spec.lookback,
+            interval_minutes=timing["feature_seconds"] // 60,
+        )
         cost = float(
             2 * (PROFILES[profile].fee("BTCUSD") + Decimal(PROFILES[profile].slippage)) * 10000
         )

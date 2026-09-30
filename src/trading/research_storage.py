@@ -183,6 +183,20 @@ class ResearchStorage:
                 last REAL NOT NULL, available REAL NOT NULL, gaps INTEGER NOT NULL,
                 PRIMARY KEY(bucket,seconds,symbol));
         """)
+        if "reclaimed_at" not in {
+            r[1] for r in self.db.execute("PRAGMA table_info(storage_segments)")
+        }:
+            with self.db:
+                self.db.execute("ALTER TABLE storage_segments ADD COLUMN reclaimed_at REAL")
+        with self.db:
+            columns = {r[1] for r in self.db.execute("PRAGMA table_info(storage_records)")}
+            for name, kind in (("available", "REAL"), ("bytes", "INTEGER")):
+                if name not in columns:
+                    self.db.execute(f"ALTER TABLE storage_records ADD COLUMN {name} {kind}")
+            self.db.execute(
+                "CREATE INDEX IF NOT EXISTS storage_record_time "
+                "ON storage_records(kind,at,segment,record)"
+            )
         self.db.execute("PRAGMA max_page_count=" + str(plan.research_bytes // 4096))
         with self.db:
             self.db.execute(
@@ -216,8 +230,27 @@ class ResearchStorage:
                         if digest(value) != sha:
                             raise ValueError("Interrupted capture checksum differs")
                         self.db.execute(
-                            "INSERT OR IGNORE INTO storage_records VALUES(?,?,?,?,?)",
-                            (sha, number, record, value["at"], value["kind"]),
+                            "INSERT OR IGNORE INTO storage_records"
+                            "(sha,segment,record,at,kind,available,bytes) VALUES(?,?,?,?,?,?,?)",
+                            (
+                                sha,
+                                number,
+                                record,
+                                value["at"],
+                                value["kind"],
+                                (
+                                    source.execute(
+                                        "SELECT available FROM record_availability WHERE id=?",
+                                        (record,),
+                                    ).fetchone()
+                                    or (None,)
+                                )[0]
+                                if source.execute(
+                                    "SELECT 1 FROM sqlite_master WHERE name='record_availability'"
+                                ).fetchone()
+                                else None,
+                                len(body.encode()),
+                            ),
                         )
                         count += 1
                         size += len(body.encode())
@@ -357,6 +390,10 @@ class ResearchStorage:
                         "CREATE TABLE IF NOT EXISTS records(id INTEGER PRIMARY KEY,sh"
                         "a TEXT UNIQUE NOT NULL,body TEXT NOT NULL)"
                     )
+                    segment.execute(
+                        "CREATE TABLE IF NOT EXISTS record_availability"
+                        "(id INTEGER PRIMARY KEY,available REAL NOT NULL)"
+                    )
                 record = segment.execute(
                     "INSERT OR IGNORE INTO records(sha,body) VALUES(?,?) RETURNING id",
                     (sha, body),
@@ -372,7 +409,20 @@ class ResearchStorage:
                         "UPDATE storage_segments SET rows=?,bytes=? WHERE id=?",
                         (count, stored_bytes, number),
                     )
+                    observed = segment.execute(
+                        "SELECT available FROM record_availability WHERE id=?", (record[0],)
+                    ).fetchone()
+                    available = observed[0] if observed else None
                 else:
+                    available = max(
+                        now,
+                        packet["at"],
+                        (packet.get("financial_commit") or {}).get("committed_at", packet["at"]),
+                    )
+                    segment.execute(
+                        "INSERT OR IGNORE INTO record_availability VALUES(?,?)",
+                        (record[0], available),
+                    )
                     self.db.execute(
                         "UPDATE storage_segments SET rows=rows+1,bytes=bytes+?,"
                         "first_at=coalesce(first_at,?),last_at=? WHERE id=?",
@@ -384,8 +434,17 @@ class ResearchStorage:
                 )
                 refs.append(f"capture-v2:{number}:{record[0]}:{digest(packet)}")
                 self.db.execute(
-                    "INSERT INTO storage_records VALUES(?,?,?,?,?)",
-                    (sha, number, record[0], packet["at"], packet["kind"]),
+                    "INSERT INTO storage_records(sha,segment,record,at,kind,available,bytes) "
+                    "VALUES(?,?,?,?,?,?,?)",
+                    (
+                        sha,
+                        number,
+                        record[0],
+                        packet["at"],
+                        packet["kind"],
+                        available,
+                        size,
+                    ),
                 )
                 until = packet.get("protected_until", 0)
                 if isinstance(until, (int, float)) and math.isfinite(until) and until > now:
@@ -530,14 +589,30 @@ class ResearchStorage:
                 ) as db:
                     if db.execute("PRAGMA quick_check(1)").fetchone()[0] != "ok":
                         raise ValueError("Sealed capture segment is corrupt")
+                    has_availability = db.execute(
+                        "SELECT 1 FROM sqlite_master WHERE name='record_availability'"
+                    ).fetchone()
+                    records = db.execute(
+                        "SELECT r.id,r.sha,r.body,a.available FROM records r "
+                        "LEFT JOIN record_availability a ON a.id=r.id ORDER BY r.id"
+                        if has_availability
+                        else "SELECT id,sha,body,NULL FROM records ORDER BY id"
+                    )
                     # Interrupted copies are replaced only from the intact source.
                     with gzip.open(partial, "wt", encoding="utf-8") as out:
-                        for item in db.execute("SELECT id,sha,body FROM records ORDER BY id"):
+                        for item in records:
                             payload = json.loads(item[2])
                             if digest(payload) != item[1]:
                                 raise ValueError("Capture checksum differs before transfer")
                             out.write(
-                                canonical({"id": item[0], "sha": item[1], "payload": payload})
+                                canonical(
+                                    {
+                                        "id": item[0],
+                                        "sha": item[1],
+                                        "payload": payload,
+                                        "available": item[3],
+                                    }
+                                )
                                 + "\n"
                             )
                 with partial.open("r+b") as staged:
@@ -580,10 +655,14 @@ class ResearchStorage:
                 ),
             )
             self.db.commit()  # Durable verified destination BEFORE eligible unlink.
+            # The index lock serializes protection, unlink and its durable acknowledgment.
+            # After a crash between unlink and commit, retry verifies the retained copy
+            # and acknowledges the absent source without inferring reclaimed byte counts.
+            self.db.execute("BEGIN IMMEDIATE")
             for row in self.db.execute(
                 (
                     "SELECT * FROM storage_segments WHERE state='retained' AND ex"
-                    "pires<=? AND pin_until<=? ORDER BY id LIMIT 2"
+                    "pires<=? AND pin_until<=? AND reclaimed_at IS NULL ORDER BY id LIMIT 2"
                 ),
                 (now, now),
             ).fetchall():
@@ -595,15 +674,25 @@ class ResearchStorage:
                     size = path.stat().st_size
                     path.unlink()
                     reclaimed += size
+                self.db.execute(
+                    "UPDATE storage_segments SET reclaimed_at=? WHERE id=?", (now, row["id"])
+                )
+            pending_cleanup = self.db.execute(
+                "SELECT 1 FROM storage_segments WHERE state='retained' AND expires<=? "
+                "AND pin_until<=? AND reclaimed_at IS NULL LIMIT 1",
+                (now, now),
+            ).fetchone()
             with self.db:
                 self.db.execute(
-                    "UPDATE storage_state SET last_success=?,reclaimed_bytes=?,reason=? WHERE id=1",
+                    "UPDATE storage_state SET last_success=?,reclaimed_bytes=?,reason=?,"
+                    "next_due=? WHERE id=1",
                     (
                         now,
                         reclaimed,
                         "Verified transfer and eligible temporary reclamation"
                         if reclaimed
                         else "Verified maintenance; no eligible temporary space reclaimed",
+                        now + (1 if remaining or pending_cleanup else 7200),
                     ),
                 )
             return {

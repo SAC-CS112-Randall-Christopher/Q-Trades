@@ -22,6 +22,7 @@ from trading import autonomous_finance as finance
 from trading.api import create_app
 from trading.autonomous_lab import AutonomousLab
 from trading.config import Settings
+from trading.evidence_runtime import plain
 from trading.paper_runtime import PaperRuntime
 from trading.paper_store import PaperStore
 from trading.paper_strategy import VARIANTS, Bar, features
@@ -324,13 +325,37 @@ def serve(port):
                                 for s in runtime.books
                             }
                             runtime.numerical_study(at, runtime.study)
+                            capture = {}
 
-                            def apply(engine):
+                            def apply(engine, at=at, capture=capture):
                                 engine.universe_experiment(["BTCUSD", "ETHUSD"])
                                 engine.state["evidence_kind"] = "synthetic_qa_continuous"
+                                capture["packet"] = runtime.evidence.prepare(
+                                    at,
+                                    runtime.books,
+                                    runtime.study,
+                                    runtime.history,
+                                    dict.fromkeys(runtime.books, at),
+                                    0,
+                                    {},
+                                    plain(engine.state),
+                                    [],
+                                    {},
+                                    {"coverage": "Synthetic browser verification only"},
+                                )
                                 engine.tick(runtime.books, runtime.study)
+                                capture["events"] = engine.events
 
                             runtime.state = store.transact(at, apply)
+                            runtime.evidence.complete(
+                                capture["packet"],
+                                capture["events"],
+                                runtime.state,
+                                [],
+                                {},
+                                time.perf_counter(),
+                                store.last_commit_receipt,
+                            )
                             for s, bars in runtime.history.items():
                                 if persisted.get(s) == bars[-1].open_ms:
                                     continue
@@ -356,11 +381,12 @@ def serve(port):
 
                     feed_task = asyncio.create_task(feed())
                     worker = asyncio.create_task(lab.run())
+                    replay_task = asyncio.create_task(app.state.replay.run())
                     storage_task = asyncio.create_task(runtime.evidence.run(lambda: True))
                     try:
                         yield
                     finally:
-                        for task in (feed_task, worker, storage_task):
+                        for task in (feed_task, worker, replay_task, storage_task):
                             task.cancel()
                             with suppress(asyncio.CancelledError):
                                 await task

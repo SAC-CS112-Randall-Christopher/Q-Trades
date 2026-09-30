@@ -546,7 +546,8 @@ class EvidenceRecorder:
                     }
                     self.dropped += len(self.pending)
                     self.pending.clear()
-                await asyncio.sleep(0.25)
+                # Yield to finance but continue queued capture without an idle delay.
+                await asyncio.sleep(0 if self.pending or self.compact_pending else 0.25)
         finally:
             if self._storage is not None:
                 self._storage.close()

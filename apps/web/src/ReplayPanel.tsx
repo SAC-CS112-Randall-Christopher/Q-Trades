@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 type Row = {request:string; at:number; status:string; error?:string};
 type Receipt = {
   request:string; status:string; error?:string;
-  plan:{request:{record_id:number; records:number}};
+  plan:{request:{record_id:number|string; records:number}};
   resources?:{wall_seconds:number; peak_rss_bytes:number};
   result?:{
     status:string; data_mode?:string; residual?:string;
-    baseline:{record_id:number; state_matches:boolean; events_match:boolean; balanced:boolean}[];
+    baseline:{record_id:number|string; state_matches:boolean; events_match:boolean; balanced:boolean}[];
     coverage?:{requested:number; supported:number; start:number; end:number; boundary?:{reason:string}};
     remaining_opportunity?:{status:string; reason:string; first_supported_book_at?:number};
     scenarios:{scenario:string; evidence_type:string; balanced:boolean; condition_stressed_ticks:number;
@@ -30,7 +30,7 @@ const names:Record<string,string>={recorded:"Recorded assumptions", "delay-3s-v1
   "condition-cost-v1":"Thin / wide-book cost stress"};
 const describe=(value:string)=>value.replaceAll("_"," ");
 
-export function ReplayPanel({recordId}:{recordId?:number}) {
+export function ReplayPanel({recordId}:{recordId?:number|string}) {
   const [rows,setRows]=useState<Row[]>([]);
   const [receipt,setReceipt]=useState<Receipt|null>(null);
   const [records,setRecords]=useState(16);

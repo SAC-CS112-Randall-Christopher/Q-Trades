@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from trading.compact_memory import compact_snapshot
-from trading.experiment_registry import ExperimentPlan, ExperimentRegistry
+from trading.experiment_registry import ExperimentPlan, ExperimentRegistry, fingerprint
 from trading.experiment_worker import code_fingerprint
 from trading.memory_dataset import corpus_snapshot
 from trading.numerical_resources import child_rss, constrain_child
@@ -63,6 +63,7 @@ class ExperimentLab:
                     if memory_path.exists():
                         memory = compact_snapshot(memory_path, plan.as_of)
                         snapshot["rows"] = memory["rows"]
+                        snapshot["manifest"]["rows"] = len(snapshot["rows"])
                         snapshot["manifest"]["memory_archive"] = memory["manifest"]
                     else:
                         snapshot["manifest"]["memory_status"] = (
@@ -84,6 +85,19 @@ class ExperimentLab:
                         plan.as_of,
                         plan=plan,
                     )
+                    if memory_path.exists():
+                        memory = compact_snapshot(memory_path, plan.as_of)
+                        known = {fingerprint(row["descriptor"]) for row in snapshot["rows"]}
+                        snapshot["rows"].extend(
+                            row
+                            for row in memory["rows"]
+                            if plan.test_start <= row["descriptor"]["cutoff"] <= plan.test_end
+                            and fingerprint(row["descriptor"]) not in known
+                        )
+                        if len(snapshot["rows"]) > 512:
+                            raise ValueError("Complete prefix interval exceeds research budget")
+                        snapshot["manifest"]["rows"] = len(snapshot["rows"])
+                        snapshot["manifest"]["memory_archive"] = memory["manifest"]
             elif not self.dsn:
                 raise ValueError("Public quote journal is not enabled")
             else:

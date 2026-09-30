@@ -15,7 +15,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from trading.execution_replay import (
     CONTRACT,
@@ -25,14 +25,25 @@ from trading.execution_replay import (
     source_hashes,
 )
 from trading.numerical_resources import child_rss, constrain_child
+from trading.research_acquisition import replay_records
 from trading.research_evidence import EvidenceArchive, canonical, digest
+from trading.research_storage import ResearchStorage
 
 
 class ReplayPlan(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,48}$")
-    record_id: int = Field(ge=1, le=2**63 - 1)
+    record_id: int | str
     records: int = Field(default=16, ge=1, le=MAX_RECORDS)
+
+    @model_validator(mode="after")
+    def exact_reference(self) -> "ReplayPlan":
+        if isinstance(self.record_id, int):
+            if not 1 <= self.record_id <= 2**63 - 1:
+                raise ValueError("Invalid legacy decision identity")
+        else:
+            ResearchStorage.parse_reference(self.record_id)
+        return self
 
 
 class ReplayRegistry:
@@ -214,29 +225,20 @@ class ReplayLab:
         if receipt["retry"]:
             return receipt
         try:
-            with closing(
-                sqlite3.connect(self.evidence.resolve().as_uri() + "?mode=ro", uri=True)
-            ) as connection:
-                connection.row_factory = sqlite3.Row
-                rows = connection.execute(
-                    "SELECT id,at,kind,payload,sha256 FROM evidence_records "
-                    "WHERE id>=? AND kind='decision' ORDER BY id LIMIT ?",
-                    (plan.record_id, plan.records),
-                ).fetchall()
-            if not rows or rows[0]["id"] != plan.record_id:
-                raise ValueError("Selected decision is missing; no later record was substituted")
-            records = [
-                {"id": row["id"], "sha256": row["sha256"], "payload": json.loads(row["payload"])}
-                for row in rows
-            ]
+            records = replay_records(self.evidence, plan.record_id, plan.records, time.time())
             for record in records:
                 if digest(record["payload"]) != record["sha256"]:
                     raise ValueError("Selected input is corrupt")
-            with closing(EvidenceArchive(self.evidence)) as archive:
-                for record in records:
-                    archive.pin(
-                        f"replay:{plan.request_id}:{record['id']}", record["id"], record["sha256"]
-                    )
+            if any(record["archive"] == "full" for record in records):
+                with closing(EvidenceArchive(self.evidence)) as archive:
+                    for record in records:
+                        if record["archive"] != "full":
+                            continue
+                        archive.pin(
+                            f"replay:{plan.request_id}:{record['id']}",
+                            record["id"],
+                            record["sha256"],
+                        )
             self.registry.inputs(plan.request_id, records)
         except (sqlite3.Error, OSError, ValueError, KeyError, json.JSONDecodeError):
             self.registry.finish(

@@ -5,9 +5,24 @@ explicit synthetic inputs. The operating installed application was inspected
 read-only in [the separate installed receipt](INSTALLED_READ_ONLY.md); no migration,
 activation, cleanup, restart or deployment was performed.
 
-## Accepted workflow and safety checks
+## Post-audit source verification
 
-Final local verification: **509 passed, no skips, one existing FastAPI/httpx
+The six independent findings at `bed73a1` are corrected in the working branch.
+See [corrections and predeclared gates](AUDIT_CORRECTIONS.md). The current local
+full suite passes **537 tests, zero skips, one existing test-client warning,
+147.97 seconds**, with isolated PostgreSQL. Its affected component run passes
+66 tests in 28.81 seconds; Ruff, strict mypy (72 source files) and dashboard build
+pass. Twenty-eight new audit regressions cover the six findings and boundary cases.
+
+The [first post-audit USB run](audit-native-first-failure.json) is a failed receipt:
+four cases passed; ten/idle and twenty/busy each omitted one full and one compact
+input at queue eight. Financial latency limits passed and every ledger balanced.
+Backlog scheduling now continues immediately with unchanged queue/batch/durability
+limits. Corrected native, browser and hosted measurements remain separate gates.
+
+## Original bed73a1 delivery
+
+Original local verification: **509 passed, no skips, one existing FastAPI/httpx
 deprecation warning, 163.24 seconds** with the disposable PostgreSQL fixture.
 Ruff passes; strict mypy passes all 71 source files; the dashboard type-check/build
 passes. The chart bundle is lazy loaded. Hosted exact-head checks are reported

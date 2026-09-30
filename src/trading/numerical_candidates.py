@@ -69,14 +69,20 @@ def observation_rows(rows: list[dict[str, Any]], as_of: float) -> list[dict[str,
 
 
 def feature_value(
-    history: list[dict[str, Any]], family: str, *, lookback: int | None = None
+    history: list[dict[str, Any]],
+    family: str,
+    *,
+    lookback: int | None = None,
+    interval_minutes: int = 1,
 ) -> float | None:
+    if type(interval_minutes) is not int or interval_minutes not in {1, 5, 15}:
+        raise ValueError("Feature sampling must be a declared one/five/fifteen-minute interval")
     lookback = FAMILIES[family]["lookback"] if lookback is None else lookback
     if len(history) < lookback + 1:
         return None
     tail = history[-lookback - 1 :]
     if any(
-        b["minute"] - a["minute"] != 1 or a["at"] > tail[-1]["at"]
+        b["minute"] - a["minute"] != interval_minutes or a["at"] > tail[-1]["at"]
         for a, b in zip(tail, tail[1:], strict=False)
     ):
         return None

@@ -4,6 +4,12 @@ Implementation contract declared before verification, September 30, 2026.
 Authoritative direction: issue #1, comment 5915529073. Baseline main:
 `a3ed677e580d801c1561b65130421c1cbbc90b29`.
 
+PR24's independent review at `bed73a1` found six uncovered defects. Their source
+corrections and new disposable regression checks are described in
+[audit corrections](reviews/continuous-paper-lab/AUDIT_CORRECTIONS.md).
+The ordered eight-request checklist below remains the complete accepted scope.
+The original delivery receipts are retained separately from corrected-head proof.
+
 The first vertical loop uses reviewed closed-bar breakout and range-conditioned
 reversion components. A frozen lookback change is the first supported variation.
 No executable expression, provider, model download or paid inference is required.
@@ -154,13 +160,14 @@ The accepted requests remain in the owner's order:
    immutable continuation and independent bounded processing after acquisition
    fails. Missing inputs yield unavailable receipts; absent writable space remains
    pending with a retry. Originals and exact references remain unchanged.
-7. **Disposable verification: local gates complete.** Full pytest with local
+7. **Disposable verification: corrected source checks recorded separately.** Full pytest with local
    PostgreSQL, Windows checks, Ruff, strict mypy, frontend build, actual API/browser,
    finite controller restart soak and 1/10/20-account native USB load are recorded
-   in [verification evidence](reviews/continuous-paper-lab/README.md): **509 passed,
-   no skips**, Ruff passed, strict mypy passed (71 source files), dashboard built,
-   browser workflow/reopen passed, final finite soak passed and all six final native
-   load cases passed. Hosted exact-head checks remain a separate delivery gate. Failures,
+   in [verification evidence](reviews/continuous-paper-lab/README.md). The original
+   source delivery passed 509 tests and its browser, soak and six native cases.
+   The corrected source passes **537 tests, no skips**, Ruff and strict mypy (72
+   source files); its current browser/native/hosted receipts are separate gates.
+   Hosted exact-head checks remain a separate delivery gate. Failures,
    interrupted attempts and omissions are retained. None of these synthetic checks
    establishes actual-market edge, real multi-day qualification, a 100-GB storage
    benchmark or 24-hour reliability.
@@ -182,9 +189,22 @@ retirement; unprotect an experimental account explicitly before safe retirement.
 Exits and authoritative closure continue, and archived account/trial evidence is
 available through bounded history and journal pages.
 
+The proposal inbox distinguishes permanent rejection from a temporary wait and
+retains each reason. Later eligible queued work proceeds while blocked work waits
+for its recorded retry. A disclosed past outcome can train the proposer but cannot
+serve as an untouched validation interval afterward. Independent admissions rotate
+declared holding horizons through durable allocation, including after restart.
+
 An external storage plan is frozen at worker startup; saving one does not restart
 the worker. Its target identity must match the mounted local NTFS volume. A storage
 outage pauses new trials and capture with visible omissions while position management
 continues. The retained tier preserves exact history until capacity; export/capacity
 decisions are explicit. Charts use local observations and cannot grant trading or
 promotion authority.
+
+Reopen the exact latest decision under Research storage to request an isolated
+execution replay. Interval evaluators read verified v1/v2 dependencies with actual
+availability metadata and frozen source hashes. Legacy v2 captures whose first-seen
+availability was never recorded remain unavailable for causal interval evaluation;
+their original packets and exact references remain inspectable. Missing or oversized
+intervals produce unavailable/inconclusive receipts, never a substituted first-N set.
