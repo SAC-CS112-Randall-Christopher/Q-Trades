@@ -25,6 +25,7 @@ class ExperimentLab:
         self.registry = ExperimentRegistry(path)
         self.dsn = dsn
         self.can_research = can_research
+        self.market_snapshot: Callable[[], dict[str, Any]] | None = None
         self.running = False
         self.blocked_reason: str | None = None
         self.child: subprocess.Popen[bytes] | None = None
@@ -42,6 +43,9 @@ class ExperimentLab:
                 "context_regime",
                 "order_flow",
                 "growing_memory",
+                "component_exit",
+                "component_size",
+                "observation_priority",
             }:
                 snapshot = corpus_snapshot(
                     self.registry.path.parent / "research-evidence.sqlite", plan.as_of
@@ -50,6 +54,8 @@ class ExperimentLab:
                 raise ValueError("Public quote journal is not enabled")
             else:
                 snapshot = quote_snapshot(self.dsn, plan.as_of)
+            if plan.experiment_mode == "observation_priority" and self.market_snapshot:
+                snapshot["point_in_time_universe"] = self.market_snapshot()
             self.registry.inputs(plan.request_id, snapshot)
         except Exception:
             self.registry.fail_inputs(

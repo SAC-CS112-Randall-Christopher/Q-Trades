@@ -201,6 +201,28 @@ def create_app(
                 except (sqlite3.Error, OSError):
                     app.state.lab_error = "Research storage unavailable; paper management continues"
                 app.state.lab = lab
+                if lab:
+
+                    def research_universe() -> dict[str, Any]:
+                        paper = app.state.paper
+                        universe = getattr(paper, "universe", None)
+                        if universe is None:
+                            return {"status": "unavailable"}
+                        value: dict[str, Any] = json.loads(
+                            json.dumps(universe.snapshot(), default=str)
+                        )
+                        value["captured_at"] = time.time()
+                        value["held_pending"] = sorted(
+                            {
+                                symbol
+                                for a in paper.state["accounts"].values()
+                                for symbol in set(a["positions"]) | set(a["pending"])
+                            }
+                        )
+                        value["source"] = "Current observed universe; no historical substitution"
+                        return value
+
+                    lab.market_snapshot = research_universe
                 lab_task = asyncio.create_task(lab.run()) if background and lab else None
                 app.state.replay = None
                 try:

@@ -43,6 +43,9 @@ class ExperimentPlan(BaseModel):
         "context_regime",
         "order_flow",
         "growing_memory",
+        "component_exit",
+        "component_size",
+        "observation_priority",
     ] = "quote_ridge"
     horizon_minutes: Literal[5, 15, 45, 60] = 5
     as_of: float
@@ -54,7 +57,15 @@ class ExperimentPlan(BaseModel):
     def boundaries(self) -> Self:
         if (
             self.experiment_mode
-            in {"memory_entry", "context_regime", "order_flow", "growing_memory"}
+            in {
+                "memory_entry",
+                "context_regime",
+                "order_flow",
+                "growing_memory",
+                "component_exit",
+                "component_size",
+                "observation_priority",
+            }
         ) != (self.horizon_minutes == 45):
             raise ValueError("Memory uses the original 45-minute horizon; other modes keep theirs")
         if self.experiment_mode == "distinct_families" and self.horizon_minutes != 60:
@@ -297,7 +308,16 @@ class ExperimentRegistry:
         ).fetchone()
         limit = (
             SHADOW_RESULT_BYTES
-            if row and row[0] in {"context_regime", "order_flow", "growing_memory"}
+            if row
+            and row[0]
+            in {
+                "context_regime",
+                "order_flow",
+                "growing_memory",
+                "component_exit",
+                "component_size",
+                "observation_priority",
+            }
             else MAX_RESULT_BYTES
         )
         if body and len(body.encode()) > limit:

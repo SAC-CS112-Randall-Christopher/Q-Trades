@@ -41,7 +41,9 @@ export function ResearchSlicePanel({requestId,readonly=false}:{requestId?:string
     <p>Test one contribution at a time. Local conditions describe the observed beginning; order-flow timing requires valid books and observed trade direction. Learning persists the forecast before separately mature outcomes can score and update research memory.</p>
     {!readonly&&<><label>Contribution<select disabled={!!pending} value={mode} onChange={e=>setMode(e.target.value)}>
       <option value="context_regime">Local market conditions</option><option value="order_flow">Order-flow entry timing</option>
-      <option value="growing_memory">Frozen, batch and growing memory</option></select></label>
+      <option value="growing_memory">Frozen, batch and growing memory</option>
+      <option value="component_exit">Independent exit comparison</option><option value="component_size">Conservative size comparison</option>
+      <option value="observation_priority">Market observation priority</option></select></label>
       <div className="lab-form-row"><label>Untouched test start<input disabled={!!pending} type="datetime-local" value={start} onInput={e=>setStart(e.currentTarget.value)} onChange={e=>setStart(e.target.value)}/></label>
       <label>Untouched test end<input disabled={!!pending} type="datetime-local" value={end} onInput={e=>setEnd(e.currentTarget.value)} onChange={e=>setEnd(e.target.value)}/></label></div>
       <button className="button" disabled={busy||!pending&&(!start||!end)} onClick={()=>void launch()}>{pending?"Retry frozen contribution":"Freeze independent comparison"}</button>

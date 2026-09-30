@@ -19,6 +19,7 @@ from trading.memory_dataset import mature_snapshot
 from trading.memory_quality import evaluate_memory
 from trading.numerical_candidates import evaluate_families
 from trading.numerical_resources import constrain_child, own_limits
+from trading.portfolio_components import evaluate_components
 from trading.research_experiment import run_experiment
 
 
@@ -36,6 +37,7 @@ def code_fingerprint() -> str:
                 "memory_dataset.py",
                 "context_flow.py",
                 "incremental_memory.py",
+                "portfolio_components.py",
             )
         )
     ).hexdigest()
@@ -54,7 +56,15 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
         or row.get("descriptor", {}).get("data_mode") == "synthetic"
         for row in rows
     )
-    local_modes = {"memory_entry", "context_regime", "order_flow", "growing_memory"}
+    local_modes = {
+        "memory_entry",
+        "context_regime",
+        "order_flow",
+        "growing_memory",
+        "component_exit",
+        "component_size",
+        "observation_priority",
+    }
     if plan.experiment_mode not in local_modes and any(
         not 0 <= r["at"] <= plan.as_of for r in rows
     ):
@@ -72,6 +82,8 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
                 result = evaluate_incremental(mature, effective_plan, LearningJournal(registry))
             finally:
                 registry.close()
+        elif plan.experiment_mode in {"component_exit", "component_size", "observation_priority"}:
+            result = evaluate_components(mature, snapshot, effective_plan)
         else:
             result = evaluate_context(mature, snapshot["records"], effective_plan)
     elif plan.experiment_mode == "distinct_families":
