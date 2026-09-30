@@ -1,0 +1,19 @@
+{
+  "scope": "Observed ordinary browser on an owned disposable six-account synthetic QA app; no original account data",
+  "checked_at": "2026-09-30",
+  "observations": [
+    {"action": "Open AI Lab and Historical matches", "observed": "Replay launch stays disabled until a retained decision is selected", "passed": true},
+    {"action": "Select decision 17 and launch sixteen decisions", "observed": "Queued request completes; all sixteen original state/event/journal baselines match; six accounts appear for each of three assumptions", "passed": true},
+    {"action": "Reload the page and inspect the saved request", "observed": "The same immutable receipt reopens without launching another request; starting exposure and embedded closing costs are explained", "passed": true},
+    {"action": "Select declared baseline-mismatch injection 229", "observed": "Reconciliation needs inspection, changed scenarios are withheld, missing metrics are unavailable, and unexplained residual is retained", "passed": true},
+    {"action": "Run one decision at the separate evidence archive capacity", "observed": "Decision 306 reconciles; archive reports 306 records, 298 episodes and 7 outcomes at 63.61 MiB; six QA accounts remain visible; result explicitly says synthetic test data", "passed": true},
+    {"action": "Repeat the mismatch after the final display changes", "observed": "The retained result shows synthetic data, needs inspection, zero matched decisions, no alternative outcome and unavailable attribution", "passed": true},
+    {"action": "Stop only the owned QA server and refresh replay history", "observed": "History is unavailable with earlier receipts preserved; the selected mismatch receipt stays readable", "passed": true}
+  ],
+  "limits": [
+    "Synthetic software checks do not establish financial advantage, real venue execution, complete continuous outcome horizons, or prospective acceptance",
+    "Pagination conservation at 128 attempts is a focused automated test, not a 128-request browser observation",
+    "The QA source financial account/journal was not changed by the intentional evidence-only mismatch injection",
+    "The original installed paper application and its six accounts were not used by this QA app"
+  ]
+}

@@ -1,4 +1,17 @@
-# CP10 durable evidence and CP11 execution replay
+# CP11 replay and the next CP12 memory challenger
+
+Read docs/CP11_EXECUTION_REPLAY.md and its review receipt. The original engine is
+replayed only in a credential-free, limited child. Baseline state/events must
+reconcile before changed scenarios; account dispatch order is recorded explicitly.
+Never infer missing dispatch from later outcomes or bridge an unrecorded financial
+transition. Retain source/input versions and failed/interrupted/insufficient runs.
+Proceed to CP12's small deterministic outcome estimator and one entry-filter
+challenger, with supported executable labels, independent support/unfamiliar
+diagnostics, chronological protected comparisons and separate marginal costs.
+Decline missing execution labels; minute-price movements are not net trading
+returns. Preserve matched controls, CP7 limits and the 28-day prospective policy.
+
+# Historical: CP10 durable evidence and CP11 execution replay
 
 Chris confirmed the installed application reloaded with six active accounts. It
 runs main cb6994561589433a68eae731e48a2b5a5a86ab81; CP0-CP9, the efficiency audit,

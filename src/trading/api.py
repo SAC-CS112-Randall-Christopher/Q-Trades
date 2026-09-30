@@ -30,6 +30,7 @@ from trading.ownership import CollectorLock
 from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
+from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_campaigns import ResearchCampaignSpec
 from trading.research_evidence import evidence_page, evidence_record
 from trading.runtime import Monitor
@@ -130,6 +131,8 @@ def create_app(
             tool_journal = None
             lab = None
             lab_task = None
+            replay_lab = None
+            replay_task = None
             try:
                 app.state.tool_busy = False
                 app.state.last_tool_at = 0.0
@@ -198,8 +201,31 @@ def create_app(
                     app.state.lab_error = "Research storage unavailable; paper management continues"
                 app.state.lab = lab
                 lab_task = asyncio.create_task(lab.run()) if background and lab else None
+                app.state.replay = None
+                try:
+                    replay_lab = ReplayLab(
+                        database.parent / "execution-replay.sqlite",
+                        database.parent / "research-evidence.sqlite",
+                        lambda: research_ready() and not (lab and lab.child),
+                    )
+                    app.state.replay = replay_lab
+                    if lab:
+                        lab.can_research = lambda: research_ready() and not (
+                            replay_lab and replay_lab.busy
+                        )
+                    replay_task = asyncio.create_task(replay_lab.run()) if background else None
+                except (sqlite3.Error, OSError):
+                    app.state.replay_error = (
+                        "Replay storage unavailable; paper management continues"
+                    )
                 yield
             finally:
+                if replay_task:
+                    replay_task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await replay_task
+                if replay_lab:
+                    replay_lab.registry.close()
                 if lab_task:
                     lab_task.cancel()
                     with suppress(asyncio.CancelledError):
@@ -331,6 +357,35 @@ def create_app(
         lab = lab_operator(request)
         try:
             return lab.enqueue(plan)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    def replay_operator(request: Request, *, writing: bool = False) -> ReplayLab:
+        if writing:
+            lab_operator(request)
+        replay: ReplayLab | None = request.app.state.replay
+        if not replay:
+            raise HTTPException(503, "Execution replay unavailable; paper management continues")
+        return replay
+
+    @app.get("/api/replays")
+    def replay_history(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:
+        return replay_operator(request).snapshot(before)
+
+    @app.get("/api/replays/{request_id}")
+    def replay_receipt(request: Request, request_id: str) -> dict[str, Any]:
+        try:
+            receipt = replay_operator(request).registry.get(request_id)
+            if receipt is None:
+                raise HTTPException(404, "Execution replay receipt missing")
+            return receipt
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/replays")
+    def replay_launch(request: Request, plan: ReplayPlan) -> dict[str, Any]:
+        try:
+            return replay_operator(request, writing=True).enqueue(plan)
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
 

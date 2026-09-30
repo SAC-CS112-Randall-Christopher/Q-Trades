@@ -115,6 +115,7 @@ class EvidenceRecorder:
                 "research_evidence.py",
                 "pattern_memory.py",
                 "execution_profiles.py",
+                "numerical_candidates.py",
             )
         }
         self.pending: deque[dict[str, Any]] = deque()
@@ -254,6 +255,7 @@ class EvidenceRecorder:
             timing.append(item)
         packet.update(
             events=plain(events),
+            dispatch_accounts=list(packet["state_before"].get("accounts", {})),
             after_tick_sha256=digest(plain(after)),
             event_timing=timing,
             stages_ms=stages,

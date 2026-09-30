@@ -1,4 +1,25 @@
-# Next source checkpoint: CP11 on the CP10 durable evidence slice
+# Next: CP12 after-cost memory estimator and entry-filter challenger
+
+Read CP11_EXECUTION_REPLAY.md and its retained review receipts. CP11 calls the
+existing engine in an isolated finite child, with exact baseline reconciliation,
+original account dispatch order, explicit chronology/state-chain boundaries and
+modeled delay/condition cost stresses. Current source full PostgreSQL proof is
+432 passed, no skips (89.92s). Exact-head CI/install/prospective outcomes are separate.
+
+CP12 must use supported, separately matured executable labels and preserve unknown
+coverage. Start with transparent numerical history estimation and a single entry
+filter above the original engine, small baselines, chronological calibration and
+protected evaluation, independent groups and unfamiliar-condition diagnostics.
+Similarity is not profit probability; gross/net costs cannot be subtracted twice.
+Compare local A/B/C components with matched controls/costs; optional provider D is
+unverified and cannot be required. Freeze artifacts and retain failed/insufficient
+attempts, protected boundaries, twenty retained accounts, four forward admissions,
+whole-account economics and the unchanged 28-day policy. No automatic promotion.
+
+The original installed six-account app is still on main cb699456. Source drafts are
+not installed; keep its full funding/history and model/GIS runtimes intact.
+
+# Historical: CP11 on the CP10 durable evidence slice
 
 Continue the hardened CP10-CP16 roadmap in issue #1, one complete vertical slice
 at a time. CP10 provides immutable BTC/USD breakout prefixes, local lookup, delayed
