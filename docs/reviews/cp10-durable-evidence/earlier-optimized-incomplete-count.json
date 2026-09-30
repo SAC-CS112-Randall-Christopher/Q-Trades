@@ -1,0 +1,390 @@
+{
+  "contract": {
+    "fixture": "Synthetic sequenced visible books and closed-bar inputs; no market latency claim",
+    "accounts": [
+      1,
+      10,
+      20
+    ],
+    "ticks_per_case": 120,
+    "ticks_per_second": 4,
+    "symbols": [
+      "BTCUSD",
+      "ETHUSD"
+    ],
+    "full_bundle_each_tick": true,
+    "commit_p95_limit_ms": 250,
+    "loop_p95_limit_ms": 100,
+    "rss_limit_mib": 512,
+    "rss_growth_limit_mib": 64,
+    "archive_budget_bytes": 67108864,
+    "queue_limit": 8,
+    "snapshot_copy_repetitions": 200,
+    "duration_clock": "perf_counter high-resolution monotonic; first coarse-clock red retained",
+    "purpose": "Evidence/financial software behavior; no strategy advantage or live authority"
+  },
+  "declared_at": 1790742888.8499904,
+  "source_head": "cb6994561589433a68eae731e48a2b5a5a86ab81",
+  "source_files": {
+    "scripts\\verify_evidence.py": "2ab8da6797a7d1635f0d6f5f4692d09687dd3ed8fc7b012fa9a93d9c5b73d2ef",
+    "src\\trading\\evidence_runtime.py": "23d83f4f46d1792e54e37772f642a618166f94a8e5db74d6184944d95b925f08",
+    "src\\trading\\research_evidence.py": "dc8300083d3c6508703054a7307b63e1ec9cca939a0fb0d11b03cc38f91a238e",
+    "src\\trading\\paper_engine.py": "750e7ef0775d540d1d7872f12fa5d74c1c217282d668e15e69580b8a8ace2d11"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.10",
+  "cases": [
+    {
+      "accounts": 1,
+      "elapsed_seconds": 29.804365299991332,
+      "completed_ticks": 120,
+      "scope": "Synthetic scheduled ticks; CPU includes matched engine validation",
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.09490002412348986,
+          "p95": 0.19120005890727043,
+          "p99": 0.2079999540001154,
+          "max": 0.2101999707520008
+        },
+        "feature_batch_compute": {
+          "p50": 5.649799946695566,
+          "p95": 12.123799999244511,
+          "p99": 12.376699945889413,
+          "max": 12.667600065469742
+        },
+        "prepare": {
+          "p50": 8.896399987861514,
+          "p95": 18.038999987766147,
+          "p99": 18.801199970766902,
+          "max": 20.429000025615096
+        },
+        "transaction": {
+          "p50": 4.771100007928908,
+          "p95": 8.000300033017993,
+          "p99": 10.585500043816864,
+          "max": 33.95359998103231
+        },
+        "evidence_write": {
+          "p50": 23.928099893964827,
+          "p95": 42.6743000280112,
+          "p99": 46.50380008388311,
+          "max": 56.846800027415156
+        },
+        "total_before_validation": {
+          "p50": 39.4861000822857,
+          "p95": 63.59210005030036,
+          "p99": 65.33780007157475,
+          "max": 67.20230006612837
+        },
+        "queue_wait": {
+          "p50": 1.246000058017671,
+          "p95": 2.378700068220496,
+          "p99": 2.594800083898008,
+          "max": 15.744799980893731
+        }
+      },
+      "dispatcher_lag_ms": {
+        "p50": 0.3741000546142459,
+        "p95": 0.6222000811249018,
+        "p99": 0.6998000899329782,
+        "max": 0.807400094345212
+      },
+      "cpu_percent_one_core": 13.735404055060318,
+      "rss_before_mib": 63.70703125,
+      "rss_after_mib": 70.53515625,
+      "archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 19938619,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 21049072,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        }
+      },
+      "postgres_before": {
+        "database_bytes": 15330451,
+        "candles": 0,
+        "events": 19,
+        "journal_lines": 36,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 106496
+      },
+      "postgres_after": {
+        "database_bytes": 15376911,
+        "candles": 0,
+        "events": 37,
+        "journal_lines": 62,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 147456
+      },
+      "matched_financial_state_and_events": true,
+      "journal_balanced": true,
+      "passed": true
+    },
+    {
+      "accounts": 10,
+      "elapsed_seconds": 29.803432499989867,
+      "completed_ticks": 120,
+      "scope": "Synthetic scheduled ticks; CPU includes matched engine validation",
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.09580003097653389,
+          "p95": 0.1583000412210822,
+          "p99": 0.18209998961538076,
+          "max": 0.22950000129640102
+        },
+        "feature_batch_compute": {
+          "p50": 5.019600037485361,
+          "p95": 11.274199932813644,
+          "p99": 12.5459999544546,
+          "max": 12.744399951770902
+        },
+        "prepare": {
+          "p50": 8.287200005725026,
+          "p95": 18.453099997714162,
+          "p99": 18.74700002372265,
+          "max": 19.182100077159703
+        },
+        "transaction": {
+          "p50": 13.931200024671853,
+          "p95": 26.813200092874467,
+          "p99": 35.69879999849945,
+          "max": 69.09949996042997
+        },
+        "evidence_write": {
+          "p50": 27.30139996856451,
+          "p95": 49.05160004273057,
+          "p99": 50.73750007431954,
+          "max": 56.76720000337809
+        },
+        "total_before_validation": {
+          "p50": 54.50630001723766,
+          "p95": 80.80390002578497,
+          "p99": 89.49980000033975,
+          "max": 103.70530001819134
+        },
+        "queue_wait": {
+          "p50": 1.3051999267190695,
+          "p95": 2.3860998917371035,
+          "p99": 2.5525999953970313,
+          "max": 13.538499944843352
+        }
+      },
+      "dispatcher_lag_ms": {
+        "p50": 0.33930002246052027,
+        "p95": 0.5644999910145998,
+        "p99": 0.5895999493077397,
+        "max": 0.7284999592229724
+      },
+      "cpu_percent_one_core": 22.124129494152196,
+      "rss_before_mib": 67.5234375,
+      "rss_after_mib": 71.9609375,
+      "archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 25320368,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 26559008,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        }
+      },
+      "postgres_before": {
+        "database_bytes": 15338643,
+        "candles": 0,
+        "events": 19,
+        "journal_lines": 36,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 106496
+      },
+      "postgres_after": {
+        "database_bytes": 16338067,
+        "candles": 0,
+        "events": 151,
+        "journal_lines": 296,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 319488
+      },
+      "matched_financial_state_and_events": true,
+      "journal_balanced": true,
+      "passed": true
+    },
+    {
+      "accounts": 20,
+      "elapsed_seconds": 29.817324400064535,
+      "completed_ticks": 120,
+      "scope": "Synthetic scheduled ticks; CPU includes matched engine validation",
+      "stage_ms": {
+        "book_batch_validation": {
+          "p50": 0.1191999763250351,
+          "p95": 0.18879992421716452,
+          "p99": 0.20450004376471043,
+          "max": 0.20560005214065313
+        },
+        "feature_batch_compute": {
+          "p50": 5.898899980820715,
+          "p95": 12.293300009332597,
+          "p99": 13.532000011764467,
+          "max": 18.944800016470253
+        },
+        "prepare": {
+          "p50": 9.846200002357364,
+          "p95": 18.628899939358234,
+          "p99": 19.680500030517578,
+          "max": 23.18120002746582
+        },
+        "transaction": {
+          "p50": 22.928099962882698,
+          "p95": 36.66560002602637,
+          "p99": 59.121199999935925,
+          "max": 119.76240004878491
+        },
+        "evidence_write": {
+          "p50": 29.640199965797365,
+          "p95": 49.61420001927763,
+          "p99": 57.44209990371019,
+          "max": 60.960100032389164
+        },
+        "total_before_validation": {
+          "p50": 65.74520003050566,
+          "p95": 96.10810002777725,
+          "p99": 106.09969997312874,
+          "max": 183.77510004211217
+        },
+        "queue_wait": {
+          "p50": 1.2008000630885363,
+          "p95": 2.0936999935656786,
+          "p99": 2.3706000065431,
+          "max": 12.613800005055964
+        }
+      },
+      "dispatcher_lag_ms": {
+        "p50": 0.33820001408457756,
+        "p95": 0.6369000766426325,
+        "p99": 0.9015999967232347,
+        "max": 6.160299992188811
+      },
+      "cpu_percent_one_core": 24.891150193153937,
+      "rss_before_mib": 68.18359375,
+      "rss_after_mib": 72.6015625,
+      "archive": {
+        "id": 1,
+        "version": "causal-evidence-v1",
+        "plan": {
+          "max_bytes": 67108864,
+          "max_episodes": 512,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "summary_seconds": 60,
+          "window_seconds": 10
+        },
+        "rows": 120,
+        "bytes": 29985518,
+        "dropped": 0,
+        "state": "recording",
+        "physical_bytes": 31113016,
+        "retention": "No eviction; capacity stops optional acquisition",
+        "financial_authority": false,
+        "redistribution": "Local internal use only",
+        "episodes": 120,
+        "outcomes": 0,
+        "queue": 0,
+        "queue_limit": 8,
+        "queue_dropped": 0,
+        "selection": {
+          "max_bytes": 67108864,
+          "max_rows": 20000,
+          "period_seconds": 300,
+          "window_seconds": 10,
+          "summary_seconds": 60,
+          "max_episodes": 512
+        }
+      },
+      "postgres_before": {
+        "database_bytes": 15355027,
+        "candles": 0,
+        "events": 19,
+        "journal_lines": 36,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 106496
+      },
+      "postgres_after": {
+        "database_bytes": 16179727,
+        "candles": 0,
+        "events": 309,
+        "journal_lines": 504,
+        "candle_table_bytes": 16384,
+        "journal_table_bytes": 499712
+      },
+      "matched_financial_state_and_events": true,
+      "journal_balanced": true,
+      "passed": true
+    }
+  ],
+  "paired_snapshot_copy": {
+    "identical_values": true,
+    "input_sha256": "01e804fe8355b264477d313ea8fec71c394bf935e01f435d7fee77f6b734fe60",
+    "scope": "Same 400 immutable bars; old asdict/JSON copy versus explicit scalar copy",
+    "baseline_ms": {
+      "p50": 4.2094000382348895,
+      "p95": 7.137099979445338,
+      "p99": 9.958800044842064,
+      "max": 12.795599992386997
+    },
+    "optimized_ms": {
+      "p50": 0.2701000776141882,
+      "p95": 0.5499999970197678,
+      "p99": 0.7042000070214272,
+      "max": 0.9460001019760966
+    }
+  },
+  "host_identity": "Omitted from public receipt; actual native Windows host",
+  "post_run_scope_correction": "The case reported as 20 created 18. Not valid twenty-account proof. Original values retained; corrected builder adds the universe pair and asserts actual count."
+}

@@ -29,6 +29,7 @@ import { LearningPanel } from "./LearningPanel";
 import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
+import { EvidencePanel } from "./EvidencePanel";
 import { ReadinessPanel } from "./ReadinessPanel";
 import { MarketStation } from "./MarketStation";
 import {
@@ -539,7 +540,9 @@ function App() {
             </div>
           )}
           {page === "dashboard" && (
-            <DashboardView paper={paper} unavailable={unavailable} />
+            <>
+              <DashboardView paper={paper} unavailable={unavailable} />
+            </>
           )}
           {page === "accounts" && (
             <>
@@ -564,6 +567,7 @@ function App() {
                 {[
                   ["experiments", "Numerical research"],
                   ["learning", "Forward learning"],
+                  ["history", "Historical matches"],
                   ["models", "Local model trials"],
                 ].map(([id, label]) => (
                   <button
@@ -584,6 +588,7 @@ function App() {
                 />
               )}
               {labTab === "models" && <ModelTrialsPanel />}
+              {labTab === "history" && <EvidencePanel status={paper?.research_evidence} />}
             </>
           )}
           {(page === "markets" || page === "strategies") && (

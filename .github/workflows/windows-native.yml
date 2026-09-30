@@ -52,7 +52,8 @@ jobs:
             tests/test_paper_campaigns.py tests/test_campaign_store.py `
             tests/test_experiment_registry.py tests/test_numerical_candidates.py `
             tests/test_research_campaigns.py tests/test_paper_learning.py `
-            tests/test_lab_resilience.py tests/test_live_readiness.py tests/test_efficiency_contracts.py
+            tests/test_lab_resilience.py tests/test_live_readiness.py tests/test_efficiency_contracts.py `
+            tests/test_research_evidence.py tests/test_pattern_memory.py
       - name: Install pinned dashboard dependencies
         working-directory: apps/web
         run: npm ci --ignore-scripts --no-audit --no-fund

@@ -1,3 +1,26 @@
+# Next source checkpoint: CP11 on the CP10 durable evidence slice
+
+Continue the hardened CP10-CP16 roadmap in issue #1, one complete vertical slice
+at a time. CP10 provides immutable BTC/USD breakout prefixes, local lookup, delayed
+market outcomes and normal UI reopen/timing. Read CP10_DURABLE_EVIDENCE.md and its
+retained review receipts before extending it into isolated execution replay.
+
+CP11 must reconcile matching recorded inputs/configuration through the existing
+engine before adding separately versioned execution stresses. Gaps, missing books,
+unsupported counterfactuals and unknown costs remain unavailable. Refresh official
+venue facts before selecting scenarios. Preserve original trial/funding/losses,
+twenty retained accounts, four forward admissions, consumed boundaries and the
+28-day human paper-role policy. CP12-CP16 then build on supported evidence.
+
+The original application is already running verified main cb699456, with six
+active accounts confirmed by Chris. Development/source drafts remain separate from
+new installation and subsequent market acceptance. Do not install merely because
+the roadmap was refined. No provider spending or financial authority is added.
+
+---
+
+# Historical operating handoff
+
 # Next operating checkpoint: prospective evidence after verified installation
 
 The requested reference UI is implemented. Read REFERENCE_UI.md and

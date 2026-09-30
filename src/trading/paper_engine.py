@@ -3,6 +3,7 @@
 import hashlib
 import json
 import math
+import time
 from copy import deepcopy
 from decimal import Decimal
 from typing import Any
@@ -237,6 +238,7 @@ class PaperEngine:
         self.state = state
         self.now = now
         self.events: list[dict[str, Any]] = []
+        self.evidence_trace: list[dict[str, Any]] | None = None
 
     def emit(
         self, kind: str, owner: str, body: dict[str, Any], lines: list[dict[str, str]] | None = None
@@ -250,6 +252,17 @@ class PaperEngine:
         self.events.append(
             {"at": self.now, "kind": kind, "account": owner, "body": body, "lines": lines or []}
         )
+        if self.evidence_trace is not None:
+            self.evidence_trace.append(
+                {
+                    "phase": "reservation_ready" if kind == "order_intent" else "event_emitted",
+                    "kind": kind,
+                    "account": owner,
+                    "mono": time.monotonic(),
+                    "event_index": len(self.events) - 1,
+                    "_event": self.events[-1],
+                }
+            )
 
     @staticmethod
     def line(asset: str, name: str, amount: Decimal) -> dict[str, str]:
@@ -1072,6 +1085,15 @@ class PaperEngine:
             last_bar = a["last_decision"].get(symbol, {}).get("bar")
             if bar_id is None or (last_bar is not None and bar_id <= last_bar):
                 continue
+            if self.evidence_trace is not None:
+                self.evidence_trace.append(
+                    {
+                        "phase": "decision_evaluation_start",
+                        "account": name,
+                        "symbol": symbol,
+                        "mono": time.monotonic(),
+                    }
+                )
             reason = self.enter(name, a, symbol, frame, feature)
             decision = {
                 "symbol": symbol,
