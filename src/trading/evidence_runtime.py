@@ -119,6 +119,26 @@ def feature_reproduction(packet: dict[str, Any]) -> dict[str, Any]:
             "recorded": expected,
         }
         for a in packet["state_before"].get("accounts", {}).values():
+            if a.get("rule_spec", {}).get("entry_filter"):
+                from trading.autonomous_spec import RuleSpec
+                from trading.rule_components import reviewed_feature
+
+                recorded_rule = packet["study"].get(symbol, {}).get(a["version"], {})
+                try:
+                    cutoff = recorded_rule["memory_input"]["cutoff"]
+                    frame_input = {k: v for k, v in frame.items() if k != "book"}
+                    reproduced_rule = reviewed_feature(
+                        bars,
+                        cutoff,
+                        RuleSpec.model_validate(a["rule_spec"]),
+                        a["execution_profile"],
+                        frame_input,
+                    )
+                    component_matched = cutoff <= at and reproduced_rule == recorded_rule
+                except (KeyError, ValueError, TypeError, ArithmeticError):
+                    component_matched = False
+                closed_results[symbol]["component_matched"] = component_matched
+                closed_results[symbol]["matched"] &= component_matched
             if symbol != "BTCUSD" or a.get("memory_entry_contract") != "memory-entry-v1":
                 continue
             from trading.memory_quality import filtered_feature
@@ -179,6 +199,8 @@ class EvidenceRecorder:
                 "execution_profiles.py",
                 "numerical_candidates.py",
                 "memory_quality.py",
+                "autonomous_spec.py",
+                "rule_components.py",
             )
         }
         self.pending: deque[dict[str, Any]] = deque()

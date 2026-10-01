@@ -1,4 +1,4 @@
-# Current: CP19 source verification, then CP20 memory-entry component
+# Current: CP20 source gate, then CP21 point-in-time stock research
 
 Implement issue #28 and its addendum in dependency order. CP17 draft #29 is
 delivered. CP18 draft #30 at 9ab26c0 passes 597 native tests/no skips and its

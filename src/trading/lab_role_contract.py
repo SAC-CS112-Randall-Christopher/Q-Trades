@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from trading.experiment_registry import fingerprint
 
-VERSION = "reviewed-rule-role-v4"
+VERSION = "reviewed-rule-role-v5"
 
 
 class Idea(BaseModel):
@@ -74,8 +74,11 @@ def prompt(role: str) -> str:
         "dependency naming the missing source or interval and the condition for resumption. "
         "Missing required data or pending labels use request_data, not no_change. "
         "Use no_change for an unchanged completed/redundant question with no new information. "
-        "Never translate a ridge feature into breakout rules. Missing historical executable data "
-        "can support only the explicitly permitted exploratory prospective comparison. "
+        "Never translate a ridge feature into breakout rules. "
+        "A frozen memory entry component may only filter an already eligible baseline entry, "
+        "uses its exact 2700-second horizon and unchanged-baseline fallback, "
+        "and never changes exits. Missing historical executable data can support only "
+        "the explicitly permitted exploratory prospective comparison. "
         "Review independently examines the frozen method and computed facts, including "
         "uncertainty; "
         "do not invent defects. A missing required source is inconclusive; proved cost/horizon "

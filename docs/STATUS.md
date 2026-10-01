@@ -8,6 +8,9 @@ result feedback workflow. Its actual-model operational proof is blocked by the
 installed optional-research resource guard; no current role is qualified or
 activated. Read [CP18 behavior and limits](CP18_QUALIFIED_ROLE_LOOP.md).
 Historical source evidence follows.
+CP20 adds the single frozen historical-memory entry filter in additive rules v3,
+preserving v2 serialization, baseline fallback and exact parents. Role contract
+v5 needs new qualification. See [component scope](CP20_FROZEN_MEMORY_FILTER.md).
 CP18 exact-head 9ab26c0 passes 597 tests/no skips and hosted Windows SUCCESS.
 CP19 implements append-only referenced lessons and outcome-driven selection, with
 two different ordinary paper comparisons in synthetic software verification.

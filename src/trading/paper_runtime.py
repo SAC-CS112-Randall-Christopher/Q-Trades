@@ -83,7 +83,8 @@ class PaperRuntime:
         return list(self._lab_history_cache[1])
 
     def numerical_study(self, now: float, study: dict[str, Any]) -> None:
-        from trading.autonomous_spec import RuleSpec, rule_feature
+        from trading.autonomous_spec import RuleSpec
+        from trading.rule_components import reviewed_feature
 
         specs = {}
         for a in self.state["accounts"].values():
@@ -97,8 +98,10 @@ class PaperRuntime:
             bars = self.lab_history(now, spec.holding_horizon)
             stamp = bars[-1].open_ms if bars else -1
             cached = self._lab_features.get(key)
-            if cached is None or cached[0] != stamp:
-                calculated = rule_feature(bars, now, spec, a["execution_profile"])
+            if cached is None or cached[0] != stamp or spec.entry_filter is not None:
+                calculated = reviewed_feature(
+                    bars, now, spec, a["execution_profile"], self.memory_book("BTCUSD")
+                )
                 self._lab_features[key] = stamp, calculated
             feature = dict(self._lab_features[key][1])
             if not bars or not 0 < now * 1000 - bars[-1].close_ms <= 90000:

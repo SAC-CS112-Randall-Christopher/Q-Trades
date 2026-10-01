@@ -6,6 +6,9 @@ CP19 source extends the same registry; read docs/CP19_REFERENCED_RESEARCH.md.
 Its two-generation receipt uses a model stub and accelerated disposable paper
 coverage, not qualified inference. Continue CP20's existing memory-entry filter
 as the single declared component; do not add another component simultaneously.
+CP20's implemented component is documented in docs/CP20_FROZEN_MEMORY_FILTER.md.
+Next implement CP21 point-in-time stock evidence with currently verified public
+access, explicit provider limitations, no equity execution or paid/account setup.
 Read docs/CP18_QUALIFIED_ROLE_LOOP.md before touching role/runtime work. CP17 is
 draft #29 at 32b5fc49 with exact-head hosted success. CP18 actual qualification is
 blocked by the operating optional-research guard; preliminary development calls

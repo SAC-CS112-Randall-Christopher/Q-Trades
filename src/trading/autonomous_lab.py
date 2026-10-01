@@ -10,7 +10,7 @@ from typing import Any
 import psycopg
 
 from trading import autonomous_finance as finance
-from trading.autonomous_spec import ORIGINALS, LabPolicy, LabProposal, RuleSpec, rule_feature
+from trading.autonomous_spec import ORIGINALS, LabPolicy, LabProposal, RuleSpec
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_proposals import LabProposals
 from trading.paper_economics import sample
@@ -19,6 +19,7 @@ from trading.paper_runtime import PaperRuntime
 from trading.research_activity import sqlite_rows
 from trading.research_evidence import digest
 from trading.research_storage import compact_path, load_plan, storage_snapshot
+from trading.rule_components import reviewed_feature
 
 
 class InputWait(ValueError):
@@ -176,7 +177,9 @@ class AutonomousLab:
             raise ValueError("Proposed holding horizon is outside the frozen policy")
         bars = self.paper.lab_history(now, proposal.strategy.holding_horizon)
         frames = self.paper.control_frames()
-        feature = rule_feature(bars, now, proposal.strategy, p.execution_profile)
+        feature = reviewed_feature(
+            bars, now, proposal.strategy, p.execution_profile, self.paper.memory_book("BTCUSD")
+        )
         available = feature.get("input_available_at")
         if (
             not fresh_frame(frames.get("BTCUSD"), now)

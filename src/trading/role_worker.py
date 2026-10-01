@@ -11,12 +11,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from trading import autonomous_finance as finance
 from trading.autonomous_lab import AutonomousLab, InputWait
-from trading.autonomous_spec import LabProposal, RuleSpec, rule_feature
+from trading.autonomous_spec import LabProposal, MemoryFilter, RuleSpec
 from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
 from trading.research_lessons import ResearchLessons
 from trading.research_storage import ResearchStorage, load_plan
+from trading.rule_components import reviewed_feature
 from trading.scoped_tools import reader
 
 
@@ -110,6 +111,54 @@ class RoleWorker:
                 "strategy": base.model_copy(update={"family": "range_reversion"}).model_dump(),
                 "reference": base.model_dump(),
             }
+        if question.parent and question.horizon == "short" and base.entry_filter is None:
+            with self.registry.lock:
+                fitted = self.registry.db.execute(
+                    "SELECT result,plan FROM experiments WHERE status='completed' AND "
+                    "json_extract(plan,'$.experiment_mode')='memory_entry' "
+                    "ORDER BY seq DESC LIMIT 4"
+                ).fetchall()
+            for fitted_row in fitted:
+                for arm in json.loads(fitted_row["result"])["candidate_group"]:
+                    artifact = arm.get("artifact")
+                    if (
+                        not artifact
+                        or max(artifact["train_end"], artifact["calibration_end"]) >= now
+                    ):
+                        continue
+                    synthetic = "synthetic" in c.paper.state.get("evidence_kind", "")
+                    if (artifact["evidence_kind"] == "synthetic_qa") != synthetic:
+                        continue
+                    # Require explicit component pricing in the frozen experiment plan.
+                    fitted_plan = json.loads(fitted_row["plan"])
+                    numerical_cost = fitted_plan.get("numerical_daily_usd")
+                    context_cost = fitted_plan.get("contextual_daily_usd")
+                    if numerical_cost is None or arm["arm"] == "C" and context_cost is None:
+                        continue
+                    from decimal import Decimal
+
+                    cost = str(
+                        Decimal(numerical_cost)
+                        + (Decimal(context_cost) if arm["arm"] == "C" else Decimal(0))
+                    )
+                    component = MemoryFilter(artifact=artifact, marginal_daily_usd=cost)
+                    strategy = RuleSpec.model_validate(
+                        base.model_dump()
+                        | {
+                            "version": "reviewed-lab-rules-v3",
+                            "entry_filter": component.model_dump(),
+                        }
+                    )
+                    catalog["r2"] = {
+                        "kind": "variation",
+                        "strategy": strategy.model_dump(),
+                        "reference": base.model_dump(),
+                        "parent_trial": question.parent,
+                        "parent_strategy_sha256": fingerprint(base.model_dump()),
+                    }
+                    break
+                if "r2" in catalog:
+                    break
         issued = c.bundle(now)
         prior = self.lessons.get(question.lesson) if question.lesson else None
         if prior:
@@ -132,11 +181,12 @@ class RoleWorker:
             "closed_bar_sha256": fingerprint([str(b) for b in bars]),
             "observed_at": now,
             "features": {
-                key: rule_feature(
+                key: reviewed_feature(
                     bars,
                     now,
                     RuleSpec.model_validate(value["strategy"]),
                     policy["execution_profile"],
+                    c.paper.memory_book("BTCUSD"),
                 )
                 for key, value in catalog.items()
             },
@@ -406,6 +456,10 @@ class RoleWorker:
                 "reference_family": value["reference"]["family"],
                 "reference_lookback": value["reference"]["lookback"],
                 "authority": "Reviewed rules; identical frozen costs/risk, prospective paper only",
+                "entry_component": value["strategy"].get("entry_filter", {}).get("kind"),
+                "component_horizon_seconds": value["strategy"]
+                .get("entry_filter", {})
+                .get("horizon_seconds"),
             }
             for key, value in context["catalog"].items()
         }
