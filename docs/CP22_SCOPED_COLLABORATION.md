@@ -62,6 +62,22 @@ renews itself for the duration of a trial.
 
 ## Ownership, allowances and recovery
 
+LLM-F1 correction: grant scope/expiry/revocation, allowance settlement and claim
+reservation now share the registry's immediate write transaction. Renew, answer
+and release use the same boundary and re-read the current grant/claim. Rejection
+rolls back its debit and mutations. A concurrent revoke either commits first and
+prevents the mutation, or commits afterward and releases its committed lease.
+An answer already committed remains immutable. A response authorized before
+revocation may already be in flight; its bytes cannot be recalled. Subsequent
+requests fail and no new lease can escape revocation. No inference or financial
+transaction occurs in this registry boundary.
+
+The four added regressions reproduce the original claim ordering through actual
+HTTP and expiry during claim/renew/answer settlement. The original source failed
+all four (ignored data/f1-original.txt). The corrected actor suite passes all 12
+tests on disposable native PostgreSQL; Ruff and strict mypy pass. Full integrated
+checks are recorded separately in the final stack receipt.
+
 Local and external workers claim one existing task lease. External leases begin at
 90 seconds and can renew to at most 300 total seconds, capped by credential expiry.
 Two external claims may be live at once, leaving independent local role work and the
@@ -83,6 +99,22 @@ ordinary proposal ID reconciles lost acknowledgment and funding remains the sole
 writer's responsibility. Inference and external waiting hold no financial lock.
 
 ## Verification and limitations
+
+LLM-F1 makes authentication, byte debit, expiry checks and stage reservation one
+immediate transaction. Revocation either prevents that reservation or sees the
+committed claim and releases it. Renewals, answers and release use the same fresh
+authorization boundary. Already committed delivery cannot recall bytes in flight;
+revocation blocks subsequent authorized operations and preserves existing answers.
+The actual HTTP/thread tests cover both orderings and expiry after debit, with
+rollback of allowance and reservation. No contributor has been connected.
+
+Integrating LLM-F6 preserves archived external attempts in the shared hourly
+allowance projection. Four normally answered claims can move to cold storage and
+still exhaust the shared allowance; a fifth claim is refused and exact old answer
+replay remains available. Archival never resets consumed work. The 13 actor cases
+and seven role-history cases pass together on disposable native PostgreSQL;
+Ruff, strict Windows mypy and the frontend build pass separately. These receipts
+prove software boundaries, not a real Crik bridge or qualified model operation.
 
 `tests/test_research_actors.py` covers local HTTP claim/answer/replay, required
 review, actual disposable ordinary paper funding/mature outcome, newly granted

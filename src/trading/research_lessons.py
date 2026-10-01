@@ -9,6 +9,7 @@ import time
 from typing import Any
 
 from trading.experiment_registry import ExperimentRegistry, fingerprint
+from trading.role_evidence import strategy_summary
 
 
 class ResearchLessons:
@@ -68,8 +69,11 @@ class ResearchLessons:
                 "mechanism": proposal["mechanism"],
                 "parent": proposal["parent_trial"],
                 "horizon": proposal["strategy"]["holding_horizon"],
-                "strategy": proposal["strategy"],
-                "reference": proposal["reference"],
+                "strategy": strategy_summary(proposal["strategy"]),
+                "strategy_sha256": fingerprint(proposal["strategy"]),
+                "reference": strategy_summary(proposal["reference"]),
+                "reference_sha256": fingerprint(proposal["reference"]),
+                "method_reference": {"task": task["id"], "field": "proposal"},
                 "cost_policy": task["context"]["policy"],
                 "data_basis": task["context"]["tool_evidence"]["source_basis"],
                 "input_sha256": task["context"]["tool_evidence"]["closed_bar_sha256"],

@@ -506,6 +506,9 @@ class PaperStore:
             (account, symbol, maximum, start, cutoff),
         ).fetchone()
         saved = snapshot["state"]
+        account_totals = sample(
+            saved, cutoff, final_at=snapshot["retired_at"] if snapshot["archived"] else None
+        )
         page = self.research_events(account, symbol, cutoff, maximum, start=start)
         comparison = (
             self.connection.execute(
@@ -522,8 +525,16 @@ class PaperStore:
             "archived": snapshot["archived"],
             "market_totals": dict(totals) if totals else None,
             **page,
-            "account_totals": sample(saved, cutoff),
-            "account_totals_basis": "Authoritative cumulative whole account at captured revision",
+            "account_totals": account_totals,
+            "account_totals_basis": (
+                "Final historical reconciled cash-only account; no current quote valuation"
+                if account_totals.get("final")
+                else "Cumulative whole account at captured revision; current marks may be missing"
+            ),
+            "accounting_at": snapshot["retired_at"]
+            if account_totals.get("final")
+            else saved.get("valuation_at"),
+            "queried_at": cutoff,
             "open_holdings": saved["positions"],
             "pending_orders": saved["pending"],
             "max_drawdown": saved["max_drawdown"],

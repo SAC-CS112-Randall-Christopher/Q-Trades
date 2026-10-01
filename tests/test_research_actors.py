@@ -3,6 +3,8 @@
 import asyncio
 import copy
 import json
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from types import SimpleNamespace
 
 import pytest
@@ -64,6 +66,60 @@ def answer(scope, claim, **change):
     value = scope.model.infer("researcher", packet, {})["answer"]
     scope.model.calls.clear()
     return ActorAnswer(claim=claim["claim"], answer=value | change)
+
+
+def test_archived_external_answers_keep_shared_hourly_allowance(scope, monkeypatch):
+    s = scope
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    first_answer = None
+    for i in range(4):
+        task = (
+            s.task
+            if i == 0
+            else s.worker.enqueue(
+                Question(question=f"Retain external allowance for ordinary question {i}.")
+            )
+        )
+        grant = (
+            s.grant
+            if i == 0
+            else s.actors.grant(
+                ActorGrant(
+                    actor="qa-external",
+                    tasks=[task["id"]],
+                    processing_location="Local disposable retained-allowance fixture",
+                )
+            )
+        )
+        claim = s.actors.claim(grant["token"], task["id"])
+        command = answer(s, claim, action="no_change", capability=None)
+        s.actors.answer(grant["token"], command)
+        assert asyncio.run(s.worker.step(START))
+        s.worker.history.rollover()
+        assert s.worker.get(task["id"])["archive_reference"]
+        if i == 0:
+            first_answer = command
+    assert first_answer is not None
+    assert s.actors.answer(s.grant["token"], first_answer)["status"] == "already_recorded"
+    used = s.lab.registry.db.execute(
+        "SELECT sum(tokens_reserved),sum(wall_reserved) FROM role_attempt_allowances "
+        "WHERE actor IS NOT NULL"
+    ).fetchone()
+    assert tuple(used) == (32768, 360)
+    next_task = s.worker.enqueue(
+        Question(question="A fifth external question needs a fresh hourly allowance.")
+    )
+    grant = s.actors.grant(
+        ActorGrant(
+            actor="qa-external",
+            tasks=[next_task["id"]],
+            processing_location="Local disposable retained-allowance fixture",
+        )
+    )
+    with pytest.raises(ValueError, match="hourly allowance"):
+        s.actors.claim(grant["token"], next_task["id"])
+    assert not s.worker.get(next_task["id"])["attempts"]
+    assert s.store.reconcile()["balanced"]
 
 
 def test_http_external_proposal_normal_paper_outcome_and_granted_result(scope):
@@ -327,3 +383,90 @@ def test_stale_local_worker_cannot_overwrite_external_answer(scope):
     assert s.worker.get(s.task["id"])["stage"] == "idea"
     assert asyncio.run(s.worker.step())
     assert s.worker.get(s.task["id"])["stage"] == "evaluate"
+
+
+def test_http_revoke_serializes_with_claim_and_settles_once(scope, monkeypatch):
+    """Force the audited charge/claim ordering; revoke must not miss the claim."""
+    s = scope
+    charged, inspected, revoked = Event(), Event(), Event()
+    blocked = []
+    original = ResearchActors._charge
+
+    def charge(self, actor, size):
+        original(self, actor, size)
+        charged.set()
+        assert inspected.wait(5)
+        if not blocked[0]:
+            assert revoked.wait(5)
+
+    def revoke():
+        assert charged.wait(5)
+        acquired = s.lab.registry.lock.acquire(blocking=False)
+        blocked.append(not acquired)
+        inspected.set()
+        try:
+            s.actors.revoke(s.grant["id"])
+        finally:
+            if acquired:
+                s.lab.registry.lock.release()
+            revoked.set()
+
+    monkeypatch.setattr(ResearchActors, "_charge", charge)
+    app = create_app(Settings(), s.directory / "monitor.sqlite", background=False)
+    with TestClient(app) as client, ThreadPoolExecutor(max_workers=1) as pool:
+        app.state.lab.roles = s.worker
+        pending = pool.submit(revoke)
+        result = client.post(
+            "/api/research/actors/tasks/claim",
+            json={"task": s.task["id"]},
+            headers={"Authorization": "Bearer " + s.grant["token"]},
+        )
+        pending.result(timeout=5)
+        # A response committed first may already be in flight; revoke releases
+        # its lease. Authorization cannot recall bytes already delivered.
+        assert result.status_code in {200, 403}
+    assert not s.lab.registry.db.execute(
+        "SELECT 1 FROM actor_claims WHERE grant_id=? AND status='claimed'",
+        (s.grant["id"],),
+    ).fetchone()
+    assert s.worker.get(s.task["id"])["status"] == "failed"
+    assert (
+        s.lab.registry.db.execute(
+            "SELECT requests_used FROM research_actors WHERE id=?", (s.grant["id"],)
+        ).fetchone()[0]
+        == 1
+    )
+    assert s.store.reconcile()["balanced"]
+
+
+@pytest.mark.parametrize("operation", ["claim", "renew", "answer"])
+def test_expiry_at_reservation_boundary_rolls_back_allowance_and_effects(
+    scope, monkeypatch, operation
+):
+    s = scope
+    claim = s.actors.claim(s.grant["token"], s.task["id"]) if operation != "claim" else None
+    command = answer(s, claim) if claim else None
+    before = s.worker.get(s.task["id"])
+    used = s.lab.registry.db.execute(
+        "SELECT requests_used,output_used FROM research_actors WHERE id=?", (s.grant["id"],)
+    ).fetchone()
+    original = ResearchActors._charge
+
+    def charge(self, actor, size):
+        original(self, actor, size)
+        s.clock[0] = actor["expires"] + 1
+
+    monkeypatch.setattr(ResearchActors, "_charge", charge)
+    with pytest.raises(ValueError, match="expired|revoked"):
+        if operation == "claim":
+            s.actors.claim(s.grant["token"], s.task["id"])
+        elif operation == "renew":
+            s.actors.renew(s.grant["token"], claim["claim"])
+        else:
+            s.actors.answer(s.grant["token"], command)
+    assert s.worker.get(s.task["id"]) == before
+    assert tuple(
+        s.lab.registry.db.execute(
+            "SELECT requests_used,output_used FROM research_actors WHERE id=?", (s.grant["id"],)
+        ).fetchone()
+    ) == tuple(used)

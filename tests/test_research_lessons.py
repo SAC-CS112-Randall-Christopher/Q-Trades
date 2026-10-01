@@ -3,9 +3,10 @@
 import asyncio
 import copy
 import sqlite3
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-from test_autonomous_lab import close_window, tick_lab
+from test_autonomous_lab import admit, bars_at, close_window, tick_lab
 from test_paper_engine import START
 from test_paper_store import pg_store as pg_store
 from test_research_storage import plan_at
@@ -14,6 +15,20 @@ from test_role_worker import ModelStub, make_lab
 from trading.evidence_runtime import EvidenceRecorder
 from trading.research_storage import save_plan
 from trading.role_worker import Question, RoleWorker
+
+
+class DataWaitStub(ModelStub):
+    dependency = "new_closed_bars"
+
+    def infer(self, role, packet, profile):
+        result = super().infer(role, packet, profile)
+        result["answer"].update(
+            action="request_data",
+            capability=None,
+            dependency=self.dependency,
+            evidence_ids=["e2"],
+        )
+        return result
 
 
 class FollowupStub(ModelStub):
@@ -148,19 +163,143 @@ def test_data_wait_requires_changed_closed_source_not_refresh(pg_store, tmp_path
     store, _ = pg_store
     monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
     lab = make_lab(store, tmp_path)
-    worker = RoleWorker(lab.registry, lab, ModelStub())
+    worker = RoleWorker(lab.registry, lab, DataWaitStub())
+    worker.enabled = True
     task = worker.enqueue(
         Question(
             question="Await a materially changed causal prefix before another model question."
         ),
         START,
     )
-    worker._update(task, "data_wait", "waiting", reason="Await newly closed bars")
+    assert asyncio.run(worker.step())
     assert worker.resume_sources(START + 1) == 0
     tick_lab(lab, START + 120)
     assert worker.resume_sources(START + 120) == 1
     assert worker.resume_sources(START + 121) == 0
     assert worker.get(task["id"])["stage"] == "complete"
     assert lab.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 2
-    assert not worker.selection_metrics()["attempts"]
+    assert worker.selection_metrics()["attempts"] == 1
+    lab.registry.close()
+
+
+def test_all_eight_data_waits_resume_atomically_after_restart_and_contention(
+    pg_store, tmp_path, monkeypatch
+):
+    store, _ = pg_store
+    clock = [START]
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: clock[0])
+    lab = make_lab(store, tmp_path)
+    model = DataWaitStub()
+    worker = RoleWorker(lab.registry, lab, model)
+    worker.enabled = True
+    tasks = [
+        worker.enqueue(Question(question=f"Await new closed causal bars for question {i}."))
+        for i in range(8)
+    ]
+    for _ in tasks:
+        assert asyncio.run(worker.step())
+    retained = {t["id"]: worker.get(t["id"])["attempts"] for t in tasks}
+    assert all(worker.get(t["id"])["stage"] == "data_wait" for t in tasks)
+    replacement = RoleWorker(lab.registry, lab, model)
+    assert replacement.resume_sources(START + 120) == 0  # Clock alone is no new source.
+    clock[0] += 120
+    tick_lab(lab, clock[0])
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        counts = list(pool.map(lambda _: replacement.resume_sources(), range(2)))
+    assert sum(counts) == 8
+    assert replacement.resume_sources() == 0
+    assert lab.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 16
+    assert (
+        lab.registry.db.execute(
+            "SELECT count(*) FROM role_tasks WHERE status NOT IN ('done','failed')"
+        ).fetchone()[0]
+        == 8
+    )
+    assert all(replacement.get(t["id"])["attempts"] == retained[t["id"]] for t in tasks)
+    assert len(model.calls) == 8  # Polling/resume itself never invokes a model.
+    assert store.reconcile()["balanced"]
+    lab.registry.close()
+
+
+def test_failed_successor_insert_retains_wait_and_retry_identity(pg_store, tmp_path, monkeypatch):
+    store, _ = pg_store
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
+    lab = make_lab(store, tmp_path)
+    worker = RoleWorker(lab.registry, lab, DataWaitStub())
+    worker.enabled = True
+    task = worker.enqueue(Question(question="Await more closed bars with retained failure proof."))
+    assert asyncio.run(worker.step())
+    before = worker.get(task["id"])
+    tick_lab(lab, START + 120)
+    lab.registry.db.execute(
+        "CREATE TEMP TRIGGER fail_successor BEFORE INSERT ON role_tasks "
+        "BEGIN SELECT RAISE(ABORT,'Injected successor failure'); END"
+    )
+    with pytest.raises(sqlite3.IntegrityError, match="Injected successor"):
+        worker.resume_sources(START + 120)
+    assert worker.get(task["id"]) == before
+    lab.registry.db.execute("DROP TRIGGER fail_successor")
+    assert worker.resume_sources(START + 120) == 1
+    assert worker.resume_sources(START + 120) == 0
+    assert lab.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 2
+    lab.registry.close()
+
+
+def test_typed_outcome_wait_requires_recorded_maturity_and_discloses_before_resume(
+    pg_store, tmp_path, monkeypatch
+):
+    store, _ = pg_store
+    clock = [START]
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: clock[0])
+    lab = make_lab(store, tmp_path, horizon_seconds=3600)
+    pending = admit(lab, START)
+    model = DataWaitStub()
+    model.dependency = "mature_outcome"
+    worker = RoleWorker(lab.registry, lab, model)
+    worker.enabled = True
+    task = worker.enqueue(
+        Question(question="Wait for the offered comparison's actual mature outcome.")
+    )
+    assert asyncio.run(worker.step())
+    requirement = worker.get(task["id"])["result"]["wait_requirement"]
+    assert requirement["trial_id"] == pending["id"]
+    prior_bars = lab.paper.history["BTCUSD"]
+    lab.paper.history["BTCUSD"] = bars_at(START + 120)
+    assert worker.resume_sources(START + 120) == 0  # More prices cannot stand in for labels.
+    lab.paper.history["BTCUSD"] = prior_bars
+    score = close_window(lab, pending, "inconclusive")
+    assert worker.resume_sources(score["available_at"] - 1) == 0
+    clock[0] = score["available_at"] + 1
+    assert worker.resume_sources() == 1
+    successor = lab.registry.db.execute(
+        "SELECT id FROM role_tasks WHERE stage='idea' AND status='queued'"
+    ).fetchone()[0]
+    assert worker.get(successor)["context"]["dependency_evidence"]["body"] == score
+    assert lab.registry.db.execute(
+        "SELECT 1 FROM evidence_windows WHERE request_id=?",
+        ("role-dependency:" + successor,),
+    ).fetchone()
+    assert worker.resume_sources() == 0 and len(model.calls) == 1
+    assert store.reconcile()["balanced"]
+    lab.registry.close()
+
+
+def test_unbound_historical_text_and_changed_old_rows_do_not_infer_maturity(
+    pg_store, tmp_path, monkeypatch
+):
+    store, _ = pg_store
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
+    lab = make_lab(store, tmp_path)
+    model = DataWaitStub()
+    model.dependency = "Await labels and candles without a permitted condition identity"
+    worker = RoleWorker(lab.registry, lab, model)
+    worker.enabled = True
+    task = worker.enqueue(
+        Question(question="An ambiguous condition must not infer unseen evidence.")
+    )
+    assert asyncio.run(worker.step())
+    tick_lab(lab, START + 120)
+    assert worker.resume_sources(START + 120) == 0
+    assert worker.get(task["id"])["result"]["wait_requirement"] is None
+    assert len(model.calls) == 1
     lab.registry.close()

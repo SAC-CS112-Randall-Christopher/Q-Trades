@@ -24,9 +24,25 @@ conclusions record a meaningful wait. Stable predecessor/request identity
 reconciles a lost enqueue acknowledgment. Deferred capacity/policy work backs off
 for sixty seconds and does not occupy all discovery. Existing financial family
 allocation, independent exploration and #24 alternative generation are unchanged.
-New closed-bar hashes may resume a source-prefix wait. Refresh time alone cannot.
-Missing-label or ambiguous dependencies require a new explicit eligible question;
-the selector does not infer that newer prices made a delayed label available.
+LLM-F2 correction: dispatch freezes typed `new_closed_bars` and, when a real
+pending comparison exists, `mature_outcome` conditions. The model selects an
+offered condition by its exact dependency key. A later closed bar and changed
+source hash satisfy the first; the sole writer's available scored event satisfies
+the second. Refresh, altered old rows and free-text references to labels cannot
+imply maturity. Historical ambiguous waits retain their answer and require an
+explicit newly scoped question; their text is never guessed into a dependency.
+
+Resumption exchanges the predecessor's active slot and inserts its successor in
+one registry transaction. Failure rolls both back, and competing resumptions use
+the predecessor's unchanged context/stage/ownership. The old question, model
+attempt and dependency remain retained and link to the successor. All eight
+waiting slots can resume without increasing capacity. Outcome disclosure commits
+before the new task is delivered. Restart and polling do not invoke inference.
+
+The original full-queue regression resumed zero of eight questions. The corrected
+role/lesson suite covers full waiting capacity, restart/contention, insertion
+failure, typed delayed maturity, unbound text and unchanged data. Receipts remain
+in ignored data/f2-*.txt; final integrated results are recorded separately.
 
 The finite software trace executes two real ordinary admissions and account
 comparisons on a disposable PostgreSQL engine, with declared accelerated synthetic

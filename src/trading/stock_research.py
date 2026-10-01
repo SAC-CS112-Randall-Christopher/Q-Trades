@@ -4,6 +4,7 @@ import hashlib
 import ipaddress
 import json
 import re
+import secrets
 import socket
 import threading
 import time
@@ -300,6 +301,14 @@ class StockResearch:
                     seq INTEGER PRIMARY KEY,url TEXT NOT NULL,sha TEXT NOT NULL,
                     retrieved REAL NOT NULL,manifest TEXT NOT NULL,UNIQUE(url,sha));
                 CREATE INDEX IF NOT EXISTS stock_cache ON stock_sources(url,retrieved);
+                CREATE INDEX IF NOT EXISTS stock_versions ON stock_sources(url,seq);
+                CREATE TABLE IF NOT EXISTS stock_source_checks(
+                    url TEXT PRIMARY KEY,source_seq INTEGER,checked REAL NOT NULL,
+                    owner TEXT,lease_until REAL);
+                CREATE TRIGGER IF NOT EXISTS stock_source_frozen BEFORE UPDATE ON stock_sources
+                  BEGIN SELECT RAISE(ABORT,'Original source version is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS stock_source_retained BEFORE DELETE ON stock_sources
+                  BEGIN SELECT RAISE(ABORT,'Source provenance is permanent'); END;
                 CREATE TABLE IF NOT EXISTS stock_provider_cooldown(
                     provider TEXT PRIMARY KEY,next_at REAL NOT NULL,reason TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS stock_studies(
@@ -315,14 +324,70 @@ class StockResearch:
 
     def source(self, url: str) -> dict[str, Any]:
         public_url(url)
+        owner = None
+        with self.registry.transaction():
+            checked = self.registry.db.execute(
+                "SELECT * FROM stock_source_checks WHERE url=?", (url,)
+            ).fetchone()
+            if not checked:
+                # Lazy migration preserves each original source timestamp/manifest.
+                old = self.registry.db.execute(
+                    "SELECT seq,retrieved FROM stock_sources WHERE url=? ORDER BY seq DESC LIMIT 1",
+                    (url,),
+                ).fetchone()
+                self.registry.db.execute(
+                    "INSERT INTO stock_source_checks(url,source_seq,checked) VALUES(?,?,?)",
+                    (url, old[0] if old else None, old[1] if old else 0),
+                )
+                checked = self.registry.db.execute(
+                    "SELECT * FROM stock_source_checks WHERE url=?", (url,)
+                ).fetchone()
+            if not checked["source_seq"] or checked["checked"] <= time.time() - 86400:
+                if checked["owner"] and checked["lease_until"] > time.time():
+                    raise ValueError("Official source refresh in progress; retry the saved study")
+                owner = secrets.token_hex(16)
+                self.registry.db.execute(
+                    "UPDATE stock_source_checks SET owner=?,lease_until=? WHERE url=?",
+                    (owner, time.time() + 120, url),
+                )
+        try:
+            return self._source(url, owner)
+        finally:
+            if owner:
+                with self.registry.transaction():
+                    self.registry.db.execute(
+                        "UPDATE stock_source_checks SET owner=NULL,lease_until=NULL "
+                        "WHERE url=? AND owner=?",
+                        (url, owner),
+                    )
+
+    @staticmethod
+    def _reopen_source(store: ResearchStorage, metadata: dict[str, Any]) -> dict[str, Any]:
+        payload = "".join(store.reopen(r)["text"] for r in metadata["references"])
+        if hashlib.sha256(payload.encode()).hexdigest() != metadata["sha256"]:
+            raise ValueError("Archived official source hash mismatch")
+        return metadata | {"text": payload}
+
+    def _validated(self, url: str, owner: str, seq: int) -> float:
+        checked = time.time()
+        changed = self.registry.db.execute(
+            "UPDATE stock_source_checks SET source_seq=?,checked=? "
+            "WHERE url=? AND owner=? AND lease_until>?",
+            (seq, checked, url, owner, checked),
+        ).rowcount
+        if not changed:
+            raise ValueError("Official source refresh ownership expired; original source retained")
+        return checked
+
+    def _source(self, url: str, owner: str | None) -> dict[str, Any]:
         provider = (
             "SEC" if urlsplit(url).hostname in {"www.sec.gov", "data.sec.gov"} else "Alpha Vantage"
         )
         with self.registry.lock:
             cached = self.registry.db.execute(
-                "SELECT manifest FROM stock_sources WHERE url=? AND retrieved>? "
-                "ORDER BY seq DESC LIMIT 1",
-                (url, time.time() - 86400),
+                "SELECT s.manifest,c.checked FROM stock_source_checks c "
+                "JOIN stock_sources s ON s.seq=c.source_seq WHERE c.url=?",
+                (url,),
             ).fetchone()
             cooldown = self.registry.db.execute(
                 "SELECT next_at FROM stock_provider_cooldown WHERE provider=?", (provider,)
@@ -334,11 +399,10 @@ class StockResearch:
         try:
             if cached:
                 metadata: dict[str, Any] = json.loads(cached["manifest"])
-                chunks = [store.reopen(r)["text"] for r in metadata["references"]]
-                payload = "".join(chunks)
-                if hashlib.sha256(payload.encode()).hexdigest() != metadata["sha256"]:
-                    raise ValueError("Archived official source hash mismatch")
-                return metadata | {"text": payload}
+                # Verify even an expired archive before spending another provider read.
+                original = self._reopen_source(store, metadata)
+                if owner is None:
+                    return original | {"last_checked_at": cached["checked"]}
             if cooldown and cooldown[0] > time.time():
                 raise ValueError("Recorded official-source cooldown remains active after restart")
             try:
@@ -369,6 +433,23 @@ class StockResearch:
                             (provider, time.time() + 600, str(exc)),
                         )
                 raise
+            if hashlib.sha256(fetched["text"].encode()).hexdigest() != fetched["sha256"]:
+                raise ValueError("Official fetched source hash mismatch")
+            with self.registry.lock:
+                if not self.registry.db.execute(
+                    "SELECT 1 FROM stock_source_checks WHERE url=? AND owner=? AND lease_until>?",
+                    (url, owner, time.time()),
+                ).fetchone():
+                    raise ValueError("Official source refresh ownership expired; source retained")
+                unchanged = self.registry.db.execute(
+                    "SELECT seq,manifest FROM stock_sources WHERE url=? AND sha=?",
+                    (url, fetched["sha256"]),
+                ).fetchone()
+            if unchanged:
+                original = self._reopen_source(store, json.loads(unchanged["manifest"]))
+                with self.registry.transaction():
+                    checked_at = self._validated(url, str(owner), unchanged["seq"])
+                return original | {"last_checked_at": checked_at}
             references = []
             parts = [
                 fetched["text"][i : i + 100000] for i in range(0, len(fetched["text"]), 100000)
@@ -402,7 +483,14 @@ class StockResearch:
                     "VALUES(?,?,?,?)",
                     (url, fetched["sha256"], fetched["retrieved_at"], json.dumps(metadata)),
                 )
-            return fetched | {"references": references}
+                row = self.registry.db.execute(
+                    "SELECT seq,manifest FROM stock_sources WHERE url=? AND sha=?",
+                    (url, fetched["sha256"]),
+                ).fetchone()
+                checked_at = self._validated(url, str(owner), row["seq"])
+            return self._reopen_source(store, json.loads(row["manifest"])) | {
+                "last_checked_at": checked_at
+            }
         finally:
             store.close()
 
