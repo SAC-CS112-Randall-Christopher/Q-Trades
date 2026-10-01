@@ -3,6 +3,8 @@
 import asyncio
 import copy
 import json
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 from types import SimpleNamespace
 
 import pytest
@@ -327,3 +329,90 @@ def test_stale_local_worker_cannot_overwrite_external_answer(scope):
     assert s.worker.get(s.task["id"])["stage"] == "idea"
     assert asyncio.run(s.worker.step())
     assert s.worker.get(s.task["id"])["stage"] == "evaluate"
+
+
+def test_http_revoke_serializes_with_claim_and_settles_once(scope, monkeypatch):
+    """Force the audited charge/claim ordering; revoke must not miss the claim."""
+    s = scope
+    charged, inspected, revoked = Event(), Event(), Event()
+    blocked = []
+    original = ResearchActors._charge
+
+    def charge(self, actor, size):
+        original(self, actor, size)
+        charged.set()
+        assert inspected.wait(5)
+        if not blocked[0]:
+            assert revoked.wait(5)
+
+    def revoke():
+        assert charged.wait(5)
+        acquired = s.lab.registry.lock.acquire(blocking=False)
+        blocked.append(not acquired)
+        inspected.set()
+        try:
+            s.actors.revoke(s.grant["id"])
+        finally:
+            if acquired:
+                s.lab.registry.lock.release()
+            revoked.set()
+
+    monkeypatch.setattr(ResearchActors, "_charge", charge)
+    app = create_app(Settings(), s.directory / "monitor.sqlite", background=False)
+    with TestClient(app) as client, ThreadPoolExecutor(max_workers=1) as pool:
+        app.state.lab.roles = s.worker
+        pending = pool.submit(revoke)
+        result = client.post(
+            "/api/research/actors/tasks/claim",
+            json={"task": s.task["id"]},
+            headers={"Authorization": "Bearer " + s.grant["token"]},
+        )
+        pending.result(timeout=5)
+        # A response committed first may already be in flight; revoke releases
+        # its lease. Authorization cannot recall bytes already delivered.
+        assert result.status_code in {200, 403}
+    assert not s.lab.registry.db.execute(
+        "SELECT 1 FROM actor_claims WHERE grant_id=? AND status='claimed'",
+        (s.grant["id"],),
+    ).fetchone()
+    assert s.worker.get(s.task["id"])["status"] == "failed"
+    assert (
+        s.lab.registry.db.execute(
+            "SELECT requests_used FROM research_actors WHERE id=?", (s.grant["id"],)
+        ).fetchone()[0]
+        == 1
+    )
+    assert s.store.reconcile()["balanced"]
+
+
+@pytest.mark.parametrize("operation", ["claim", "renew", "answer"])
+def test_expiry_at_reservation_boundary_rolls_back_allowance_and_effects(
+    scope, monkeypatch, operation
+):
+    s = scope
+    claim = s.actors.claim(s.grant["token"], s.task["id"]) if operation != "claim" else None
+    command = answer(s, claim) if claim else None
+    before = s.worker.get(s.task["id"])
+    used = s.lab.registry.db.execute(
+        "SELECT requests_used,output_used FROM research_actors WHERE id=?", (s.grant["id"],)
+    ).fetchone()
+    original = ResearchActors._charge
+
+    def charge(self, actor, size):
+        original(self, actor, size)
+        s.clock[0] = actor["expires"] + 1
+
+    monkeypatch.setattr(ResearchActors, "_charge", charge)
+    with pytest.raises(ValueError, match="expired|revoked"):
+        if operation == "claim":
+            s.actors.claim(s.grant["token"], s.task["id"])
+        elif operation == "renew":
+            s.actors.renew(s.grant["token"], claim["claim"])
+        else:
+            s.actors.answer(s.grant["token"], command)
+    assert s.worker.get(s.task["id"]) == before
+    assert tuple(
+        s.lab.registry.db.execute(
+            "SELECT requests_used,output_used FROM research_actors WHERE id=?", (s.grant["id"],)
+        ).fetchone()
+    ) == tuple(used)

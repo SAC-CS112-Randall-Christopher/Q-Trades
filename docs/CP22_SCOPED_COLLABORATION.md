@@ -62,6 +62,22 @@ renews itself for the duration of a trial.
 
 ## Ownership, allowances and recovery
 
+LLM-F1 correction: grant scope/expiry/revocation, allowance settlement and claim
+reservation now share the registry's immediate write transaction. Renew, answer
+and release use the same boundary and re-read the current grant/claim. Rejection
+rolls back its debit and mutations. A concurrent revoke either commits first and
+prevents the mutation, or commits afterward and releases its committed lease.
+An answer already committed remains immutable. A response authorized before
+revocation may already be in flight; its bytes cannot be recalled. Subsequent
+requests fail and no new lease can escape revocation. No inference or financial
+transaction occurs in this registry boundary.
+
+The four added regressions reproduce the original claim ordering through actual
+HTTP and expiry during claim/renew/answer settlement. The original source failed
+all four (ignored data/f1-original.txt). The corrected actor suite passes all 12
+tests on disposable native PostgreSQL; Ruff and strict mypy pass. Full integrated
+checks are recorded separately in the final stack receipt.
+
 Local and external workers claim one existing task lease. External leases begin at
 90 seconds and can renew to at most 300 total seconds, capped by credential expiry.
 Two external claims may be live at once, leaving independent local role work and the

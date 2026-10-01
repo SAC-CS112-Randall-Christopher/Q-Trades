@@ -4,6 +4,7 @@ import hashlib
 import json
 import secrets
 import time
+from contextlib import nullcontext
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -163,16 +164,22 @@ class ResearchActors:
         }
 
     def _charge(self, actor: dict[str, Any], size: int) -> None:
-        with self.registry.transaction():
-            changed = self.registry.db.execute(
-                "UPDATE research_actors SET output_used=output_used+?,"
-                "requests_used=requests_used+1 "
-                "WHERE id=? AND revoked=0 AND expires>? AND output_used+?<=output_limit "
-                "AND requests_used<request_limit",
-                (size, actor["id"], time.time(), size),
-            ).rowcount
-            if not changed:
-                raise ValueError("Research grant allowance exhausted/revoked; no data delivered")
+        # Callers mutating a claim already own the registry transaction. Read-only
+        # deliveries use a standalone transaction; the lock prevents another
+        # thread's transaction from being mistaken for our own.
+        with self.registry.lock:
+            with nullcontext() if self.registry.db.in_transaction else self.registry.transaction():
+                changed = self.registry.db.execute(
+                    "UPDATE research_actors SET output_used=output_used+?,"
+                    "requests_used=requests_used+1 "
+                    "WHERE id=? AND revoked=0 AND expires>? AND output_used+?<=output_limit "
+                    "AND requests_used<request_limit",
+                    (size, actor["id"], time.time(), size),
+                ).rowcount
+                if not changed:
+                    raise ValueError(
+                        "Research grant allowance exhausted/revoked; no data delivered"
+                    )
 
     def claim(self, token: str, task_id: str) -> dict[str, Any]:
         actor = self.auth(token, task_id)
@@ -201,8 +208,11 @@ class ResearchActors:
             "scope": "This frozen semantic packet only; no raw archives/heldout/credentials",
             "required_review": "External output cannot fund or qualify a paper account",
         }
-        self._charge(actor, len(json.dumps(result, allow_nan=False).encode()))
         with self.registry.transaction():
+            actor = self.auth(token, task_id)
+            now = time.time()
+            until = min(now + 90, actor["expires"])
+            result["lease_until"] = until
             if (
                 self.registry.db.execute(
                     "SELECT count(*) FROM actor_claims WHERE status='claimed' AND lease_until>=?",
@@ -238,7 +248,8 @@ class ResearchActors:
                 )
             changed = self.registry.db.execute(
                 "UPDATE role_tasks SET owner=?,lease_until=?,status='running' WHERE id=? "
-                "AND stage=? AND (owner IS NULL OR lease_until<?)",
+                "AND stage=? AND status NOT IN ('done','failed') "
+                "AND (owner IS NULL OR lease_until<?)",
                 ("actor:" + claim_id, until, task_id, task["stage"], now),
             ).rowcount
             if not changed:
@@ -271,6 +282,8 @@ class ResearchActors:
                     fingerprint(packet),
                 ),
             )
+            self._charge(actor, len(json.dumps(result, allow_nan=False).encode()))
+            self.auth(token, task_id)  # Expiry at settlement rolls back every effect.
         # Follow-up outcome protection commits before the granted packet leaves.
         self.worker.view(task_id)
         return result
@@ -285,8 +298,13 @@ class ResearchActors:
         return dict(row)
 
     def renew(self, token: str, claim_id: str) -> dict[str, Any]:
+        with self.registry.transaction():
+            return self._renew(token, claim_id)
+
+    def _renew(self, token: str, claim_id: str) -> dict[str, Any]:
         actor = self.auth(token)
         claim = self._claim(actor, claim_id)
+        self.auth(token, claim["task"])
         now = time.time()
         if (
             claim["status"] != "claimed"
@@ -296,8 +314,7 @@ class ResearchActors:
             raise ValueError("Expired/completed claim cannot be renewed")
         until = min(now + 90, claim["started"] + 300, actor["expires"])
         result = {"claim": claim_id, "lease_until": until}
-        self._charge(actor, len(json.dumps(result).encode()))
-        with self.registry.transaction():
+        with self.registry.lock:
             used = self.registry.db.execute(
                 "SELECT coalesce(sum(wall_reserved),0) FROM role_attempts "
                 "WHERE started>=? AND json_extract(profile,'$.actor') IS NOT NULL",
@@ -323,6 +340,8 @@ class ResearchActors:
                 "UPDATE role_attempts SET wall_reserved=? WHERE task=? AND stage=? AND attempt=?",
                 (reservation, claim["task"], claim["stage"], claim["attempt"]),
             )
+            self._charge(actor, len(json.dumps(result).encode()))
+            self.auth(token, claim["task"])
         return result
 
     def answer(self, token: str, response: ActorAnswer) -> dict[str, Any]:
@@ -331,11 +350,9 @@ class ResearchActors:
         self.auth(token, claim["task"])
         digest = fingerprint(response.answer)
         if claim["response_sha"] is not None:
-            if claim["response_sha"] != digest:
-                raise ValueError("Completed external answer cannot be rewritten")
-            result = {"task": claim["task"], "answer_sha256": digest, "status": "already_recorded"}
-            self._charge(actor, len(json.dumps(result).encode()))
-            return result
+            with self.registry.transaction():
+                self.auth(token, claim["task"])
+                return self._answered(actor, claim, digest)
         task = self.worker.get(claim["task"])
         self.worker._current(task)
         role, packet = self.worker._packet(task)
@@ -354,13 +371,18 @@ class ResearchActors:
             "status": "recorded",
             "next": "Existing worker evaluates and requires local review; no funding here",
         }
-        self._charge(actor, len(json.dumps(result).encode()))
         error = None
         try:
             validate(role, response.answer, packet)
         except ValueError as exc:
             error = str(exc)[:300]
         with self.registry.transaction():
+            actor = self.auth(token, claim["task"])
+            claim = self._claim(actor, response.claim)
+            if claim["response_sha"] is not None:
+                return self._answered(actor, claim, digest)
+            if claim["status"] != "claimed" or claim["lease_until"] < time.time():
+                raise ValueError("External claim expired or released; no effect")
             changed = self.registry.db.execute(
                 "UPDATE role_tasks SET owner=NULL,lease_until=NULL,status=?,reason=? "
                 "WHERE id=? AND stage=? AND owner=? AND lease_until>=?",
@@ -398,8 +420,20 @@ class ResearchActors:
                 "UPDATE actor_claims SET response_sha=?,status='answered' WHERE id=?",
                 (digest, response.claim),
             )
+            self._charge(actor, len(json.dumps(result).encode()))
+            self.auth(token, claim["task"])
         if error:
             raise ValueError("Non-executable external answer retained: " + error)
+        return result
+
+    def _answered(
+        self, actor: dict[str, Any], claim: dict[str, Any], digest: str
+    ) -> dict[str, Any]:
+        if claim["response_sha"] != digest:
+            raise ValueError("Completed external answer cannot be rewritten")
+        result = {"task": claim["task"], "answer_sha256": digest, "status": "already_recorded"}
+        self._charge(actor, len(json.dumps(result).encode()))
+        # The debit checks current expiry/revocation inside the owning transaction.
         return result
 
     def _release(self, claim: dict[str, Any], reason: str) -> None:
@@ -418,16 +452,16 @@ class ResearchActors:
         )
 
     def release(self, token: str, claim_id: str) -> None:
-        actor = self.auth(token)
-        claim = self._claim(actor, claim_id)
-        if claim["status"] != "claimed":
-            self._charge(actor, 0)
-            return
-        self._charge(actor, 0)
         with self.registry.transaction():
-            self._release(
-                claim, "External claim released; completion unknown, explicit retry required"
-            )
+            actor = self.auth(token)
+            claim = self._claim(actor, claim_id)
+            self.auth(token, claim["task"])
+            self._charge(actor, 0)
+            if claim["status"] == "claimed":
+                self._release(
+                    claim, "External claim released; completion unknown, explicit retry required"
+                )
+            self.auth(token, claim["task"])
 
     def result(self, token: str, task_id: str) -> dict[str, Any]:
         actor = self.auth(token, task_id)
