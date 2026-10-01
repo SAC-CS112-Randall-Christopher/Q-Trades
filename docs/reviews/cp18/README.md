@@ -108,3 +108,34 @@ fixture supplied invalid abstention fields; its failure remains. The corrected
 original-source probe then reproduced the actual 513th-task rejection. Ignored
 data/f6-*.txt retain both original failures and later passing receipts. These are
 isolated software checks, with no model inference or operating data change.
+
+## Integrated audit correction LLM-F7
+
+Question recovery now uses an explicit receipt for the exact saved intent. A
+confirmed rejection is durably fenced in the registry so an in-flight copy cannot
+create work after the form offers editing/discard. Accepted request identities
+win over rejection; a later detail/disclosure failure reports the existing task,
+never a pre-enqueue rejection. Identical concurrent requests share one task.
+Rejections remain immutable recovery history, without a lifetime counter. An
+explicit retry of a rejected question gets a new identity; unknown acknowledgment
+reuses the original identity/body. Bare legacy saved requests migrate as unknown.
+
+The normal rendered form reproduced the original invalid-parent trap, including
+ineffective visible-field correction and refresh. The repaired form passed
+invalid-parent correction, rejection refresh, full-eight-queue rejection/retry
+and a deliberately lost successful acknowledgment followed by refresh/reconcile.
+The last case stayed at ten fixture questions and three accepted request records
+before/after reconciliation. All were queued with inference disabled/unqualified;
+the preview sent zero model calls and its disposable financial journal balanced.
+The preview's initial source-basis fixture label was too broad; its synthetic
+bars are software evidence only. Integrated verification will use an explicitly
+labelled synthetic source. Private original/corrected screenshots and receipts
+remain ignored under data/f7-*. No installed service was restarted.
+
+Six actual HTTP tests passed in 5.51 seconds, including rejection versus late
+creation, duplicate concurrent requests, queue capacity, intent rewrite, detail
+failure after commit and lost acknowledgment across source/restart changes.
+The frontend build passed. Final affected and integrated gates are recorded in
+the delivery receipt; they do not qualify a model or establish economic benefit.
+The final complete affected run passed 30 tests in 39.94 seconds, with Ruff,
+strict Windows typing (four changed sources) and the frontend build passing.

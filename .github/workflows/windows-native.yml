@@ -59,7 +59,8 @@ jobs:
             tests/test_research_audit_corrections.py tests/test_memory_accounts.py `
             tests/test_autonomous_lab.py tests/test_continuous_safety.py tests/test_research_storage.py `
             tests/test_continuous_audit.py tests/test_trade_history.py tests/test_scoped_tools.py `
-            tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py
+            tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
+            tests/test_question_recovery.py
       - name: Install pinned dashboard dependencies
         working-directory: apps/web
         run: npm ci --ignore-scripts --no-audit --no-fund

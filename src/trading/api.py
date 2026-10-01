@@ -490,9 +490,19 @@ def create_app(
     def role_question(request: Request, question: Question) -> dict[str, Any]:
         lab = lab_operator(request)
         try:
-            return dict(lab.roles.view(lab.roles.enqueue(question)["id"]))
+            identity = lab.roles.enqueue(question)["id"]
         except ValueError as exc:
-            raise HTTPException(409, str(exc)) from exc
+            receipt = lab.roles.reject(question, str(exc))
+            raise HTTPException(503 if receipt["outcome"] == "created" else 409, receipt) from exc
+        try:
+            return dict(lab.roles.view(identity))
+        except (ValueError, OSError, LookupError) as exc:
+            # A detail/disclosure failure after commit is a positive creation receipt.
+            # Never tell the form this already-saved intent was rejected.
+            receipt = lab.roles.reject(
+                question, "Question saved; detail is temporarily unavailable"
+            )
+            raise HTTPException(503, receipt) from exc
 
     @app.get("/api/lab/roles/tasks/{identity}")
     def role_detail(request: Request, identity: str) -> dict[str, Any]:

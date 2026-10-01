@@ -6,6 +6,7 @@ import math
 import secrets
 import time
 from collections.abc import Callable
+from contextlib import nullcontext
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -53,25 +54,82 @@ class RoleWorker:
                     PRIMARY KEY(task,stage,attempt));
                 CREATE TABLE IF NOT EXISTS role_requests(
                     request_id TEXT PRIMARY KEY, question_sha256 TEXT NOT NULL, task TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS role_rejections(
+                    request_id TEXT PRIMARY KEY,question_sha256 TEXT NOT NULL,
+                    reason TEXT NOT NULL,created REAL NOT NULL);
+                CREATE TRIGGER IF NOT EXISTS role_rejection_frozen BEFORE UPDATE ON role_rejections
+                  BEGIN SELECT RAISE(ABORT,'Rejected request intent is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS role_rejection_retained
+                  BEFORE DELETE ON role_rejections
+                  BEGIN SELECT RAISE(ABORT,'Request recovery history is permanent'); END;
                 CREATE TRIGGER IF NOT EXISTS role_answer_frozen BEFORE UPDATE ON role_attempts
                   WHEN OLD.response IS NOT NULL AND NEW.response IS NOT OLD.response
                   BEGIN SELECT RAISE(ABORT,'Completed model answer is immutable'); END;
             """)
         self.history = RoleHistory(registry)
 
+    def _requested(self, question: Question) -> str | None:
+        if not question.request_id:
+            return None
+        sha = fingerprint(question.model_dump(exclude={"request_id"}))
+        existing = self.registry.db.execute(
+            "SELECT * FROM role_requests WHERE request_id=?", (question.request_id,)
+        ).fetchone()
+        if existing:
+            if existing["question_sha256"] != sha:
+                raise ValueError("Question request identity cannot be rewritten")
+            return str(existing["task"])
+        rejection = self.registry.db.execute(
+            "SELECT * FROM role_rejections WHERE request_id=?", (question.request_id,)
+        ).fetchone()
+        if rejection:
+            if rejection["question_sha256"] != sha:
+                raise ValueError("Rejected request identity cannot be rewritten")
+            raise ValueError(str(rejection["reason"]))
+        return None
+
+    def reject(self, question: Question, reason: str) -> dict[str, Any]:
+        """Fence a confirmed non-creation against every late copy of the same request."""
+        intent = question.model_dump(exclude={"request_id"})
+        sha = fingerprint(intent)
+        receipt: dict[str, Any] = {
+            "request_id": question.request_id,
+            "intent": intent,
+            "message": reason[:500],
+            "outcome": "unknown",
+        }
+        if not question.request_id:
+            return receipt
+        with self.registry.transaction():
+            existing = self.registry.db.execute(
+                "SELECT * FROM role_requests WHERE request_id=?", (question.request_id,)
+            ).fetchone()
+            if existing:
+                return receipt | {
+                    "outcome": "created"
+                    if existing["question_sha256"] == sha
+                    else "intent_conflict",
+                    "task": existing["task"],
+                }
+            self.registry.db.execute(
+                "INSERT OR IGNORE INTO role_rejections VALUES(?,?,?,?)",
+                (question.request_id, sha, reason[:500], time.time()),
+            )
+            rejection = self.registry.db.execute(
+                "SELECT * FROM role_rejections WHERE request_id=?", (question.request_id,)
+            ).fetchone()
+            if rejection["question_sha256"] != sha:
+                return receipt | {"outcome": "intent_conflict"}
+            return receipt | {"outcome": "not_created", "message": rejection["reason"]}
+
     def enqueue(self, question: Question, now: float | None = None) -> dict[str, Any]:
         now = time.time() if now is None else now
         question_body = question.model_dump(exclude={"request_id"})
         question_sha256 = fingerprint(question_body)
-        if question.request_id:
-            with self.registry.lock:
-                existing = self.registry.db.execute(
-                    "SELECT * FROM role_requests WHERE request_id=?", (question.request_id,)
-                ).fetchone()
-            if existing:
-                if existing["question_sha256"] != question_sha256:
-                    raise ValueError("Question request identity cannot be rewritten")
-                return self.get(existing["task"])
+        with self.registry.lock:
+            requested = self._requested(question)
+        if requested:
+            return self.get(requested)
         c = self.controller
         if c is None or not c.paper.state.get("autonomous_lab"):
             raise ValueError("Declare an ordinary paper lab policy before creating role research")
@@ -165,6 +223,9 @@ class RoleWorker:
             raise ValueError("Role evidence context exceeds 64 KiB")
         self.history.rollover()
         with self.registry.transaction():
+            requested = self._requested(question)
+            if requested:
+                return self.get(requested)
             if not self.registry.db.execute(
                 "SELECT 1 FROM role_tasks WHERE id=?", (identity,)
             ).fetchone():
@@ -198,21 +259,30 @@ class RoleWorker:
         return self.get(identity)
 
     def get(self, identity: str) -> dict[str, Any]:
-        with self.registry.lock:
+        with (
+            self.registry.lock,
+            nullcontext() if self.registry.db.in_transaction else self.registry.transaction(),
+        ):
             row = self.registry.db.execute(
                 "SELECT * FROM role_tasks WHERE id=?", (identity,)
             ).fetchone()
             if not row:
                 raise ValueError("Unknown role task")
-            result = self.history.read(row) if row["archive_reference"] else dict(row)
-            for key in ("context", "proposal", "evaluation", "result"):
-                result[key] = json.loads(result[key]) if result[key] else None
-            result.pop("owner", None)
-            if "attempts" not in result:
-                attempts = self.registry.db.execute(
+            attempts = (
+                self.registry.db.execute(
                     "SELECT * FROM role_attempts WHERE task=? ORDER BY started,rowid", (identity,)
                 ).fetchall()
-                result["attempts"] = [dict(a) for a in attempts]
+                if not row["archive_reference"]
+                else []
+            )
+        # A single registry snapshot sees either all hot attempts or the exact
+        # cold reference, even when another process archives this task.
+        result = self.history.read(row) if row["archive_reference"] else dict(row)
+        for key in ("context", "proposal", "evaluation", "result"):
+            result[key] = json.loads(result[key]) if result[key] else None
+        result.pop("owner", None)
+        if "attempts" not in result:
+            result["attempts"] = [dict(a) for a in attempts]
         return result
 
     def page(self, before: float = 0, before_id: str = "", search: str = "") -> dict[str, Any]:
