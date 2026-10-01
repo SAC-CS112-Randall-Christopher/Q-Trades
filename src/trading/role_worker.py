@@ -1211,7 +1211,7 @@ class RoleWorker:
             }
             totals = self.registry.db.execute(
                 "SELECT count(*),coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
-                "FROM role_attempts"
+                "FROM role_attempt_allowances"
             ).fetchone()
             completed = self.registry.db.execute(
                 "SELECT count(*) FROM role_tasks WHERE status='done'"
