@@ -41,6 +41,7 @@ from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
 from trading.research_campaigns import ResearchCampaignSpec
 from trading.research_evidence import evidence_page, evidence_record
+from trading.research_quality import quality_report
 from trading.research_storage import (
     StoragePlan,
     compact_path,
@@ -580,11 +581,15 @@ def create_app(
         return lab.autonomous
 
     @app.get("/api/lab/roles")
-    def role_status(request: Request, before: float = Query(0, ge=0)) -> dict[str, Any]:
+    def role_status(
+        request: Request,
+        before: float = Query(0, ge=0, allow_inf_nan=False),
+        before_id: str = Query("", max_length=100),
+    ) -> dict[str, Any]:
         lab = request.app.state.lab
         if lab is None or lab.roles is None:
             raise HTTPException(503, "Local role registry unavailable; paper management continues")
-        return dict(lab.roles.page(before))
+        return dict(lab.roles.page(before, before_id))
 
     @app.post("/api/lab/roles/questions")
     def role_question(request: Request, question: Question) -> dict[str, Any]:
@@ -660,6 +665,13 @@ def create_app(
             raise HTTPException(503, "Research selector unavailable")
         return dict(lab.roles.selection_metrics())
 
+    @app.get("/api/research/quality")
+    def research_quality(request: Request) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Research metrics unavailable")
+        return quality_report(lab.roles)
+
     @app.post("/api/research/stocks/investigations")
     def stock_investigate(request: Request, question: StockQuestion) -> dict[str, Any]:
         lab = lab_operator(request)
@@ -694,9 +706,7 @@ def create_app(
         index: int = Query(0, ge=0, le=1),
         compare: bool = False,
     ) -> dict[str, Any]:
-        lab = request.app.state.lab
-        if lab is None:
-            raise HTTPException(503, "Research registry unavailable")
+        lab = lab_operator(request)
         try:
             research = StockResearch(lab.registry)
             return (

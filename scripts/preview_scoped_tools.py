@@ -30,7 +30,7 @@ from trading.tiered_runtime import TieredPaperRuntime  # noqa: E402
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def make_app() -> Any:
+def make_app(start_at: float | None = None) -> Any:
     dsn = load_dsn(ROOT / "data/paper-database.json")
     info = conninfo_to_dict(dsn)
     if info.get("host") != "127.0.0.1" or info.get("port") != "55641":
@@ -55,7 +55,7 @@ def make_app() -> Any:
     admin = psycopg.connect(dsn, autocommit=True)
     admin.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
     store = PaperStore(make_conninfo(dsn, options=f"-c search_path={schema}"), owner=True)
-    now = time.time()
+    now = time.time() if start_at is None else start_at
     store.initialize(now)
     frozen_features = {"close": "100.1234567890123456789", "atr": "2", "note": "Synthetic Δ"}
 

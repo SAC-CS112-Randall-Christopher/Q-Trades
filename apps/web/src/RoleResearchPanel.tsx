@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { LessonPanel } from "./LessonPanel";
 import { StockResearchPanel } from "./StockResearchPanel";
 import { ResearchActorPanel } from "./ResearchActorPanel";
+import { ResearchQualityPanel } from "./ResearchQualityPanel";
 
 type RoleState = {
   enabled: boolean;
@@ -18,6 +19,7 @@ type RoleState = {
   };
   tasks: { id: string; question?: string; created: number; updated: number; stage: string; status: string; reason: string | null }[];
   next_before: number | null;
+  next_before_id: string | null;
 };
 type Task = {
   id: string; stage: string; status: string; updated: number; reason: string | null;
@@ -37,6 +39,7 @@ export function RoleResearchPanel() {
   const [task, setTask] = useState<Task | null>(null);
   const [selected, setSelected] = useState(() => localStorage.getItem("qtrades-role-task") ?? "");
   const [before, setBefore] = useState(0);
+  const [beforeId, setBeforeId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
@@ -53,7 +56,7 @@ export function RoleResearchPanel() {
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
-        const response = await fetch(`/api/lab/roles?before=${before}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) });
+        const response = await fetch(`/api/lab/roles?before=${before}&before_id=${encodeURIComponent(beforeId)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) });
         if (!response.ok) throw new Error("Role status disconnected. Saved questions and paper operation remain separate.");
         const value = await response.json() as RoleState;
         if (live) { setState(value); setError(null); }
@@ -68,7 +71,7 @@ export function RoleResearchPanel() {
     };
     void poll();
     return () => { live = false; controller.abort(); clearTimeout(timer); };
-  }, [selected, before, refresh]);
+  }, [selected, before, beforeId, refresh]);
   const open = (id: string) => { setSelected(id); setTask(null); localStorage.setItem("qtrades-role-task", id); };
   const submit = async (body: Question) => {
     setBusy(true); setError(null); setRetry(body);
@@ -116,8 +119,8 @@ export function RoleResearchPanel() {
     </form>
     <p>Saving a question does not enable inference. A declared paper policy, current role qualification and separate activation are required.</p>
     <div className="table-scroll"><table><thead><tr><th>Saved question</th><th>Stage</th><th>Status</th><th>Actual last progress</th></tr></thead><tbody>{state?.tasks.map(t => <tr key={t.id}><td><button type="button" onClick={() => open(t.id)}>{t.question ?? t.id}</button></td><td>{stages[t.stage] ?? t.stage}</td><td>{t.status}{t.reason ? ` · ${t.reason}` : ""}</td><td>{stamp(t.updated)}</td></tr>)}</tbody></table></div>
-    {before !== 0 && <button type="button" onClick={() => setBefore(0)}>Latest questions</button>}
-    {state?.next_before && <button type="button" onClick={() => setBefore(state.next_before!)}>Older questions</button>}
+    {before !== 0 && <button type="button" onClick={() => {setBefore(0);setBeforeId("");}}>Latest questions</button>}
+    {state?.next_before && <button type="button" onClick={() => {setBefore(state.next_before!);setBeforeId(state.next_before_id ?? "");}}>Older questions</button>}
     {task && <article aria-label="Saved research task">
       <h3>{task.context.question.question}</h3><p>{task.context.question.horizon} horizon · {stages[task.stage] ?? task.stage} · {task.status} · progress {stamp(task.updated)}</p>
       <p>Current ownership: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
@@ -138,5 +141,6 @@ export function RoleResearchPanel() {
     <LessonPanel openTask={open} />
     <StockResearchPanel />
     <ResearchActorPanel selectedTask={selected || null} />
+    <ResearchQualityPanel />
   </section>;
 }

@@ -1,6 +1,10 @@
 """Finite CP17 measurement on an owned disposable database; no operating writes."""
 
+import argparse
+import hashlib
 import json
+import platform
+import subprocess
 import threading
 import time
 import uuid
@@ -31,17 +35,32 @@ CONTRACT = {
 }
 
 
-def verify():
+def verify(output=None, qa_cluster=None):
     dsn = load_dsn(ROOT / "data/paper-database.json")
     info = conninfo_to_dict(dsn)
     if info.get("host") != "127.0.0.1" or info.get("port") != "55641":
         raise ValueError("Requires owned QA PostgreSQL on 55641")
     with psycopg.connect(dsn) as admin:
         directory = Path(admin.execute("SHOW data_directory").fetchone()[0]).resolve()
-        if directory != (ROOT / "data/qa-pg").resolve():
+        if directory != (qa_cluster or ROOT / "data/qa-pg").resolve():
             raise ValueError("Disposable database ownership differs")
-    output = ROOT / "data/cp17-native.json"
-    receipt = {"contract": CONTRACT, "declared_at": time.time(), "cases": []}
+    output = output or ROOT / "data/cp17-native.json"
+    receipt = {
+        "contract": CONTRACT,
+        "declared_at": time.time(),
+        "cases": [],
+        "source_commit": subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip(),
+        "source_sha256": {
+            str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in [Path(__file__), *sorted((ROOT / "src/trading").glob("*.py"))]
+        },
+        "platform": platform.platform(),
+        "python": platform.python_version(),
+        "tier_bytes": 100_000_000_000,
+        "limits": "Finite small actual bytes, not full 100-GB throughput",
+    }
     output.write_text(json.dumps(receipt, indent=2))
     for mode in CONTRACT["cases"]:
         with disposable() as store:
@@ -101,11 +120,6 @@ def verify():
             plan = StoragePlan(
                 root=str(research),
                 volume_identity=volume(research)["identity"],
-                temporary_bytes=16 * 1024**2,
-                research_bytes=16 * 1024**2,
-                scratch_bytes=256 * 1024,
-                segment_bytes=64 * 1024,
-                free_reserve_bytes=0,
             )
             journal = ToolJournal(ROOT / "data" / ("cp17-bench-" + mode + ".sqlite3"), plan)
             stop, errors = threading.Event(), []
@@ -192,4 +206,8 @@ def verify():
 
 
 if __name__ == "__main__":
-    print(json.dumps(verify()))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--qa-cluster", type=Path)
+    args = parser.parse_args()
+    print(json.dumps(verify(args.output, args.qa_cluster)))

@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import math
 import secrets
 import time
 from collections.abc import Callable
@@ -286,19 +287,22 @@ class RoleWorker:
                 result["execution"]["actor"] = last_profile.get("actor", "Local worker")
         return result
 
-    def page(self, before: float = 0) -> dict[str, Any]:
+    def page(self, before: float = 0, before_id: str = "") -> dict[str, Any]:
+        if not math.isfinite(before):
+            raise ValueError("Role cursor timestamp must be finite")
         with self.registry.lock:
             rows = self.registry.db.execute(
                 "SELECT id,created,updated,stage,status,reason,"
                 "json_extract(context,'$.question.question') AS question FROM role_tasks ORDER BY "
-                "created DESC LIMIT 21"
+                "created DESC,id DESC LIMIT 21"
                 if before == 0
                 else (
                     "SELECT id,created,updated,stage,status,reason,"
                     "json_extract(context,'$.question.question') AS question FROM role_tasks "
-                    "WHERE created<? ORDER BY created DESC LIMIT 21"
+                    "WHERE created<? OR (created=? AND id<?) "
+                    "ORDER BY created DESC,id DESC LIMIT 21"
                 ),
-                () if before == 0 else (before,),
+                () if before == 0 else (before, before, before_id),
             ).fetchall()
         return {
             "enabled": self.enabled,
@@ -308,6 +312,7 @@ class RoleWorker:
             else "Separate sequential role worker; task receipts show actual progress",
             "tasks": [dict(r) for r in rows[:20]],
             "next_before": rows[19]["created"] if len(rows) > 20 else None,
+            "next_before_id": rows[19]["id"] if len(rows) > 20 else None,
             "readiness": self.transport.readiness()
             if self.transport
             else {"qualified": False, "reason": "No qualified local role profile configured"},
@@ -428,6 +433,11 @@ class RoleWorker:
         c = self.controller
         if c is None:
             raise InputWait("Paper controller unavailable; task retained")
+        if (
+            task["stage"] in {"idea", "review", "followup"}
+            and task["context"]["contract"] != VERSION
+        ):
+            raise ValueError("Frozen role contract changed; replan before new inference")
         lab = c.paper.state.get("autonomous_lab")
         if task["stage"] in {"outcome", "followup", "complete"}:
             # Historical results remain researchable after policy/parent changes.
@@ -582,6 +592,17 @@ class RoleWorker:
                     "wall_reserved=max(wall_reserved,?-started) "
                     "WHERE task=? AND stage=? AND attempt=?",
                     (body, time.time(), time.time(), task["id"], task["stage"], attempt_number),
+                )
+                # An expired owner may have reported unknown completion before
+                # this immutable receipt arrives. Reconcile that uncertainty,
+                # only if no newer attempt/owner/verdict has superseded it.
+                self.registry.db.execute(
+                    "UPDATE role_tasks SET status='queued',reason=NULL,retry_at=0 "
+                    "WHERE id=? AND stage=? AND status='failed' AND owner IS NULL "
+                    "AND reason LIKE 'Previous inference completion unknown%' "
+                    "AND NOT EXISTS(SELECT 1 FROM role_attempts WHERE task=? "
+                    "AND stage=? AND attempt>?)",
+                    (task["id"], task["stage"], task["id"], task["stage"], attempt_number),
                 )
             return validate(role, response["answer"], packet)
         except Exception as exc:
@@ -915,13 +936,17 @@ class RoleWorker:
             completed = self.registry.db.execute(
                 "SELECT count(*) FROM role_tasks WHERE status='done'"
             ).fetchone()[0]
+            external = self.registry.db.execute(
+                "SELECT count(*) FROM role_attempts "
+                "WHERE json_extract(profile,'$.actor') IS NOT NULL"
+            ).fetchone()[0]
         return {
             "selection": selections,
             "completed_questions": completed,
             "attempts": totals[0],
             "reserved_wall_seconds": totals[1],
             "reserved_token_allowance": totals[2],
-            "paid_usd": "0",
+            "paid_usd": None if external else "0",
             "actual_model_tokens": None,
             "limits": "Allowance is conservative reservation, not measured model tokens or benefit",
         }

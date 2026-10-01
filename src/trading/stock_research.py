@@ -43,6 +43,9 @@ class StockQuestion(BaseModel):
     as_of: float = Field(gt=0)
     hypothesis: str = Field(min_length=12, max_length=500)
     market: bool = False
+    request_id: str | None = Field(
+        default=None, pattern=r"^[A-Za-z0-9_-]{8,64}$", exclude_if=lambda v: v is None
+    )
 
 
 def public_url(url: str) -> str:
@@ -302,6 +305,8 @@ class StockResearch:
                 CREATE TABLE IF NOT EXISTS stock_studies(
                     id TEXT PRIMARY KEY,created REAL NOT NULL,question TEXT NOT NULL,
                     body TEXT NOT NULL,sha TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS stock_requests(
+                    request_id TEXT PRIMARY KEY,question_sha TEXT NOT NULL,study TEXT);
                 CREATE TRIGGER IF NOT EXISTS stock_study_frozen BEFORE UPDATE ON stock_studies
                   BEGIN SELECT RAISE(ABORT,'Read-only study is immutable'); END;
                 CREATE TRIGGER IF NOT EXISTS stock_study_retained BEFORE DELETE ON stock_studies
@@ -402,6 +407,9 @@ class StockResearch:
             store.close()
 
     def investigate(self, question: StockQuestion) -> dict[str, Any]:
+        previous = self._request(question, "filings")
+        if previous:
+            return previous
         if question.as_of > time.time() + 1:
             raise ValueError("Future information cutoff is unsupported")
         tickers = None
@@ -536,9 +544,48 @@ class StockResearch:
                     fingerprint(result),
                 ),
             )
+            if question.request_id:
+                self.registry.db.execute(
+                    "UPDATE stock_requests SET study=coalesce(study,?) WHERE request_id=?",
+                    (identity, question.request_id),
+                )
+                identity = self.registry.db.execute(
+                    "SELECT study FROM stock_requests WHERE request_id=?", (question.request_id,)
+                ).fetchone()[0]
         return self.get(identity)
 
+    def _request(self, question: StockQuestion, mode: str) -> dict[str, Any] | None:
+        if not question.request_id:
+            return None
+        digest = fingerprint(
+            {"mode": mode, "question": question.model_dump(exclude={"request_id"})}
+        )
+        with self.registry.transaction():
+            row = self.registry.db.execute(
+                "SELECT * FROM stock_requests WHERE request_id=?", (question.request_id,)
+            ).fetchone()
+            if row:
+                if row["question_sha"] != digest:
+                    raise ValueError(
+                        "Stock request identity cannot change cutoff, mode or question"
+                    )
+                identity = row["study"]
+            else:
+                if (
+                    self.registry.db.execute("SELECT count(*) FROM stock_requests").fetchone()[0]
+                    >= 4096
+                ):
+                    raise ValueError("Stock request capacity reached; prior identities retained")
+                self.registry.db.execute(
+                    "INSERT INTO stock_requests VALUES(?,?,NULL)", (question.request_id, digest)
+                )
+                identity = None
+        return self.get(identity) if identity else None
+
     def market_study(self, question: StockQuestion) -> dict[str, Any]:
+        previous = self._request(question, "market")
+        if previous:
+            return previous
         if question.security != "IBM" or not question.market or question.as_of > time.time() + 1:
             raise ValueError("Explicit public IBM daily-only study required")
         source = self.source(DEMO)
