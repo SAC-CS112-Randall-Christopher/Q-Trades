@@ -1324,6 +1324,48 @@ progress::-webkit-progress-value {
 .orders-table {
   min-width: 750px;
 }
+
+.q-workspace .orders-tabs {
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 0;
+}
+.trade-history-toolbar, .trade-history-pagination, .trade-history-pagination > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.trade-history-toolbar { padding: 12px 0 20px; }
+.trade-history-toolbar label { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.trade-history-toolbar select { min-width: 145px; }
+.trade-history-toolbar > span, .trade-history-pagination > span { color: var(--muted); font-size: 11px; }
+.trade-history-pagination { justify-content: space-between; padding: 16px 0 8px; }
+.trade-history-pagination > div { gap: 6px; }
+.trade-history-table { min-width: 1070px; font-variant-numeric: tabular-nums; }
+.q-workspace .trade-history-table th, .q-workspace .trade-history-table td { padding: 10px 8px; }
+.trade-history-table th, .trade-history-table td { white-space: nowrap; }
+.trade-history-table .trade-account { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.trade-archived { margin-left: 6px; color: var(--muted); font-size: 9px; }
+.trade-status { display: inline-block; border-radius: 4px; padding: 4px 7px; font-size: 10px; }
+.trade-gain .trade-status { color: var(--green); background: #113328; }
+.trade-loss .trade-status { color: var(--red); background: #361d2a; }
+.trade-flat .trade-status { color: var(--muted); background: #202e43; }
+.trade-open .trade-status { color: var(--amber); background: #352a1a; }
+.trade-gain .trade-result { color: var(--green); }
+.trade-loss .trade-result { color: var(--red); }
+.trade-open .trade-result { color: var(--amber); }
+.trade-flat .trade-result { color: var(--muted); }
+.trade-result { font-weight: 600; }
+.trade-result > span { font-weight: 400; }
+.trade-estimate { margin-left: 6px; font-size: 9px; }
+.trade-detail-button { padding: 5px; background: transparent; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
+.trade-detail-button[aria-expanded="true"] svg { transform: rotate(180deg); }
+.trade-detail-row td { background: #121f31; white-space: normal; }
+.trade-breakdown { display: flex; flex-wrap: wrap; gap: 16px 24px; margin: 4px 0 12px; }
+.trade-breakdown dt { font-size: 10px; color: var(--muted); margin-bottom: 5px; }
+.trade-breakdown dd { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
+.trade-detail-row p { font-size: 11px; color: var(--muted); }
 .workspace-card .campaign-journal {
   margin-bottom: 0;
 }

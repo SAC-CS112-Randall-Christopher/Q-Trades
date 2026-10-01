@@ -93,7 +93,7 @@ const navigation = [
     id: "orders",
     label: "Orders",
     icon: FileClock,
-    description: "Positions, pending paper orders and account history",
+    description: "Trade history, positions, pending orders and retained journal",
   },
   {
     id: "analytics",
@@ -252,7 +252,7 @@ function App() {
       "Compare isolated accounts. Keep each balance, strategy and loss limit separate.",
     "ai-lab": "Test an idea. Freeze the evidence. Learn from every outcome.",
     strategies: "Understand the rules, the signals and why a strategy acted.",
-    orders: "Every position, pending order and retained account event.",
+    orders: "Recent trades across accounts, plus positions and the full journal.",
     analytics: "Whole-account results, measured after modeled execution costs.",
     risk: "Review account limits, retained losses and the path to a live decision.",
     settings:

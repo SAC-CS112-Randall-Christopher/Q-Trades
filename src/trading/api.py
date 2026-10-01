@@ -956,6 +956,53 @@ def create_app(
             raise HTTPException(404, "Paper account not found")
         return paper.store.export(after, limit, account)
 
+    @app.get("/api/paper/trades")
+    def paper_trades(
+        request: Request, before: int = Query(0, ge=0),
+        limit: int = Query(50, ge=1, le=100),
+        account: str | None = Query(None, min_length=1, max_length=100),
+        status: Literal["all", "open", "closed"] = "all",
+    ) -> JSONResponse:
+        paper: PaperRuntime | None = request.app.state.paper
+        if paper is None:
+            raise HTTPException(409, "Paper experiment is not enabled")
+        from trading.paper_engine import filters, fresh_frame
+
+        # Runs in the worker pool, with a separate read-only connection. This
+        # view never uses control_frames(), which updates feed bookkeeping.
+        frames = {}
+        now = time.time()
+        if paper.running and not paper.error:
+            symbols = {s for a in paper.state["accounts"].values() for s in a["positions"]}
+            for symbol in symbols:
+                book = paper.memory_book(symbol)
+                instrument = paper.instruments.get(symbol)
+                previous = paper._previous_books.get(symbol)
+                if book and instrument and fresh_frame(book, now):
+                    if previous and book["book"].update_id < previous[0]:
+                        continue
+                    try:
+                        frames[symbol] = {**book, "rules": filters(instrument)}
+                    except (KeyError, ValueError, ArithmeticError):
+                        continue
+        reader = None
+        try:
+            reader = PaperStore(paper.store.connection.info.dsn)
+            with reader.connection.transaction():
+                reader.connection.execute(
+                    "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
+                )
+                result = reader.trade_history(before=before, limit=limit, account=account,
+                                              status=status, frames=frames, now=now)
+            return JSONResponse(result, headers={"Cache-Control": "no-store"})
+        except KeyError as exc:
+            raise HTTPException(404, "Paper account not found") from exc
+        except psycopg.Error as exc:
+            raise HTTPException(503, "Trade history could not load; retry when connected") from exc
+        finally:
+            if reader is not None:
+                reader.close()
+
     @app.post("/api/collector")
     async def collector(control: Control, request: Request) -> dict[str, bool]:
         origin = request.headers.get("origin")

@@ -1,4 +1,21 @@
-# Continuous paper lab — draft PR24 source
+# Compact trade history — source verification
+
+Chris requested a separate compact Trade history tab in Orders, with Account first,
+all accounts/newest activity by default, account filtering and green/red/amber
+results. The original journal component/export and financial engine remain unchanged.
+Source checks pass: 17 focused, 48 affected and 563 full tests with isolated
+PostgreSQL/no skips; Ruff, strict mypy and frontend build pass. Browser checks cover
+filters, pagination, details, original journal, stale marks and retry/recovery.
+See [the behavior and ordered requests](TRADE_HISTORY.md) and
+[acceptance](reviews/trade-history/ACCEPTANCE.md).
+
+The actual installed app was inspected read-only on `6b059cf`, the merged PR24
+release. Chris then authorized merging this new history change and requested a
+screenshot. Exact-head hosted, merge/final-main and any installed update are separate
+delivery stages; their observed receipts belong in the PR/issue. The older source
+stages below are preserved as historical evidence.
+
+# Historical continuous paper lab — draft PR24 source stage
 
 The installed application remains on main `a3ed677e`. September 30's two bounded
 read-only observations showed advancing markets/closed candles and paper decisions,
