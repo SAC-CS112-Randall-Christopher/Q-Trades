@@ -90,7 +90,17 @@ def prompt(role: str) -> str:
 
 
 def contract_hash() -> str:
-    return fingerprint({role: prompt(role) for role in ("researcher", "reviewer")})
+    return fingerprint(
+        {
+            "packet_encoding": "sorted-compact-json-utf8-v1",
+            "prompts": {role: prompt(role) for role in ("researcher", "reviewer")},
+        }
+    )
+
+
+def packet_json(packet: dict[str, Any]) -> str:
+    """Lossless wire encoding shared by sizing, dispatch and qualification identity."""
+    return json.dumps(packet, sort_keys=True, separators=(",", ":"), allow_nan=False)
 
 
 def validate(role: str, value: dict[str, Any], packet: dict[str, Any]) -> Idea | Review:

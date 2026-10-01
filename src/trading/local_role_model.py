@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 
 from trading.experiment_registry import fingerprint
-from trading.lab_role_contract import contract_hash, prompt, schema
+from trading.lab_role_contract import contract_hash, packet_json, prompt, schema
 from trading.ownership import CollectorLock
 from trading.research_inference import cpu_placement_valid
 from trading.research_resources import (
@@ -178,7 +178,7 @@ class LocalRoles:
         """Size the actual system/schema and serialized packet, without runtime access."""
         measured = {
             "system_schema_bytes": len(prompt(role).encode()),
-            "packet_bytes": len(json.dumps(packet, sort_keys=True).encode()),
+            "packet_bytes": len(packet_json(packet).encode()),
             "output_reserve": profile["options"]["num_predict"],
             "template_reserve": 512,
             "context_allowance": profile["options"]["num_ctx"],
@@ -211,7 +211,7 @@ class LocalRoles:
                     json={
                         "model": profile["model"],
                         "system": prompt(role),
-                        "prompt": json.dumps(packet, sort_keys=True),
+                        "prompt": packet_json(packet),
                         "format": schema(role),
                         "think": profile["thinking"],
                         "stream": False,

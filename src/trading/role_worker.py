@@ -284,7 +284,7 @@ class RoleWorker:
                 "asks": [[str(p), str(q)] for p, q in book.asks[:3]] if book else [],
                 "update_id": book.update_id if book else None,
             },
-            "scope": "Current causal features; no historical fills or profitable backtest inferred",
+            "scope": "Current causal features; historical fills/returns unavailable",
         }
         waits: dict[str, Any] = {
             "new_closed_bars": {
