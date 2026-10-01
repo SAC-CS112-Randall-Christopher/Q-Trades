@@ -6,9 +6,11 @@ This assignment implements issue #28 and its implementation addendum. Read
 CP17-CP22 are dependent draft PRs #29-34, with exact-head hosted Windows success.
 CP23 integrates native/browser/fault acceptance, late-answer recovery, tied-time
 history cursors, exact stock acknowledgment recovery and truthful quality/results.
-Final product source passes 629 native PostgreSQL tests/no skips, Ruff, strict
-mypy (82 modules), frontend build and authenticated reader checks. Final delivery
-head/hosted results are recorded in its draft and issue; stages stay distinct.
+The integrated LLM-F1–F7 repair source passes 668 native PostgreSQL tests/no skips,
+Ruff, strict mypy (84 modules), frontend build and the eight declared finite cases.
+Normal browser recovery/cold-history checks use explicitly synthetic fixtures.
+Final delivery head/hosted results are recorded in its draft and issue; stages
+stay distinct. The earlier 629-case receipts remain historical.
 
 Actual CP18 qualified-model-to-mature-outcome/follow-up remains blocked. The
 operating paper guard repeatedly constrains optional research; corrected development

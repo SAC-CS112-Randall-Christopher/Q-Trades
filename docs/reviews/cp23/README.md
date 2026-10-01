@@ -1,4 +1,21 @@
-# CP23 integrated software acceptance and precise remaining proof
+# Current integrated audit repair evidence
+
+LLM-F1–F7 are repaired within the existing draft PRs #29–35. Read
+[AUDIT_REPAIRS.md](AUDIT_REPAIRS.md) for each fix, current exact source heads,
+668 complete native passes/no skips, the eight finite cases, normal browser
+recovery/cold-history checks, retained failures and precise unresolved model proof.
+Current public receipts are
+[software](audit-repair-software-checks.json),
+[finite load](audit-repair-finite-native.json) and
+[browser](audit-repair-browser-checks.json).
+The PR/issue records the later documentation/receipt delivery head and hosted gate.
+
+# Historical pre-audit CP23 acceptance
+
+The following receipts describe the earlier 629-case delivery. They are preserved
+as historical evidence and are superseded by the repair gates linked above.
+
+## CP23 integrated software acceptance and precise remaining proof
 
 The operator can reopen a recorded ordinary paper comparison, read its calculated
 inputs/review/whole-account result, retrieve a cited lesson, and open the justified

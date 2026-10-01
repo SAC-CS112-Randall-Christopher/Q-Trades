@@ -1,5 +1,42 @@
 # Current implementation: issue #28, CP17–CP23
 
+## Integrated audit repair delivery
+
+The independent integrated audit of `446bd319` identified LLM-F1–F7. All seven
+are repaired in the existing dependent drafts, with original ancestry preserved:
+
+| Draft | Repair head | Finding and behavior |
+|---|---|---|
+| #29 / CP17 | `dc7d155afc2d082ccccfaa9c639927c0cd013e27` | F4: labelled final retired cash accounting remains available a day later; active uncertainty remains unavailable |
+| #30 / CP18 | `527774439c1053c04cdb15353129b2c09925ea84` | F6/F7: bounded hot tasks plus verified searchable archives; retained attempts/requests/usage; rejected versus unknown request recovery |
+| #31 / CP19 | `dea1dc2caaab4af23885655f9a499b20bc121f6b` | F2: typed offered dependencies and atomic full-queue continuation; cold attempt metrics |
+| #32 / CP20 | `edc9ac4464a522d570bf8e47315540abef968c0a` | F3: retained full memory/method artifacts with compact model packets and paged details; actual adapter preflight |
+| #33 / CP21 | `c673b2339c57a9b8375443f87ddf660748eebc17` | F5: immutable first-known content plus durable checked time and cross-connection refresh lease |
+| #34 / CP22 | `84ac3965d043486682ddc59ce41dfd592f8cda14` | F1: atomic fresh authorization/debit/lease commit; cold external budget and unknown paid billing preserved |
+| #35 / CP23 | `6b5a9263b41eb0f23d0440b492a450d305d162c1` | Integrated native/fault/browser proof, cold ordinary memory outcome/lesson/disclosure/quality, and QA helper fixes |
+
+The complete final native Windows/PostgreSQL suite passes **668 tests, zero
+skips, 231.81 s**. The eight predeclared finite workloads all pass, worst financial
+p95 **51.126 ms** under the unchanged 100-ms limit, with balanced journals.
+Ruff, strict mypy (84 modules), frontend build (1926 modules) and normal browser
+rejection/full-queue/lost-ack/cold-history/lesson/component/narrow/disconnection
+checks pass. Native, finite measurement, browser, hosted and later documentation
+heads are separate stages. The original failed integrated run (664 passed / 4
+setup failures), unchanged affected-file reproduction and preview startup
+failures remain retained. Detailed findings, hashes, exact stages and limitations
+are in [the current repair evidence](reviews/cp23/AUDIT_REPAIRS.md).
+
+Actual CP18 current-qualified model → ordinary mature outcome → supported
+follow-up is **still unresolved**. Repair verification dispatches zero actual
+model and public-provider requests. The read-only installed resource guard is
+constrained and current qualification is absent; no admission or qualification
+waiver, installed restart, operating activation, merge or deployment occurred.
+Keep the original six/history, successful parents, twenty-slot membership,
+financial locks, G: policy and delayed-outcome boundaries unchanged. The
+previous 629-case delivery receipts below are historical, not current model proof.
+
+## Original checkpoint delivery and acceptance declaration
+
 Work order: https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/28
 Implementation addendum: issue comment 5933501730. Integration owner: this
 assignment, starting from main `6fc72dccb51e07e00b30bd5c880234c13099297b`.

@@ -1,0 +1,154 @@
+{
+  "actual_model_requests": 0,
+  "balanced": true,
+  "checks": [
+    "Known invalid-parent rejection persists after reload; Edit then corrected Save creates one question",
+    "Separate confirmed rejection Discard restores ordinary Save",
+    "Full eight-slot queue rejects; owned slot release then Try Again uses a new request ID",
+    "Lost committed success acknowledgment freezes exact request; no Edit or ordinary Save; reload then Reconcile preserves exactly 11 questions and 3 accepted IDs",
+    "Search finds archived memory task; outcome, exact method and lesson survive reload",
+    "Full frozen artifact opens from retained identity: rows 1-8 then 9-12",
+    "Recorded inconclusive comparison reports equal after-cost results and supported no_change follow-up",
+    "Desktop and 390x844 narrow viewport; document/body/main widths all 375 CSS pixels; no page overflow; internal table scroll remains",
+    "Viewport reset after narrow check",
+    "Graceful shutdown produces Disconnected and historical-observation alerts while retained task remains visible"
+  ],
+  "cleanup": {
+    "dedicated_model_listening": false,
+    "gis_same_listener": true,
+    "graceful_preview_exited": true,
+    "operating_app_same_listener": true,
+    "verified_at_utc": "2026-10-01T23:21:52.0502270Z"
+  },
+  "component_sha256": "062d5f9f1c684a93b3f0913ad35a81d38c9acff41a7f8dcf6fe3a541e7e180d2",
+  "enabled": false,
+  "evidence_kind": "synthetic-cp23-audit-software-fixture",
+  "fixture": "Synthetic memory trial; accelerated inconclusive outcome",
+  "history": {
+    "active": 8,
+    "archived": 1,
+    "hot_limit": 512,
+    "retained": 11
+  },
+  "limitations": [
+    "Three software answer stubs and accelerated disposable maturity; no qualified model completion",
+    "Normal source preview on owned QA resources; no installed-app source update",
+    "No fresh stock-provider or Crik transport proof"
+  ],
+  "lost_success_acknowledgment": {
+    "after_questions": 11,
+    "after_requests": 3,
+    "balanced": true,
+    "before_questions": 11,
+    "before_requests": 3,
+    "exact_request_ids_unchanged": true,
+    "model_requests": 0
+  },
+  "paid_services_used": false,
+  "public_provider_requests_this_repair": 0,
+  "published_at_utc": "2026-10-01T23:26:03.568000+00:00",
+  "qualified": false,
+  "quality": {
+    "activity": {
+      "done": 3,
+      "queued": 8
+    },
+    "allowance": {
+      "actual_model_tokens": null,
+      "attempts": 3,
+      "completed_questions": 3,
+      "limits": "Allowance is conservative reservation, not measured model tokens or benefit",
+      "paid_usd": "0",
+      "reserved_token_allowance": 24576,
+      "reserved_wall_seconds": 15.0,
+      "selection": {}
+    },
+    "assessment": "Insufficient matched qualified-role observation",
+    "attempts": 3,
+    "economic_value": {
+      "hardware_dollars": null,
+      "independent_support": null,
+      "net_benefit": null,
+      "reason": "Software/stub activity is not prospective matched whole-account economic evidence",
+      "subsequent_matched_windows": null,
+      "supported": false
+    },
+    "external_attempts": 0,
+    "failed_attempts": 0,
+    "matched_research_arms": [
+      {
+        "arm": "A",
+        "defect_detection": null,
+        "evidence_correctness": null,
+        "false_rejection": null,
+        "method": "Existing deterministic generator",
+        "quality_per_budget": null,
+        "reason": "No frozen matched cohort with qualified eligible role evidence",
+        "useful_completions": null
+      },
+      {
+        "arm": "B",
+        "defect_detection": null,
+        "evidence_correctness": null,
+        "false_rejection": null,
+        "method": "Qualified researcher plus required review",
+        "quality_per_budget": null,
+        "reason": "No frozen matched cohort with qualified eligible role evidence",
+        "useful_completions": null
+      },
+      {
+        "arm": "C",
+        "defect_detection": null,
+        "evidence_correctness": null,
+        "false_rejection": null,
+        "method": "Same qualified roles plus supported lesson retrieval",
+        "quality_per_budget": null,
+        "reason": "No frozen matched cohort with qualified eligible role evidence",
+        "useful_completions": null
+      },
+      {
+        "arm": "D",
+        "defect_detection": null,
+        "evidence_correctness": null,
+        "false_rejection": null,
+        "method": "Optional extra skeptic; unconfigured and disabled",
+        "quality_per_budget": null,
+        "reason": "No frozen matched cohort with qualified eligible role evidence",
+        "useful_completions": null
+      }
+    ],
+    "native_usage": {
+      "attempts_with_counts": 0,
+      "basis": "Recorded endpoint counts only; absent counts remain unknown, failed reservations retained",
+      "input_tokens": null,
+      "measured_wall_seconds": null,
+      "output_tokens": null,
+      "unknown_attempts": 3
+    },
+    "recommendation": "Keep optional model/external activation off pending current qualification, host allowance and an authorized matched study. Retain deterministic research/tools.",
+    "selection_warning": "All attempts/search variants remain recorded. Correlated siblings and retrospective LLM knowledge are not fresh independent confirmation. Required review stays in every arm.",
+    "unknown_status_attempts": 0
+  },
+  "read_only_installed_health": {
+    "balanced": true,
+    "commit_p95_ms": 125.0,
+    "cooldown_seconds": 300.0,
+    "dedicated_model_listening": false,
+    "engine_p95_ms": 156.0,
+    "error": null,
+    "read_at_utc": "2026-10-01T23:21:06.9510351Z",
+    "research_constrained": true,
+    "running": true,
+    "stale": false
+  },
+  "scope": "Isolated synthetic software QA; actual qualified-model milestone not established",
+  "screenshots_sha256": {
+    "audit-disconnected.png": "328f84edadf921e15ebeb1f17bb36c5cf9a2761ef9187e5366c7f1f8c66bd099",
+    "audit-mobile.png": "17e5aebc53d6bf7c7ac66b539d1495b7c1c24174774d62a239b0711056152f22",
+    "audit-recovery.png": "777fd8c64f44a7801f6bc9c60df4184be3f86b5af89b085695b001f376950c8c",
+    "audit-synthetic-cold-outcome.png": "9b82ddb06de4d3d31f6cbe369d2f9433ece754513e74460d0b503a8c4c9e76cb",
+    "audit-synthetic-cold-source.png": "8ace6021550bfd4983cf167b6451e0656670c41dd3e5c687c38a04231142be01"
+  },
+  "seed_answer_stub_calls": 3,
+  "source": "6b5a9263b41eb0f23d0440b492a450d305d162c1"
+}

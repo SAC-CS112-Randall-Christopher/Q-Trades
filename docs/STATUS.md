@@ -1,11 +1,13 @@
 # Current issue #28: source stack delivered; operational LLM proof blocked
 
-CP17-CP22 drafts #29-34 have exact-head hosted Windows success, with 580/597/
-600/604/614/622 full native passes and zero skips at their recorded stages.
-CP23 final product source passes 629 native/disposable PostgreSQL tests, zero
-skips in 201.19 seconds, Ruff, strict mypy (82 modules), frontend build (1925
-modules), SCRAM read-only reader and normal desktop/mobile/refresh/failure UI.
-Its final delivery head/hosted gate is recorded separately in the draft/issue.
+LLM-F1–F7 are repaired in the existing CP17-CP23 drafts #29-35, preserving ancestry.
+All seven repair source heads have successful hosted Windows gates. CP23 source
+`6b5a926` passes 668 native/disposable PostgreSQL tests, zero skips in 231.81 s,
+Ruff, strict mypy (84 modules), frontend build (1926 modules), eight predeclared
+finite load cases and normal desktop/mobile/reload/recovery/cold-history UI.
+Worst finite financial p95 is 51.126 ms under the unchanged 100-ms limit.
+Its final documentation/receipt delivery head and hosted gate are recorded
+separately in the draft/issue. Earlier checkpoint counts remain historical.
 See [the integrated ledger](LLM_RESEARCH_CHECKPOINTS.md),
 [CP23 evidence](reviews/cp23/README.md) and
 [rollout handoff](CP23_ROLLOUT_HANDOFF.md).

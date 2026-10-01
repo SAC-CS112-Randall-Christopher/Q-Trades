@@ -21,7 +21,35 @@ Read [the integrated ledger](LLM_RESEARCH_CHECKPOINTS.md),
 in issue/PR receipts. Measurement source hashes are public; private runtime,
 failed attempts, database configuration and original provider packets stay ignored.
 
-## Current evidence and blockers
+## Integrated audit repair handoff
+
+LLM-F1–F7 are corrected in their existing owning drafts and integrated through
+PR #35. Full native source `6b5a9263b41eb0f23d0440b492a450d305d162c1` passes
+668 tests/no skips in 231.81 s; the unchanged financial/resource thresholds pass
+all eight finite cases at `b520a4c`, worst financial p95 51.126 ms. Product source
+is identical at these two heads. The final preview helper respects its existing
+frozen storage plan. Failed full/setup/startup receipts remain retained. See the
+[repair evidence](reviews/cp23/AUDIT_REPAIRS.md) for all seven fixes, exact counts,
+browser reconciliation/cold artifact/lesson proof and limitations.
+
+Read-only installed health at 2026-10-01 23:21:06 UTC reports fresh, running,
+error-free paper processing and a balanced journal. Optional research is still
+constrained: engine p95 156 ms, commit p95 125 ms, cooldown 300 s. The dedicated
+QA model endpoint is stopped. Only the verified owned source-preview process
+was gracefully stopped; installed paper/GIS listener identities are unchanged.
+These observations supersede the older runtime samples below, without changing
+the admission requirements or authorizing installation/activation.
+
+All seven drafts remain unmerged. Issue #28 remains open for independent review
+and the actual qualified-model milestone. Compact packet encoding changes the
+current contract digest to
+`71f90342b3781819e690cf9bb8890a750e97a34b3818fb1a8d04b2324682b7f5`.
+Obtain current development/qualification evidence under an actually admitted,
+authorized host before the real-model vertical trace; never reuse old scores.
+Source fixture/browser success cannot replace mature market observation, model
+quality, full storage-scale acceptance or prospective economic evidence.
+
+## Earlier delivery evidence and persistent blockers
 
 The final read-only installed marker and ordinary health endpoint agree on main
 `6fc72dccb51e07e00b30bd5c880234c13099297b`, with fresh paper processing and a
