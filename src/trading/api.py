@@ -17,6 +17,7 @@ from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
+from psycopg.conninfo import make_conninfo
 from pydantic import BaseModel, ConfigDict, Field
 
 from trading.autonomous_spec import LabControl, LabPolicy, LabProposal
@@ -987,7 +988,10 @@ def create_app(
                         continue
         reader = None
         try:
-            reader = PaperStore(paper.store.connection.info.dsn)
+            # info.dsn is intentionally redacted; reconnect with the existing
+            # credential in memory, never in a response or diagnostic log.
+            info = paper.store.connection.info
+            reader = PaperStore(make_conninfo(info.dsn, password=info.password))
             with reader.connection.transaction():
                 reader.connection.execute(
                     "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"

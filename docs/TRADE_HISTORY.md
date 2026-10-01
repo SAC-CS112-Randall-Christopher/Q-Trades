@@ -39,3 +39,9 @@ No lab activation, financial mutation, provider call or model download is includ
 
 Observed source/UI verification is recorded in
 [the acceptance receipt](reviews/trade-history/ACCEPTANCE.md).
+
+The first authorized installed rollout exposed a password-authentication dependency
+masked by the original QA cluster. See the
+[authenticated reader correction](reviews/trade-history/AUTH_READER.md) for its
+retained failure, bounded diagnosis and stronger verification. The financial
+preservation checks passed; installed API/browser acceptance remains a separate gate.
