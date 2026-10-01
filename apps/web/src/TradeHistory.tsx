@@ -25,6 +25,9 @@ const percent = (value: string | null) => value == null || !Number.isFinite(Numb
 const when = (value: number | null) => value == null ? "—" : new Date(value * 1000)
   .toLocaleString("en-US", { timeZone: "America/Denver", month: "short", day: "numeric", year: "numeric",
     hour: "numeric", minute: "2-digit", second: "2-digit" });
+const rowWhen = (value: number | null) => value == null ? "—" : new Date(value * 1000)
+  .toLocaleString("en-US", { timeZone: "America/Denver", month: "2-digit", day: "2-digit", year: "numeric",
+    hour: "numeric", minute: "2-digit" });
 
 export function TradeHistory({ paper, unavailable }: { paper: PaperSnapshot; unavailable: boolean }) {
   const [account, setAccount] = useState("");
@@ -44,10 +47,12 @@ export function TradeHistory({ paper, unavailable }: { paper: PaperSnapshot; una
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
-    if (before) return;
-    const timer = window.setInterval(() => setRefresh(value => value + 1), 10000);
+    if (before || pending) return;
+    // Keep current open estimates inside the existing five-second book validity.
+    const interval = status === "closed" || page?.open_count === 0 ? 10000 : 3000;
+    const timer = window.setInterval(() => setRefresh(value => value + 1), interval);
     return () => window.clearInterval(timer);
-  }, [before]);
+  }, [before, status, pending, page?.open_count]);
   useEffect(() => {
     const controller = new AbortController();
     const request = ++sequence.current;
@@ -163,7 +168,8 @@ function TradeRows({ trade, tone, state, pnl, markOld, visible, toggle }: {
         {pnl == null ? "Unavailable" : <>{amount(pnl, true)} <span>/ {percent(trade.return_fraction)}</span></>}
         {open && <span className="trade-estimate">{pnl == null ? "Awaiting fresh mark" : "Est. net"}</span>}
       </td>
-      <td>{when(trade.opened_at)}</td><td>{when(trade.closed_at)}</td>
+      <td title={when(trade.opened_at)}>{rowWhen(trade.opened_at)}</td>
+      <td title={when(trade.closed_at)}>{rowWhen(trade.closed_at)}</td>
       <td><button className="trade-detail-button" aria-expanded={visible}
         aria-controls={`detail-${trade.id}`} aria-label={`Details for ${trade.account} ${trade.symbol} trade ${trade.id}`}
         onClick={toggle}><ChevronDown size={14} /></button></td>

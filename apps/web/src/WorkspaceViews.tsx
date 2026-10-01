@@ -1357,7 +1357,7 @@ export function OrdersView({
   );
   return (
     <>
-      <nav className="workspace-tabs" aria-label="Orders views">
+      <nav className="workspace-tabs orders-tabs" aria-label="Orders views">
         {[["trades", "Trade history"], ["positions", "Positions & pending"], ["journal", "Journal"]].map(([id, label]) => (
           <button key={id} className={view === id ? "selected" : ""} aria-pressed={view === id}
             onClick={() => setView(id)}>{label}</button>

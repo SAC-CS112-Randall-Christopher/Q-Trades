@@ -34,6 +34,15 @@ Observed local checks:
   open rows; newer navigation; stale open marks with closed gains/losses retained;
   visible 503 read failure and normal Refresh recovery.
 
+The final screenshot review caught the global navigation style stacking the new
+tabs vertically; a scoped Orders style now keeps them horizontal and wraps on
+narrow screens. Rows use compact dates with the year and full-second timestamps
+in their tooltips. Current open estimates refresh after three idle seconds, without
+overlapping requests or weakening the five-second book validity; closed-only
+pages retain the ten-second cadence and older pages remain fixed. The polished
+build and normal account filter show fresh amber estimates alongside green gains
+and red losses. These are synthetic disposable trades, not installed results.
+
 The final reusable offline fixture is `scripts/verify_trade_history.py`. It refuses
 the installed port/database, creates a generated schema on QA PostgreSQL port 55633,
 labels the normal dashboard Synthetic QA, uses actual engine fills and journals,
