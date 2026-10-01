@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS paper_events (
 );
 CREATE INDEX IF NOT EXISTS paper_events_recent ON paper_events(account, id DESC);
 CREATE INDEX IF NOT EXISTS paper_events_kind ON paper_events(kind, id DESC);
+CREATE INDEX IF NOT EXISTS paper_trade_entry ON paper_events(account, (body->>'symbol'), at)
+WHERE kind='fill' AND body->>'side'='buy';
 CREATE UNIQUE INDEX IF NOT EXISTS lab_proposal_once ON paper_events ((body->>'proposal_id'))
 WHERE kind='lab_trial_reserved';
 CREATE INDEX IF NOT EXISTS lab_trial_events ON paper_events ((body->>'trial_id'), id DESC)
@@ -352,6 +354,58 @@ class PaperStore:
             "records": page,
             "has_more": has_more,
             "next_after": page[-1]["id"] if page else after,
+        }
+
+    def trade_history(
+        self, *, before: int = 0, limit: int = 50, account: str | None = None,
+        status: str = "all", frames: dict[str, dict[str, Any]] | None = None,
+        now: float | None = None,
+    ) -> dict[str, Any]:
+        from trading.trade_history import closed_row, open_row
+
+        if not 1 <= limit <= 100 or before < 0 or status not in {"all", "open", "closed"}:
+            raise ValueError("Invalid trade history page")
+        now = time.time() if now is None else now
+        state = self.read()
+        accounts = state["accounts"]
+        if account is not None and account not in accounts and not self.archived_account(account):
+            raise KeyError("Paper account not found")
+        closed = []
+        if status != "open":
+            rows = self.connection.execute(
+                "SELECT id,revision,account,at,body FROM paper_events WHERE kind='trade_closed' "
+                "AND (%s=0 OR id<%s) AND (%s::text IS NULL OR account=%s) "
+                "ORDER BY id DESC LIMIT %s", (before, before, account, account, limit + 1),
+            ).fetchall()
+            for event in rows[:limit]:
+                entries = self.connection.execute(
+                    "SELECT id,body FROM paper_events WHERE kind='fill' AND body->>'side'='buy' "
+                    "AND account=%s AND body->>'symbol'=%s AND at=%s AND revision<=%s "
+                    "ORDER BY id DESC LIMIT 2",
+                    (event["account"], event["body"]["symbol"], event["body"]["opened_at"],
+                     event["revision"]),
+                ).fetchall()
+                closed.append(closed_row(event, entries))
+        else:
+            rows = []
+        opened = []
+        if before == 0 and status != "closed":
+            for name, saved in accounts.items():
+                if account is None or name == account:
+                    for symbol, position in saved["positions"].items():
+                        opened.append(open_row(name, symbol, position, saved,
+                                               (frames or {}).get(symbol), now))
+        opened.sort(key=lambda r: (r["opened_at"], r["id"]), reverse=True)
+        records = opened + closed
+        records.sort(key=lambda r: (r["closed_at"] or r["opened_at"], r["id"]), reverse=True)
+        for record in records:
+            record["label"] = accounts.get(record["account"], {}).get("label", record["account"])
+            record["archived"] = record["account"] not in accounts
+        return {
+            "records": records, "has_more": len(rows) > limit,
+            "next_before": rows[limit - 1]["id"] if len(rows) > limit else before,
+            "before": before, "observed_at": now, "revision": state["revision"],
+            "open_count": len(opened), "closed_count": len(closed),
         }
 
     def reconcile(self) -> dict[str, Any]:

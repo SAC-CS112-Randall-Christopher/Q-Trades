@@ -1,3 +1,13 @@
+# Paper trade history
+
+Orders opens a separate **Trade history** tab: Account first, all accounts/newest
+activity by default, and one row with entry, exit and net USD/percent result.
+Filter by account or open/closed state and page through older retained trades.
+Gains are green, losses red, open positions amber; optional details explain costs,
+partial exits and unavailable marks. **Journal** keeps the complete original events.
+See [behavior and verification](docs/TRADE_HISTORY.md). An installed update is a
+separate release step from source verification and merge.
+
 # Paper risk and recovery
 
 CP1 adds account-level blocked reasons, explicit hard-stop policy adoption and

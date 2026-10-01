@@ -18,6 +18,7 @@ import {
 import type { Account, PaperSnapshot } from "./PaperPanel";
 import { PaperCampaignPanel } from "./PaperCampaignPanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
+import { TradeHistory } from "./TradeHistory";
 
 const money = (value: string | number | null | undefined) =>
   value == null || !Number.isFinite(Number(value))
@@ -1343,6 +1344,7 @@ export function OrdersView({
 }) {
   const [account, setAccount] = useState("all");
   const [journal, setJournal] = useState("primary");
+  const [view, setView] = useState("trades");
   if (!paper) return <EmptyPaper />;
   const accounts = Object.entries(paper.accounts).filter(
     ([name]) => account === "all" || account === name,
@@ -1355,7 +1357,14 @@ export function OrdersView({
   );
   return (
     <>
-      <div className="workspace-card">
+      <nav className="workspace-tabs" aria-label="Orders views">
+        {[["trades", "Trade history"], ["positions", "Positions & pending"], ["journal", "Journal"]].map(([id, label]) => (
+          <button key={id} className={view === id ? "selected" : ""} aria-pressed={view === id}
+            onClick={() => setView(id)}>{label}</button>
+        ))}
+      </nav>
+      {view === "trades" && <TradeHistory paper={paper} unavailable={unavailable} />}
+      {view === "positions" && <div className="workspace-card">
         <div className="card-heading">
           <h2>Positions &amp; pending orders</h2>
           <label>
@@ -1429,8 +1438,8 @@ export function OrdersView({
           Paper only. A stop trigger is not a guaranteed exit price. The journal
           retains fills, fees, cancellations and failures.
         </p>
-      </div>
-      <section className="workspace-card">
+      </div>}
+      {view === "journal" && <section className="workspace-card">
         <div className="card-heading">
           <h2>Retained account history</h2>
           <label>
@@ -1448,7 +1457,7 @@ export function OrdersView({
           </label>
         </div>
         <PaperCampaignJournal key={journal} account={journal} />
-      </section>
+      </section>}
     </>
   );
 }
