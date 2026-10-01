@@ -11,6 +11,7 @@ from test_autonomous_lab import admit, bars_at, close_window, tick_lab
 from test_paper_engine import START
 from test_paper_store import pg_store as pg_store
 from test_research_storage import plan_at
+from test_role_history import NoChange
 from test_role_worker import ModelStub, make_lab
 
 from trading.evidence_runtime import EvidenceRecorder
@@ -329,4 +330,24 @@ def test_unbound_historical_text_does_not_infer_maturity(pg_store, tmp_path, mon
     assert worker.resume_sources(START + 120) == 0
     assert worker.get(task["id"]) == before
     assert worker.transport.calls == []
+    lab.registry.close()
+
+
+def test_selection_allowance_totals_survive_history_rollover(pg_store, tmp_path, monkeypatch):
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
+    lab = make_lab(pg_store[0], tmp_path)
+    save_plan(tmp_path, plan_at(tmp_path))
+    worker = RoleWorker(lab.registry, lab, NoChange())
+    worker.enabled = True
+    for i in range(2):
+        worker.enqueue(
+            Question(question=f"Keep the charged allowance for historical question {i}.")
+        )
+        assert asyncio.run(worker.step())
+    before = worker.selection_metrics()
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    worker.history.rollover()
+    assert lab.registry.db.execute("SELECT count(*) FROM role_attempts").fetchone()[0] == 0
+    assert worker.selection_metrics() == before
+    assert before["attempts"] == 2 and before["reserved_token_allowance"] == 16384
     lab.registry.close()
