@@ -8,6 +8,7 @@ import time
 from collections.abc import Callable
 from typing import Any, Literal
 
+import psycopg
 from pydantic import BaseModel, ConfigDict, Field
 
 from trading import autonomous_finance as finance
@@ -799,6 +800,15 @@ class RoleWorker:
             return True
         except InputWait as exc:
             self._update(task, task["stage"], "waiting", reason=str(exc), retry_at=now + 30)
+            return False
+        except (psycopg.OperationalError, psycopg.InterfaceError):
+            self._update(
+                task,
+                task["stage"],
+                "waiting",
+                reason="Paper database unavailable; saved stage retained for retry",
+                retry_at=now + 30,
+            )
             return False
         except OSError as exc:
             if task["stage"] == "archive_evaluation":

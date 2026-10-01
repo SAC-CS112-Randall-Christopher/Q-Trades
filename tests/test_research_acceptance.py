@@ -2,10 +2,14 @@
 
 import asyncio
 import json
+import socket
 from hashlib import sha256
 
+import psycopg
 import pytest
 from fastapi.testclient import TestClient
+from psycopg.conninfo import make_conninfo
+from test_autonomous_lab import close_window, tick_lab
 from test_paper_engine import START
 from test_paper_store import pg_store as pg_store
 from test_research_storage import plan_at
@@ -17,6 +21,7 @@ from trading.experiment_registry import ExperimentRegistry
 from trading.research_quality import quality_report
 from trading.research_storage import save_plan
 from trading.role_worker import Question, RoleWorker
+from trading.scoped_tools import reader
 from trading.stock_research import StockQuestion, StockResearch
 
 
@@ -185,6 +190,58 @@ def test_quality_report_keeps_unknown_tokens_and_no_matched_value(pg_store, tmp_
     assert not report["economic_value"]["supported"]
     assert all(a["quality_per_budget"] is None for a in report["matched_research_arms"])
     assert "off" in report["recommendation"]
+    lab.registry.close()
+
+
+def test_database_outage_retains_mature_outcome_and_recovers_once(pg_store, tmp_path, monkeypatch):
+    store, dsn = pg_store
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
+    lab = make_lab(store, tmp_path, horizon_seconds=3600)
+    save_plan(tmp_path, plan_at(tmp_path))
+    from trading.evidence_runtime import EvidenceRecorder
+
+    recorder = EvidenceRecorder(tmp_path / "research-evidence.sqlite")
+    recorder.enqueue({"kind": "wire", "at": START, "source": "synthetic-outage-fixture"})
+    asyncio.run(recorder.flush())
+    model = ModelStub()
+    worker = RoleWorker(lab.registry, lab, model)
+    worker.enabled = True
+    task = worker.enqueue(
+        Question(question="Retain the original ordinary outcome through a database outage."), START
+    )
+    for _ in range(5):
+        assert asyncio.run(worker.step(START))
+    for i in range(1, 5):
+        tick_lab(lab, START + i * 2)
+        lab.step(START + i * 2)
+    proposal = lab.inbox.get("role-proposal-" + task["id"][5:])
+    trial = lab.paper.state["autonomous_lab"]["trials"][proposal["trial_id"]]
+    score = close_window(lab, trial, "inconclusive")
+    before = store.read()
+    events = store.export(0, 1000)["records"]
+
+    # Own a native loopback port without a listener; the real PostgreSQL driver
+    # must fail to connect, while the independently owned writer remains healthy.
+    with socket.socket() as unavailable:
+        unavailable.bind(("127.0.0.1", 0))
+        bad_dsn = make_conninfo(dsn, port=unavailable.getsockname()[1], connect_timeout=1)
+
+        def disconnected(_):
+            return psycopg.connect(bad_dsn)
+
+        monkeypatch.setattr("trading.role_worker.reader", disconnected)
+        assert not asyncio.run(worker.step(score["available_at"] + 1))
+    saved = worker.get(task["id"])
+    assert saved["stage"] == "outcome" and saved["status"] == "waiting"
+    assert saved["reason"] == "Paper database unavailable; saved stage retained for retry"
+    assert "outcome" not in saved["result"] and model.calls == ["researcher", "reviewer"]
+    assert store.read() == before and store.export(0, 1000)["records"] == events
+    monkeypatch.setattr("trading.role_worker.reader", reader)
+    assert asyncio.run(worker.step(score["available_at"] + 32))
+    assert worker.get(task["id"])["result"]["outcome"]["body"] == score
+    assert model.calls == ["researcher", "reviewer"] and store.reconcile()["balanced"]
+    assert store.read() == before and store.export(0, 1000)["records"] == events
+    assert len(worker.get(task["id"])["attempts"]) == 2
     lab.registry.close()
 
 
