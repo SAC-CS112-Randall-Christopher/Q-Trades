@@ -22,7 +22,7 @@ from trading.config import Settings
 from trading.evidence_runtime import EvidenceRecorder
 from trading.experiment_registry import ExperimentRegistry
 from trading.research_quality import quality_report
-from trading.research_storage import save_plan
+from trading.research_storage import load_plan, save_plan
 from trading.role_worker import Question, RoleWorker
 from trading.scoped_tools import reader
 from trading.stock_research import StockQuestion, StockResearch
@@ -31,7 +31,8 @@ from trading.stock_research import StockQuestion, StockResearch
 def seed_memory_result(store, folder, clock):
     """Owned synthetic ordinary lifecycle; no qualified model or provider call."""
     lab = make_lab(store, folder, now=clock[0], horizon_seconds=3600, hourly_compute_seconds=60)
-    save_plan(folder, plan_at(folder))
+    if load_plan(folder) is None:
+        save_plan(folder, plan_at(folder))
     lab.paper.state = store.transact(
         clock[0],
         lambda e: e.state.update(evidence_kind="synthetic-cp23-audit-software-fixture"),
