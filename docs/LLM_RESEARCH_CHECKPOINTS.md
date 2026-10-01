@@ -21,18 +21,20 @@ on declared fixtures; sparse/small fixtures are not 100-GB or 24/7 proof. Normal
 browser checks use an isolated app/database and synthetic market observations.
 Password-authenticated checks use a separately owned disposable cluster.
 
-No operating accounts, installation, storage migration, model service, downloads,
-paid calls, merges or activation are authorized. Only draft source PRs.
+No operating accounts, installation, storage migration, downloads, paid calls,
+merges or agent activation are authorized. Prior explicit authorization permits
+bounded installed-model tests on the dedicated isolated CPU QA service; it does
+not waive paper-resource admission or permit installed reconfiguration.
 
 ## Requirements and evidence ledger
 
 | Checkpoint | Implementation / proof | Current limitation |
 |---|---|---|
-| CP17 | Implemented: scoped tools, durable outcomes, verified rollover and disclosure | Finite software/browser/native proof; see reviews/cp17/README.md |
-| CP18 | Read-only preflight: no trading listener at 11435; old qualification incomplete | Real-model operational proof blocked; do independent source work |
+| CP17 | Delivered draft #29 at 32b5fc49; 580 native tests, no skips; exact-head hosted SUCCESS | Finite software/browser/native proof; see reviews/cp17/README.md |
+| CP18 | Source implements evidence/idea/check/review/inbox/outcome/follow-up; actual dedicated CPU runtime observed | Operating resource guard blocks qualification; see CP18_QUALIFIED_ROLE_LOOP.md |
 | CP19 | Planned after CP18 contracts | No two-generation role trace yet |
 | CP20 | Planned historical-memory filter; assess supported data first | No new runtime component yet |
-| CP21 | Independent official source work eligible after scoped contracts | Providers/entitlements unverified |
+| CP21 | Planned controlled actor/task/evidence access | Actual scoped external transport unverified |
 | CP22 | Planned shared scoped task path | Actual external transport unverified |
 | CP23 | Planned integrated acceptance | No installed/prospective/economic claim |
 

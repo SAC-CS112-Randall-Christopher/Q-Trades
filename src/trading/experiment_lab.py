@@ -32,6 +32,7 @@ class ExperimentLab:
         self.blocked_reason: str | None = None
         self.child: subprocess.Popen[bytes] | None = None
         self.autonomous: Any = None
+        self.roles: Any = None
         self.campaigns = ResearchCampaigns(self.registry, self.enqueue, code_fingerprint)
         from trading.prospective_review import ProspectiveReview
 

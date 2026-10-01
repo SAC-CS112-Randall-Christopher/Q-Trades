@@ -1,7 +1,9 @@
-# Current: CP17, then the CP18 local-model loop
+# Current: CP18 verification, then independent CP19 source
 
-Implement issue #28 and its addendum in dependency order. Finish selected-account
-tools and durable receipts, then qualified evidence-to-paper-result feedback.
+Implement issue #28 and its addendum in dependency order. CP17 draft #29 is
+delivered. Finish bounded CP18 source/browser/hosted evidence while preserving
+the actual qualification blocker, then continue independent CP19 implementation.
+No actual qualified-model-to-paper-result milestone has been established.
 Read [the current ledger](LLM_RESEARCH_CHECKPOINTS.md) for proof and blockers.
 Leave source PRs draft and unmerged; preserve installed and operating state.
 

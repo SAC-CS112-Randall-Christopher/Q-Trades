@@ -61,6 +61,10 @@ try {
     if ($tradingElastic -and $tradingProcessorCount -lt 6) { throw 'Six-thread profile requires at least six logical processors.' }
     $tradingAffinity = if ($tradingElastic) { (1L -shl $tradingProcessorCount) - 1L } else { (1L -shl ($tradingProcessorCount - 1)) -bor (1L -shl ($tradingProcessorCount - 3)) }
     $tradingServer.ProcessorAffinity = [IntPtr]$tradingAffinity
+    # Hashing must not depend on Utility module auto-loading in windowless hosts.
+    $tradingHasher = [Security.Cryptography.SHA256]::Create()
+    try { $tradingScriptHash = ([BitConverter]::ToString($tradingHasher.ComputeHash([IO.File]::ReadAllBytes($PSCommandPath)))).Replace('-', '').ToLowerInvariant() }
+    finally { $tradingHasher.Dispose() }
     $tradingState = [ordered]@{
         profile = $tradingProfileName; state = 'starting'; origin = $tradingOrigin
         supervisor_pid = $PID; server_pid = $tradingServer.Id; executable = $tradingExecutable
@@ -68,7 +72,7 @@ try {
         started_at = [DateTime]::UtcNow.ToString('o'); priority = $tradingPriority
         processor_affinity = $tradingAffinity; logical_processors = if ($tradingElastic) { $tradingProcessorCount } else { 2 }
         inference_threads = $tradingThreads; gpu_policy = 'Reserved for ArcGIS; research CPU only'
-        environment = $tradingEnvironment; script_sha256 = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        environment = $tradingEnvironment; script_sha256 = $tradingScriptHash
     }
     Save-RuntimeState
     $tradingReady = $false

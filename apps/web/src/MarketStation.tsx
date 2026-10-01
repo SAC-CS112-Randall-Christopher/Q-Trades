@@ -100,6 +100,7 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
   const detailPoll = usePoll<Detail>(`/api/station/detail?symbol=${symbol}&account=${encodeURIComponent(account)}`, 10000, visible);
   const accountsPoll = usePoll<ToolAccounts>(`/api/research/tools/accounts?before=${encodeURIComponent(accountPage)}`, 10000, visible);
   const toolsPoll = usePoll<ToolState>(`/api/research/tools${historyCursor ? `?cursor=${encodeURIComponent(historyCursor)}` : ""}`, 10000, visible);
+  const rolesPoll = usePoll<{ enabled: boolean; readiness: { qualified: boolean; reason?: string } }>("/api/lab/roles", 30000, visible);
   const live = livePoll.data?.selected_symbol === symbol ? livePoll.data : null;
   const detail = detailPoll.data?.selected_symbol === symbol && detailPoll.data.strategy.account === account ? detailPoll.data : null;
   const quote = live?.markets.find(q => q.symbol === symbol);
@@ -191,7 +192,7 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
       <div className="station-tool-buttons">{toolsPoll.data?.tools.map(tool => <button key={tool.id} type="button" disabled={busy || !detail} title={tool.purpose} onClick={() => void runTool(tool.id)}>{busy ? "Working…" : tool.name}</button>)}</div>
       {(toolError || toolsPoll.error || toolsPoll.data?.error) && <p className="station-inline-note" role="alert">{toolError || toolsPoll.error || toolsPoll.data?.error}</p>}
       {latest && <ToolResult run={latest} />}
-      <div className="station-agents"><span><strong>Researcher · Trainer · Reviewer</strong> — awaiting model qualification</span><a href="#model-lab">View model trials <ChevronRight size={13} /></a></div>
+      <div className="station-agents"><span><strong>Local research roles</strong> · {rolesPoll.error ? "Status unavailable" : rolesPoll.data ? `${rolesPoll.data.readiness.qualified ? "Qualified" : "Unqualified"} · policy ${rolesPoll.data.enabled ? "enabled" : "disabled"}` : "Loading actual status…"}</span><a href="#role-research">View AI Lab <ChevronRight size={13} /></a></div>
       <details className="station-receipts"><summary>Saved tool runs ({toolsPoll.data?.total ?? 0})</summary>
         {toolsPoll.data?.runs.map(run => <button key={run.id} type="button" onClick={() => void openRun(run.id)}>{time(run.started * 1000)} · {run.account ?? "primary"} · {run.symbol} · {toolsPoll.data?.tools.find(t => t.id === run.tool)?.name ?? run.tool}<span>{run.status}</span></button>)}
         {toolsPoll.data?.next_cursor && <button type="button" onClick={() => setHistoryCursor(toolsPoll.data!.next_cursor!)}>Older saved runs</button>}

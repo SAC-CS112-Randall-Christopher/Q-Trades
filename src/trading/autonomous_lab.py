@@ -142,6 +142,32 @@ class AutonomousLab:
 
     def submit(self, proposal: LabProposal, now: float | None = None) -> dict[str, Any]:
         now = time.time() if now is None else now
+        evaluation = self.evaluate(proposal, now)
+        rejection = None
+        try:
+            finance.validate_parent(self.paper.state, proposal)
+        except finance.InvalidProposal as exc:
+            rejection = str(exc)
+        result = self.inbox.submit(proposal, evaluation, rejection=rejection)
+        recorder = getattr(self.paper, "evidence", None)
+        if recorder is not None and result["status"] == "evaluated":
+            p = LabPolicy.model_validate(self.paper.state["autonomous_lab"]["policy"])
+            recorder.enqueue(
+                {
+                    "schema": "causal-evidence-v1",
+                    "kind": "lab_inputs",
+                    "at": now,
+                    "proposal": proposal.model_dump(),
+                    "evaluation": evaluation,
+                    "protected_until": now
+                    + max(p.horizon_seconds, proposal.strategy.timing["review"])
+                    + 86400,
+                }
+            )
+        return result
+
+    def evaluate(self, proposal: LabProposal, now: float) -> dict[str, Any]:
+        """Existing deterministic prospective check; no inbox or financial effects."""
         lab = self.paper.state.get("autonomous_lab")
         if not lab or proposal.policy_id != lab["policy"]["request_id"]:
             raise ValueError("Start a declared lab policy before submitting an experiment")
@@ -160,7 +186,7 @@ class AutonomousLab:
             or not 0 <= now - available <= 90
         ):
             raise InputWait("Awaiting contiguous causal candles and a fresh executable book")
-        evaluation = {
+        return {
             "status": "supported_exploratory_configuration",
             "evaluated_at": now,
             "expires_at": now + 90,
@@ -181,27 +207,6 @@ class AutonomousLab:
             "profit_required": False,
             "replay": "No new historical replay claimed; compare subsequent executable accounts",
         }
-        rejection = None
-        try:
-            finance.validate_parent(self.paper.state, proposal)
-        except finance.InvalidProposal as exc:
-            rejection = str(exc)
-        result = self.inbox.submit(proposal, evaluation, rejection=rejection)
-        recorder = getattr(self.paper, "evidence", None)
-        if recorder is not None and result["status"] == "evaluated":
-            recorder.enqueue(
-                {
-                    "schema": "causal-evidence-v1",
-                    "kind": "lab_inputs",
-                    "at": now,
-                    "proposal": proposal.model_dump(),
-                    "evaluation": evaluation,
-                    "protected_until": now
-                    + max(p.horizon_seconds, proposal.strategy.timing["review"])
-                    + 86400,
-                }
-            )
-        return result
 
     def _family_available(self, family: str, independent: bool = False) -> bool:
         lab = self.paper.state["autonomous_lab"]

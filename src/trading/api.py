@@ -27,6 +27,7 @@ from trading.config import Settings
 from trading.evidence_runtime import feature_reproduction
 from trading.experiment_lab import ExperimentLab
 from trading.experiment_registry import ExperimentPlan
+from trading.local_role_model import LocalRoles
 from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
@@ -47,6 +48,7 @@ from trading.research_storage import (
     storage_snapshot,
     volume,
 )
+from trading.role_worker import Question, RoleWorker
 from trading.runtime import Monitor
 from trading.scoped_tools import disclose, outcome_page, reader
 from trading.scoped_tools import run as scoped_tool
@@ -156,6 +158,7 @@ def create_app(
             tool_journal = None
             lab = None
             lab_task = None
+            role_task = None
             replay_lab = None
             replay_task = None
             try:
@@ -255,6 +258,10 @@ def create_app(
                         lab.autonomous = AutonomousLab(
                             lab.registry, app.state.paper, lambda: lab.can_research()
                         )
+                    local_roles = LocalRoles(database.parent)
+                    lab.roles = RoleWorker(lab.registry, lab.autonomous, local_roles)
+                    lab.roles.activation = lambda: bool(local_roles.policy().get("enabled", False))
+                    role_task = asyncio.create_task(lab.roles.run()) if background else None
                 lab_task = asyncio.create_task(lab.run()) if background and lab else None
                 app.state.replay = None
                 try:
@@ -275,6 +282,10 @@ def create_app(
                     )
                 yield
             finally:
+                if role_task:
+                    role_task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await role_task
                 if replay_task:
                     replay_task.cancel()
                     with suppress(asyncio.CancelledError):
@@ -462,6 +473,39 @@ def create_app(
         if lab is None or lab.autonomous is None:
             raise HTTPException(503, "Autonomous lab requires the paper service and registry")
         return lab.autonomous
+
+    @app.get("/api/lab/roles")
+    def role_status(request: Request, before: float = Query(0, ge=0)) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Local role registry unavailable; paper management continues")
+        return dict(lab.roles.page(before))
+
+    @app.post("/api/lab/roles/questions")
+    def role_question(request: Request, question: Question) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return dict(lab.roles.view(lab.roles.enqueue(question)["id"]))
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/lab/roles/tasks/{identity}")
+    def role_detail(request: Request, identity: str) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Local role registry unavailable")
+        try:
+            return dict(lab.roles.view(identity))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/lab/roles/tasks/{identity}/retry")
+    def role_retry(request: Request, identity: str) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return dict(lab.roles.retry(identity))
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
 
     @app.get("/api/autonomous")
     async def autonomous_snapshot(request: Request) -> dict[str, Any]:

@@ -2,6 +2,11 @@
 
 Implement the work order and implementation addendum in GitHub issue #28.
 Read docs/LLM_RESEARCH_CHECKPOINTS.md for the current integration/evidence ledger.
+Read docs/CP18_QUALIFIED_ROLE_LOOP.md before touching role/runtime work. CP17 is
+draft #29 at 32b5fc49 with exact-head hosted success. CP18 actual qualification is
+blocked by the operating optional-research guard; preliminary development calls
+are ineligible as qualification. Continue independent source work without waiving
+that guard, installing/restarting the app or activating operating agents.
 Build on merged #27 at main 6fc72dcc. One complete checkpoint per bounded draft
 PR, dependent branches when needed; proceed from CP17 to CP18 without claiming
 an operational LLM layer from tools or schemas. Preserve existing work and all

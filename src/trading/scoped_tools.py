@@ -9,13 +9,14 @@ from typing import Any
 from psycopg.conninfo import make_conninfo
 
 from trading.experiment_registry import ExperimentRegistry, fingerprint
+from trading.paper_runtime import PaperRuntime
 from trading.paper_store import PaperStore
 from trading.station import execute_tool
 from trading.tiered_runtime import TieredPaperRuntime
 
 
 @contextmanager
-def reader(runtime: TieredPaperRuntime) -> Iterator[PaperStore]:
+def reader(runtime: PaperRuntime) -> Iterator[PaperStore]:
     info = runtime.store.connection.info
     view = PaperStore(make_conninfo(info.dsn, password=info.password, connect_timeout=3))
     try:
