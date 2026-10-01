@@ -173,20 +173,35 @@ class LocalRoles:
         except (httpx.HTTPError, ValueError, OSError, KeyError) as exc:
             return {"qualified": False, "reason": str(exc)[:300]}
 
+    @staticmethod
+    def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, int]:
+        """Size the actual system/schema and serialized packet, without runtime access."""
+        measured = {
+            "system_schema_bytes": len(prompt(role).encode()),
+            "packet_bytes": len(json.dumps(packet, sort_keys=True).encode()),
+            "output_reserve": profile["options"]["num_predict"],
+            "template_reserve": 512,
+            "context_allowance": profile["options"]["num_ctx"],
+        }
+        measured["reserved_total"] = sum(
+            measured[k]
+            for k in ("system_schema_bytes", "packet_bytes", "output_reserve", "template_reserve")
+        )
+        # prompt() includes the complete schema; the identical format object
+        # constrains output grammar rather than adding another textual prompt.
+        if measured["reserved_total"] > measured["context_allowance"]:
+            raise ValueError(
+                "Packet exceeds conservative context allowance; request bounded evidence"
+            )
+        return measured
+
     def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
         lock = CollectorLock(self.directory / "research-inference.lock")
         lock.acquire()
         started = time.perf_counter()
         dispatched = False
         try:
-            prompt_bytes = len(prompt(role).encode()) + len(json.dumps(packet).encode())
-            if (
-                prompt_bytes + profile["options"]["num_predict"] + 512
-                > profile["options"]["num_ctx"]
-            ):
-                raise ValueError(
-                    "Packet exceeds conservative context allowance; request bounded evidence"
-                )
+            self.preflight(role, packet, profile)
             before = self.observe(profile)
             before["paper_guard"] = self.paper_guard()
             with httpx.Client(trust_env=False, timeout=profile["timeout_seconds"]) as client:

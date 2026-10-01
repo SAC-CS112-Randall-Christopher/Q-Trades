@@ -477,19 +477,34 @@ def create_app(
         return lab.autonomous
 
     @app.get("/api/lab/roles")
-    def role_status(request: Request, before: float = Query(0, ge=0)) -> dict[str, Any]:
+    def role_status(
+        request: Request,
+        before: float = Query(0, ge=0),
+        before_id: str = Query("", max_length=100),
+        search: str = Query("", max_length=100),
+    ) -> dict[str, Any]:
         lab = request.app.state.lab
         if lab is None or lab.roles is None:
             raise HTTPException(503, "Local role registry unavailable; paper management continues")
-        return dict(lab.roles.page(before))
+        return dict(lab.roles.page(before, before_id, search))
 
     @app.post("/api/lab/roles/questions")
     def role_question(request: Request, question: Question) -> dict[str, Any]:
         lab = lab_operator(request)
         try:
-            return dict(lab.roles.view(lab.roles.enqueue(question)["id"]))
+            identity = lab.roles.enqueue(question)["id"]
         except ValueError as exc:
-            raise HTTPException(409, str(exc)) from exc
+            receipt = lab.roles.reject(question, str(exc))
+            raise HTTPException(503 if receipt["outcome"] == "created" else 409, receipt) from exc
+        try:
+            return dict(lab.roles.view(identity))
+        except (ValueError, OSError, LookupError) as exc:
+            # A detail/disclosure failure after commit is a positive creation receipt.
+            # Never tell the form this already-saved intent was rejected.
+            receipt = lab.roles.reject(
+                question, "Question saved; detail is temporarily unavailable"
+            )
+            raise HTTPException(503, receipt) from exc
 
     @app.get("/api/lab/roles/tasks/{identity}")
     def role_detail(request: Request, identity: str) -> dict[str, Any]:
@@ -508,6 +523,18 @@ def create_app(
             return dict(lab.roles.retry(identity))
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/lab/roles/tasks/{identity}/components/{capability}")
+    def role_component_detail(
+        request: Request, identity: str, capability: str, offset: int = Query(0, ge=0, le=128)
+    ) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Local role registry unavailable")
+        try:
+            return dict(lab.roles.component_detail(identity, capability, offset))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
 
     @app.get("/api/research/lessons")
     def lesson_search(
