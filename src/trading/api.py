@@ -507,6 +507,18 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
 
+    @app.get("/api/lab/roles/tasks/{identity}/components/{capability}")
+    def role_component_detail(
+        request: Request, identity: str, capability: str, offset: int = Query(0, ge=0, le=128)
+    ) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Local role registry unavailable")
+        try:
+            return dict(lab.roles.component_detail(identity, capability, offset))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
     @app.get("/api/research/lessons")
     def lesson_search(
         request: Request,

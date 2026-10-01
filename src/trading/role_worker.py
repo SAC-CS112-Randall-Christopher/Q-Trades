@@ -17,6 +17,14 @@ from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
 from trading.research_lessons import ResearchLessons
 from trading.research_storage import ResearchStorage, load_plan
+from trading.role_evidence import (
+    artifact_summary,
+    bundle_summary,
+    feature_set,
+    feature_summary,
+    method_summary,
+    outcome_summary,
+)
 from trading.rule_components import reviewed_feature
 from trading.scoped_tools import reader
 
@@ -55,6 +63,13 @@ class RoleWorker:
                     PRIMARY KEY(task,stage,attempt));
                 CREATE TABLE IF NOT EXISTS role_requests(
                     request_id TEXT PRIMARY KEY, question_sha256 TEXT NOT NULL, task TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS role_components(
+                    sha256 TEXT PRIMARY KEY, body TEXT NOT NULL);
+                CREATE TRIGGER IF NOT EXISTS role_component_frozen BEFORE UPDATE ON role_components
+                  BEGIN SELECT RAISE(ABORT,'Role component is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS role_component_retained
+                  BEFORE DELETE ON role_components
+                  BEGIN SELECT RAISE(ABORT,'Role component is permanent'); END;
                 CREATE TRIGGER IF NOT EXISTS role_answer_frozen BEFORE UPDATE ON role_attempts
                   WHEN OLD.response IS NOT NULL AND NEW.response IS NOT OLD.response
                   BEGIN SELECT RAISE(ABORT,'Completed model answer is immutable'); END;
@@ -172,7 +187,12 @@ class RoleWorker:
             if prior["context"]["horizon"] != question.horizon:
                 raise ValueError("Lesson and new comparison require the same declared horizon")
             catalog = {
-                k: v for k, v in catalog.items() if v["strategy"] != prior["context"]["strategy"]
+                k: v
+                for k, v in catalog.items()
+                if fingerprint(v["strategy"])
+                != prior["context"].get(
+                    "strategy_sha256", fingerprint(prior["context"]["strategy"])
+                )
             }
             if not catalog:
                 raise ValueError("No supported different capability; wait for new evidence")
@@ -229,6 +249,18 @@ class RoleWorker:
                 "eligible_at": pending[0]["review_at"],
                 "other_pending_comparisons": len(pending) - 1,
             }
+        artifacts: dict[str, Any] = {}
+        for value in catalog.values():
+            for key in ("strategy", "reference"):
+                value[key + "_sha256"] = fingerprint(value[key])
+                component = value[key].get("entry_filter")
+                if component:
+                    artifact = component["artifact"]
+                    artifacts[artifact["sha256"]] = artifact
+                    value[key] = value[key] | {
+                        "entry_filter": component
+                        | {"artifact": artifact_summary(artifact) | {"retained": True}}
+                    }
         context = {
             "contract": VERSION,
             "question": question_body,
@@ -260,6 +292,11 @@ class RoleWorker:
         if len(encoded.encode()) > 65536:
             raise ValueError("Role evidence context exceeds 64 KiB")
         with self.registry.transaction():
+            for sha256, artifact in artifacts.items():
+                self.registry.db.execute(
+                    "INSERT OR IGNORE INTO role_components VALUES(?,?)",
+                    (sha256, json.dumps(artifact, sort_keys=True, allow_nan=False)),
+                )
             if _resume_from:
                 if identity == _resume_from["id"]:
                     raise ValueError("Unchanged evidence cannot resume the same question")
@@ -485,16 +522,27 @@ class RoleWorker:
                 "question": context["question"]["question"],
                 "capabilities": {},
                 "evidence": {
-                    "e0": {"method": task["proposal"], "cost_policy": context["policy"]},
+                    "e0": {
+                        "method": method_summary(task["proposal"]),
+                        "cost_policy": context["policy"],
+                    },
                     "e1": {k: v for k, v in task["evaluation"].items() if k != "inputs"}
                     | {
                         "input_count": task["evaluation"]["input_count"],
                         "input_sha256": task["evaluation"]["input_sha256"],
+                        "feature": feature_summary(task["evaluation"]["feature"]),
                     },
                 },
             }
-        evidence: dict[str, Any] = {"e0": context["issued"]["bundle"]}
-        evidence["e2"] = context["tool_evidence"]
+        evidence: dict[str, Any] = {"e0": bundle_summary(context["issued"]["bundle"])}
+        evidence["e2"] = context["tool_evidence"] | {
+            "features": feature_set(context["tool_evidence"]["features"]),
+            "executable_book": {
+                k: context["tool_evidence"]["executable_book"][k]
+                for k in ("observed_at", "at", "bids", "asks", "update_id")
+                if k in context["tool_evidence"]["executable_book"]
+            },
+        }
         evidence["e2"] = evidence["e2"] | {
             "request_data_conditions": {
                 key: {
@@ -512,7 +560,7 @@ class RoleWorker:
             ),
         }
         if context.get("dependency_evidence"):
-            evidence["e4"] = context["dependency_evidence"]
+            evidence["e4"] = outcome_summary(context["dependency_evidence"])
         if context.get("lesson"):
             prior = context["lesson"]
             evidence["e3"] = {
@@ -536,28 +584,79 @@ class RoleWorker:
                     "basis": "Earlier causal inputs; the new score is training information",
                 }
             }
-            evidence["e1"] = task["result"]["outcome"]
+            evidence["e1"] = outcome_summary(task["result"]["outcome"])
         capabilities = {
             key: {
                 "kind": value["kind"],
                 "family": value["strategy"]["family"],
-                "holding_horizon": value["strategy"]["holding_horizon"],
                 "lookback": value["strategy"]["lookback"],
                 "reference_family": value["reference"]["family"],
                 "reference_lookback": value["reference"]["lookback"],
-                "authority": "Reviewed rules; identical frozen costs/risk, prospective paper only",
-                "entry_component": value["strategy"].get("entry_filter", {}).get("kind"),
-                "component_horizon_seconds": value["strategy"]
-                .get("entry_filter", {})
-                .get("horizon_seconds"),
             }
+            | (
+                {"component": value["strategy"]["entry_filter"]}
+                if value["strategy"].get("entry_filter")
+                else {}
+            )
             for key, value in context["catalog"].items()
         }
         return "researcher", {
             "question": context["question"]["question"],
             "capabilities": capabilities,
+            "scope": "Prospective paper; same declared horizon, frozen costs/risk",
             "evidence": evidence,
         }
+
+    def _capability(self, value: dict[str, Any]) -> dict[str, Any]:
+        """Resolve the frozen full numerical method; model summaries grant no authority."""
+        result = {
+            k: v for k, v in value.items() if k not in {"strategy_sha256", "reference_sha256"}
+        }
+        for key in ("strategy", "reference"):
+            strategy = result[key]
+            component = strategy.get("entry_filter")
+            if component and component["artifact"].get("retained"):
+                with self.registry.lock:
+                    row = self.registry.db.execute(
+                        "SELECT body FROM role_components WHERE sha256=?",
+                        (component["artifact"]["sha256"],),
+                    ).fetchone()
+                if not row:
+                    raise InputWait("Retained component unavailable; frozen method not substituted")
+                strategy = strategy | {"entry_filter": component | {"artifact": json.loads(row[0])}}
+            if key + "_sha256" in value and fingerprint(strategy) != value[key + "_sha256"]:
+                raise ValueError("Frozen numerical method reference mismatch")
+            result[key] = RuleSpec.model_validate(strategy).model_dump()
+        return result
+
+    def component_detail(self, identity: str, capability: str, offset: int = 0) -> dict[str, Any]:
+        task = self.get(identity)
+        value = task["context"]["catalog"].get(capability)
+        if not value or not value["strategy"].get("entry_filter") or not 0 <= offset <= 128:
+            raise ValueError("No such frozen component page in the selected task")
+        artifact = self._capability(value)["strategy"]["entry_filter"]["artifact"]
+        result = {
+            "capability": capability,
+            "artifact_sha256": artifact["sha256"],
+            "artifact_metadata": {k: v for k, v in artifact.items() if k != "library"},
+            "library_count": len(artifact["library"]),
+            "offset": offset,
+            "library": artifact["library"][offset : offset + 8],
+            "next_offset": offset + 8 if offset + 8 < len(artifact["library"]) else None,
+            "scope": "Eight retained training rows per page; no prospective result inferred",
+        }
+        if len(json.dumps(result).encode()) > 131072:
+            raise ValueError("Component page exceeds response allowance; exact artifact retained")
+        with self.registry.transaction():
+            self.registry.db.execute(
+                "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,'role component disclosure')",
+                (
+                    "role-component:" + artifact["sha256"],
+                    min(row["at"] for row in artifact["library"]) - 600,
+                    max(artifact["train_end"], artifact["calibration_end"]),
+                ),
+            )
+        return result
 
     async def _answer(self, task: dict[str, Any]) -> Idea | Review:
         role, packet = self._packet(task)
@@ -715,7 +814,7 @@ class RoleWorker:
                         reason=answer.dependency or answer.rationale,
                     )
                 else:
-                    capability = task["context"]["catalog"][answer.capability]
+                    capability = self._capability(task["context"]["catalog"][answer.capability])
                     proposal = LabProposal(
                         request_id="role-proposal-" + task["id"][5:],
                         policy_id=task["context"]["policy"]["request_id"],
