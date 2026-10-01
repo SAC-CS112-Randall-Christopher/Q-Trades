@@ -26,6 +26,62 @@ runtime = _runtime
 pg_store = _pg_store
 
 
+def test_actual_retired_cash_result_save_reopen_days_later_stays_known(
+    pg_store, tmp_path, monkeypatch
+):
+    from test_autonomous_lab import admit, close_window, make_lab
+
+    store, _ = pg_store
+    lab = make_lab(store, tmp_path, horizon_seconds=3600)
+    trial = admit(lab, START)
+    score = close_window(lab, trial, "economically_unsuccessful")
+    later = score["available_at"] + 86401
+    snapshot = store.research_account(trial["candidate"], later)
+    assert snapshot["archived"] and not snapshot["state"]["positions"]
+    result = store.research_outcomes(snapshot, "BTCUSD")
+    from decimal import Decimal
+
+    assert Decimal(result["account_totals"]["net_pnl"]) == (
+        Decimal(snapshot["state"]["cash"]) - Decimal(snapshot["state"]["funding"])
+    )
+    assert result["account_totals"]["final"] is True
+    assert result["account_totals"]["fresh"] is False
+    assert result["accounting_at"] == snapshot["retired_at"] < later
+    monkeypatch.setattr("trading.scoped_tools.time.time", lambda: later)
+    from test_paper_runtime import instrument
+
+    lab.paper.instruments = {"BTCUSD": instrument("BTC")}
+    saved = run(lab.paper, "outcome_review", "BTCUSD", trial["candidate"], "final-reopen-id")
+    journal = ToolJournal(tmp_path / "terminal-tools.sqlite3", plan_at(tmp_path))
+    identity = journal.start("outcome_review", "BTCUSD", account=trial["candidate"])
+    journal.finish(identity, saved, None)
+    journal.close()
+    reopened = ToolJournal(tmp_path / "terminal-tools.sqlite3", plan_at(tmp_path))
+    assert reopened.get(identity)["result"]["result"]["account_totals"] == result["account_totals"]
+    app = create_app(Settings(), tmp_path / "monitor.sqlite3", background=False)
+    with TestClient(app) as client:
+        app.state.tool_journal = reopened
+        restored = client.get(f"/api/research/tools/runs/{identity}")
+        assert restored.status_code == 200
+        assert restored.json()["result"]["result"]["account_totals"] == result["account_totals"]
+    reopened.close()
+    active = store.research_outcomes(store.research_account("primary", later), "BTCUSD")
+    assert active["account_totals"]["net_pnl"] is None
+    from trading.paper_economics import sample
+
+    for change in (
+        {"fault": "Unresolved financial closure"},
+        {"execution_uncertain": True},
+        {"equity": "98"},
+        {"positions": {"BTCUSD": {"cost": "1", "quantity": "0.01"}}},
+        {"pending": {"BTCUSD": {"reserved": "1", "uncertain": True}}},
+    ):
+        uncertain = sample(snapshot["state"] | change, later, final_at=snapshot["retired_at"])
+        assert uncertain["net_pnl"] is None and uncertain["final"] is False
+    assert store.reconcile()["balanced"]
+    lab.registry.close()
+
+
 def test_selected_child_uses_frozen_costs_and_recorded_causal_features(runtime):
     child = copy.deepcopy(runtime.state["accounts"]["primary"])
     child["execution_profile"] = "binance-us-public-2026-09-29-v1"

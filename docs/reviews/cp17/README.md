@@ -42,6 +42,23 @@ exact hot receipts and reports backpressure; details never substitute today's va
 The native contract uses no model tokenizer, so model tokens remain unknown rather
 than inferred from bytes. Old receipt versions retain their original meaning.
 
+## Integrated audit correction LLM-F4
+
+A retired account with reconciled cash, no holdings, no pending orders and no
+execution/accounting fault now reports its known final net result independently
+of the current query clock. The reader labels the accounting as final historical
+cash and retains the retirement and query times separately. It does not label an
+old quote fresh. Active accounts still require current valuation; unresolved
+closures, mismatched cash/equity, dust holdings and uncertain orders remain unknown.
+
+The regression runs an ordinary losing trial through actual retirement, queries
+it a day later, saves an outcome-review receipt, closes/reopens the journal and
+reads the saved receipt through the API. The original failure and subsequent
+fixture failure are retained in ignored data/f4-*.txt. This is disposable software
+proof; no operating account or historical financial event was changed.
+The complete affected native PostgreSQL run passed 50 tests in 25.41 seconds;
+Ruff, strict typing for the changed sources and the frontend build also passed.
+
 ## Next checkpoint
 
 CP18 must qualify the expanded proposal/tool contract and demonstrate the actual

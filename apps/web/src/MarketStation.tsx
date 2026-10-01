@@ -70,8 +70,9 @@ const ToolResult = memo(function ToolResult({ run }: { run: Run }) {
     summary = decision?.reason ? `Last recorded decision: ${decision.reason}` : "No selected-account decision has been recorded for this market.";
   } else if (run.tool === "outcome_review" && result) {
     const totals = result.market_totals as { trades: number; net_pnl: string; fees: string } | undefined;
-    const account = result.account_totals as { net_pnl?: string | null; cash?: string; fresh?: boolean } | undefined;
-    summary = totals ? `${totals.trades} recorded ${run.symbol.replace(/USD$/, "")} trades: $${number(totals.net_pnl)} net P/L, including $${number(totals.fees)} in fees. Whole-account net P/L: ${account?.net_pnl == null ? "unavailable at captured valuation" : `$${number(account.net_pnl)}`}; cash $${number(account?.cash)}. Open holdings and separate-capital comparisons remain in the receipt.` : String(result.reason ?? "Permanent outcome evidence is unavailable.");
+    const account = result.account_totals as { net_pnl?: string | null; cash?: string; fresh?: boolean; final?: boolean; final_at?: number } | undefined;
+    const basis = account?.final ? `Final historical whole-account net P/L (retired ${new Date(account.final_at! * 1000).toLocaleString()})` : "Whole-account net P/L";
+    summary = totals ? `${totals.trades} recorded ${run.symbol.replace(/USD$/, "")} trades: $${number(totals.net_pnl)} net P/L, including $${number(totals.fees)} in fees. ${basis}: ${account?.net_pnl == null ? "unavailable at captured valuation" : `$${number(account.net_pnl)}`}; cash $${number(account?.cash)}. Open holdings and separate-capital comparisons remain in the receipt.` : String(result.reason ?? "Permanent outcome evidence is unavailable.");
   }
   else if (run.tool === "market_evidence" && result) {
     const live = result.live as Live | undefined;
