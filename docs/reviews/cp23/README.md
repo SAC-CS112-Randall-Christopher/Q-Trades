@@ -11,8 +11,8 @@ acceptance remains blocked.
 
 Base CP22: `dd55b89b2c772e4d24fb7d06966b7f4d74374f04`.
 Final full-tested product source: `197e5a1894b16b01af71604664048dc23a03bd34`.
-Measurement #2 source was b76fd61; after the final database-recovery correction,
-the same final workload is rerun and its exact source hashes retained separately.
+Final measurement #3 uses clean delivery source 28e9d25 with the same limits;
+exact per-file hashes and all earlier measurement identities remain retained.
 Subsequent delivery changes are documentation/public receipts only. The draft/issue
 records the final delivery head and exact-head hosted check.
 Read the [predeclared plan](../../CP23_ACCEPTANCE_PLAN.md) and
@@ -29,7 +29,9 @@ modules**. TypeScript/production build passes, **1925 transformed modules** in
 The final database-outage correction additionally passes 17 affected tests in
 8.88 seconds, then the complete 629-test rerun. The preceding complete 628-pass
 run in 213.68 seconds stays retained. Exact final delivery head/hosted results
-remain separate from these source receipts.
+remain separate from these source receipts. Hosted tests conditionally skip when
+the disposable database is unconfigured; the native complete suite has zero skips.
+See [software-checks.json](software-checks.json) for exact source-stage counts.
 
 The native reader driver uses actual SCRAM-SHA-256 password authentication against
 the separately owned disposable PostgreSQL cluster. Bad credentials are rejected,
@@ -48,38 +50,47 @@ logs/runtime attempts remain with their checkpoint receipts.
 
 ## Finite native measurements
 
+Final measurement #3 is clean source `28e9d25e0b1dd7fa787ae8cdf38874a8506cad46`; all product source
+hashes are in the receipt. It includes the database-recovery correction, and
+later publication changes only documentation/receipts. Measurements #1/#2 are
+retained with their original identities and results, not combined with #3.
+
 Actual Windows/disposable PostgreSQL, six 30-second one/ten/twenty cases, 120 ticks
 each, with 1103 retained synthetic outcome events and an archived account. Busy
-means an actual constrained CPU numerical-fit process, not an LLM request. Its
-Windows IDLE/two-processor placement is measured. All six cases passed unchanged
-limits and exact balanced-journal/projection reconciliation.
+means an actual constrained CPU numerical-fit process. Its Windows IDLE/two-
+processor placement is measured. All six cases passed unchanged limits and exact
+balanced-journal/projection reconciliation. Actual-model busy work remains blocked.
 
 | Accounts / work | Financial p50 ms | p95 ms | p99 ms | Max ms | Peak parent MiB |
 |---|---:|---:|---:|---:|---:|
-| 1 idle | 3.566 | 5.805 | 7.000 | 7.465 | 71.496 |
-| 1 numerical | 3.716 | 8.017 | 19.865 | 20.900 | 71.945 |
-| 10 idle | 9.078 | 29.702 | 33.023 | 58.889 | 72.410 |
-| 10 numerical | 11.004 | 32.325 | 34.107 | 65.873 | 72.609 |
-| 20 idle | 14.632 | 32.756 | 38.134 | 73.828 | 73.379 |
-| 20 numerical | 11.216 | 37.504 | 58.032 | 84.518 | 73.480 |
+| 1 idle | 3.392 | 6.407 | 7.309 | 11.290 | 71.426 |
+| 1 numerical | 2.979 | 5.847 | 8.728 | 307.920 | 71.871 |
+| 10 idle | 8.840 | 17.941 | 52.381 | 258.383 | 72.387 |
+| 10 numerical | 6.796 | 13.901 | 16.335 | 34.384 | 72.535 |
+| 20 idle | 12.296 | 24.397 | 32.519 | 79.625 | 73.301 |
+| 20 numerical | 12.627 | 26.114 | 41.500 | 89.550 | 73.441 |
 
-Queue peak is one; maximum queue-lag p99 is 0.539 ms. Maximum parent RSS growth
-is 0.703 MiB and measured one-core parent CPU is 6.923%. Tiny one-account process
-CPU samples round to zero on Windows; this does not mean zero hardware cost.
-The fit children perform 363–366 fits, use 28.859–29.125 CPU seconds and peak at
-60.668–61.113 MiB. Host CPU includes unrelated activity (30.720–40.818%).
-Database growth is 393216–1441792 bytes per case, with 16/160/320 journal lines.
+Queue peak is one; maximum queue-lag p99 is 9.258 ms.
+Maximum parent RSS growth is 0.688 MiB and measured one-core parent
+CPU is 3.883%. Process counters have finite Windows resolution and
+exclude PostgreSQL-server work; they do not imply zero hardware cost.
+The children perform 234-306 fits, use 20.484-26.453 CPU seconds
+and peak at 60.816-61.078 MiB. Host CPU includes unrelated activity
+(41.080-66.809%). Database growth is
+324988-1449984 bytes per case, with 16/160/320 journal lines.
+
 Parent I/O counters are recorded; PostgreSQL-server I/O is not attributed. Synthetic
-last-tick freshness is 0.295–1.983 seconds including child teardown, not actual
+last-tick freshness is 0.384-2.348 seconds including child teardown, not actual
 market freshness. UI-state timing is server read/serialization, not browser paint.
 
 Two additional twenty-account 30-second scoped-tool cases have 120 writes each.
-Idle financial p50/p95/p99: **15.391/46.760/60.914 ms**; scoped reads:
-**13.268/33.496/110.764 ms**. Forty-one reads have query p50/p95/p99
-**77.104/172.751/202.281 ms**, serialization p95 0.843 ms, compact overview max
-**4824 UTF-8 bytes** and full receipt max **44460 bytes**. Query p95 is reported
-as measured; the declared 100-ms limit applies to financial p95. Scoped peak RSS
-is **75.844 MiB**, growth **1.504 MiB**, balanced with no errors. Both cases pass.
+Idle financial p50/p95/p99: **16.282/30.139/61.173 ms**;
+scoped reads: **12.893/26.067/32.260 ms**. 45 reads have query
+p50/p95/p99 **66.190/90.561/94.577 ms**, serialization p95
+0.599 ms, compact overview max **4826 UTF-8 bytes** and full receipt max
+**44463 bytes**. Query latency is reported separately; the declared 100-ms
+limit applies to financial p95. Scoped peak RSS is **76.320 MiB**, growth
+**1.848 MiB**, balanced with no errors. Both cases pass.
 
 G: quotas are the existing **100 decimal GB per tier**, on a verified owned volume
 and separately owned subtree. Actual written bytes are small. Proportional storage
@@ -134,8 +145,8 @@ recorded task and saved stock request. It did not touch the installed applicatio
 are retained. Synthetic captions remain visible; ordinary funded/scored paper
 control flow is real disposable engine/database work, not qualified model evidence.
 
-The real operating guard remains constrained (final sampled engine p95 156 ms,
-commit p95 125 ms, cooldown 299.516 seconds). The corrected CP18 development
+The real operating guard remains constrained (final sampled engine p95 172 ms,
+commit p95 141 ms, cooldown 296.766 seconds). The corrected CP18 development
 screen dispatched zero requests over 601.018 seconds; prior incomplete-screen
 calls stay ineligible. No actual qualified-role workload or result-feedback trace
 is established. Native SEC denial/cooldown and unavailable Crik transport remain

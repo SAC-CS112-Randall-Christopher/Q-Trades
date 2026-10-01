@@ -1,8 +1,8 @@
 {
-  "stage": "Finite native software measurements; no qualified-model busy workload",
+  "stage": "Final finite native software measurements; actual qualified-model busy workload blocked",
   "declaration": {
-    "declared_at": 1790878737.8842068,
-    "source": "b76fd61ce40eb5a5a03a3e5e79ee46387c0213f4",
+    "declared_at": 1790879930.1468682,
+    "source": "28e9d25e0b1dd7fa787ae8cdf38874a8506cad46",
     "contract_sha256": "dd043566a92199bd478b000993a5d1b884fa907140b701bbaca931a53a09ac7f",
     "plan": "docs/CP23_ACCEPTANCE_PLAN.md",
     "workloads": "6 existing 30-second idle/numerical cases + 2 scoped-read cases",
@@ -44,7 +44,7 @@
     "platform": "Windows-11-10.0.26200-SP0",
     "python": "3.12.10",
     "logical_processors": 12,
-    "source_commit": "b76fd61ce40eb5a5a03a3e5e79ee46387c0213f4",
+    "source_commit": "28e9d25e0b1dd7fa787ae8cdf38874a8506cad46",
     "source_dirty": false,
     "source_sha256": {
       "scripts\\verify_lab.py": "b86cefa476bbc401cf62347740e52395f1c85eac0c1770b3f361ede8d1c858ab",
@@ -117,7 +117,7 @@
       "src\\trading\\research_storage.py": "2f5177a6ee02c2f832e4e30c12270e2f29ae86f1f6fbafe512f63813fc0f3195",
       "src\\trading\\research_support.py": "3bcd778b2fe5fcc3cc59dd96b917aa49d0c593b06135c34c4fc0977ec5e9a8b4",
       "src\\trading\\research_timing.py": "22d002a84ecaa260f003af06e5acf416c7db5d227e112a813447faa8476a6778",
-      "src\\trading\\role_worker.py": "98a132fe5e191fc245261cb77ad684311b45cb55578c7bbdc4c59bd0c0cea9de",
+      "src\\trading\\role_worker.py": "35e773ed4517d318505b3090351ed3ab5ee8432adc1dc7fca18de0ac718433a0",
       "src\\trading\\rule_components.py": "47267d854de5071a4d0b9230d1538d9496fd3de54fbe8b8fe9b4a9c98ed41506",
       "src\\trading\\runtime.py": "9b1e69bae8b71a720b85029ce36b41e21dea960d7a14fb988484739ecf002439",
       "src\\trading\\scoped_tools.py": "128f9c522c235ee0446ff62a3e108d0190757d772c24427a10526db7b7519c0e",
@@ -138,45 +138,45 @@
         "accounts": 1,
         "research": "idle",
         "ticks": 120,
-        "elapsed_seconds": 29.75932399998419,
-        "parent_cpu_seconds": 0.0,
-        "parent_cpu_one_core_percent": 0.0,
+        "elapsed_seconds": 29.75496600009501,
+        "parent_cpu_seconds": 0.703125,
+        "parent_cpu_one_core_percent": 2.3630509273569826,
         "parent_rss_mib": {
-          "mean": 71.45999348958334,
-          "p50": 71.49609375,
-          "p95": 71.49609375,
-          "p99": 71.49609375,
-          "max": 71.49609375
+          "mean": 71.41634114583333,
+          "p50": 71.42578125,
+          "p95": 71.42578125,
+          "p99": 71.42578125,
+          "max": 71.42578125
         },
-        "parent_rss_growth_mib": 0.21875,
+        "parent_rss_growth_mib": 0.05078125,
         "commit_ms": {
-          "mean": 3.7003424988749125,
-          "p50": 3.5658000269904733,
-          "p95": 5.804699845612049,
-          "p99": 6.999799981713295,
-          "max": 7.465499918907881
+          "mean": 3.930354161032786,
+          "p50": 3.391999867744744,
+          "p95": 6.406999891623855,
+          "p99": 7.308600004762411,
+          "max": 11.290499940514565
         },
         "decision_ms": {
-          "mean": 0.35471498461750645,
-          "p50": 0.3105499781668186,
-          "p95": 0.5896000657230616,
-          "p99": 0.7100000511854887,
-          "max": 0.7643999997526407
+          "mean": 0.39170499076135457,
+          "p50": 0.30215003062039614,
+          "p95": 0.8014999330043793,
+          "p99": 0.8733998984098434,
+          "max": 1.1454999912530184
         },
         "queue_lag_ms": {
-          "mean": 0.19559418239320317,
-          "p50": 0.17925002612173557,
-          "p95": 0.29099988751113415,
-          "p99": 0.3581999335438013,
-          "max": 0.4080000799149275
+          "mean": 0.5979999958071858,
+          "p50": 0.19865005742758512,
+          "p95": 0.6061999592930079,
+          "p99": 9.258499834686518,
+          "max": 17.95689994469285
         },
         "queue_peak": 1,
         "ui_state_read_ms": {
-          "mean": 1.4877166443814833,
-          "p50": 1.6059000045061111,
-          "p95": 2.0246999338269234,
-          "p99": 2.0246999338269234,
-          "max": 2.0651998929679394
+          "mean": 1.3690165942534804,
+          "p50": 1.1140499264001846,
+          "p95": 1.4412999153137207,
+          "p99": 1.4412999153137207,
+          "max": 2.736399881541729
         },
         "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
         "child": null,
@@ -194,20 +194,20 @@
           "projection_errors": [],
           "revision": 121
         },
-        "host_cpu_percent": 30.72041316526611,
+        "host_cpu_percent": 41.08048993875765,
         "paper_connections": 2,
         "market_connections": 0,
         "paid_usd": "0",
         "parent_io": {
           "read_ops": 0,
           "write_ops": 0,
-          "other_ops": 656,
+          "other_ops": 662,
           "read_bytes": 0,
           "write_bytes": 0,
-          "other_bytes": 20284
+          "other_bytes": 20476
         },
         "io_scope": "Parent process counters only; PostgreSQL server I/O not attributed",
-        "source_freshness_seconds": 0.33548831939697266,
+        "source_freshness_seconds": 0.4119534492492676,
         "freshness_scope": "Last committed synthetic fixture tick, not market freshness",
         "passed": true
       },
@@ -215,52 +215,52 @@
         "accounts": 1,
         "research": "busy",
         "ticks": 120,
-        "elapsed_seconds": 31.322190300095826,
-        "parent_cpu_seconds": 0.0,
-        "parent_cpu_one_core_percent": 0.0,
+        "elapsed_seconds": 31.446435899939388,
+        "parent_cpu_seconds": 0.03125,
+        "parent_cpu_one_core_percent": 0.09937533175281156,
         "parent_rss_mib": {
-          "mean": 71.93362630208334,
-          "p50": 71.9453125,
-          "p95": 71.9453125,
-          "p99": 71.9453125,
-          "max": 71.9453125
+          "mean": 71.82223307291666,
+          "p50": 71.81640625,
+          "p95": 71.8671875,
+          "p99": 71.87109375,
+          "max": 71.87109375
         },
-        "parent_rss_growth_mib": 0.05078125,
+        "parent_rss_growth_mib": 0.0546875,
         "commit_ms": {
-          "mean": 4.7669699900628375,
-          "p50": 3.716300008818507,
-          "p95": 8.01700004376471,
-          "p99": 19.86509980633855,
-          "max": 20.899799885228276
+          "mean": 5.884609159935887,
+          "p50": 2.97949998639524,
+          "p95": 5.847000051289797,
+          "p99": 8.727600099518895,
+          "max": 307.91979981586337
         },
         "decision_ms": {
-          "mean": 0.39069166329378885,
-          "p50": 0.30559999868273735,
-          "p95": 0.817999942228198,
-          "p99": 0.901099992915988,
-          "max": 0.9113000705838203
+          "mean": 0.2885766599016885,
+          "p50": 0.2941499697044492,
+          "p95": 0.4989001899957657,
+          "p99": 0.5862999241799116,
+          "max": 0.6311999168246984
         },
         "queue_lag_ms": {
-          "mean": 0.17892499454319477,
-          "p50": 0.16460008919239044,
-          "p95": 0.30019995756447315,
-          "p99": 0.33110007643699646,
-          "max": 0.35450002178549767
+          "mean": 0.9175458437918375,
+          "p50": 0.15380000695586205,
+          "p95": 4.032399971038103,
+          "p99": 5.06539992056787,
+          "max": 57.80609999783337
         },
         "queue_peak": 1,
         "ui_state_read_ms": {
-          "mean": 1.1946000158786774,
-          "p50": 1.1175000108778477,
-          "p95": 1.1962000280618668,
-          "p99": 1.1962000280618668,
-          "max": 1.6653998754918575
+          "mean": 1.339850015938282,
+          "p50": 1.3113501481711864,
+          "p95": 1.415099948644638,
+          "p99": 1.415099948644638,
+          "max": 1.6975000035017729
         },
         "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
         "child": {
-          "fits": 366,
-          "cpu_seconds": 28.890625,
-          "wall_seconds": 30.108999999938533,
-          "peak_rss_mib": 60.66796875,
+          "fits": 234,
+          "cpu_seconds": 20.484375,
+          "wall_seconds": 30.030999999959022,
+          "peak_rss_mib": 61.078125,
           "paid_usd": "0",
           "worker_identity": {
             "processors_allowed": 2,
@@ -268,7 +268,7 @@
           }
         },
         "storage_growth_bytes": {
-          "database_bytes": 393216,
+          "database_bytes": 324988,
           "candles": 0,
           "events": 21,
           "journal_lines": 16,
@@ -281,20 +281,20 @@
           "projection_errors": [],
           "revision": 121
         },
-        "host_cpu_percent": 39.31808731808732,
+        "host_cpu_percent": 63.24552683896621,
         "paper_connections": 2,
         "market_connections": 0,
         "paid_usd": "0",
         "parent_io": {
           "read_ops": 0,
           "write_ops": 0,
-          "other_ops": 644,
+          "other_ops": 656,
           "read_bytes": 0,
           "write_bytes": 0,
-          "other_bytes": 19924
+          "other_bytes": 20276
         },
         "io_scope": "Parent process counters only; PostgreSQL server I/O not attributed",
-        "source_freshness_seconds": 1.8571598529815674,
+        "source_freshness_seconds": 2.083287239074707,
         "freshness_scope": "Last committed synthetic fixture tick, not market freshness",
         "passed": true
       },
@@ -302,52 +302,52 @@
         "accounts": 10,
         "research": "idle",
         "ticks": 120,
-        "elapsed_seconds": 29.777156100142747,
-        "parent_cpu_seconds": 1.453125,
-        "parent_cpu_one_core_percent": 4.879999268946419,
+        "elapsed_seconds": 29.766549200052395,
+        "parent_cpu_seconds": 0.640625,
+        "parent_cpu_one_core_percent": 2.152164148066153,
         "parent_rss_mib": {
-          "mean": 72.34606119791667,
-          "p50": 72.31640625,
-          "p95": 72.41015625,
-          "p99": 72.41015625,
-          "max": 72.41015625
+          "mean": 72.34677734375,
+          "p50": 72.32421875,
+          "p95": 72.38671875,
+          "p99": 72.38671875,
+          "max": 72.38671875
         },
-        "parent_rss_growth_mib": 0.3046875,
+        "parent_rss_growth_mib": 0.2734375,
         "commit_ms": {
-          "mean": 12.510006653610617,
-          "p50": 9.078050032258034,
-          "p95": 29.70180008560419,
-          "p99": 33.02289987914264,
-          "max": 58.88860020786524
+          "mean": 12.660261670437952,
+          "p50": 8.840249967761338,
+          "p95": 17.941300058737397,
+          "p99": 52.38050012849271,
+          "max": 258.3825998008251
         },
         "decision_ms": {
-          "mean": 2.5018291741920016,
-          "p50": 1.8647500546649098,
-          "p95": 5.411599995568395,
-          "p99": 5.558899836614728,
-          "max": 5.623500095680356
+          "mean": 2.7988033407988646,
+          "p50": 2.620049985125661,
+          "p95": 5.725699942559004,
+          "p99": 6.155699957162142,
+          "max": 7.552600000053644
         },
         "queue_lag_ms": {
-          "mean": 0.20077084191143513,
-          "p50": 0.17024995759129524,
-          "p95": 0.335899880155921,
-          "p99": 0.5389000289142132,
-          "max": 0.627199886366725
+          "mean": 0.3949508420191705,
+          "p50": 0.1606498844921589,
+          "p95": 1.0985999833792448,
+          "p99": 5.345200188457966,
+          "max": 8.529700106009841
         },
         "queue_peak": 1,
         "ui_state_read_ms": {
-          "mean": 5.3524333440388245,
-          "p50": 5.685899988748133,
-          "p95": 6.908300099894404,
-          "p99": 6.908300099894404,
-          "max": 8.048400050029159
+          "mean": 2.891183365136385,
+          "p50": 2.9008500277996063,
+          "p95": 3.2961000688374043,
+          "p99": 3.2961000688374043,
+          "max": 3.4668000880628824
         },
         "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
         "child": null,
         "storage_growth_bytes": {
-          "database_bytes": 802816,
+          "database_bytes": 876544,
           "candles": 0,
-          "events": 192,
+          "events": 202,
           "journal_lines": 160,
           "candle_table_bytes": 0,
           "journal_table_bytes": 237568
@@ -358,7 +358,7 @@
           "projection_errors": [],
           "revision": 121
         },
-        "host_cpu_percent": 34.90731024833858,
+        "host_cpu_percent": 58.38145231846019,
         "paper_connections": 2,
         "market_connections": 0,
         "paid_usd": "0",
@@ -368,10 +368,10 @@
           "other_ops": 1082,
           "read_bytes": 0,
           "write_bytes": 0,
-          "other_bytes": 33940
+          "other_bytes": 33908
         },
         "io_scope": "Parent process counters only; PostgreSQL server I/O not attributed",
-        "source_freshness_seconds": 0.46653294563293457,
+        "source_freshness_seconds": 0.38397669792175293,
         "freshness_scope": "Last committed synthetic fixture tick, not market freshness",
         "passed": true
       },
@@ -379,52 +379,52 @@
         "accounts": 10,
         "research": "busy",
         "ticks": 120,
-        "elapsed_seconds": 31.388459200039506,
-        "parent_cpu_seconds": 1.359375,
-        "parent_cpu_one_core_percent": 4.3308114977440155,
+        "elapsed_seconds": 31.41293799993582,
+        "parent_cpu_seconds": 0.125,
+        "parent_cpu_one_core_percent": 0.39792521158083144,
         "parent_rss_mib": {
-          "mean": 72.5556640625,
-          "p50": 72.54296875,
-          "p95": 72.609375,
-          "p99": 72.609375,
-          "max": 72.609375
+          "mean": 72.53264973958333,
+          "p50": 72.53515625,
+          "p95": 72.53515625,
+          "p99": 72.53515625,
+          "max": 72.53515625
         },
-        "parent_rss_growth_mib": 0.09765625,
+        "parent_rss_growth_mib": 0.0390625,
         "commit_ms": {
-          "mean": 14.916816673940048,
-          "p50": 11.00434991531074,
-          "p95": 32.32490015216172,
-          "p99": 34.1070001013577,
-          "max": 65.8725998364389
+          "mean": 8.043940010247752,
+          "p50": 6.7963000619784,
+          "p95": 13.901199912652373,
+          "p99": 16.33460004813969,
+          "max": 34.383999882265925
         },
         "decision_ms": {
-          "mean": 3.004324180074036,
-          "p50": 2.3655000841245055,
-          "p95": 5.705300020053983,
-          "p99": 6.021799985319376,
-          "max": 8.388299960643053
+          "mean": 2.0954749993203827,
+          "p50": 1.7848500283434987,
+          "p95": 3.0303001403808594,
+          "p99": 3.1747000757604837,
+          "max": 5.837799981236458
         },
         "queue_lag_ms": {
-          "mean": 0.1663108414504677,
-          "p50": 0.1577000366523862,
-          "p95": 0.247300136834383,
-          "p99": 0.2834999468177557,
-          "max": 0.2850000746548176
+          "mean": 0.278604996856302,
+          "p50": 0.1444999361410737,
+          "p95": 0.264299800619483,
+          "p99": 2.6201000437140465,
+          "max": 6.029099924489856
         },
         "queue_peak": 1,
         "ui_state_read_ms": {
-          "mean": 3.3732333298151693,
-          "p50": 2.918099984526634,
-          "p95": 3.9684001822024584,
-          "p99": 3.9684001822024584,
-          "max": 5.301899975165725
+          "mean": 2.6588999511053166,
+          "p50": 2.6525999419391155,
+          "p95": 2.8583998791873455,
+          "p99": 2.8583998791873455,
+          "max": 3.234399948269129
         },
         "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
         "child": {
-          "fits": 366,
-          "cpu_seconds": 28.859375,
-          "wall_seconds": 30.094000000040978,
-          "peak_rss_mib": 60.9140625,
+          "fits": 264,
+          "cpu_seconds": 23.703125,
+          "wall_seconds": 30.108999999938533,
+          "peak_rss_mib": 60.875,
           "paid_usd": "0",
           "worker_identity": {
             "processors_allowed": 2,
@@ -432,9 +432,9 @@
           }
         },
         "storage_growth_bytes": {
-          "database_bytes": 663552,
+          "database_bytes": 398716,
           "candles": 0,
-          "events": 202,
+          "events": 192,
           "journal_lines": 160,
           "candle_table_bytes": 0,
           "journal_table_bytes": 245760
@@ -445,20 +445,20 @@
           "projection_errors": [],
           "revision": 121
         },
-        "host_cpu_percent": 37.039034305388476,
+        "host_cpu_percent": 58.159203980099505,
         "paper_connections": 2,
         "market_connections": 0,
         "paid_usd": "0",
         "parent_io": {
           "read_ops": 0,
           "write_ops": 0,
-          "other_ops": 1082,
+          "other_ops": 1096,
           "read_bytes": 0,
           "write_bytes": 0,
-          "other_bytes": 33940
+          "other_bytes": 34388
         },
         "io_scope": "Parent process counters only; PostgreSQL server I/O not attributed",
-        "source_freshness_seconds": 1.9833168983459473,
+        "source_freshness_seconds": 2.0415806770324707,
         "freshness_scope": "Last committed synthetic fixture tick, not market freshness",
         "passed": true
       },
@@ -466,55 +466,55 @@
         "accounts": 20,
         "research": "idle",
         "ticks": 120,
-        "elapsed_seconds": 29.79015380004421,
-        "parent_cpu_seconds": 2.0625,
-        "parent_cpu_one_core_percent": 6.923428505417582,
+        "elapsed_seconds": 29.777155100135133,
+        "parent_cpu_seconds": 1.15625,
+        "parent_cpu_one_core_percent": 3.8830103013929382,
         "parent_rss_mib": {
-          "mean": 73.35081380208334,
-          "p50": 73.3671875,
-          "p95": 73.37890625,
-          "p99": 73.37890625,
-          "max": 73.37890625
+          "mean": 73.26136067708333,
+          "p50": 73.30078125,
+          "p95": 73.30078125,
+          "p99": 73.30078125,
+          "max": 73.30078125
         },
-        "parent_rss_growth_mib": 0.703125,
+        "parent_rss_growth_mib": 0.6875,
         "commit_ms": {
-          "mean": 16.829070821404457,
-          "p50": 14.631699887104332,
-          "p95": 32.756000058725476,
-          "p99": 38.13380002975464,
-          "max": 73.82760010659695
+          "mean": 14.24383832102952,
+          "p50": 12.295700027607381,
+          "p95": 24.396700086072087,
+          "p99": 32.51949977129698,
+          "max": 79.62549990043044
         },
         "decision_ms": {
-          "mean": 4.944775011002396,
-          "p50": 3.5692999372258782,
-          "p95": 9.855299955233932,
-          "p99": 10.776299983263016,
-          "max": 12.926599942147732
+          "mean": 3.8540966634172946,
+          "p50": 3.5790001275017858,
+          "p95": 5.4120998829603195,
+          "p99": 7.060300093144178,
+          "max": 9.650100022554398
         },
         "queue_lag_ms": {
-          "mean": 0.17837416574669382,
-          "p50": 0.1677001127973199,
-          "p95": 0.2707999665290117,
-          "p99": 0.33490010537207127,
-          "max": 0.3521000035107136
+          "mean": 0.7397641718853265,
+          "p50": 0.17809995915740728,
+          "p95": 2.337800106033683,
+          "p99": 9.186899987980723,
+          "max": 11.72860013321042
         },
-        "queue_peak": 1,
+        "queue_peak": 0,
         "ui_state_read_ms": {
-          "mean": 6.0778667296593385,
-          "p50": 6.051200092770159,
-          "p95": 7.031300105154514,
-          "p99": 7.031300105154514,
-          "max": 8.348200004547834
+          "mean": 4.8131832930569844,
+          "p50": 4.0889999363571405,
+          "p95": 6.238700123503804,
+          "p99": 6.238700123503804,
+          "max": 7.379499962553382
         },
         "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
         "child": null,
         "storage_growth_bytes": {
-          "database_bytes": 1441792,
+          "database_bytes": 1449984,
           "candles": 0,
-          "events": 382,
+          "events": 402,
           "journal_lines": 320,
           "candle_table_bytes": 0,
-          "journal_table_bytes": 417792
+          "journal_table_bytes": 425984
         },
         "reconciliation": {
           "balanced": true,
@@ -522,20 +522,20 @@
           "projection_errors": [],
           "revision": 121
         },
-        "host_cpu_percent": 33.25467575598672,
+        "host_cpu_percent": 66.80949674259979,
         "paper_connections": 2,
         "market_connections": 0,
         "paid_usd": "0",
         "parent_io": {
           "read_ops": 0,
           "write_ops": 0,
-          "other_ops": 1463,
+          "other_ops": 1470,
           "read_bytes": 0,
           "write_bytes": 0,
-          "other_bytes": 46132
+          "other_bytes": 46356
         },
         "io_scope": "Parent process counters only; PostgreSQL server I/O not attributed",
-        "source_freshness_seconds": 0.2946903705596924,
+        "source_freshness_seconds": 0.610327959060669,
         "freshness_scope": "Last committed synthetic fixture tick, not market freshness",
         "passed": true
       },
@@ -543,52 +543,52 @@
         "accounts": 20,
         "research": "busy",
         "ticks": 120,
-        "elapsed_seconds": 31.293558900011703,
-        "parent_cpu_seconds": 0.796875,
-        "parent_cpu_one_core_percent": 2.5464505412955827,
+        "elapsed_seconds": 31.82058239984326,
+        "parent_cpu_seconds": 1.203125,
+        "parent_cpu_one_core_percent": 3.780964738112167,
         "parent_rss_mib": {
-          "mean": 73.47747395833333,
-          "p50": 73.4765625,
-          "p95": 73.48046875,
-          "p99": 73.48046875,
-          "max": 73.48046875
+          "mean": 73.42786458333333,
+          "p50": 73.44140625,
+          "p95": 73.44140625,
+          "p99": 73.44140625,
+          "max": 73.44140625
         },
-        "parent_rss_growth_mib": -0.01171875,
+        "parent_rss_growth_mib": 0.015625,
         "commit_ms": {
-          "mean": 16.311258329854656,
-          "p50": 11.216099956072867,
-          "p95": 37.50350000336766,
-          "p99": 58.032099856063724,
-          "max": 84.51849990524352
+          "mean": 15.39106250857003,
+          "p50": 12.62715004850179,
+          "p95": 26.114000007510185,
+          "p99": 41.500199818983674,
+          "max": 89.5495000295341
         },
         "decision_ms": {
-          "mean": 3.6780050063195326,
-          "p50": 2.8024500934407115,
-          "p95": 8.203799836337566,
-          "p99": 9.199499851092696,
-          "max": 9.331099921837449
+          "mean": 4.556680839353551,
+          "p50": 4.256600048393011,
+          "p95": 8.496700087562203,
+          "p99": 9.325399994850159,
+          "max": 9.825200075283647
         },
         "queue_lag_ms": {
-          "mean": 0.16687833121977746,
-          "p50": 0.14974991790950298,
-          "p95": 0.29690004885196686,
-          "p99": 0.3245999105274677,
-          "max": 0.39519998244941235
+          "mean": 0.15770917331489423,
+          "p50": 0.14795002061873674,
+          "p95": 0.2427001018077135,
+          "p99": 0.2874999772757292,
+          "max": 0.6355000659823418
         },
         "queue_peak": 1,
         "ui_state_read_ms": {
-          "mean": 4.536899970844388,
-          "p50": 3.926499979570508,
-          "p95": 4.744099918752909,
-          "p99": 4.744099918752909,
-          "max": 7.529200054705143
+          "mean": 4.333433345891535,
+          "p50": 3.9048000471666455,
+          "p95": 4.519999958574772,
+          "p99": 4.519999958574772,
+          "max": 6.4032000955194235
         },
         "ui_read_scope": "PostgreSQL state read plus actual PaperRuntime account/economics status and JSON serialization; no network/paint timing",
         "child": {
-          "fits": 363,
-          "cpu_seconds": 29.125,
-          "wall_seconds": 30.155999999959022,
-          "peak_rss_mib": 61.11328125,
+          "fits": 306,
+          "cpu_seconds": 26.453125,
+          "wall_seconds": 30.265000000130385,
+          "peak_rss_mib": 60.81640625,
           "paid_usd": "0",
           "worker_identity": {
             "processors_allowed": 2,
@@ -596,7 +596,7 @@
           }
         },
         "storage_growth_bytes": {
-          "database_bytes": 1122304,
+          "database_bytes": 873852,
           "candles": 0,
           "events": 402,
           "journal_lines": 320,
@@ -609,20 +609,20 @@
           "projection_errors": [],
           "revision": 121
         },
-        "host_cpu_percent": 40.81793975703112,
+        "host_cpu_percent": 49.76272295859925,
         "paper_connections": 2,
         "market_connections": 0,
         "paid_usd": "0",
         "parent_io": {
           "read_ops": 0,
           "write_ops": 0,
-          "other_ops": 1487,
+          "other_ops": 1478,
           "read_bytes": 0,
           "write_bytes": 0,
-          "other_bytes": 46900
+          "other_bytes": 46612
         },
         "io_scope": "Parent process counters only; PostgreSQL server I/O not attributed",
-        "source_freshness_seconds": 1.866758108139038,
+        "source_freshness_seconds": 2.348158359527588,
         "freshness_scope": "Last committed synthetic fixture tick, not market freshness",
         "passed": true
       }
@@ -642,7 +642,7 @@
       "rss_growth_limit_mib": 64,
       "scope": "Disposable software evidence; no live-market, model or economic claim"
     },
-    "source_commit": "b76fd61ce40eb5a5a03a3e5e79ee46387c0213f4",
+    "source_commit": "28e9d25e0b1dd7fa787ae8cdf38874a8506cad46",
     "source_sha256": {
       "scripts\\verify_scoped_tools.py": "8b132bb2ee3ba4640caa1f1aa6549269599de27c31ad57f29ccd414aaf97185b",
       "src\\trading\\__init__.py": "773d75fece1af6176cc1c96f38dae00efb549bc716a4ea542e3539978fee5c73",
@@ -712,7 +712,7 @@
       "src\\trading\\research_storage.py": "2f5177a6ee02c2f832e4e30c12270e2f29ae86f1f6fbafe512f63813fc0f3195",
       "src\\trading\\research_support.py": "3bcd778b2fe5fcc3cc59dd96b917aa49d0c593b06135c34c4fc0977ec5e9a8b4",
       "src\\trading\\research_timing.py": "22d002a84ecaa260f003af06e5acf416c7db5d227e112a813447faa8476a6778",
-      "src\\trading\\role_worker.py": "98a132fe5e191fc245261cb77ad684311b45cb55578c7bbdc4c59bd0c0cea9de",
+      "src\\trading\\role_worker.py": "35e773ed4517d318505b3090351ed3ab5ee8432adc1dc7fca18de0ac718433a0",
       "src\\trading\\rule_components.py": "47267d854de5071a4d0b9230d1538d9496fd3de54fbe8b8fe9b4a9c98ed41506",
       "src\\trading\\runtime.py": "9b1e69bae8b71a720b85029ce36b41e21dea960d7a14fb988484739ecf002439",
       "src\\trading\\scoped_tools.py": "128f9c522c235ee0446ff62a3e108d0190757d772c24427a10526db7b7519c0e",
@@ -738,18 +738,18 @@
         "accounts": 20,
         "ticks": 120,
         "financial_transaction_ms": {
-          "p50": 15.390999848023057,
-          "p95": 46.75950016826391,
-          "p99": 60.91449991799891,
-          "max": 97.6962000131607
+          "p50": 16.282099997624755,
+          "p95": 30.13890003785491,
+          "p99": 61.173299793154,
+          "max": 90.82620008848608
         },
         "query_ms": null,
         "serialization_ms": null,
         "result_utf8_bytes": null,
         "overview_utf8_bytes": null,
         "reads": 0,
-        "peak_rss_mib": 74.1953125,
-        "rss_growth_mib": 0.05859375,
+        "peak_rss_mib": 74.27734375,
+        "rss_growth_mib": 0.12109375,
         "balanced": true,
         "errors": []
       },
@@ -758,38 +758,38 @@
         "accounts": 20,
         "ticks": 120,
         "financial_transaction_ms": {
-          "p50": 13.26790009625256,
-          "p95": 33.49589998833835,
-          "p99": 110.76369998045266,
-          "max": 148.97239999845624
+          "p50": 12.892500031739473,
+          "p95": 26.06730000115931,
+          "p99": 32.25970012135804,
+          "max": 112.7536001149565
         },
         "query_ms": {
-          "p50": 77.10370002314448,
-          "p95": 172.7509000338614,
-          "p99": 202.28129997849464,
-          "max": 311.482299817726
+          "p50": 66.1898001562804,
+          "p95": 90.56070004589856,
+          "p99": 94.57660000771284,
+          "max": 96.1086000315845
         },
         "serialization_ms": {
-          "p50": 0.16369996592402458,
-          "p95": 0.8431000169366598,
-          "p99": 0.8479999378323555,
-          "max": 0.9963000193238258
+          "p50": 0.16670022159814835,
+          "p95": 0.5987000185996294,
+          "p99": 0.8980999700725079,
+          "max": 0.9202000219374895
         },
         "result_utf8_bytes": {
-          "p50": 7741,
-          "p95": 44457,
+          "p50": 7763,
+          "p95": 44459,
           "p99": 44459,
-          "max": 44460
+          "max": 44463
         },
         "overview_utf8_bytes": {
-          "p50": 3629,
-          "p95": 4821,
-          "p99": 4822,
-          "max": 4824
+          "p50": 3631,
+          "p95": 4823,
+          "p99": 4823,
+          "max": 4826
         },
-        "reads": 41,
-        "peak_rss_mib": 75.84375,
-        "rss_growth_mib": 1.50390625,
+        "reads": 45,
+        "peak_rss_mib": 76.3203125,
+        "rss_growth_mib": 1.84765625,
         "balanced": true,
         "errors": []
       }
@@ -800,9 +800,9 @@
     "error": null,
     "stale": false,
     "research_constrained": true,
-    "engine_p95_ms": 156.0,
-    "commit_p95_ms": 125.0,
-    "cooldown_remaining_seconds": 299.516
+    "engine_p95_ms": 172.0,
+    "commit_p95_ms": 141.0,
+    "cooldown_remaining_seconds": 296.766
   },
   "limits": "30-second generated cases, small actual G: bytes; not 24/7 or 100-GB throughput. Parent I/O excludes PostgreSQL server; fixture freshness is synthetic."
 }

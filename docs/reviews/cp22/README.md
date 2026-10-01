@@ -15,6 +15,7 @@ Ruff and frontend build (1924 modules) pass. Original full run: 621 passed, one
 failed in 204.11 seconds; the assertion incorrectly counted a retired trial only
 in live state. The corrected test checks its one immutable PostgreSQL funding
 event. The subsequent exact-head full passes 622 tests, zero skips in 188.18 seconds.
-Hosted Windows SUCCESS is run 36903155703 at dd55b89b; normal grant/revoke/
+Hosted Windows SUCCESS is run 36903155703 at dd55b89b (351 passed,
+91 conditional PostgreSQL skips; the native complete suite has zero skips); normal grant/revoke/
 refresh/disconnection UI proof is retained in ../cp23. All original failed attempts remain ignored. See
 CP22_SCOPED_COLLABORATION.md for the exact interface, privacy and operational blockers.

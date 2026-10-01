@@ -13,7 +13,7 @@ has a dependent draft PR; none is merged or installed by this assignment.
 | CP20 | #32 / codex/cp20-frozen-memory-filter | Single frozen historical-memory entry component; v2 compatibility and baseline fallback |
 | CP21 | #33 / codex/cp21-point-in-time-stocks | Point-in-time official filings and separate public IBM daily research |
 | CP22 | #34 / codex/cp22-scoped-external-research | Shared task/lease/proposal identities, scoped credentials and result disclosure |
-| CP23 | codex/cp23-integrated-research-acceptance | Late-answer recovery, equal-time history cursors, stock acknowledgment recovery, truthful result/quality UI and finite acceptance |
+| CP23 | #35 / codex/cp23-integrated-research-acceptance | Late-answer recovery, equal-time history cursors, stock acknowledgment recovery, truthful result/quality UI and finite acceptance |
 
 Read [the integrated ledger](LLM_RESEARCH_CHECKPOINTS.md),
 [frozen acceptance plan](CP23_ACCEPTANCE_PLAN.md) and
@@ -25,8 +25,8 @@ failed attempts, database configuration and original provider packets stay ignor
 
 The installed app was observed read-only on historical `d520236ee8e6c1cec4ea10f609c3f5c7391a269c`.
 Its current paper processing is fresh, but optional research remains constrained.
-The final native preflight observed engine p95 156 ms, commit p95 125 ms and
-299.516 seconds of resource cooldown. These are installed observations, separate
+The final native preflight observed engine p95 172 ms, commit p95 141 ms and
+296.766 seconds of resource cooldown. These are installed observations, separate
 from the generated QA workload's lower measured latencies. Do not waive the
 guard or restart/reconfigure the operating app to obtain a green model receipt.
 
@@ -87,7 +87,9 @@ After separately authorized merge and final-main hosted checks, use the existing
 source-only backup, stops the existing paper task, copies only application source,
 updates dependencies, restarts that same task and verifies its commit/health.
 Do not use an unmerged worktree as installation input or introduce another updater.
-The current primary checkout has unrelated untracked updater work; preserve it and
+The primary checkout retains unrelated untracked `Update Q-Trades.cmd`,
+`Update-QTrades.ps1`, `scripts/PaperStartupIdentity.ps1`,
+`scripts/Update-QTrades.ps1` and `scripts/qtrades_health.py`; preserve them and
 resolve ownership/clean source without reset, force-pull, deletion or implicit stash.
 
 Keep optional role policy disabled after installation. Verify actual UI/API history,
