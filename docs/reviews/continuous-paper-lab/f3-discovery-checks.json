@@ -1,0 +1,69 @@
+{
+  "review_url": "https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/pull/24#discussion_r4150167727",
+  "scope": "Single remaining F3 follow-up; controller-generated independent discovery",
+  "inspected_pre_fix_head": "16c612804d19a162a8994fe815af4f2f42406fa1",
+  "original_failure": {
+    "raw_receipt": "f3-discovery-original-failure.txt",
+    "raw_sha256": "4355540e53fe4957791b4257562377af05b031d05fb3713b3e99697eeaa0f865",
+    "passed": 0,
+    "failed": 1,
+    "skipped": 0,
+    "seconds": 1.57
+  },
+  "affected_components": {
+    "raw_receipt": "f3-discovery-components.txt",
+    "raw_sha256": "a637c75665ca74c0305cd27ee639626cc3ddf21411834a7e3363a98605daa5e3",
+    "passed": 54,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 40.98
+  },
+  "full_local_postgresql_17": {
+    "raw_receipt": "f3-discovery-full.txt",
+    "raw_sha256": "f59268d803d985fb1dc74cd0beb4d9c72973aa26571c06f8c03baa8a1e049eef",
+    "passed": 546,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 156.6
+  },
+  "new_regressions": 7,
+  "verified_assertions": {
+    "synthetic_fixture": true,
+    "normal_passes": 6,
+    "protected_originals": 6,
+    "preserved_breakout_parents": 1,
+    "initial_free_total_slots": 13,
+    "family_slots": 2,
+    "manually_submitted_independent_proposals": 0,
+    "controller_generated_funded_independent_pairs": 1,
+    "unchanged_parent_contract_rules_risk_funding": true,
+    "deferred_job_retry_unchanged_after_discovery_and_registry_reopen": true,
+    "funding_events_per_new_identity": 1,
+    "active_inbox_limit": 4,
+    "concurrent_last_slot_winners": 1,
+    "resource_hourly_daily_pause_guards": true,
+    "balanced_journal": true
+  },
+  "source_files_lf_sha256": {
+    "src/trading/autonomous_lab.py": "6803f2bee219bfd2c6084767534d2650bb45abb52679412b69e8eef7b73ca7a5",
+    "src/trading/lab_proposals.py": "f9979d5409ea28850a02fb8c902319a582eb328a75f4b23b26533a9021cf6b34",
+    "tests/test_continuous_audit.py": "970e96784acb6310deb685b64381318efdfb27c26a17a9d312fb46ac67428885"
+  },
+  "proof_limits": [
+    "Disposable generated schemas, synthetic inputs and accelerated lifecycle clock only",
+    "No installed runtime/state inspection or mutation in this follow-up",
+    "Earlier browser, USB load and soak receipts retain their own source stages; not repeated",
+    "Exact-head hosted results are recorded separately in the draft PR and issue",
+    "No actual-market advantage, qualification, 24-hour reliability, or rollout authority"
+  ],
+  "ruff": {
+    "raw_receipt": "f3-discovery-ruff.txt",
+    "raw_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+    "passed": true
+  },
+  "strict_mypy": {
+    "raw_receipt": "f3-discovery-mypy.txt",
+    "raw_sha256": "7fc3a2a008fd149a547725791a88995a903553c47a281224a552ff815f4dd4db",
+    "passed": true
+  }
+}

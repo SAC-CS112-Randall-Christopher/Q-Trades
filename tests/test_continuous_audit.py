@@ -1,11 +1,12 @@
 """Disposable regressions for the six independent PR24 findings; no market qualification."""
 
+import copy
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal as D
 from threading import Barrier
 
 import pytest
-from test_autonomous_lab import make_lab, tick_lab
+from test_autonomous_lab import admit, close_window, make_lab, tick_lab
 from test_paper_engine import START, frame
 from test_paper_store import pg_store as pg_store
 from test_pattern_memory import entry
@@ -124,8 +125,6 @@ def test_invalid_parent_cannot_block_valid_queued_work(pg_store, tmp_path, old_q
 
 
 def test_transient_family_wait_allows_independent_work_and_retry(pg_store, tmp_path):
-    from test_autonomous_lab import admit
-
     from trading.autonomous_lab import AutonomousLab
 
     store, _ = pg_store
@@ -171,6 +170,186 @@ def test_transient_family_wait_allows_independent_work_and_retry(pg_store, tmp_p
             break
     assert lab.inbox.get(waiting.request_id)["status"] == "funded"
     assert lab.inbox.get(waiting.request_id)["reason"] is None
+    assert store.reconcile()["balanced"]
+    lab.registry.close()
+
+
+def test_deferred_family_job_allows_controller_generated_discovery(pg_store, tmp_path):
+    from trading.autonomous_lab import AutonomousLab
+
+    store, _ = pg_store
+    lab = make_lab(store, tmp_path, family_slots=2, horizon_seconds=3600)
+    parent = admit(lab, START)
+    close_window(lab, parent, "promising")
+    before = store.read()
+    frozen_parent = copy.deepcopy(before["autonomous_lab"]["trials"][parent["id"]])
+    account = before["accounts"][parent["candidate"]]
+    frozen_identity = {
+        k: copy.deepcopy(account[k]) for k in ("rule_spec", "risk_policy", "funding", "admitted_at")
+    }
+    assert frozen_parent["status"] == "preserved"
+    assert finance.slots(before)["used"] == 7  # Six originals and the frozen parent.
+    assert lab._family_available("range_reversion", True)
+    assert not lab._family_available("breakout")
+
+    now = parent["review_at"] + 4
+    tick_lab(lab, now)
+    waiting = proposal(lab.bundle(now), name="deferred-behind-preserved-parent")
+    lab.submit(waiting, now)
+    assert not lab.step(now)
+    deferred = lab.inbox.get(waiting.request_id)
+    assert deferred["status"] == "blocked" and "family" in deferred["reason"]
+    assert (
+        deferred["next_retry"]
+        == now + lab.paper.state["autonomous_lab"]["policy"]["cooldown_seconds"]
+    )
+
+    # Five further normal passes: the controller must issue the independent idea.
+    # No direct generator call or manually submitted range proposal bypasses it.
+    for i in range(1, 6):
+        tick_lab(lab, now + i * 2)
+        lab.step(now + i * 2)
+        assert not lab.last_error, lab.last_error
+    after = store.read()
+    independent = [
+        t
+        for t in after["autonomous_lab"]["trials"].values()
+        if t["contract"]["proposal"]["kind"] == "independent"
+    ]
+    assert len(independent) == 1
+    trial = independent[0]
+    assert trial["status"] == "active"
+    generated = lab.inbox.get(trial["proposal_id"])
+    assert generated["status"] == "funded" and generated["body"]["source"] == "deterministic"
+    assert generated["body"]["strategy"]["family"] == "range_reversion"
+    assert generated["evaluation"]["status"] == "supported_exploratory_configuration"
+    assert lab.inbox.get(waiting.request_id) == deferred  # Its own backoff is unchanged.
+    assert after["autonomous_lab"]["phase"] == "proposal_wait"
+    assert after["autonomous_lab"]["next_action_at"] == deferred["next_retry"]
+    assert after["autonomous_lab"]["trials"][parent["id"]] == frozen_parent
+    assert {
+        k: after["accounts"][parent["candidate"]][k] for k in frozen_identity
+    } == frozen_identity
+    assert finance.slots(after)["used"] == 9
+    lab.registry.close()
+    lab = AutonomousLab(
+        ExperimentRegistry(tmp_path / "experiments.sqlite3"), lab.paper, lambda: True
+    )
+    tick_lab(lab, now + 12)
+    assert not lab.step(now + 12)
+    assert lab.inbox.get(waiting.request_id) == deferred
+    assert store.read()["autonomous_lab"]["next_action_at"] == deferred["next_retry"]
+    for account_id in (trial["candidate"], trial["reference"]):
+        assert (
+            store.connection.execute(
+                "SELECT count(*) AS n FROM paper_events "
+                "WHERE kind='lab_account_funded' AND account=%s",
+                (account_id,),
+            ).fetchone()["n"]
+            == 1
+        )
+    assert store.reconcile()["balanced"]
+    lab.registry.close()
+
+
+def test_full_deferred_queue_waits_without_generating_or_issuing_bundle(
+    pg_store, tmp_path, monkeypatch
+):
+    store, _ = pg_store
+    lab = make_lab(store, tmp_path)
+    bundle = lab.bundle(START)
+    for i in range(4):
+        p = proposal(bundle, name=f"full-deferred-queue-{i}")
+        lab.submit(p, START)
+        lab.inbox.defer(p.request_id, "Temporary admission wait", START + 60 + i * 60)
+    before = lab.inbox.page()
+    with pytest.raises(ValueError, match="Four active proposal jobs"):
+        lab.submit(proposal(bundle, name="overflow-deferred-queue"), START)
+
+    def no_discovery(_now):
+        pytest.fail("A full four-job inbox must not dispatch autonomous discovery")
+
+    monkeypatch.setattr(lab, "propose", no_discovery)
+    assert not lab.step(START)
+    assert lab.inbox.page() == before
+    current = store.read()["autonomous_lab"]
+    assert current["phase"] == "proposal_wait" and current["next_action_at"] == START + 60
+    assert not lab.last_error
+    assert lab.registry.db.execute("SELECT count(*) FROM lab_bundles").fetchone()[0] == 1
+    assert finance.slots(store.read())["used"] == 6
+    assert store.reconcile()["balanced"]
+    lab.registry.close()
+
+
+def test_discovery_capacity_precheck_cannot_overfill_concurrent_inbox(tmp_path):
+    registry = ExperimentRegistry(tmp_path / "experiments.sqlite3")
+    inbox = LabProposals(registry)
+    bundle = inbox.bundle({"schema": "permitted-lab-bundle-v1", "evidence": {}})
+    for i in range(3):
+        p = proposal(bundle, name=f"last-inbox-slot-{i}")
+        inbox.submit(p, {})
+        inbox.defer(p.request_id, "Temporary admission wait", START + 300)
+    barrier = Barrier(2)
+
+    def submit_last_slot(i):
+        assert inbox.has_capacity()
+        barrier.wait(timeout=5)  # Both producers observe the same remaining slot.
+        try:
+            return inbox.submit(proposal(bundle, name=f"concurrent-discovery-{i}"), {})["status"]
+        except ValueError as exc:
+            return str(exc)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(submit_last_slot, range(2)))
+    assert results.count("evaluated") == 1
+    assert sum("Four active proposal jobs" in result for result in results) == 1
+    assert not inbox.has_capacity()
+    assert len(inbox.page()["proposals"]) == 4
+    registry.close()
+
+
+@pytest.mark.parametrize(
+    ("guard", "expected_phase"),
+    [
+        ("resource", "waiting"),
+        ("hourly", "budget_wait"),
+        ("daily", "budget_wait"),
+        ("pause", "paused"),
+    ],
+)
+def test_deferred_discovery_respects_resource_budget_and_pause_guards(
+    pg_store, tmp_path, monkeypatch, guard, expected_phase
+):
+    store, _ = pg_store
+    lab = make_lab(store, tmp_path)
+    p = proposal(lab.bundle(START), name="deferred-guard-check")
+    lab.submit(p, START)
+    lab.inbox.defer(p.request_id, "Temporary admission wait", START + 300)
+    before = lab.inbox.get(p.request_id)
+
+    def configure(engine):
+        current = engine.state["autonomous_lab"]
+        # Explicit synthetic budget fixture; no funding or outcomes are invented.
+        if guard == "hourly":
+            current["budget"]["steps"] = current["policy"]["hourly_steps"]
+        elif guard == "daily":
+            current["budget"]["trials"] = current["policy"]["daily_trials"]
+        elif guard == "pause":
+            finance.control(engine, "pause_proposals")
+
+    lab.paper.state = store.transact(START, configure)
+    if guard == "resource":
+        monkeypatch.setattr(lab, "can_research", lambda: False)
+
+    def no_discovery(_now):
+        pytest.fail("A deferred job must not bypass the existing dispatch guards")
+
+    monkeypatch.setattr(lab, "propose", no_discovery)
+    assert not lab.step(START)
+    assert store.read()["autonomous_lab"]["phase"] == expected_phase
+    assert lab.inbox.get(p.request_id) == before
+    assert not lab.last_error
+    assert finance.slots(store.read())["used"] == 6
     assert store.reconcile()["balanced"]
     lab.registry.close()
 

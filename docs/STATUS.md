@@ -13,7 +13,13 @@ The independent PR24 review exposed six additional gaps; their corrections and
 separate verification are recorded in [audit corrections](reviews/continuous-paper-lab/AUDIT_CORRECTIONS.md)
 and [the ordered complete checklist](CONTINUOUS_PAPER_LAB.md).
 
-Corrected local verification is 539 passes, no skips, with isolated PostgreSQL;
+The second review's remaining F3 follow-up now permits bounded controller-generated
+discovery while a different family's proposal waits for its own retry. It retains
+four-job/resource/budget guards, frozen parent state and exact-once funding. Current
+local proof is 546 passes, zero skips, 54 affected checks and seven new regressions,
+Ruff and strict mypy. See [the separate follow-up receipt](reviews/continuous-paper-lab/F3_DISCOVERY_FOLLOWUP.md).
+
+The earlier six-finding stage recorded 539 passes, no skips, with isolated PostgreSQL;
 84 affected checks, thirty audit regressions, Ruff, strict mypy and frontend build
 pass. Actual disposable browser/API receipts show exact v2 replay reconciliation
 and persistent quota pressure while paper work and due checks advance. Six USB

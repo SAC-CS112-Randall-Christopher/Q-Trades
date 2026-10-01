@@ -4,6 +4,8 @@ The September 30 independent review reproduced six gaps at
 `bed73a1584a2aa7ed2a8f87550832e7349d14018`. Earlier passing suites did not cover
 these cases. Keep that original delivery and its failed/successful receipts.
 The original eight-request checklist remains in `docs/CONTINUOUS_PAPER_LAB.md`.
+The second review's single remaining F3 scheduler follow-up has its own
+[predeclared gate and verification receipt](F3_DISCOVERY_FOLLOWUP.md).
 
 Declare these correction gates before their disposable verification:
 

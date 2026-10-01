@@ -516,6 +516,23 @@ class AutonomousLab:
                             2,
                         )
                 return True
+            if b["day"] == int(now // 86400) and b["trials"] >= policy.daily_trials:
+                self._state(
+                    now,
+                    "budget_wait",
+                    "UTC daily trial-creation budget exhausted",
+                    86400 - now % 86400,
+                )
+                return False
+            # A deferred job owns its retry, not the whole discovery schedule.
+            # Avoid issuing/consuming a bundle when the bounded inbox is full;
+            # submit also checks capacity atomically against concurrent producers.
+            if self.inbox.has_capacity():
+                proposed = self.propose(now)
+                if proposed:
+                    self.submit(proposed, now)
+                    self._state(now, "evaluated", "Supported exploratory proposal evaluated", 2)
+                    return True
             retry_at = self.inbox.retry_due()
             if retry_at is not None:
                 self._state(
@@ -525,19 +542,6 @@ class AutonomousLab:
                     max(2, retry_at - now),
                 )
                 return False
-            if b["day"] == int(now // 86400) and b["trials"] >= policy.daily_trials:
-                self._state(
-                    now,
-                    "budget_wait",
-                    "UTC daily trial-creation budget exhausted",
-                    86400 - now % 86400,
-                )
-                return False
-            proposed = self.propose(now)
-            if proposed:
-                self.submit(proposed, now)
-                self._state(now, "evaluated", "Supported exploratory proposal evaluated", 2)
-                return True
             self._state(
                 now,
                 "observe",

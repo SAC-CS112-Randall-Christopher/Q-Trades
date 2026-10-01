@@ -7,6 +7,8 @@ Authoritative direction: issue #1, comment 5915529073. Baseline main:
 PR24's independent review at `bed73a1` found six uncovered defects. Their source
 corrections and new disposable regression checks are described in
 [audit corrections](reviews/continuous-paper-lab/AUDIT_CORRECTIONS.md).
+The second review's remaining scheduler discovery follow-up is recorded separately
+in [F3 discovery](reviews/continuous-paper-lab/F3_DISCOVERY_FOLLOWUP.md).
 The ordered eight-request checklist below remains the complete accepted scope.
 The original delivery receipts are retained separately from corrected-head proof.
 
@@ -165,12 +167,16 @@ The accepted requests remain in the owner's order:
    finite controller restart soak and 1/10/20-account native USB load are recorded
    in [verification evidence](reviews/continuous-paper-lab/README.md). The original
    source delivery passed 509 tests and its browser, soak and six native cases.
-   The corrected source passes **539 tests, no skips**, 84 affected-component
-   checks and 30 new regressions, Ruff and strict mypy (72 source files). Current
+   The six-finding correction stage passed **539 tests, no skips**, 84 affected-component
+   checks and 30 new regressions. The remaining F3 discovery follow-up passes
+   **546 tests, no skips**, 54 affected checks and seven additional regressions,
+   Ruff and strict mypy (72 source files), with its
+   [own receipt](reviews/continuous-paper-lab/F3_DISCOVERY_FOLLOWUP.md). Earlier
    browser/API checks cover exact v2 replay, persistent capacity pressure, omission
    counts and advancing independent due-outcome checks. Six post-audit native
    cases and the finite restart soak pass at their recorded source stage; later
-   shutdown/capacity guards have separate final-source tests. Hosted exact-head
+   shutdown/capacity guards and the F3 follow-up have separate source tests.
+   Hosted exact-head
    results remain separate and are recorded in PR24 and issue #1. Failures,
    interrupted attempts and omissions are retained. None of these synthetic checks
    establishes actual-market edge, real multi-day qualification, a 100-GB storage
@@ -194,8 +200,12 @@ Exits and authoritative closure continue, and archived account/trial evidence is
 available through bounded history and journal pages.
 
 The proposal inbox distinguishes permanent rejection from a temporary wait and
-retains each reason. Later eligible queued work proceeds while blocked work waits
-for its recorded retry. A disclosed past outcome can train the proposer but cannot
+retains each reason. Later eligible queued work and bounded autonomous discovery
+proceed while blocked work waits for its recorded retry. Discovery uses the same
+validation/admission path and requires space in the four-job inbox and available
+resource/work/creation budgets. A deferred job determines the next wait only after
+no other eligible work can proceed. A disclosed past outcome can train the proposer
+but cannot
 serve as an untouched validation interval afterward. Independent admissions rotate
 declared holding horizons through durable allocation, including after restart.
 

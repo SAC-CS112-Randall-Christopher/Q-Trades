@@ -147,11 +147,7 @@ class LabProposals:
                     "Equivalent reviewed settings were already attempted; label an "
                     "exact replication"
                 )
-            queued = r.db.execute(
-                "SELECT count(*) FROM lab_proposals "
-                "WHERE status IN ('evaluated','reserved','blocked')"
-            ).fetchone()[0]
-            if queued >= 4:
+            if not self.has_capacity():
                 raise ValueError(
                     "Four active proposal jobs already queued; wait for bounded dispatch"
                 )
@@ -185,6 +181,14 @@ class LabProposals:
                 },
             )
         return self.get(proposal.request_id)
+
+    def has_capacity(self) -> bool:
+        with self.registry.lock:
+            queued = self.registry.db.execute(
+                "SELECT count(*) FROM lab_proposals "
+                "WHERE status IN ('evaluated','reserved','blocked')"
+            ).fetchone()[0]
+            return bool(queued < 4)
 
     def used(self, rule_sha256: str) -> bool:
         with self.registry.lock:

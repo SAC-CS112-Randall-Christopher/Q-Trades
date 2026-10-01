@@ -5,7 +5,22 @@ explicit synthetic inputs. The operating installed application was inspected
 read-only in [the separate installed receipt](INSTALLED_READ_ONLY.md); no migration,
 activation, cleanup, restart or deployment was performed.
 
-## Post-audit source verification
+## Remaining F3 discovery follow-up
+
+The controller now tries bounded autonomous discovery before choosing a wait from
+a deferred job. The real generator admits a range-reversion pair beside a frozen
+breakout parent whose family cannot fit another pair; that replication keeps its
+original backoff. The four-job inbox and all resource/budget/pause/admission gates
+remain enforced. See [predeclared follow-up and result](F3_DISCOVERY_FOLLOWUP.md)
+and [scoped checks](f3-discovery-checks.json).
+
+Current local proof is **546 passed, zero skips, one existing test-client warning,
+156.60 seconds**, with isolated PostgreSQL 17; 54 affected checks and seven new
+regressions pass. Ruff and strict mypy (72 source files) pass. The original failing
+regression is retained. Exact-head hosted results are recorded in the PR/issue.
+This follow-up does not repeat or extend the earlier browser/native/soak measurements.
+
+## Earlier six-finding correction verification
 
 The six independent findings at `bed73a1` are corrected in the working branch.
 See [corrections and predeclared gates](AUDIT_CORRECTIONS.md). The final local
