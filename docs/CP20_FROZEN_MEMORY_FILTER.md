@@ -42,18 +42,26 @@ contract/normalization/calibration, original full-artifact hash and disclosure
 recorded before delivery. Reading does not add support or change any label.
 
 `tests/test_role_packet_preflight.py` builds ordinary and minimum/maximum supported
-12/128-row synthetic memory tasks, runs the real local adapter until a deliberate
+12/128-row synthetic memory tasks, including the maximum 500-character question,
+runs the real local adapter until a deliberate
 no-network sentinel, and exercises ordinary review, memory review, ordinary paper
 outcome, follow-up and lesson-backed different research. Every complete actual
 system/schema/packet/output/template byte reservation fits the unchanged 8192
-allowance. The maximum memory researcher/reviewer packets are 4177/4427 bytes;
-their total conservative reservations are 8053/7917. Follow-up is 2508 bytes and
-the lesson-backed question 3732 bytes. These are bytes/reservations, not tokenizer
+allowance. The maximum memory researcher/reviewer packets are 4216/4554 bytes;
+their total conservative reservations are 8097/8049. Follow-up is 2777 bytes and
+the lesson-backed question 3412 bytes. These are bytes/reservations, not tokenizer
 measurements, model inference, qualification or market support. Full artifacts
 remain byte-equivalent in the numerical proposal and retained registry. The
-128-row fixture is explicitly a synthetic size case. The 30 affected native tests
+128-row fixture is explicitly a synthetic size case. The latest 24 affected native tests
 pass; original failed fixture, context-bound and preflight attempts are retained
 under ignored data/f3-*.txt. Final stack checks remain separate evidence.
+
+Packet serialization is lossless sorted compact JSON and is identical in the real
+adapter's sizing and submitted prompt. Its encoding identifier participates in
+the contract digest, so qualification of the earlier format cannot authorize this
+one. The schemas, output reserve, template reserve, model options and resource
+guard are unchanged. Extra maximum-question failures remain retained separately
+from the final passing receipt; neither invokes a model or an observation request.
 
 Verification includes real parent-versus-filtered buy-intent behavior on explicit
 synthetic causal bars, exact replay reproduction/corruption refusal, legacy
