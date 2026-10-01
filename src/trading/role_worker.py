@@ -1216,13 +1216,16 @@ class RoleWorker:
             completed = self.registry.db.execute(
                 "SELECT count(*) FROM role_tasks WHERE status='done'"
             ).fetchone()[0]
+            external = self.registry.db.execute(
+                "SELECT count(*) FROM role_attempt_allowances WHERE actor IS NOT NULL"
+            ).fetchone()[0]
         return {
             "selection": selections,
             "completed_questions": completed,
             "attempts": totals[0],
             "reserved_wall_seconds": totals[1],
             "reserved_token_allowance": totals[2],
-            "paid_usd": "0",
+            "paid_usd": None if external else "0",
             "actual_model_tokens": None,
             "limits": "Allowance is conservative reservation, not measured model tokens or benefit",
         }

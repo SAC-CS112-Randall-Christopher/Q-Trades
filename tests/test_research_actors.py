@@ -106,6 +106,9 @@ def test_archived_external_answers_keep_shared_hourly_allowance(scope, monkeypat
         "WHERE actor IS NOT NULL"
     ).fetchone()
     assert tuple(used) == (32768, 360)
+    metrics = s.worker.selection_metrics()
+    assert metrics["attempts"] == 4 and metrics["reserved_token_allowance"] == 32768
+    assert metrics["paid_usd"] is None
     next_task = s.worker.enqueue(
         Question(question="A fifth external question needs a fresh hourly allowance.")
     )
