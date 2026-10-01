@@ -70,8 +70,8 @@ def prompt(role: str) -> str:
         "Cite only opaque evidence IDs in this packet. You have no financial tools. "
         "Research selects one offered reviewed-rule capability or abstains with a specific reason. "
         "A propose_experiment answer MUST set capability to an existing capabilities key. "
-        "All other actions MUST set capability=null. request_data MUST give a nonempty "
-        "dependency naming the missing source or interval and the condition for resumption. "
+        "All other actions MUST set capability=null. request_data MUST use an offered "
+        "e2.request_data_conditions key when present; otherwise state missing source/eligibility. "
         "Missing required data or pending labels use request_data, not no_change. "
         "Use no_change for an unchanged completed/redundant question with no new information. "
         "Never translate a ridge feature into breakout rules. "
@@ -90,7 +90,17 @@ def prompt(role: str) -> str:
 
 
 def contract_hash() -> str:
-    return fingerprint({role: prompt(role) for role in ("researcher", "reviewer")})
+    return fingerprint(
+        {
+            "packet_encoding": "sorted-compact-json-utf8-v1",
+            "prompts": {role: prompt(role) for role in ("researcher", "reviewer")},
+        }
+    )
+
+
+def packet_json(packet: dict[str, Any]) -> str:
+    """Lossless wire encoding shared by sizing, dispatch and qualification identity."""
+    return json.dumps(packet, sort_keys=True, separators=(",", ":"), allow_nan=False)
 
 
 def validate(role: str, value: dict[str, Any], packet: dict[str, Any]) -> Idea | Review:
@@ -100,4 +110,11 @@ def validate(role: str, value: dict[str, Any], packet: dict[str, Any]) -> Idea |
     if isinstance(answer, Idea) and answer.capability is not None:
         if answer.capability not in packet["capabilities"]:
             raise ValueError("Unsupported or stale rule capability")
+    if isinstance(answer, Idea) and answer.action == "request_data":
+        causal = packet["evidence"].get("e2", {})
+        if (
+            "request_data_conditions" in causal
+            and answer.dependency not in causal["request_data_conditions"]
+        ):
+            raise ValueError("Data dependency must name an offered wait requirement")
     return answer

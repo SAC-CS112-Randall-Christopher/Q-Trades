@@ -21,7 +21,7 @@ def artifact_summary(artifact: dict[str, Any]) -> dict[str, Any]:
         "neighbors": 5,
         "minimum_groups": 5,
         "maximum_weight": 0.2,
-        "limits": "Correlated historical support; prospective account benefit unknown",
+        "limits": "Correlated history; prospective account benefit unknown",
     }
 
 
@@ -30,7 +30,7 @@ def strategy_summary(strategy: dict[str, Any]) -> dict[str, Any]:
     if strategy.get("entry_filter"):
         result["entry_filter"] = strategy["entry_filter"] | {
             "artifact": artifact_summary(strategy["entry_filter"]["artifact"]),
-            "purpose": "Filter an eligible baseline entry; exits, sizing and risk unchanged",
+            "purpose": "Baseline entry filter; exits/sizing/risk unchanged",
         }
     return result
 
@@ -40,7 +40,7 @@ def method_summary(proposal: dict[str, Any]) -> dict[str, Any]:
         "strategy": strategy_summary(proposal["strategy"]),
         "reference": strategy_summary(proposal["reference"]),
         "method_sha256": fingerprint(proposal),
-        "detail": "Selected task's frozen proposal; exact full method retained",
+        "detail": "Full frozen method retained in selected task",
     }
 
 
@@ -72,7 +72,7 @@ def feature_summary(feature: dict[str, Any]) -> dict[str, Any]:
         }
         result["detail"] = {
             "feature_sha256": fingerprint(feature),
-            "scope": "Full descriptor/input/neighbors retained with selected task",
+            "scope": "Full descriptor/input/neighbors retained in task",
         }
     return result
 
@@ -119,7 +119,7 @@ def bundle_summary(bundle: dict[str, Any]) -> dict[str, Any]:
         },
         "detail": {
             "sha256": fingerprint(bundle),
-            "scope": "Exact permitted bundle retained; last three per category shown",
+            "scope": "Full bundle retained; latest three/category shown",
         },
     }
 
@@ -153,6 +153,6 @@ def outcome_summary(outcome: dict[str, Any]) -> dict[str, Any]:
         "at": outcome["at"],
         "body": {k: v for k, v in body.items() if k in keys},
         "source_sha256": fingerprint(outcome),
-        "detail": "Exact scored event retained with selected task/lesson",
+        "detail": "Full scored event retained in task/lesson",
         "omitted_fields": sorted(set(body) - keys),
     }
