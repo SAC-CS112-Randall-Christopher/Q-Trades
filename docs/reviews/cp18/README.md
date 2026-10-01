@@ -139,3 +139,11 @@ The frontend build passed. Final affected and integrated gates are recorded in
 the delivery receipt; they do not qualify a model or establish economic benefit.
 The final complete affected run passed 30 tests in 39.94 seconds, with Ruff,
 strict Windows typing (four changed sources) and the frontend build passing.
+
+Integrated continuation also retains compact status and recorded endpoint-usage
+projections alongside cold attempt allowances. Endpoint counts and wall time are
+preserved exactly when present; absent measurements remain unknown. Legacy cold
+records with no projection retain their original full receipt and explicitly
+unknown summary fields. Eight history and six request-recovery tests pass together
+in 31.48 seconds. This includes exact hot/cold usage equality and restart; the
+recorded endpoint numbers are labelled software fixtures, never actual inference.
