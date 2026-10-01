@@ -23,8 +23,10 @@ failed attempts, database configuration and original provider packets stay ignor
 
 ## Current evidence and blockers
 
-The installed app was observed read-only on historical `d520236ee8e6c1cec4ea10f609c3f5c7391a269c`.
-Its current paper processing is fresh, but optional research remains constrained.
+The final read-only installed marker and ordinary health endpoint agree on main
+`6fc72dccb51e07e00b30bd5c880234c13099297b`, with fresh paper processing and a
+balanced journal. The earlier d520236 observation is historical. This assignment
+did not install or restart the operating app. Optional research remains constrained.
 The final native preflight observed engine p95 172 ms, commit p95 141 ms and
 296.766 seconds of resource cooldown. These are installed observations, separate
 from the generated QA workload's lower measured latencies. Do not waive the
