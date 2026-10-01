@@ -2,6 +2,7 @@
 
 import asyncio
 import copy
+import json
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 
@@ -284,7 +285,7 @@ def test_typed_outcome_wait_requires_recorded_maturity_and_discloses_before_resu
     lab.registry.close()
 
 
-def test_unbound_historical_text_and_changed_old_rows_do_not_infer_maturity(
+def test_new_unbound_data_dependency_fails_with_answer_retained_and_slot_released(
     pg_store, tmp_path, monkeypatch
 ):
     store, _ = pg_store
@@ -297,9 +298,35 @@ def test_unbound_historical_text_and_changed_old_rows_do_not_infer_maturity(
     task = worker.enqueue(
         Question(question="An ambiguous condition must not infer unseen evidence.")
     )
-    assert asyncio.run(worker.step())
+    assert not asyncio.run(worker.step())
+    failed = worker.get(task["id"])
+    assert failed["status"] == "failed"
+    assert "offered wait requirement" in failed["reason"]
+    assert failed["attempts"][0]["status"] == "failed"
+    assert json.loads(failed["attempts"][0]["response"])["answer"]["dependency"] == model.dependency
     tick_lab(lab, START + 120)
     assert worker.resume_sources(START + 120) == 0
-    assert worker.get(task["id"])["result"]["wait_requirement"] is None
+    worker.enqueue(Question(question="A valid successor can use the released active slot."))
     assert len(model.calls) == 1
+    lab.registry.close()
+
+
+def test_unbound_historical_text_does_not_infer_maturity(pg_store, tmp_path, monkeypatch):
+    store, _ = pg_store
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
+    lab = make_lab(store, tmp_path)
+    worker = RoleWorker(lab.registry, lab, DataWaitStub())
+    task = worker.enqueue(Question(question="Retain an earlier unbound historical data wait."))
+    # Legacy saved state, not a response accepted by the current contract.
+    worker._update(
+        task,
+        "data_wait",
+        "waiting",
+        result={"answer": {"dependency": "Await unknown labels"}, "wait_requirement": None},
+    )
+    before = worker.get(task["id"])
+    tick_lab(lab, START + 120)
+    assert worker.resume_sources(START + 120) == 0
+    assert worker.get(task["id"]) == before
+    assert worker.transport.calls == []
     lab.registry.close()

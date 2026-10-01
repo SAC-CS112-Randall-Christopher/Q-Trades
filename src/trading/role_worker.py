@@ -556,9 +556,6 @@ class RoleWorker:
                 }
                 for key, value in context.get("wait_requirements", {}).items()
             },
-            "wait_selection": (
-                "For automatic resumption, dependency must equal one offered condition key"
-            ),
         }
         if context.get("dependency_evidence"):
             evidence["e4"] = context["dependency_evidence"]
