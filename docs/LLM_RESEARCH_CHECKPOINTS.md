@@ -35,7 +35,7 @@ not waive paper-resource admission or permit installed reconfiguration.
 | CP19 | Referenced lessons and outcome-driven different-test selection implemented | Two-generation synthetic software proof; actual-model trace blocked |
 | CP20 | Frozen short memory-entry filter reaches child/runtime/replay/cost/evidence | Synthetic source proof; actual fitted role discovery unverified |
 | CP21 | Bounded SEC facts/filing studies and independent public IBM daily study | Actual IBM native read; SEC HTTP 403/cooldown; entitled vintage unverified |
-| CP22 | Planned shared scoped task path | Actual external transport unverified |
+| CP22 | Shared scoped HTTP task leases, semantic proposals, required review and ordinary paper result; disposable integration | Actual Crik/authorized bridge absent; see CP22_SCOPED_COLLABORATION.md |
 | CP23 | Planned integrated acceptance | No installed/prospective/economic claim |
 
 Evidence stages are separate: planned, implemented, software verified, actual role

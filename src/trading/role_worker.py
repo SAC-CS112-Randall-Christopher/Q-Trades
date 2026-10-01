@@ -269,10 +269,21 @@ class RoleWorker:
             for key in ("context", "proposal", "evaluation", "result"):
                 result[key] = json.loads(result[key]) if result[key] else None
             result.pop("owner", None)
+            result["execution"] = {
+                "kind": "external"
+                if str(row["owner"]).startswith("actor:")
+                else "local"
+                if row["owner"]
+                else "unclaimed",
+                "lease_until": row["lease_until"],
+            }
             attempts = self.registry.db.execute(
                 "SELECT * FROM role_attempts WHERE task=? ORDER BY started", (identity,)
             ).fetchall()
             result["attempts"] = [dict(a) for a in attempts]
+            if row["owner"] and attempts:
+                last_profile = json.loads(attempts[-1]["profile"])
+                result["execution"]["actor"] = last_profile.get("actor", "Local worker")
         return result
 
     def page(self, before: float = 0) -> dict[str, Any]:
@@ -367,7 +378,7 @@ class RoleWorker:
 
     def _update(
         self, task: dict[str, Any], stage: str, status: str = "queued", **values: Any
-    ) -> None:
+    ) -> bool:
         with self.registry.transaction():
             assignments = ["stage=?", "status=?", "updated=?", "owner=NULL", "lease_until=NULL"]
             progressed = (
@@ -385,12 +396,35 @@ class RoleWorker:
                     if key in {"proposal", "evaluation", "result"}
                     else value
                 )
-            params.append(task["id"])
-            self.registry.db.execute(
-                "UPDATE role_tasks SET " + ",".join(assignments) + " WHERE id=?", params
+            params.extend(
+                [
+                    task["id"],
+                    task["stage"],
+                    self.owner,
+                    time.time(),
+                    int(not task.get("_claimed_owner")),
+                ]
+            )
+            return bool(
+                self.registry.db.execute(
+                    "UPDATE role_tasks SET " + ",".join(assignments) + " WHERE id=? AND stage=? "
+                    "AND (owner=? AND lease_until>=? "
+                    "OR ?=1 AND owner IS NULL AND lease_until IS NULL)",
+                    params,
+                ).rowcount
             )
 
     def _current(self, task: dict[str, Any]) -> AutonomousLab:
+        if task.get("_claimed_owner"):
+            with self.registry.lock:
+                owned = self.registry.db.execute(
+                    "SELECT 1 FROM role_tasks WHERE id=? AND owner=? AND lease_until>=?",
+                    (task["id"], self.owner, time.time()),
+                ).fetchone()
+            if not owned:
+                raise InputWait(
+                    "Task ownership expired or changed; retained completion awaits its owner"
+                )
         c = self.controller
         if c is None:
             raise InputWait("Paper controller unavailable; task retained")
@@ -478,6 +512,8 @@ class RoleWorker:
                 (task["id"], task["stage"]),
             ).fetchone()
         if previous and previous["response"]:
+            if fingerprint(json.loads(previous["packet"])) != fingerprint(packet):
+                raise ValueError("Completed answer belongs to a different frozen packet")
             return validate(role, json.loads(previous["response"])["answer"], packet)
         if previous and previous["status"] != "retry_authorized":
             # An unknown completion is never an invisible retry for a preferred verdict.
@@ -497,9 +533,15 @@ class RoleWorker:
         timeout = profile["timeout_seconds"]
         attempt_number = previous["attempt"] + 1 if previous else 1
         with self.registry.transaction():
+            owned = self.registry.db.execute(
+                "SELECT 1 FROM role_tasks WHERE id=? AND owner=? AND lease_until>=?",
+                (task["id"], self.owner, started),
+            ).fetchone()
+            if not owned:
+                raise InputWait("Role ownership changed before inference; no new attempt")
             used = self.registry.db.execute(
                 "SELECT coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
-                "FROM role_attempts WHERE started>=?",
+                "FROM role_attempts WHERE started>=? AND json_extract(profile,'$.actor') IS NULL",
                 (started - 3600,),
             ).fetchone()
             if (
@@ -525,8 +567,8 @@ class RoleWorker:
                 ),
             )
             self.registry.db.execute(
-                "UPDATE role_tasks SET owner=?,lease_until=?,status='running' WHERE id=?",
-                (self.owner, started + timeout + 30, task["id"]),
+                "UPDATE role_tasks SET lease_until=?,status='running' WHERE id=? AND owner=?",
+                (started + timeout + 30, task["id"], self.owner),
             )
         try:
             response = await asyncio.to_thread(self.transport.infer, role, packet, profile)
@@ -576,6 +618,7 @@ class RoleWorker:
         if not row:
             return False
         task = self.get(row["id"])
+        task["_claimed_owner"] = self.owner
         try:
             c = self._current(task)
             if not c.can_research():
@@ -598,7 +641,7 @@ class RoleWorker:
                     else:
                         self._update(task, "submit", result={"review": answer.model_dump()})
                 elif stage == "followup":
-                    self._update(
+                    changed = self._update(
                         task,
                         "complete",
                         "done",
@@ -608,7 +651,8 @@ class RoleWorker:
                             "support": "Recorded comparison; annotation grants no new P/L",
                         },
                     )
-                    self.lessons.record(self.get(task["id"]))
+                    if changed:
+                        self.lessons.record(self.get(task["id"]))
                 elif answer.action != "propose_experiment":
                     self._update(
                         task,

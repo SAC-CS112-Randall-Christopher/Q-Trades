@@ -2,6 +2,10 @@
 
 Implement the work order and implementation addendum in GitHub issue #28.
 Read docs/LLM_RESEARCH_CHECKPOINTS.md for the current integration/evidence ledger.
+CP22 source uses shared scoped HTTP leases; read docs/CP22_SCOPED_COLLABORATION.md.
+Actual Crik connector/authorized bridge is absent. Complete CP23's predeclared
+finite native/browser/fault verification and rollout handoff; do not activate a
+bridge, worker or schedule to turn a source adapter into actual transport proof.
 CP19 source extends the same registry; read docs/CP19_REFERENCED_RESEARCH.md.
 Its two-generation receipt uses a model stub and accelerated disposable paper
 coverage, not qualified inference. Continue CP20's existing memory-entry filter

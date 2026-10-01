@@ -1,5 +1,12 @@
 # Current CP17–CP23 implementation
 
+CP22 adds shared task-scoped contributor leases and normal paper-result linkage.
+No installed Crik connector/authorized bridge is available; actual external proof
+remains blocked. See [interface and limits](CP22_SCOPED_COLLABORATION.md).
+CP20's hosted source gate and CP21's exact source gate are green (614 native tests,
+zero skips, 183.51 seconds for CP21). Actual SEC access remains denied on both
+the website and direct public data API; the persistent cooldown is preserved.
+
 Issue #28 owns the remaining LLM/tools work. Main and prerequisite #27 are
 refreshed to 6fc72dcc. See [current ledger](LLM_RESEARCH_CHECKPOINTS.md).
 CP17 is delivered in draft #29 (32b5fc49) with 580 native tests/no skips and

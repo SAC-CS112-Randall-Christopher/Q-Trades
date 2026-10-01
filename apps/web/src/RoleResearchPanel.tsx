@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { LessonPanel } from "./LessonPanel";
 import { StockResearchPanel } from "./StockResearchPanel";
+import { ResearchActorPanel } from "./ResearchActorPanel";
 
 type RoleState = {
   enabled: boolean;
@@ -20,6 +21,7 @@ type RoleState = {
 };
 type Task = {
   id: string; stage: string; status: string; updated: number; reason: string | null;
+  execution: {kind: string; actor?: string; lease_until: number | null};
   context: { question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
   proposal: { request_id: string; kind: string; strategy: {family: string; lookback: number; entry_filter?: {kind: string; horizon_seconds: number; marginal_daily_usd: string; fallback: string; artifact: {sha256: string}}}; reference: { family: string; lookback: number } } | null;
   evaluation: { input_count: number; evaluated_at: number; feature: { eligible?: boolean; reason?: string }; replay: string; detail_reference?: string } | null;
@@ -118,6 +120,7 @@ export function RoleResearchPanel() {
     {state?.next_before && <button type="button" onClick={() => setBefore(state.next_before!)}>Older questions</button>}
     {task && <article aria-label="Saved research task">
       <h3>{task.context.question.question}</h3><p>{task.context.question.horizon} horizon · {stages[task.stage] ?? task.stage} · {task.status} · progress {stamp(task.updated)}</p>
+      <p>Current ownership: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
       {task.reason && <p>{task.reason}</p>}
       {task.status === "failed" && task.attempts.length > 0 && !task.attempts.at(-1)?.response && <button disabled={busy} type="button" onClick={() => void retryTransport()}>Authorize one recorded transport retry</button>}
       <h4>Captured causal evidence</h4><p>{task.context.tool_evidence.security} · {task.context.tool_evidence.closed_bar_count} closed bars · captured {stamp(task.context.tool_evidence.observed_at)} · {task.context.tool_evidence.source_basis}</p>
@@ -134,5 +137,6 @@ export function RoleResearchPanel() {
     </article>}
     <LessonPanel openTask={open} />
     <StockResearchPanel />
+    <ResearchActorPanel selectedTask={selected || null} />
   </section>;
 }

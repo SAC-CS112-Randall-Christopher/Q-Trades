@@ -1,10 +1,13 @@
-# Current: CP21 source/access gate, then CP22 scoped external collaboration
+# Current: CP22 source gate, then CP23 integrated acceptance
 
 Implement issue #28 and its addendum in dependency order. CP17 draft #29 is
 delivered. CP18 draft #30 at 9ab26c0 passes 597 native tests/no skips and its
 exact-head hosted Windows check. CP19 adds referenced lessons and a finite
 two-generation software trace. Complete its source gate and continue CP20's
-existing 45-minute historical-memory filter as the single component.
+existing 45-minute historical-memory filter as the single component. CP20/CP21
+source gates are green. CP22 implements the shared scoped local HTTP interface;
+actual Crik transport is unavailable. Complete its native gate and CP23 finite
+browser/load/fault verification and rollout handoff without activating agents.
 No actual qualified-model-to-paper-result milestone has been established.
 Read [the current ledger](LLM_RESEARCH_CHECKPOINTS.md) for proof and blockers.
 Leave source PRs draft and unmerged; preserve installed and operating state.

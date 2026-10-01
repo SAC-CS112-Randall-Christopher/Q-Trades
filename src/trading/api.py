@@ -38,6 +38,7 @@ from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
 from trading.prospective_review import ProspectiveSpec
 from trading.replay_lab import ReplayLab, ReplayPlan
+from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
 from trading.research_campaigns import ResearchCampaignSpec
 from trading.research_evidence import evidence_page, evidence_record
 from trading.research_storage import (
@@ -462,6 +463,108 @@ def create_app(
         if lab is None:
             raise HTTPException(503, "Research registry unavailable; paper management continues")
         return lab
+
+    @app.middleware("http")
+    async def scoped_actor_route(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        # A narrow future transport must preserve this credential and allowlist.
+        # A bearer credential never authorizes operator/dashboard/financial APIs.
+        if request.headers.get("authorization", "").startswith("Bearer ") and not (
+            request.url.path.startswith("/api/research/actors/tasks/")
+            or request.url.path.startswith("/api/research/actors/claims/")
+            or request.url.path == "/api/research/actors/answers"
+        ):
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "Research credential cannot access operator or unrelated routes"
+                },
+            )
+        return await call_next(request)
+
+    def actors(request: Request) -> ResearchActors:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Scoped research registry unavailable")
+        return ResearchActors(lab.roles)
+
+    def actor_token(request: Request) -> str:
+        authorization = request.headers.get("authorization", "")
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(403, "Scoped research bearer credential required")
+        return authorization[7:]
+
+    @app.get("/api/research/actors/grants")
+    def actor_grants(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        return actors(request).snapshot()
+
+    @app.post("/api/research/actors/grants")
+    def actor_grant(request: Request, grant: ActorGrant) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return actors(request).grant(grant)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/actors/grants/{identity}/revoke")
+    def actor_revoke(request: Request, identity: str) -> dict[str, str]:
+        lab_operator(request)
+        try:
+            actors(request).revoke(identity)
+            return {
+                "status": "revoked",
+                "effect": "Completed receipts, paper positions and history preserved",
+            }
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/actors/tasks/claim")
+    def actor_claim(request: Request, command: ActorTask) -> dict[str, Any]:
+        try:
+            return actors(request).claim(actor_token(request), command.task)
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.post("/api/research/actors/claims/renew")
+    def actor_renew(request: Request, command: ActorClaim) -> dict[str, Any]:
+        try:
+            return actors(request).renew(actor_token(request), command.claim)
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.post("/api/research/actors/claims/release")
+    def actor_release(request: Request, command: ActorClaim) -> dict[str, str]:
+        try:
+            actors(request).release(actor_token(request), command.claim)
+            return {
+                "status": "released",
+                "next": "Unknown completion retained; one explicit local retry allowed",
+            }
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.post("/api/research/actors/answers")
+    def actor_answer(request: Request, command: ActorAnswer) -> dict[str, Any]:
+        try:
+            return actors(request).answer(actor_token(request), command)
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.get("/api/research/actors/tasks/{identity}/result")
+    def actor_result(request: Request, identity: str) -> dict[str, Any]:
+        try:
+            return actors(request).result(actor_token(request), identity)
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.get("/api/research/actors/tasks/maintenance")
+    def actor_maintenance(request: Request) -> dict[str, Any]:
+        try:
+            return actors(request).maintenance(actor_token(request))
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
 
     @app.get("/api/lab")
     def research_lab(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:
