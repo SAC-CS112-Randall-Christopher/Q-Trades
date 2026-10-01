@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
+import httpx
 import psycopg
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -53,6 +54,7 @@ from trading.runtime import Monitor
 from trading.scoped_tools import disclose, outcome_page, reader
 from trading.scoped_tools import run as scoped_tool
 from trading.station import TOOLS, market_detail, market_live
+from trading.stock_research import StockQuestion, StockResearch
 from trading.storage import MonitorStore
 from trading.tiered_runtime import TieredPaperRuntime as PaperRuntime
 from trading.tool_journal import ToolJournal
@@ -554,6 +556,53 @@ def create_app(
         if lab is None or lab.roles is None:
             raise HTTPException(503, "Research selector unavailable")
         return dict(lab.roles.selection_metrics())
+
+    @app.post("/api/research/stocks/investigations")
+    def stock_investigate(request: Request, question: StockQuestion) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return StockResearch(lab.registry).investigate(question)
+        except (ValueError, httpx.HTTPError) as exc:
+            raise HTTPException(409, str(exc)[:300]) from exc
+
+    @app.post("/api/research/stocks/market-study")
+    def stock_market_study(request: Request, question: StockQuestion) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return StockResearch(lab.registry).market_study(question)
+        except (ValueError, httpx.HTTPError) as exc:
+            raise HTTPException(409, str(exc)[:300]) from exc
+
+    @app.get("/api/research/stocks/studies/{identity}")
+    def stock_study(request: Request, identity: str) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research registry unavailable")
+        try:
+            return StockResearch(lab.registry).get(identity)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/research/stocks/studies/{identity}/section")
+    def stock_section(
+        request: Request,
+        identity: str,
+        phrase: str = Query(min_length=3, max_length=100),
+        index: int = Query(0, ge=0, le=1),
+        compare: bool = False,
+    ) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research registry unavailable")
+        try:
+            research = StockResearch(lab.registry)
+            return (
+                research.compare_filings(identity, phrase)
+                if compare
+                else research.section(identity, index, phrase)
+            )
+        except (ValueError, httpx.HTTPError) as exc:
+            raise HTTPException(409, str(exc)[:300]) from exc
 
     @app.get("/api/autonomous")
     async def autonomous_snapshot(request: Request) -> dict[str, Any]:

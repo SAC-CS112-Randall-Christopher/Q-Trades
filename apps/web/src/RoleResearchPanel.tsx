@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { LessonPanel } from "./LessonPanel";
+import { StockResearchPanel } from "./StockResearchPanel";
 
 type RoleState = {
   enabled: boolean;
@@ -132,5 +133,6 @@ export function RoleResearchPanel() {
       <details><summary>Model attempts, final answers and resource receipts</summary>{task.attempts.map((a, i) => <div key={i}><h4>{a.stage} · {a.status}</h4><p>{stamp(a.started)} {a.finished ? `to ${stamp(a.finished)}` : "completion pending or unknown"} {a.reason}</p><pre>{JSON.stringify({ profile: a.profile, final_response: a.response }, null, 2)}</pre></div>)}</details>
     </article>}
     <LessonPanel openTask={open} />
+    <StockResearchPanel />
   </section>;
 }

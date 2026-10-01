@@ -8,6 +8,10 @@ result feedback workflow. Its actual-model operational proof is blocked by the
 installed optional-research resource guard; no current role is qualified or
 activated. Read [CP18 behavior and limits](CP18_QUALIFIED_ROLE_LOOP.md).
 Historical source evidence follows.
+CP21 adds read-only SEC/IBM source studies. Native public IBM archive/read works;
+native SEC HTTP 403/cooldown remains an access blocker. No entitled market feed,
+historical as-seen price vintage or stock execution is established. Read
+[source identities and limits](CP21_POINT_IN_TIME_STOCKS.md).
 CP20 adds the single frozen historical-memory entry filter in additive rules v3,
 preserving v2 serialization, baseline fallback and exact parents. Role contract
 v5 needs new qualification. See [component scope](CP20_FROZEN_MEMORY_FILTER.md).

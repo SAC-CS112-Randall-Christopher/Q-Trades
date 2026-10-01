@@ -34,7 +34,7 @@ not waive paper-resource admission or permit installed reconfiguration.
 | CP18 | Source implements evidence/idea/check/review/inbox/outcome/follow-up; actual dedicated CPU runtime observed | Operating resource guard blocks qualification; see CP18_QUALIFIED_ROLE_LOOP.md |
 | CP19 | Referenced lessons and outcome-driven different-test selection implemented | Two-generation synthetic software proof; actual-model trace blocked |
 | CP20 | Frozen short memory-entry filter reaches child/runtime/replay/cost/evidence | Synthetic source proof; actual fitted role discovery unverified |
-| CP21 | Planned point-in-time stock filing and market research | Permitted sources require current verification |
+| CP21 | Bounded SEC facts/filing studies and independent public IBM daily study | Actual IBM native read; SEC HTTP 403/cooldown; entitled vintage unverified |
 | CP22 | Planned shared scoped task path | Actual external transport unverified |
 | CP23 | Planned integrated acceptance | No installed/prospective/economic claim |
 

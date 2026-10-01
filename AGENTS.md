@@ -9,6 +9,10 @@ as the single declared component; do not add another component simultaneously.
 CP20's implemented component is documented in docs/CP20_FROZEN_MEMORY_FILTER.md.
 Next implement CP21 point-in-time stock evidence with currently verified public
 access, explicit provider limitations, no equity execution or paid/account setup.
+CP21 behavior/access is documented in docs/CP21_POINT_IN_TIME_STOCKS.md. Respect
+the persisted SEC cooldown; don't substitute website-tool access for native proof.
+Continue CP22 shared scoped task leases without activating external workers or
+creating a public bridge/schedule. Actual Crik transport remains unconfigured.
 Read docs/CP18_QUALIFIED_ROLE_LOOP.md before touching role/runtime work. CP17 is
 draft #29 at 32b5fc49 with exact-head hosted success. CP18 actual qualification is
 blocked by the operating optional-research guard; preliminary development calls
