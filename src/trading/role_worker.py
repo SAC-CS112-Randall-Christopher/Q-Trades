@@ -60,7 +60,14 @@ class RoleWorker:
                   BEGIN SELECT RAISE(ABORT,'Completed model answer is immutable'); END;
             """)
 
-    def enqueue(self, question: Question, now: float | None = None) -> dict[str, Any]:
+    def enqueue(
+        self,
+        question: Question,
+        now: float | None = None,
+        *,
+        _resume_from: dict[str, Any] | None = None,
+        _dependency_evidence: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         now = time.time() if now is None else now
         question_body = question.model_dump(exclude={"request_id"})
         question_sha256 = fingerprint(question_body)
@@ -198,6 +205,30 @@ class RoleWorker:
             },
             "scope": "Current causal features; no historical fills or profitable backtest inferred",
         }
+        waits: dict[str, Any] = {
+            "new_closed_bars": {
+                "kind": "closed_bars",
+                "horizon": question.horizon,
+                "source_sha256": causal_inputs["closed_bar_sha256"],
+                "last_closed_at": max((b.close_ms / 1000 for b in bars), default=0),
+            }
+        }
+        pending = sorted(
+            (
+                t
+                for t in c.paper.state["autonomous_lab"]["trials"].values()
+                if t["status"] in {"active", "draining"}
+                and t["contract"]["proposal"]["strategy"]["holding_horizon"] == question.horizon
+            ),
+            key=lambda t: (t["started_at"], t["id"]),
+        )
+        if pending:
+            waits["mature_outcome"] = {
+                "kind": "mature_outcome",
+                "trial_id": pending[0]["id"],
+                "eligible_at": pending[0]["review_at"],
+                "other_pending_comparisons": len(pending) - 1,
+            }
         context = {
             "contract": VERSION,
             "question": question_body,
@@ -207,6 +238,9 @@ class RoleWorker:
             "issued": issued,
             "tool_evidence": causal_inputs,
             "lesson": prior,
+            "wait_requirements": waits,
+            "predecessor_task": _resume_from["id"] if _resume_from else None,
+            "dependency_evidence": _dependency_evidence,
         }
         identity = (
             "role-"
@@ -217,6 +251,8 @@ class RoleWorker:
                     "catalog": catalog,
                     "evidence": issued["bundle"]["novelty_sha256"],
                     "source": causal_inputs["closed_bar_sha256"],
+                    "waits": waits,
+                    "dependency_evidence": _dependency_evidence,
                 }
             )[:32]
         )
@@ -224,6 +260,22 @@ class RoleWorker:
         if len(encoded.encode()) > 65536:
             raise ValueError("Role evidence context exceeds 64 KiB")
         with self.registry.transaction():
+            if _resume_from:
+                if identity == _resume_from["id"]:
+                    raise ValueError("Unchanged evidence cannot resume the same question")
+                changed = self.registry.db.execute(
+                    "UPDATE role_tasks SET stage='complete',status='done',updated=?,reason=? "
+                    "WHERE id=? AND stage='data_wait' AND status='waiting' AND owner IS NULL "
+                    "AND context=?",
+                    (
+                        now,
+                        "Eligible dependency resumes as " + identity,
+                        _resume_from["id"],
+                        json.dumps(_resume_from["context"], sort_keys=True, allow_nan=False),
+                    ),
+                ).rowcount
+                if not changed:
+                    raise ValueError("Waiting predecessor already resumed or ownership changed")
             if not self.registry.db.execute(
                 "SELECT 1 FROM role_tasks WHERE id=?", (identity,)
             ).fetchone():
@@ -246,6 +298,26 @@ class RoleWorker:
                     (identity, now, now, encoded),
                 )
                 self.registry.event(identity, "role_question", {"question": question.question})
+            if _resume_from:
+                self.registry.event(
+                    _resume_from["id"],
+                    "role_dependency_resumed",
+                    {
+                        "successor": identity,
+                        "requirement": (_resume_from["result"] or {}).get("wait_requirement"),
+                    },
+                )
+            if _dependency_evidence:
+                outcome = _dependency_evidence["body"]
+                self.registry.db.execute(
+                    "INSERT OR IGNORE INTO evidence_windows "
+                    "VALUES(?,?,?,'role dependency disclosure')",
+                    (
+                        "role-dependency:" + identity,
+                        outcome["window_start"],
+                        outcome["available_at"],
+                    ),
+                )
             if question.request_id:
                 if (
                     self.registry.db.execute("SELECT count(*) FROM role_requests").fetchone()[0]
@@ -423,6 +495,24 @@ class RoleWorker:
             }
         evidence: dict[str, Any] = {"e0": context["issued"]["bundle"]}
         evidence["e2"] = context["tool_evidence"]
+        evidence["e2"] = evidence["e2"] | {
+            "request_data_conditions": {
+                key: {
+                    "kind": value["kind"],
+                    "condition": (
+                        "A later closed bar from the same horizon"
+                        if value["kind"] == "closed_bars"
+                        else "The sole writer records this mature outcome"
+                    ),
+                }
+                for key, value in context.get("wait_requirements", {}).items()
+            },
+            "wait_selection": (
+                "For automatic resumption, dependency must equal one offered condition key"
+            ),
+        }
+        if context.get("dependency_evidence"):
+            evidence["e4"] = context["dependency_evidence"]
         if context.get("lesson"):
             prior = context["lesson"]
             evidence["e3"] = {
@@ -614,7 +704,14 @@ class RoleWorker:
                         task,
                         "data_wait" if answer.action == "request_data" else "complete",
                         "waiting" if answer.action == "request_data" else "done",
-                        result=answer.model_dump(),
+                        result=answer.model_dump()
+                        | {
+                            "wait_requirement": task["context"]
+                            .get("wait_requirements", {})
+                            .get(answer.dependency)
+                            if answer.action == "request_data"
+                            else None,
+                        },
                         reason=answer.dependency or answer.rationale,
                     )
                 else:
@@ -817,7 +914,7 @@ class RoleWorker:
         return {"selected": selected, "waiting": waiting}
 
     def resume_sources(self, now: float | None = None) -> int:
-        """A new closed source prefix, not clock refresh, may replace a data wait."""
+        """Exchange one waiting slot atomically, using its frozen typed dependency."""
         if self.controller is None:
             return 0
         now = time.time() if now is None else now
@@ -830,29 +927,38 @@ class RoleWorker:
         for row in rows:
             task = self.get(row["id"])
             question = Question.model_validate(task["context"]["question"])
-            dependency = (task["result"] or {}).get("dependency") or task["reason"] or ""
-            if any(word in dependency.lower() for word in ("label", "outcome")):
-                # A newer price prefix cannot resolve a missing delayed outcome.
-                continue
-            if not any(
-                word in dependency.lower() for word in ("bar", "candle", "prefix", "source")
-            ):
-                continue  # Ambiguous dependency requires an explicit new investigation.
-            current = fingerprint(
-                [str(b) for b in self.controller.paper.lab_history(now, question.horizon)]
-            )
-            if current == task["context"]["tool_evidence"]["closed_bar_sha256"]:
+            requirement = (task["result"] or {}).get("wait_requirement")
+            if not requirement:
+                continue  # Historical free text is retained; no guessed dependency/maturity.
+            outcome = None
+            if requirement["kind"] == "closed_bars":
+                bars = self.controller.paper.lab_history(now, requirement["horizon"])
+                if (
+                    fingerprint([str(b) for b in bars]) == requirement["source_sha256"]
+                    or max((b.close_ms / 1000 for b in bars), default=0)
+                    <= requirement["last_closed_at"]
+                ):
+                    continue
+            elif requirement["kind"] == "mature_outcome":
+                with reader(self.controller.paper) as view:
+                    outcome = view.connection.execute(
+                        "SELECT id,at,body FROM paper_events WHERE kind='lab_trial_scored' "
+                        "AND body->>'trial_id'=%s AND at<=%s ORDER BY id DESC LIMIT 1",
+                        (requirement["trial_id"], now),
+                    ).fetchone()
+                if not outcome or outcome["body"]["available_at"] > now:
+                    continue
+            else:
                 continue
             try:
-                new_task = self.enqueue(question.model_copy(update={"request_id": None}), now)
+                self.enqueue(
+                    question.model_copy(update={"request_id": None}),
+                    now,
+                    _resume_from=task,
+                    _dependency_evidence=dict(outcome) if outcome else None,
+                )
             except ValueError:
                 continue
-            with self.registry.transaction():
-                self.registry.db.execute(
-                    "UPDATE role_tasks SET stage='complete',status='done',updated=?,reason=? "
-                    "WHERE id=? AND stage='data_wait' AND status='waiting'",
-                    (now, "New closed source evidence resumes as " + new_task["id"], task["id"]),
-                )
             resumed += 1
         return resumed
 
