@@ -1,10 +1,14 @@
 """Read-model economics and permanent paging; never use installed financial state."""
 
 import copy
+from contextlib import nullcontext
 from decimal import Decimal as D
+from types import SimpleNamespace
 
+import psycopg
 import pytest
 from fastapi.testclient import TestClient
+from psycopg.conninfo import conninfo_to_dict
 from test_paper_engine import START, buy, frame, study
 from test_paper_store import pg_store as _pg_store
 
@@ -16,6 +20,56 @@ from trading.paper_store import PaperStore
 from trading.trade_history import closed_row, number, open_row, ratio
 
 pg_store = _pg_store
+
+
+@pytest.mark.parametrize("password", ["synthetic-password", "synthetic ' quote \\ and space"])
+def test_api_reader_keeps_authentication_private_and_separate(password, monkeypatch, tmp_path):
+    import trading.api as api
+
+    info = SimpleNamespace(
+        dsn="host=127.0.0.1 port=55633 dbname=synthetic user=fixture "
+        "options='-c search_path=auth_case'",
+        password=password,
+    )
+    # Psycopg deliberately omits passwords from info.dsn. A password-requiring
+    # reader exposes the installed failure even on hosted runners without PG.
+    readers = []
+
+    class Reader:
+        def __init__(self, dsn):
+            params = conninfo_to_dict(dsn)
+            if params.get("password") != password:
+                raise psycopg.OperationalError("Synthetic authentication requires a password")
+            assert params["options"] == "-c search_path=auth_case"
+            self.connection = self
+            self.closed = False
+            self.read_only = False
+            readers.append(self)
+
+        def transaction(self):
+            return nullcontext()
+
+        def execute(self, query):
+            assert query == "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
+            self.read_only = True
+
+        def trade_history(self, **kwargs):
+            assert self.read_only and kwargs["status"] == "closed"
+            return {"records": [], "closed_count": 0}
+
+        def close(self):
+            self.closed = True
+
+    monkeypatch.setattr(api, "PaperStore", Reader)
+    writer = SimpleNamespace(connection=SimpleNamespace(info=info))
+    runtime = SimpleNamespace(running=False, error=None, store=writer)
+    with TestClient(create_app(Settings(), tmp_path / "auth-api", background=False)) as client:
+        client.app.state.paper = runtime
+        response = client.get("/api/paper/trades?status=closed")
+    assert response.status_code == 200
+    assert response.json() == {"records": [], "closed_count": 0}
+    assert password not in response.text
+    assert len(readers) == 1 and readers[0].closed and writer.connection.info is info
 
 
 def closure(pnl="8", proceeds="109"):
