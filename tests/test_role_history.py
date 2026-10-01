@@ -226,3 +226,33 @@ def test_actual_registry_full_retains_history_and_recovers_when_fixture_space_re
     assert db.execute("PRAGMA max_page_count").fetchone()[0] == cap
     assert worker.get(original["id"])["attempts"] == original["attempts"]
     assert store.reconcile()["balanced"]
+
+
+def test_cold_usage_projection_keeps_endpoint_counts_and_unknowns(history_worker):
+    worker, first, _, store = history_worker
+    original_infer = worker.transport.infer
+
+    def measured_fixture(*args):
+        return original_infer(*args) | {
+            "tokens": {"prompt_eval_count": 17, "eval_count": 11},
+            "wall_seconds": 0.25,
+        }
+
+    worker.transport.infer = measured_fixture
+    second = worker.enqueue(Question(question="Preserve synthetic recorded endpoint usage counts."))
+    assert asyncio.run(worker.step(START))
+    before = [dict(row) for row in worker.registry.db.execute("SELECT * FROM role_attempt_usage")]
+    worker.history.rollover()
+    after = [dict(row) for row in worker.registry.db.execute("SELECT * FROM role_attempt_usage")]
+    assert sorted(before, key=lambda r: r["task"]) == sorted(after, key=lambda r: r["task"])
+    rows = {r["task"]: r for r in after}
+    assert rows[first["id"]]["input_tokens"] is None
+    assert rows[second["id"]]["input_tokens"] == 17
+    assert rows[second["id"]]["output_tokens"] == 11
+    assert rows[second["id"]]["measured_wall_seconds"] == 0.25
+    assert worker.registry.db.execute("SELECT count(*) FROM role_attempts").fetchone()[0] == 0
+    RoleWorker(worker.registry, worker.controller)
+    assert [
+        dict(r) for r in worker.registry.db.execute("SELECT * FROM role_attempt_usage")
+    ] == after
+    assert store.reconcile()["balanced"]

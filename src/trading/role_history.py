@@ -50,12 +50,34 @@ class RoleHistory:
             registry.db.execute(
                 "CREATE INDEX IF NOT EXISTS role_archive_started ON role_archive_attempts(started)"
             )
+            archived_columns = {
+                r[1] for r in registry.db.execute("PRAGMA table_info(role_archive_attempts)")
+            }
+            for name, kind in (
+                ("status", "TEXT"),
+                ("input_tokens", "INTEGER"),
+                ("output_tokens", "INTEGER"),
+                ("measured_wall_seconds", "REAL"),
+            ):
+                if name not in archived_columns:
+                    registry.db.execute(
+                        f"ALTER TABLE role_archive_attempts ADD COLUMN {name} {kind}"
+                    )
             registry.db.execute(
                 "CREATE VIEW IF NOT EXISTS role_attempt_allowances AS "
                 "SELECT task,stage,attempt,started,wall_reserved,tokens_reserved,"
                 "json_extract(profile,'$.actor') AS actor FROM role_attempts UNION ALL "
                 "SELECT task,stage,attempt,started,wall_reserved,tokens_reserved,actor "
                 "FROM role_archive_attempts"
+            )
+            registry.db.execute(
+                "CREATE VIEW IF NOT EXISTS role_attempt_usage AS "
+                "SELECT task,stage,attempt,started,status,json_extract(profile,'$.actor') AS actor,"
+                "json_extract(response,'$.tokens.prompt_eval_count') AS input_tokens,"
+                "json_extract(response,'$.tokens.eval_count') AS output_tokens,"
+                "json_extract(response,'$.wall_seconds') AS measured_wall_seconds "
+                "FROM role_attempts UNION ALL SELECT task,stage,attempt,started,status,actor,"
+                "input_tokens,output_tokens,measured_wall_seconds FROM role_archive_attempts"
             )
             search_exists = registry.db.execute(
                 "SELECT 1 FROM sqlite_master WHERE name='role_task_search'"
@@ -144,8 +166,15 @@ class RoleHistory:
                                 "DELETE FROM role_attempts WHERE task=?", (row["id"],)
                             )
                             for attempt in saved["attempts"]:
+                                response = (
+                                    json.loads(attempt["response"]) if attempt["response"] else {}
+                                )
+                                tokens = response.get("tokens") or {}
                                 self.registry.db.execute(
-                                    "INSERT INTO role_archive_attempts VALUES(?,?,?,?,?,?,?)",
+                                    "INSERT INTO role_archive_attempts(task,stage,attempt,started,"
+                                    "wall_reserved,tokens_reserved,actor,status,input_tokens,"
+                                    "output_tokens,measured_wall_seconds) "
+                                    "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                                     (
                                         row["id"],
                                         attempt["stage"],
@@ -154,6 +183,10 @@ class RoleHistory:
                                         attempt["wall_reserved"],
                                         attempt["tokens_reserved"],
                                         json.loads(attempt["profile"]).get("actor"),
+                                        attempt["status"],
+                                        tokens.get("prompt_eval_count"),
+                                        tokens.get("eval_count"),
+                                        response.get("wall_seconds"),
                                     ),
                                 )
                 except (sqlite3.Error, OSError, LookupError) as exc:
