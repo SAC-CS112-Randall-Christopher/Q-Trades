@@ -1,0 +1,205 @@
+{
+  "scope": "Disposable synthetic checks only; original receipts remain separate",
+  "raw_receipts": [
+    {
+      "file": "audit-bridge-first.txt",
+      "sha256": "95143f255a50f8e85ad7a171e93b1b1fcae2679bde922289abd7a9127b1c1585"
+    },
+    {
+      "file": "audit-browser-capacity-dom.txt",
+      "sha256": "94053e7dbe5e52d37af9d1c307050d5e6bec30e78f65551dbb349b2988bad7c2"
+    },
+    {
+      "file": "audit-browser-final-capacity-dom.txt",
+      "sha256": "470b02b6b7b81ea13e909d3b90de15c1df583f10b5ff2953863e6af8f15e3e3d"
+    },
+    {
+      "file": "audit-browser-replay-dom.txt",
+      "sha256": "45880a818fd93856ddab793ec85e073cdf73eee4327c313b60e5acd1e7222223"
+    },
+    {
+      "file": "audit-cancel-old-source.txt",
+      "sha256": "b5376ff888d27b50484e408bd38070ea7341b718602ae251eafc678dd845967a"
+    },
+    {
+      "file": "audit-capacity-components-final.txt",
+      "sha256": "40449712e8c2126f0e2b7e68e3dde3953d37ecc79f4a719c9c9e1abfc7bec006"
+    },
+    {
+      "file": "audit-capacity-current-focused-final.txt",
+      "sha256": "b0cc573296f7594d83ad8f07ef628e3ee211fadc27c58abd0a8885d856ccdcc6"
+    },
+    {
+      "file": "audit-capacity-current-focused.txt",
+      "sha256": "4d2c149799857e641c2cbfbd13a90ef067dd1e30c7379b7409b4e91dbeb35b1d"
+    },
+    {
+      "file": "audit-capacity-focused-corrected.txt",
+      "sha256": "c36b6df1fb69c85dd583be9590a2bc35e74bca6e6e183dd4512ca10e42f9d01e"
+    },
+    {
+      "file": "audit-capacity-focused-final.txt",
+      "sha256": "0afc33f2f37d3fa08abcf0ffe2d302a4b0cec2b14bb1497ec23df5645b5e549a"
+    },
+    {
+      "file": "audit-capacity-full-final.txt",
+      "sha256": "14530a1c9106878eccd616a8e83d9d72e9333a8596fc7e245e7a354ad73e963c"
+    },
+    {
+      "file": "audit-capacity-mypy-final.txt",
+      "sha256": "7fc3a2a008fd149a547725791a88995a903553c47a281224a552ff815f4dd4db"
+    },
+    {
+      "file": "audit-capacity-mypy.txt",
+      "sha256": "7fc3a2a008fd149a547725791a88995a903553c47a281224a552ff815f4dd4db"
+    },
+    {
+      "file": "audit-capacity-omission-reproduced.txt",
+      "sha256": "92780fed550071a2f0ecefd495f6c2c885a53aa35feee39067b32e994586ab25"
+    },
+    {
+      "file": "audit-capacity-restart-components-final.txt",
+      "sha256": "2135238e0c59adb2f59afd68917249f6ccf92bccdc66b62566f3e12a6f113766"
+    },
+    {
+      "file": "audit-capacity-restart-mypy.txt",
+      "sha256": "7fc3a2a008fd149a547725791a88995a903553c47a281224a552ff815f4dd4db"
+    },
+    {
+      "file": "audit-capacity-restart-reproduced.txt",
+      "sha256": "de5d52b88fc43350a4043f50531c26aa31bd638b612302016e0370df89611915"
+    },
+    {
+      "file": "audit-capacity-restart-ruff.txt",
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    {
+      "file": "audit-capacity-ruff.txt",
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    {
+      "file": "audit-capacity-static-final.txt",
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    {
+      "file": "audit-ci-collection.txt",
+      "sha256": "f1bd8d54c6dfed7269447b3b10f1591f8fabc200e95e2795bd87c7376bd84bce"
+    },
+    {
+      "file": "audit-complete-first.txt",
+      "sha256": "8794798a2ecebc3a5c324b17b5bd210b17a16ee1eb95b36676685a7411c7497f"
+    },
+    {
+      "file": "audit-complete-fourth.txt",
+      "sha256": "5bea1256e6b627999e891e526a5c49ccec651b9a4fa7260448445b9f00608920"
+    },
+    {
+      "file": "audit-complete-second.txt",
+      "sha256": "24cf1a0ef9fddd592abe6103158e78865406bbf5ed0c7d7dc184c8e3f72bb7b5"
+    },
+    {
+      "file": "audit-complete-third.txt",
+      "sha256": "a5dc3735bf0909a64be8a78e6ebaef024d2fe4d5d479bf92e0d0788eb1ec6040"
+    },
+    {
+      "file": "audit-corrected-focused-final.txt",
+      "sha256": "d4c51e75e9f1218f48256a79b4f4027a55e6527521a5ee809744e2e43899227f"
+    },
+    {
+      "file": "audit-corrected-full-final.txt",
+      "sha256": "bdb05d2f505d5d56f216078594ae747c2a87dd32667110fd5971a8e115a87997"
+    },
+    {
+      "file": "audit-current-focused-final.txt",
+      "sha256": "fd3db7f7627903f06f3c2ee90b1dc54cc55f8a62d8bc480fe447586c64a79b8d"
+    },
+    {
+      "file": "audit-current-full-final.txt",
+      "sha256": "41dfc549768d4a3530e5602c5bea48911fa8cb6ae574a706c7448ef9c9a5d81b"
+    },
+    {
+      "file": "audit-delivery-full-final.txt",
+      "sha256": "2e0b177a5cee75230fe5afbad13d45471c059c6bf833964ba439ba364605f1d7"
+    },
+    {
+      "file": "audit-empty-capacity-corrected.txt",
+      "sha256": "e2d80bebebb0a802eefa4b65f7108ff05a97fa187d3204e75dd15dff03e40e50"
+    },
+    {
+      "file": "audit-empty-capacity-original.txt",
+      "sha256": "8d8d0ec286d5c980cb66e828417771f66ea4a466511258f6830925fef91507f5"
+    },
+    {
+      "file": "audit-empty-capacity-reproduced.txt",
+      "sha256": "ac73968d69152ca2a939a7ea9472c8fb2dab2ae3e398f2e95ae965da5ecd236e"
+    },
+    {
+      "file": "audit-expanded-final.txt",
+      "sha256": "259202a4b1f40431aaeb37046c3e56968e0849aaaf473caf4e173e6a3b684314"
+    },
+    {
+      "file": "audit-expanded.txt",
+      "sha256": "6495f14b14d748495e91c0a0ad61d91eb7f7bd3d458f21fee21661d1d223429d"
+    },
+    {
+      "file": "audit-first-corrections.txt",
+      "sha256": "2052797affb833ea9edb5d3d23c169be0ba955b1afa7262b2dccee97e62c9bdd"
+    },
+    {
+      "file": "audit-focused-final.txt",
+      "sha256": "fe77135d5ec46fafccc84127eb5a24e38ba0b2a804f9eb2276e8a9acdc0b450a"
+    },
+    {
+      "file": "audit-frontend-current.txt",
+      "sha256": "8d2484f9136936097235e133b9ee45448f93f43ed5123f8b874472347686f97d"
+    },
+    {
+      "file": "audit-full-corrected-final.txt",
+      "sha256": "b956a9aa779f1a7b87d3a14a7787c6d2115d64929a9df07ec93e18781c5521c3"
+    },
+    {
+      "file": "audit-full-final.txt",
+      "sha256": "901693a4adadd2a8229209a340c87963fa5e3adfc40c2e9691e1d4ac58fb9886"
+    },
+    {
+      "file": "audit-mypy-current.txt",
+      "sha256": "7fc3a2a008fd149a547725791a88995a903553c47a281224a552ff815f4dd4db"
+    },
+    {
+      "file": "audit-mypy-final.txt",
+      "sha256": "7fc3a2a008fd149a547725791a88995a903553c47a281224a552ff815f4dd4db"
+    },
+    {
+      "file": "audit-native-correction-focused.txt",
+      "sha256": "e9121c0f68029e65206fc0a30c129e15950345f24be4a2fb3d57fd494f19a597"
+    },
+    {
+      "file": "audit-original-regressions-corrected-fixture.txt",
+      "sha256": "f382080d104653257e434989448c250938d002c2a9fec7a7aa2678746bd85351"
+    },
+    {
+      "file": "audit-original-regressions.txt",
+      "sha256": "eea9df463570a248a46b3bfc435f073258fb97ca0972b0240b6803339014b363"
+    },
+    {
+      "file": "audit-restart-delivery-full-final.txt",
+      "sha256": "e4bbe990ec1b92f20ca8e187c53dc4dc8e64d8604a9bbaee31a0f85e7aab3c6f"
+    },
+    {
+      "file": "audit-ruff-current.txt",
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    {
+      "file": "audit-ruff-final.txt",
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    }
+  ],
+  "native_failure": "First post-audit run passed four cases; ten/idle and twenty/busy each omitted one full/compact input at queue eight. Finance latency limits passed; no limits raised.",
+  "fixture_failures": "Retained initial invalid profile, duplicate-receipt/status and one-horizon-policy fixtures, omitted registry inputs, future/expired child clocks, legacy packet bars, and future-input refusal expectations. These are not green implementation results.",
+  "source_failures": "Original reproduction receipts and later account-memory manifest count failure retained. Premature full run interrupted after focused failure; final complete run is separate.",
+  "static_failure": "Browser harness callback bindings fixed after Ruff B023; subsequent full Ruff passed.",
+  "capacity_status_failures": "Actual browser quota pressure exposed empty retries clearing acquisition failure. The corrected pressure fixture reproduced recording while full. First prototype missed a canonical import (four failures, eighty passes); the next run had two cleanup-only failures after eighty-two passes. The final five-component set passes eighty-four tests. All failed receipts are retained, not relabelled.",
+  "omission_publication_failure": "After capacity stays blocked, omission/queue fields could remain at the last successful write. A disposable cached-API receipt assertion reproduced zero reported versus one observed omitted capture. Status publication now occurs on both success and failure without altering the last capture date.",
+  "blocked_restart_failure": "A disposable restart lost the previously reported omissions and capture reference. Restoring a bounded validated receipt only for the identical frozen plan retains counters, dates, references and intake requirements; new/different plans cannot inherit another root history. The failed probe is retained.",
+  "hosted_cancelled_receipt": "audit-hosted-cancelled.json retains the cancelled 183-pass/33-skip run and bounded old-source shutdown reproduction."
+}

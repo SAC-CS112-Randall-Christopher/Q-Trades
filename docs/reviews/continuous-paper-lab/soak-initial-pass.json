@@ -1,0 +1,70 @@
+{
+  "contract": {
+    "seconds": 60,
+    "ticks_per_second": 4,
+    "restart_at_seconds": 30,
+    "peak_slots": 20,
+    "loop_p95_ms": 100,
+    "feature_p95_ms": 100,
+    "rss_mib": 512,
+    "growth_mib": 64,
+    "queue": 4,
+    "scope": "Synthetic software/controller continuity; no 24/7 or market-profit claim",
+    "history": "36 scored trials plus 72 archived accounts; active projection remains bounded"
+  },
+  "declared_at": 1790796291.6530154,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "synthetic": true,
+  "wall_seconds": 59.819286999991164,
+  "ticks": 240,
+  "restarted": true,
+  "peak_slots": 20,
+  "peak_queue": 0,
+  "stage_ms": {
+    "financial_loop_ms": {
+      "p50": 22.1493998542428,
+      "p95": 41.65029991418123,
+      "p99": 44.34260004200041,
+      "max": 69.55130002461374
+    },
+    "features_ms": {
+      "p50": 2.1624001674354076,
+      "p95": 5.580099998041987,
+      "p99": 6.482400000095367,
+      "max": 7.385800126940012
+    },
+    "research_step_ms": {
+      "p50": 6.285199895501137,
+      "p95": 12.08529993891716,
+      "p99": 14.850500039756298,
+      "max": 45.33929983153939
+    }
+  },
+  "largest_observed_interval": 0.25043249130249023,
+  "rss_mib": 79.32421875,
+  "rss_growth_mib": 0.59765625,
+  "history_trials": 43,
+  "archived_accounts": 72,
+  "active_projection_bytes": 244646,
+  "registry_bytes": 6668104,
+  "postgres": {
+    "database_bytes": 29215891,
+    "candles": 0,
+    "events": 1579,
+    "journal_lines": 652,
+    "candle_table_bytes": 16384,
+    "journal_table_bytes": 1548288
+  },
+  "balanced": true,
+  "budget": {
+    "day": 20728,
+    "hour": 497480,
+    "steps": 2,
+    "trials": 14,
+    "compute_seconds": 2.0,
+    "measured_seconds": 0.06609760015271604
+  },
+  "passed": true,
+  "original_receipt_sha256": "624297100318854d3ab7743064b658639f185f5a7b54f160df061356c07b1116",
+  "published_scope": "Disposable software checks; installed finance, actual markets, qualification and 24-hour reliability are not tested here"
+}

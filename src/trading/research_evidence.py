@@ -443,7 +443,20 @@ def evidence_record(path: Path, record_id: int) -> dict[str, Any]:
                     raise ValueError("Required outcome reference missing")
                 record["subsequent_outcome"] = _checked_record(outcome)
             else:
-                record["subsequent_outcome"] = {"status": "outcome_pending"}
+                from trading.outcome_continuation import continued_outcome
+                from trading.research_storage import compact_path
+
+                original = connection.execute(
+                    "SELECT descriptor_sha256 FROM evidence_episodes WHERE episode=?", (reference,)
+                ).fetchone()
+                continued = continued_outcome(
+                    compact_path(path.parent).parent, "full", reference, original[0], time.time()
+                )
+                record["subsequent_outcome"] = (
+                    {"payload": continued, "sha256": digest(continued), "continuation": True}
+                    if continued
+                    else {"status": "outcome_pending"}
+                )
         return record
 
 

@@ -1,0 +1,33 @@
+{
+  "full_pytest": {
+    "passed": 509,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 163.24,
+    "warning": "Existing FastAPI/httpx test-client deprecation",
+    "raw_receipt_sha256": "00e52d8b9662c3bf3bafb5725d7ffa5fa14e05cea341aff2dbb5a5adf7bcba57"
+  },
+  "ruff": "passed",
+  "strict_mypy": {
+    "result": "passed",
+    "files": 71
+  },
+  "frontend": "TypeScript and Vite build passed",
+  "maturity_focused": {
+    "passed": 41,
+    "scope": "Archive/evidence/maturity before final outcome taxonomy addition"
+  },
+  "final_outcome_focused": {
+    "passed": 19,
+    "scope": "Distinct low-information, meaningful inconclusive, lifecycle/API/crash checks"
+  },
+  "postgres": "Separate owned local cluster, generated disposable schemas; never installed database",
+  "no_installed_mutation": true,
+  "rollout_authorized": false,
+  "failures_retained": "README.md and distinct JSON/private raw receipts",
+  "maturity_headroom_focused": {
+    "passed": 12,
+    "scope": "Storage, original archive preservation, due maturity and physical acquisition quota",
+    "seconds": 2.97
+  }
+}

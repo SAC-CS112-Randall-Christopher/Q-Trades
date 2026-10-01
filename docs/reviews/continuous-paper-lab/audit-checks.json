@@ -1,0 +1,62 @@
+{
+  "audited_original_head": "bed73a1584a2aa7ed2a8f87550832e7349d14018",
+  "full_pytest": {
+    "passed": 539,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 151.15,
+    "raw_receipt_sha256": "e4bbe990ec1b92f20ca8e187c53dc4dc8e64d8604a9bbaee31a0f85e7aab3c6f",
+    "warning": "Existing FastAPI/httpx deprecation"
+  },
+  "audit_regressions": 30,
+  "affected_components": {
+    "passed": 84,
+    "seconds": 27.04,
+    "raw_receipt_sha256": "2135238e0c59adb2f59afd68917249f6ccf92bccdc66b62566f3e12a6f113766",
+    "files": [
+      "test_research_storage.py",
+      "test_research_evidence.py",
+      "test_continuous_audit.py",
+      "test_memory_quality.py",
+      "test_execution_replay.py"
+    ]
+  },
+  "previous_complete_pytest": {
+    "passed": 538,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 153.83,
+    "raw_receipt_sha256": "41dfc549768d4a3530e5602c5bea48911fa8cb6ae574a706c7448ef9c9a5d81b"
+  },
+  "previous_capacity_pytest": {
+    "passed": 539,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 155.96,
+    "raw_receipt_sha256": "14530a1c9106878eccd616a8e83d9d72e9333a8596fc7e245e7a354ad73e963c"
+  },
+  "previous_publication_pytest": {
+    "passed": 539,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 145.88,
+    "raw_receipt_sha256": "2e0b177a5cee75230fe5afbad13d45471c059c6bf833964ba439ba364605f1d7"
+  },
+  "ruff": {
+    "result": "passed",
+    "raw_receipt_sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+  },
+  "mypy": {
+    "result": "passed",
+    "files": 72,
+    "raw_receipt_sha256": "7fc3a2a008fd149a547725791a88995a903553c47a281224a552ff815f4dd4db"
+  },
+  "frontend": {
+    "result": "TypeScript/Vite passed",
+    "raw_receipt_sha256": "8d2484f9136936097235e133b9ee45448f93f43ed5123f8b874472347686f97d"
+  },
+  "postgres": "Owned isolated PostgreSQL 17, generated disposable schemas; never installed state",
+  "installed_preservation": true,
+  "rollout_authorized": false,
+  "limits": "Synthetic software proof; no actual-market edge, 28-day qualification, 100-GB capacity stress or 24-hour reliability"
+}

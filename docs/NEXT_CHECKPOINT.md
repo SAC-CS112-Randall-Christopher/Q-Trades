@@ -1,4 +1,21 @@
-# Next: finish audit correction delivery, then untouched economic evidence
+# Current: complete the continuous autonomous paper lab
+
+Follow `CONTINUOUS_PAPER_LAB.md` and issue #1 comment 5915529073. The September 30
+assignment is implementation through a complete deterministic vertical loop,
+including the normal UI, durable supervisor, exploration, matched comparison,
+parent preservation, meaningful descendants, safe retirement and history access.
+Twenty is concurrent capacity, including protected originals and reservations.
+Preserve older finite contracts and CP7 qualification. Deliver a draft PR; no
+merge, installation, restart or operating-lab activation is authorized here.
+Verification and outstanding evidence must be updated from observed results.
+The local implementation now has 509 passing PostgreSQL/native tests (no skips),
+Ruff/strict mypy/frontend/browser checks and retained finite native receipts. Read
+`reviews/continuous-paper-lab/README.md`, including failures and limitations, before
+reviewing the source draft. No merge, migration, restart, cleanup or activation
+permission follows from these checks. Subsequent operating/market qualification
+requires separately authorized work and the unchanged CP7 human policy.
+
+# Historical: finish audit correction delivery, then untouched economic evidence
 
 Read CP16_AUDIT_CORRECTIONS.md and the issue #1 audit. Finish final source/native
 performance and exact-head/final-main hosted checks, then use the authorized existing

@@ -1,0 +1,5 @@
+TradingView Lightweight Charts™
+Copyright (с) 2025 TradingView, Inc. https://www.tradingview.com/
+
+Q-Trades uses Lightweight Charts 5.2.1 under Apache License 2.0.
+The chart page displays this attribution and a link to TradingView.

@@ -69,6 +69,7 @@ export type PaperSnapshot = Partial<FeedDetails> & {
   execution_profiles?: ExecutionProfile[];
   futures_context?: FuturesSnapshot;
   enabled: boolean;
+  evidence_kind?: string;
   running: boolean;
   error: string | null;
   stale: boolean;

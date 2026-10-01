@@ -1,0 +1,69 @@
+{
+  "contract": {
+    "seconds": 60,
+    "ticks_per_second": 4,
+    "restart_at_seconds": 30,
+    "peak_slots": 20,
+    "loop_p95_ms": 100,
+    "feature_p95_ms": 100,
+    "rss_mib": 512,
+    "growth_mib": 64,
+    "queue": 4,
+    "scope": "Synthetic software/controller continuity; no 24/7 or market-profit claim",
+    "history": "36 scored trials plus 72 archived accounts; active projection remains bounded"
+  },
+  "declared_at": 1790799562.0815077,
+  "platform": "Windows-11-10.0.26200-SP0",
+  "synthetic": true,
+  "wall_seconds": 59.81308799982071,
+  "ticks": 240,
+  "restarted": true,
+  "peak_slots": 20,
+  "peak_queue": 0,
+  "stage_ms": {
+    "financial_loop_ms": {
+      "p50": 19.69360001385212,
+      "p95": 34.97830010019243,
+      "p99": 49.90950017236173,
+      "max": 75.35790000110865
+    },
+    "features_ms": {
+      "p50": 2.4584000930190086,
+      "p95": 4.3744000140577555,
+      "p99": 5.538899917155504,
+      "max": 12.366800103336573
+    },
+    "research_step_ms": {
+      "p50": 5.565400002524257,
+      "p95": 10.438099969178438,
+      "p99": 13.525699963793159,
+      "max": 50.97780004143715
+    }
+  },
+  "largest_observed_interval": 0.25205397605895996,
+  "rss_mib": 79.8515625,
+  "rss_growth_mib": 1.84375,
+  "history_trials": 43,
+  "archived_accounts": 72,
+  "active_projection_bytes": 245095,
+  "registry_bytes": 6664008,
+  "postgres": {
+    "database_bytes": 35277971,
+    "candles": 0,
+    "events": 2186,
+    "journal_lines": 1120,
+    "candle_table_bytes": 16384,
+    "journal_table_bytes": 2048000
+  },
+  "balanced": true,
+  "budget": {
+    "day": 20728,
+    "hour": 497481,
+    "steps": 2,
+    "trials": 15,
+    "compute_seconds": 2.0,
+    "measured_seconds": 0.07788990018889308
+  },
+  "passed": true,
+  "original_receipt_sha256": "d20c00210f9da1618639870581b5801c0db169c0707efd1282d78d9ed5cf437d"
+}

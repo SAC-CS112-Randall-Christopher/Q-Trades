@@ -194,6 +194,10 @@ def test_actual_linked_net_labels_require_matured_horizon_and_reproduce_engine(t
     assert label["status"] == "available" and label["fees_embedded_once"]
     assert label["exit"]["body"]["pnl"] != "0"
     assert label["available_at"] == end
+    delayed = copy.deepcopy(records)
+    delayed[-1]["available_at"] = end + 500
+    assert executable_label(d, delayed, end)["status"] == "unavailable"
+    assert executable_label(d, delayed, end + 500)["available_at"] == end + 500
     assert executable_label(d, records[:-1], end)["status"] == "unavailable"
     assert executable_label(d, records, d["horizon_at"] - 1)["status"] == "pending"
     broken = copy.deepcopy(records)

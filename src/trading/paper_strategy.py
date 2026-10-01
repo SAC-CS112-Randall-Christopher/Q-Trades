@@ -60,21 +60,24 @@ def ema(values: list[Decimal], period: int) -> list[Decimal]:
     return output
 
 
-def features(bars: list[Bar], now: float, version: str) -> dict[str, Any]:
-    rules = VARIANTS[version]
+def features(
+    bars: list[Bar], now: float, version: str, *, rules: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    rules = VARIANTS[version] if rules is None else rules
+    interval = int(rules.get("bar_seconds", 60)) * 1000
     result: dict[str, Any] = {"version": version, "eligible": False}
     if len(bars) < 305:
         return {**result, "reason": "Warming up: need 60 complete five-minute bars"}
     bars = bars[-600:]
-    if any(b.open_ms - a.open_ms != 60000 for a, b in zip(bars, bars[1:], strict=False)):
+    if any(b.open_ms - a.open_ms != interval for a, b in zip(bars, bars[1:], strict=False)):
         return {**result, "reason": "Candle gap: entries paused until contiguous history"}
     last = bars[-1]
     result["bar_open_ms"] = last.open_ms
-    if not 0 < now * 1000 - last.close_ms <= 90000:
+    if not 0 < now * 1000 - last.close_ms <= max(90000, interval):
         return {**result, "reason": "Closed candle is stale"}
     groups: dict[int, list[Bar]] = {}
     for bar in bars:
-        groups.setdefault(bar.open_ms // 300000, []).append(bar)
+        groups.setdefault(bar.open_ms // (interval * 5), []).append(bar)
     closes = [rows[-1].close for rows in groups.values() if len(rows) == 5]
     if len(closes) < 60:
         return {**result, "reason": "Five-minute trend warmup incomplete"}

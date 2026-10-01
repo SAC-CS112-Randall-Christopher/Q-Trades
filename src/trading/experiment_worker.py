@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from trading.context_flow import evaluate_context
+from trading.execution_replay import data_mode
 from trading.experiment_registry import (
     PREFLIGHT_END,
     ExperimentPlan,
@@ -43,6 +44,7 @@ def code_fingerprint() -> str:
                 "research_timing.py",
                 "research_support.py",
                 "memory_accounts.py",
+                "research_acquisition.py",
             )
         )
     ).hexdigest()
@@ -56,10 +58,16 @@ def evaluate(job: dict[str, Any]) -> dict[str, Any]:
     if fingerprint(snapshot) != job["snapshot_sha256"]:
         raise ValueError("Frozen input fingerprint mismatch")
     rows = snapshot["rows"]
-    synthetic = plan.evidence_kind == "synthetic_qa" or any(
-        row.get("body", {}).get("synthetic_qa")
-        or row.get("descriptor", {}).get("data_mode") == "synthetic"
-        for row in rows
+    synthetic = (
+        plan.evidence_kind == "synthetic_qa"
+        or any(
+            row.get("body", {}).get("synthetic_qa")
+            or row.get("descriptor", {}).get("data_mode") == "synthetic"
+            for row in rows
+        )
+        or any(
+            data_mode(record["payload"]) == "synthetic" for record in snapshot.get("records", [])
+        )
     )
     local_modes = {
         "memory_entry",

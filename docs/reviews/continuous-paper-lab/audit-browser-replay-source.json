@@ -1,0 +1,56 @@
+{
+  "source_head": "5cba53e2741309219d9ee92e9229efb49b650934",
+  "origin": "http://127.0.0.1:8798",
+  "disposable": true,
+  "synthetic": true,
+  "normal_ui": "AI Lab -> continuous panel -> exact latest capture -> one-decision isolated replay -> refresh selected result; same receipt after normal-page reload/API reread",
+  "request": {
+    "record_id": "capture-v2:364:1:18ab636a485f25bdbdedf3a9941b298b7a59ca6400cfc22d6ad60e5333c4cb4d",
+    "records": 1,
+    "request_id": "69a57822-8b71-440e-a749-8a4c3d7f7974"
+  },
+  "status": "completed",
+  "result_status": "reconciled",
+  "coverage": {
+    "boundary": null,
+    "end": 1790808954.5310502,
+    "market_sample_increment": 0,
+    "requested": 1,
+    "start": 1790808954.5310502,
+    "supported": 1
+  },
+  "input_references": [
+    {
+      "id": "capture-v2:364:1:18ab636a485f25bdbdedf3a9941b298b7a59ca6400cfc22d6ad60e5333c4cb4d",
+      "sha256": "18ab636a485f25bdbdedf3a9941b298b7a59ca6400cfc22d6ad60e5333c4cb4d"
+    }
+  ],
+  "baseline": [
+    {
+      "at": 1790808954.5310502,
+      "balanced": true,
+      "events_match": true,
+      "input_sha256": "18ab636a485f25bdbdedf3a9941b298b7a59ca6400cfc22d6ad60e5333c4cb4d",
+      "journal_events": [],
+      "journal_revision": 364,
+      "record_id": "capture-v2:364:1:18ab636a485f25bdbdedf3a9941b298b7a59ca6400cfc22d6ad60e5333c4cb4d",
+      "state_matches": true
+    }
+  ],
+  "result_hash": "6c54b2df67c2fb500b27c3d98b698050e3ba604c52c1ef3e9101c77954c2ff54",
+  "resources": {
+    "gpu": false,
+    "paid_usd": "0",
+    "peak_rss_bytes": 35221504,
+    "processors_max": 2,
+    "wall_seconds": 3.771430700086057
+  },
+  "result_compute_seconds": 0.46660690009593964,
+  "market_sample_increment": 0,
+  "financial_authority": false,
+  "paid_usd": "0",
+  "raw_api_sha256": "ec4ce2217f7d0dfa9fe4afc65d2763c8d3fb34046f57c197c8149ce5328f2341",
+  "raw_dom_sha256": "45880a818fd93856ddab793ec85e073cdf73eee4327c313b60e5acd1e7222223",
+  "capacity": "Small 64-MiB QA tier later blocked acquisition; original replay continued from retained exact evidence. Original omission/status failure retained separately.",
+  "limits": "One flat synthetic decision, no fills; no full-horizon economics or new market evidence. Original lifecycle browser receipt remains separate."
+}

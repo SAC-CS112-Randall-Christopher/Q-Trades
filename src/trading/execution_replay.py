@@ -61,6 +61,7 @@ def source_hashes() -> dict[str, str]:
             "paper_economics.py",
             "replay_lab.py",
             "replay_worker.py",
+            "research_acquisition.py",
         )
     }
 
