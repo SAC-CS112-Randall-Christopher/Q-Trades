@@ -84,6 +84,31 @@ I/O runs outside the trading event loop. The API requires local operator/same-or
 requests, a healthy paper worker, free disk, and at most one bounded tool execution
 per second. No model text is executed as a command and no financial tool is registered.
 
+The October 1 saved-evidence repair uses `market-evidence-tools-v2`. The full chart
+can calculate 600 indicator points, which previously overflowed the 128 KiB receipt
+with a populated history. Market-evidence receipts now include only the selected
+quote and scanner row, with totals and omitted counts. The selected row is taken
+from the full scan even when it falls outside the dashboard's first eighty rows.
+Saved indicator points match the receipt's latest 120 closed candles. Their values
+are projected after the full chart calculation, preserving VWAP anchors, EMA seeds,
+warmup, decimal values and gap resets. Calculation-history and omitted-point counts
+are recorded explicitly. The dashboard explains the candle window; detailed limits
+remain in the receipt. Chart responses and journal capacity limits are unchanged,
+and previous failed receipts remain failed and available. Source verification and
+updating the installed application are separate steps.
+
+Repair verification: the new full-history regression failed with the original
+oversized-result error before the repair. All 567 local Python tests then passed
+with a dedicated disposable PostgreSQL cluster and no skips. Ruff, strict mypy
+(73 source modules) and the production dashboard build passed. An isolated actual
+API/dashboard preview used synthetic 600-candle inputs: all four buttons completed,
+failed and completed receipts reopened, hashes verified and account state stayed
+unchanged. A separate private retained-input check preserved exact candle/indicator
+values and saved/reopened the formerly oversized observed packet. That check is
+retained-input proof, and the browser preview is synthetic software proof. Neither
+establishes installed-runtime acceptance, model qualification or a trading edge.
+The station regressions now run in hosted Windows acceptance as well.
+
 These are working deterministic tools, not a completed agent harness. Model trials
 remain visible separately; no role is qualified or activated. There are no paid calls,
 new downloads, strategy/risk changes or financial permissions in this change.

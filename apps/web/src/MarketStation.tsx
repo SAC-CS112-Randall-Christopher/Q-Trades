@@ -60,7 +60,7 @@ const ToolResult = memo(function ToolResult({ run }: { run: Run }) {
     const live = result.live as Live | undefined;
     const detail = result.detail as Detail | undefined;
     const quote = live?.markets.find(q => q.symbol === run.symbol);
-    summary = `Quote ${quote?.state ?? "unavailable"} at capture. Saved ${detail?.candles.length ?? 0} closed candles and ${live?.trades.length ?? 0} observed trades, with the available order book and strategy evidence.`;
+    summary = `Quote ${quote?.state ?? "unavailable"} at capture. Saved ${detail?.candles.length ?? 0} closed candles and ${live?.trades.length ?? 0} observed trades, with the available order book and strategy evidence. Candle and indicator evidence covers up to the latest 120 closed candles for this market; gaps remain visible in the receipt.`;
   }
   return <div className="tool-result" role="status"><div className="tool-result-heading"><strong>{run.symbol.replace(/USD$/, " / USD")}</strong><span className={run.status === "completed" ? "station-positive" : "station-muted"}>{run.status}</span></div><p>{summary}</p><details><summary>Evidence / diagnostics</summary><pre>{JSON.stringify(run, null, 2)}</pre></details></div>;
 });
