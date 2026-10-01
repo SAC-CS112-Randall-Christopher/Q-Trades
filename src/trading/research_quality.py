@@ -15,16 +15,15 @@ def quality_report(worker: RoleWorker) -> dict[str, Any]:
         }
         attempts = worker.registry.db.execute(
             "SELECT count(*) AS n,"
-            "sum(CASE WHEN json_extract(profile,'$.actor') IS NOT NULL "
+            "sum(CASE WHEN actor IS NOT NULL "
             "THEN 1 ELSE 0 END) AS external,"
             "sum(CASE WHEN status='failed' THEN 1 ELSE 0 END) AS failed,"
-            "sum(CASE WHEN json_extract(response,'$.tokens.prompt_eval_count') IS NOT NULL "
-            "AND json_extract(response,'$.tokens.eval_count') IS NOT NULL "
+            "sum(CASE WHEN input_tokens IS NOT NULL AND output_tokens IS NOT NULL "
             "THEN 1 ELSE 0 END) AS measured,"
-            "sum(json_extract(response,'$.tokens.prompt_eval_count')) AS input_tokens,"
-            "sum(json_extract(response,'$.tokens.eval_count')) AS output_tokens,"
-            "sum(json_extract(response,'$.wall_seconds')) AS measured_wall_seconds "
-            "FROM role_attempts"
+            "sum(input_tokens) AS input_tokens,sum(output_tokens) AS output_tokens,"
+            "sum(measured_wall_seconds) AS measured_wall_seconds,"
+            "sum(CASE WHEN status IS NULL THEN 1 ELSE 0 END) AS unknown_status "
+            "FROM role_attempt_usage"
         ).fetchone()
     native_tokens = {
         "attempts_with_counts": attempts["measured"] or 0,
@@ -42,6 +41,7 @@ def quality_report(worker: RoleWorker) -> dict[str, Any]:
         "activity": counts,
         "attempts": attempts["n"],
         "failed_attempts": attempts["failed"] or 0,
+        "unknown_status_attempts": attempts["unknown_status"] or 0,
         "external_attempts": attempts["external"] or 0,
         "native_usage": native_tokens,
         "allowance": worker.selection_metrics(),
@@ -70,8 +70,7 @@ def quality_report(worker: RoleWorker) -> dict[str, Any]:
             "independent_support": None,
             "hardware_dollars": None,
             "reason": (
-                "Software/stub activity is not prospective matched "
-                "whole-account economic evidence"
+                "Software/stub activity is not prospective matched whole-account economic evidence"
             ),
         },
         "recommendation": (

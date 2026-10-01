@@ -85,3 +85,33 @@ external access; pause; cached outcome disclosure; historical receipts beyond ol
 caps; v2 rule/hash compatibility and optional-role disable without financial reset.
 Record exact individual source tests in the final review ledger. Protected originals,
 parents, twenty-slot cap, sole writer and delayed outcomes remain unchanged.
+
+## Integrated audit repair rerun declaration
+
+LLM-F1–F7 are corrected in their existing owning draft branches and integrated
+with preserved ancestry. Before the new measurements, declare the same eight
+30-second workloads and every unchanged threshold above. Retain the original
+audited 446bd319 receipts and all new failed attempts; no retrospective widening
+of the limits is permitted. Freeze the repair source and contract digest before
+the new full native suite and finite load; later documentation changes are
+identified separately from the measured source.
+
+Additional acceptance cases: revocation versus committed claim and expiry after
+debit; full eight waits with atomic continuation, rollback and typed maturity;
+actual adapter preflight for 12/128-row artifacts and 500-character questions;
+known retired cash results versus uncertain active marks; unchanged-source TTL,
+cross-connection refresh and first-known chronology; 529 normal sequential
+software questions, 4100 request identities, verified cold storage and physical
+quota recovery; archived local/external allowance and endpoint-count retention;
+ordinary memory paper outcome/lesson/component detail after cold reopen; and
+rejected versus unknown HTTP acknowledgment recovery with concurrency fences.
+
+Normal browser verification uses `preview_audit_repairs.py`, guarded to the
+existing separately owned QA cluster and new small owned G: fixture. Its seed is
+explicitly synthetic, uses recorded answer stubs, and freezes an actual ordinary
+inconclusive paper outcome. It then disables the unqualified transport and performs
+no model/public-provider acquisition. Check invalid-parent edit/discard, full
+queue retry, lost-success acknowledgment/reload/exact reconcile, search and cold
+outcome/component/lesson reopen, desktop and narrow layout. Gracefully stop only
+the identified preview process. Installed/runtime checks are read-only; actual
+qualified-model/Crik/market/24-hour capacity proof stays separately unresolved.

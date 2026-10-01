@@ -9,20 +9,112 @@ import psycopg
 import pytest
 from fastapi.testclient import TestClient
 from psycopg.conninfo import make_conninfo
-from test_autonomous_lab import close_window, tick_lab
+from test_autonomous_lab import admit, close_window, tick_lab
+from test_memory_quality import fitted
 from test_paper_engine import START
 from test_paper_store import pg_store as pg_store
 from test_research_storage import plan_at
+from test_role_packet_preflight import MemoryStub
 from test_role_worker import ModelStub, make_lab
 
 from trading.api import create_app
 from trading.config import Settings
+from trading.evidence_runtime import EvidenceRecorder
 from trading.experiment_registry import ExperimentRegistry
 from trading.research_quality import quality_report
 from trading.research_storage import save_plan
 from trading.role_worker import Question, RoleWorker
 from trading.scoped_tools import reader
 from trading.stock_research import StockQuestion, StockResearch
+
+
+def seed_memory_result(store, folder, clock):
+    """Owned synthetic ordinary lifecycle; no qualified model or provider call."""
+    lab = make_lab(store, folder, now=clock[0], horizon_seconds=3600, hourly_compute_seconds=60)
+    save_plan(folder, plan_at(folder))
+    lab.paper.state = store.transact(
+        clock[0],
+        lambda e: e.state.update(evidence_kind="synthetic-cp23-audit-software-fixture"),
+    )
+    plan, rows, result, artifact = fitted()
+    plan = plan.model_copy(update={"numerical_daily_usd": "0", "contextual_daily_usd": "0"})
+    lab.registry.reserve(plan, "synthetic-cp23-audit-source")
+    lab.registry.inputs(plan.request_id, {"episodes": rows, "scope": "Synthetic memory fixture"})
+    job = lab.registry.claim()
+    assert job and lab.registry.finish(plan.request_id, job["lease"], result, None)
+    capture = EvidenceRecorder(folder / "research-evidence.sqlite")
+    capture.enqueue({"kind": "wire", "at": clock[0], "source": "synthetic-cp23-audit"})
+    asyncio.run(capture.flush())
+    parent = admit(lab, clock[0])
+    parent_score = close_window(lab, parent, "promising")
+    clock[0] = parent_score["available_at"] + 4
+    tick_lab(lab, clock[0])
+    capture.enqueue({"kind": "wire", "at": clock[0], "source": "synthetic-cp23-audit"})
+    asyncio.run(capture.flush())
+    worker = RoleWorker(lab.registry, lab, MemoryStub())
+    worker.enabled = True
+    task = worker.enqueue(
+        Question(
+            question="Synthetic QA: retain this memory outcome, exact method and supported lesson.",
+            parent=parent["id"],
+        )
+    )
+    for _ in range(5):
+        assert asyncio.run(worker.step()), worker.get(task["id"])["reason"]
+    trial = None
+    for i in range(1, 25):
+        tick_lab(lab, clock[0] + i * 2)
+        lab.step(clock[0] + i * 2)
+        trial = next(
+            (
+                t
+                for t in lab.paper.state["autonomous_lab"]["trials"].values()
+                if t["proposal_id"] == "role-proposal-" + task["id"][5:]
+            ),
+            None,
+        )
+        if trial and trial["status"] == "active":
+            break
+    assert trial and trial["status"] == "active", lab.last_error
+    score = close_window(lab, trial, "inconclusive")
+    clock[0] = score["available_at"] + 1
+    assert asyncio.run(worker.step()) and asyncio.run(worker.step())
+    return worker, worker.get(task["id"]), artifact, worker.lessons.record(worker.get(task["id"]))
+
+
+def test_cold_mature_memory_outcome_lesson_disclosures_and_quality_reopen(
+    pg_store, tmp_path, monkeypatch
+):
+    clock = [START]
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: clock[0])
+    worker, task, artifact, lesson = seed_memory_result(pg_store[0], tmp_path, clock)
+    lesson_before = worker.lessons.get(lesson)
+    component_before = worker.component_detail(task["id"], "r2")
+    windows = [tuple(r) for r in worker.registry.db.execute("SELECT * FROM evidence_windows")]
+    quality_before = quality_report(worker)
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    worker.history.rollover()
+    assert worker.get(task["id"])["archive_reference"]
+    replacement = RoleWorker(worker.registry, worker.controller)
+    restored = replacement.get(task["id"])
+    for key in ("context", "proposal", "evaluation", "result", "attempts"):
+        assert restored[key] == task[key]
+    assert restored["proposal"]["strategy"]["entry_filter"]["artifact"] == artifact
+    lesson_after = replacement.lessons.get(lesson)
+    assert {k: v for k, v in lesson_before.items() if k != "access"} == {
+        k: v for k, v in lesson_after.items() if k != "access"
+    }
+    assert replacement.component_detail(task["id"], "r2") == component_before
+    assert [
+        tuple(r) for r in worker.registry.db.execute("SELECT * FROM evidence_windows")
+    ] == windows
+    assert quality_report(replacement) == quality_before
+    assert quality_before["attempts"] == 3
+    assert quality_before["native_usage"]["unknown_attempts"] == 3
+    assert not quality_before["economic_value"]["supported"]
+    assert replacement.page(search="retain this memory")["tasks"][0]["id"] == task["id"]
+    assert pg_store[0].reconcile()["balanced"]
+    worker.registry.close()
 
 
 def test_role_history_equal_timestamp_cursor_conserves_all_ids(pg_store, tmp_path, monkeypatch):
