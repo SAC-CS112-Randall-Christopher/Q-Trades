@@ -17,6 +17,7 @@ from trading.research_quality import quality_report
 from trading.role_worker import Question, RoleWorker
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "tests"))
 COMMAND = ROOT / "data/audit-ui-command.json"
 RECEIPT = ROOT / "data/audit-ui-receipt.json"
@@ -36,6 +37,7 @@ async def lifespan(application):
             worker, task, artifact, lesson = await asyncio.to_thread(
                 seed_memory_result, runtime.store, folder, clock
             )
+            seed_stub_calls = len(worker.transport.calls)
             with patch("trading.role_history.ROLLOVER_BYTES", 0):
                 worker.history.rollover()
         assert clock[0] < time.time(), "Synthetic mature fixture must already be available"
@@ -95,7 +97,8 @@ async def lifespan(application):
                             "requests": requests,
                             "qualified": False,
                             "enabled": False,
-                            "inference_calls": 0,
+                            "actual_model_requests": 0,
+                            "seed_answer_stub_calls": seed_stub_calls,
                             "public_requests": 0,
                             "quality": quality_report(worker),
                             "fixture": "Synthetic memory trial; accelerated inconclusive outcome",
