@@ -2,6 +2,10 @@
 
 Implement the work order and implementation addendum in GitHub issue #28.
 Read docs/LLM_RESEARCH_CHECKPOINTS.md for the current integration/evidence ledger.
+CP19 source extends the same registry; read docs/CP19_REFERENCED_RESEARCH.md.
+Its two-generation receipt uses a model stub and accelerated disposable paper
+coverage, not qualified inference. Continue CP20's existing memory-entry filter
+as the single declared component; do not add another component simultaneously.
 Read docs/CP18_QUALIFIED_ROLE_LOOP.md before touching role/runtime work. CP17 is
 draft #29 at 32b5fc49 with exact-head hosted success. CP18 actual qualification is
 blocked by the operating optional-research guard; preliminary development calls

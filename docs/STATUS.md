@@ -8,6 +8,11 @@ result feedback workflow. Its actual-model operational proof is blocked by the
 installed optional-research resource guard; no current role is qualified or
 activated. Read [CP18 behavior and limits](CP18_QUALIFIED_ROLE_LOOP.md).
 Historical source evidence follows.
+CP18 exact-head 9ab26c0 passes 597 tests/no skips and hosted Windows SUCCESS.
+CP19 implements append-only referenced lessons and outcome-driven selection, with
+two different ordinary paper comparisons in synthetic software verification.
+Actual qualified-model generations and matched research/economic value remain
+unverified. See [lesson behavior and limits](CP19_REFERENCED_RESEARCH.md).
 
 # Compact trade history — source verification
 

@@ -507,6 +507,54 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from exc
 
+    @app.get("/api/research/lessons")
+    def lesson_search(
+        request: Request,
+        before: int = Query(0, ge=0),
+        text: str = "",
+        family: str = "",
+        parent: str = "",
+        horizon: str = "",
+        outcome: str = "",
+        cost_sha: str = "",
+        data_basis: str = "",
+    ) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Research lesson registry unavailable")
+        try:
+            return dict(
+                lab.roles.lessons.retrieve(
+                    before=before,
+                    text=text,
+                    family=family,
+                    parent=parent,
+                    horizon=horizon,
+                    outcome=outcome,
+                    cost_sha=cost_sha,
+                    data_basis=data_basis,
+                )
+            )
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/research/lessons/{identity}")
+    def lesson_detail(request: Request, identity: str) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Research lesson registry unavailable")
+        try:
+            return dict(lab.roles.lessons.get(identity))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/research/selection")
+    def selection_metrics(request: Request) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Research selector unavailable")
+        return dict(lab.roles.selection_metrics())
+
     @app.get("/api/autonomous")
     async def autonomous_snapshot(request: Request) -> dict[str, Any]:
         return dict(autonomous(request).snapshot())

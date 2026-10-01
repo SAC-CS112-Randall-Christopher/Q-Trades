@@ -1,8 +1,10 @@
-# Current: CP18 verification, then independent CP19 source
+# Current: CP19 source verification, then CP20 memory-entry component
 
 Implement issue #28 and its addendum in dependency order. CP17 draft #29 is
-delivered. Finish bounded CP18 source/browser/hosted evidence while preserving
-the actual qualification blocker, then continue independent CP19 implementation.
+delivered. CP18 draft #30 at 9ab26c0 passes 597 native tests/no skips and its
+exact-head hosted Windows check. CP19 adds referenced lessons and a finite
+two-generation software trace. Complete its source gate and continue CP20's
+existing 45-minute historical-memory filter as the single component.
 No actual qualified-model-to-paper-result milestone has been established.
 Read [the current ledger](LLM_RESEARCH_CHECKPOINTS.md) for proof and blockers.
 Leave source PRs draft and unmerged; preserve installed and operating state.

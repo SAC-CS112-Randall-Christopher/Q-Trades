@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { LessonPanel } from "./LessonPanel";
 
 type RoleState = {
   enabled: boolean;
@@ -129,5 +130,6 @@ export function RoleResearchPanel() {
       {task.result?.followup && <p>Supported follow-up: {task.result.followup.action} · {task.result.followup.rationale} {task.result.followup.dependency}</p>}
       <details><summary>Model attempts, final answers and resource receipts</summary>{task.attempts.map((a, i) => <div key={i}><h4>{a.stage} · {a.status}</h4><p>{stamp(a.started)} {a.finished ? `to ${stamp(a.finished)}` : "completion pending or unknown"} {a.reason}</p><pre>{JSON.stringify({ profile: a.profile, final_response: a.response }, null, 2)}</pre></div>)}</details>
     </article>}
+    <LessonPanel openTask={open} />
   </section>;
 }

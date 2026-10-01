@@ -32,9 +32,9 @@ not waive paper-resource admission or permit installed reconfiguration.
 |---|---|---|
 | CP17 | Delivered draft #29 at 32b5fc49; 580 native tests, no skips; exact-head hosted SUCCESS | Finite software/browser/native proof; see reviews/cp17/README.md |
 | CP18 | Source implements evidence/idea/check/review/inbox/outcome/follow-up; actual dedicated CPU runtime observed | Operating resource guard blocks qualification; see CP18_QUALIFIED_ROLE_LOOP.md |
-| CP19 | Planned after CP18 contracts | No two-generation role trace yet |
+| CP19 | Referenced lessons and outcome-driven different-test selection implemented | Two-generation synthetic software proof; actual-model trace blocked |
 | CP20 | Planned historical-memory filter; assess supported data first | No new runtime component yet |
-| CP21 | Planned controlled actor/task/evidence access | Actual scoped external transport unverified |
+| CP21 | Planned point-in-time stock filing and market research | Permitted sources require current verification |
 | CP22 | Planned shared scoped task path | Actual external transport unverified |
 | CP23 | Planned integrated acceptance | No installed/prospective/economic claim |
 

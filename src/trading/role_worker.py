@@ -15,6 +15,7 @@ from trading.autonomous_spec import LabProposal, RuleSpec, rule_feature
 from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
+from trading.research_lessons import ResearchLessons
 from trading.research_storage import ResearchStorage, load_plan
 from trading.scoped_tools import reader
 
@@ -25,6 +26,7 @@ class Question(BaseModel):
     horizon: Literal["short", "medium", "long"] = "short"
     parent: str | None = Field(default=None, max_length=100)
     request_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{8,64}$")
+    lesson: str | None = Field(default=None, pattern=r"^lesson-[a-f0-9]{32}$")
 
 
 class RoleWorker:
@@ -32,6 +34,7 @@ class RoleWorker:
         self, registry: ExperimentRegistry, controller: AutonomousLab | None, transport: Any = None
     ):
         self.registry, self.controller, self.transport = registry, controller, transport
+        self.lessons = ResearchLessons(registry)
         self.owner = secrets.token_hex(16)
         self.enabled = False  # Only separately authorized, qualified policy enables inference.
         self.activation: Callable[[], bool] | None = None
@@ -108,6 +111,15 @@ class RoleWorker:
                 "reference": base.model_dump(),
             }
         issued = c.bundle(now)
+        prior = self.lessons.get(question.lesson) if question.lesson else None
+        if prior:
+            if prior["context"]["horizon"] != question.horizon:
+                raise ValueError("Lesson and new comparison require the same declared horizon")
+            catalog = {
+                k: v for k, v in catalog.items() if v["strategy"] != prior["context"]["strategy"]
+            }
+            if not catalog:
+                raise ValueError("No supported different capability; wait for new evidence")
         bars = c.paper.lab_history(now, question.horizon)
         frame = c.paper.control_frames().get("BTCUSD")
         book = frame.get("book") if frame else None
@@ -144,6 +156,7 @@ class RoleWorker:
             "catalog": catalog,
             "issued": issued,
             "tool_evidence": causal_inputs,
+            "lesson": prior,
         }
         identity = (
             "role-"
@@ -360,6 +373,19 @@ class RoleWorker:
             }
         evidence: dict[str, Any] = {"e0": context["issued"]["bundle"]}
         evidence["e2"] = context["tool_evidence"]
+        if context.get("lesson"):
+            prior = context["lesson"]
+            evidence["e3"] = {
+                k: prior[k]
+                for k in (
+                    "id",
+                    "claim",
+                    "source_sha256",
+                    "supporting_facts",
+                    "unknowns",
+                    "next_test",
+                )
+            }
         if task["stage"] == "followup":
             # The recorded result is the new information. Keep predecessor links
             # instead of repeating its entire earlier input packet/transcript.
@@ -528,6 +554,7 @@ class RoleWorker:
                             "support": "Recorded comparison; annotation grants no new P/L",
                         },
                     )
+                    self.lessons.record(self.get(task["id"]))
                 elif answer.action != "propose_experiment":
                     self._update(
                         task,
@@ -654,6 +681,14 @@ class RoleWorker:
         except InputWait as exc:
             self._update(task, task["stage"], "waiting", reason=str(exc), retry_at=now + 30)
             return False
+        except OSError as exc:
+            if task["stage"] == "archive_evaluation":
+                self._update(
+                    task, task["stage"], "waiting", reason=str(exc)[:500], retry_at=now + 30
+                )
+            else:
+                self._update(task, task["stage"], "failed", reason=str(exc)[:500])
+            return False
         except Exception as exc:
             self._update(task, task["stage"], "failed", reason=str(exc)[:500])
             return False
@@ -666,5 +701,129 @@ class RoleWorker:
                 except (ValueError, OSError, KeyError):
                     self.enabled = False
             if self.enabled:
+                await asyncio.to_thread(self.resume_sources)
+                await asyncio.to_thread(self.select_followups)
                 await self.step()
             await asyncio.sleep(1)
+
+    def select_followups(self) -> dict[str, int]:
+        """Bounded completed-comparison trigger; unchanged/replayed results coalesce.
+
+        Required qualification gates remain at dispatch. This selector never
+        changes the numerical learner, financial allocation or family quotas.
+        """
+        with self.registry.lock:
+            rows = self.registry.db.execute(
+                "SELECT id FROM role_tasks WHERE stage='complete' AND "
+                "json_extract(result,'$.outcome') IS NOT NULL AND NOT EXISTS "
+                "(SELECT 1 FROM research_selection s JOIN research_lessons l ON l.id=s.lesson "
+                "WHERE l.task=role_tasks.id AND (s.state IN ('selected','waiting') "
+                "OR s.retry_at>?)) ORDER BY updated,id LIMIT 20",
+                (time.time(),),
+            ).fetchall()
+        selected = waiting = 0
+        for row in rows:
+            task = self.get(row["id"])
+            identity = self.lessons.record(task)
+            followup = task["result"].get("followup", {})
+            choice = task["context"]["catalog"].get(followup.get("capability"))
+            if (
+                followup.get("action") != "propose_experiment"
+                or not choice
+                or choice["strategy"] == task["proposal"]["strategy"]
+            ):
+                self.lessons.selected(
+                    identity,
+                    "waiting",
+                    followup.get("dependency")
+                    or "No supported different test; wait for new mature/source evidence",
+                )
+                waiting += 1
+                continue
+            try:
+                next_task = self.enqueue(
+                    Question(
+                        question=followup["falsification"],
+                        horizon=task["context"]["question"]["horizon"],
+                        parent=task["context"]["question"]["parent"],
+                        request_id="next-" + identity[7:],
+                        lesson=identity,
+                    )
+                )
+                # Reconciliation after a lost acknowledgment returns the exact same task.
+                self.lessons.selected(
+                    identity,
+                    "selected",
+                    "New mature comparison and supported different capability",
+                    next_task["id"],
+                )
+                selected += 1
+            except (ValueError, OSError) as exc:
+                self.lessons.selected(identity, "deferred", str(exc)[:500])
+        return {"selected": selected, "waiting": waiting}
+
+    def resume_sources(self, now: float | None = None) -> int:
+        """A new closed source prefix, not clock refresh, may replace a data wait."""
+        if self.controller is None:
+            return 0
+        now = time.time() if now is None else now
+        with self.registry.lock:
+            rows = self.registry.db.execute(
+                "SELECT id FROM role_tasks WHERE stage='data_wait' AND status='waiting' "
+                "ORDER BY updated,id LIMIT 20"
+            ).fetchall()
+        resumed = 0
+        for row in rows:
+            task = self.get(row["id"])
+            question = Question.model_validate(task["context"]["question"])
+            dependency = (task["result"] or {}).get("dependency") or task["reason"] or ""
+            if any(word in dependency.lower() for word in ("label", "outcome")):
+                # A newer price prefix cannot resolve a missing delayed outcome.
+                continue
+            if not any(
+                word in dependency.lower() for word in ("bar", "candle", "prefix", "source")
+            ):
+                continue  # Ambiguous dependency requires an explicit new investigation.
+            current = fingerprint(
+                [str(b) for b in self.controller.paper.lab_history(now, question.horizon)]
+            )
+            if current == task["context"]["tool_evidence"]["closed_bar_sha256"]:
+                continue
+            try:
+                new_task = self.enqueue(question.model_copy(update={"request_id": None}), now)
+            except ValueError:
+                continue
+            with self.registry.transaction():
+                self.registry.db.execute(
+                    "UPDATE role_tasks SET stage='complete',status='done',updated=?,reason=? "
+                    "WHERE id=? AND stage='data_wait' AND status='waiting'",
+                    (now, "New closed source evidence resumes as " + new_task["id"], task["id"]),
+                )
+            resumed += 1
+        return resumed
+
+    def selection_metrics(self) -> dict[str, Any]:
+        with self.registry.lock:
+            selections = {
+                r["state"]: r["n"]
+                for r in self.registry.db.execute(
+                    "SELECT state,count(*) AS n FROM research_selection GROUP BY state"
+                )
+            }
+            totals = self.registry.db.execute(
+                "SELECT count(*),coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
+                "FROM role_attempts"
+            ).fetchone()
+            completed = self.registry.db.execute(
+                "SELECT count(*) FROM role_tasks WHERE status='done'"
+            ).fetchone()[0]
+        return {
+            "selection": selections,
+            "completed_questions": completed,
+            "attempts": totals[0],
+            "reserved_wall_seconds": totals[1],
+            "reserved_token_allowance": totals[2],
+            "paid_usd": "0",
+            "actual_model_tokens": None,
+            "limits": "Allowance is conservative reservation, not measured model tokens or benefit",
+        }
