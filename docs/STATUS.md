@@ -1,32 +1,34 @@
-# Current CP17–CP23 implementation
+# Current issue #28: source stack delivered; operational LLM proof blocked
 
-CP22 adds shared task-scoped contributor leases and normal paper-result linkage.
-No installed Crik connector/authorized bridge is available; actual external proof
-remains blocked. See [interface and limits](CP22_SCOPED_COLLABORATION.md).
-CP20's hosted source gate and CP21's exact source gate are green (614 native tests,
-zero skips, 183.51 seconds for CP21). Actual SEC access remains denied on both
-the website and direct public data API; the persistent cooldown is preserved.
+CP17-CP22 drafts #29-34 have exact-head hosted Windows success, with 580/597/
+600/604/614/622 full native passes and zero skips at their recorded stages.
+CP23 final product source passes 629 native/disposable PostgreSQL tests, zero
+skips in 201.19 seconds, Ruff, strict mypy (82 modules), frontend build (1925
+modules), SCRAM read-only reader and normal desktop/mobile/refresh/failure UI.
+Its final delivery head/hosted gate is recorded separately in the draft/issue.
+See [the integrated ledger](LLM_RESEARCH_CHECKPOINTS.md),
+[CP23 evidence](reviews/cp23/README.md) and
+[rollout handoff](CP23_ROLLOUT_HANDOFF.md).
 
-Issue #28 owns the remaining LLM/tools work. Main and prerequisite #27 are
-refreshed to 6fc72dcc. See [current ledger](LLM_RESEARCH_CHECKPOINTS.md).
-CP17 is delivered in draft #29 (32b5fc49) with 580 native tests/no skips and
-exact-head Windows hosted SUCCESS. CP18 source covers the complete proposal and
-result feedback workflow. Its actual-model operational proof is blocked by the
-installed optional-research resource guard; no current role is qualified or
-activated. Read [CP18 behavior and limits](CP18_QUALIFIED_ROLE_LOOP.md).
-Historical source evidence follows.
-CP21 adds read-only SEC/IBM source studies. Native public IBM archive/read works;
-native SEC HTTP 403/cooldown remains an access blocker. No entitled market feed,
-historical as-seen price vintage or stock execution is established. Read
-[source identities and limits](CP21_POINT_IN_TIME_STOCKS.md).
-CP20 adds the single frozen historical-memory entry filter in additive rules v3,
-preserving v2 serialization, baseline fallback and exact parents. Role contract
-v5 needs new qualification. See [component scope](CP20_FROZEN_MEMORY_FILTER.md).
-CP18 exact-head 9ab26c0 passes 597 tests/no skips and hosted Windows SUCCESS.
-CP19 implements append-only referenced lessons and outcome-driven selection, with
-two different ordinary paper comparisons in synthetic software verification.
-Actual qualified-model generations and matched research/economic value remain
-unverified. See [lesson behavior and limits](CP19_REFERENCED_RESEARCH.md).
+Finite one/ten/twenty idle/numerical and twenty-account scoped-read workloads
+pass the predeclared financial/RSS limits with accumulated synthetic retired
+history and balanced ledgers. Actual busy LLM work is excluded by the operating
+resource guard. Small owned G: fixtures retain the 100 decimal GB tier policy;
+they do not prove 100-GB throughput or 24/7 reliability.
+
+Actual CP18 qualified-model -> ordinary mature outcome -> follow-up remains
+blocked: current v5 role qualification is absent and installed optional research
+is constrained. Corrected development waited 601.018 seconds/zero model calls;
+earlier incomplete-screen calls are ineligible. CP23's qualified matched quality
+comparison is unperformed, and prospective economic effects remain insufficient.
+The UI preserves these unknowns rather than claiming model value from stubs.
+
+Actual native public IBM daily-only archive/save/reopen works. SEC denied/rate-
+limited access/cooldown and absent Crik/authorized bridge remain provider blockers.
+No install/restart/activation, merge/deployment, operating financial/data/storage
+change, model download or paid service was performed. Source delivery, software
+verification, actual role qualification, installed acceptance and economic support
+remain separate. Historical evidence below keeps its original stage/date.
 
 # Compact trade history — source verification
 

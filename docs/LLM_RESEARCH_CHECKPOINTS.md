@@ -31,12 +31,28 @@ not waive paper-resource admission or permit installed reconfiguration.
 | Checkpoint | Implementation / proof | Current limitation |
 |---|---|---|
 | CP17 | Delivered draft #29 at 32b5fc49; 580 native tests, no skips; exact-head hosted SUCCESS | Finite software/browser/native proof; see reviews/cp17/README.md |
-| CP18 | Source implements evidence/idea/check/review/inbox/outcome/follow-up; actual dedicated CPU runtime observed | Operating resource guard blocks qualification; see CP18_QUALIFIED_ROLE_LOOP.md |
-| CP19 | Referenced lessons and outcome-driven different-test selection implemented | Two-generation synthetic software proof; actual-model trace blocked |
-| CP20 | Frozen short memory-entry filter reaches child/runtime/replay/cost/evidence | Synthetic source proof; actual fitted role discovery unverified |
-| CP21 | Bounded SEC facts/filing studies and independent public IBM daily study | Actual IBM native read; SEC HTTP 403/cooldown; entitled vintage unverified |
-| CP22 | Shared scoped HTTP task leases, semantic proposals, required review and ordinary paper result; disposable integration | Actual Crik/authorized bridge absent; see CP22_SCOPED_COLLABORATION.md |
-| CP23 | Planned integrated acceptance | No installed/prospective/economic claim |
+| CP18 | Draft #30, 9ab26c0; 597 native/no skips; exact hosted green; complete source result-feedback workflow | Operating resource guard blocks qualification; see CP18_QUALIFIED_ROLE_LOOP.md |
+| CP19 | Draft #31, 408c5af; 600 native/no skips; exact hosted green; referenced lessons/different-test selection | Two-generation synthetic software proof; actual-model trace blocked |
+| CP20 | Draft #32, 7f9f9ba; 604 native/no skips; exact hosted green; single frozen entry filter | Synthetic source proof; actual fitted role discovery unverified |
+| CP21 | Draft #33, d0f8e0d; 614 native/no skips; exact hosted green; SEC facts and public IBM study | Actual IBM native read; SEC HTTP 403/cooldown; entitled vintage unverified |
+| CP22 | Draft #34, dd55b89; 622 native/no skips; exact hosted green; shared scoped leases/result lifecycle | Actual Crik/authorized bridge absent; see CP22_SCOPED_COLLABORATION.md |
+| CP23 | Final full-tested product source 197e5a1: 629 native/no skips, typing/build, SCRAM reader, desktop/mobile/retry and finite native measurements; see reviews/cp23 | Actual qualified-model workload/trace and matched quality comparison blocked; prospective/economic observation insufficient |
 
 Evidence stages are separate: planned, implemented, software verified, actual role
 tested, installed verified, prospectively evaluated, economic value supported.
+
+## Final integration and remaining required observations
+
+[CP23 finite declaration](CP23_ACCEPTANCE_PLAN.md) preceded measurement.
+[Observed native/browser/fault ledger](reviews/cp23/README.md) identifies exact
+proof and original failed attempts. [Rollout handoff](CP23_ROLLOUT_HANDOFF.md)
+is concrete but has not been executed. Final delivery-head hosted evidence is in
+its draft/issue, separate from the frozen measured product source.
+
+Actual CP18 is the first complete LLM milestone and remains unmet. Current v5
+qualification, actual guard-admitted trace through mature paper outcome/follow-up,
+actual busy model load and matched usefulness/cost comparisons require eligible
+runtime evidence. Native SEC denial/cooldown and unavailable Crik bridge remain
+precise provider limits. No actual installed, prospective or economic stage is
+claimed from software stubs. All draft PRs stay unmerged; no operating state was
+changed by this source work.

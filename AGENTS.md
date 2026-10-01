@@ -1,37 +1,40 @@
-# Current work order — issue #28, CP17–CP23
+# Current work order - issue #28, CP17-CP23 source delivery
 
-Implement the work order and implementation addendum in GitHub issue #28.
-Read docs/LLM_RESEARCH_CHECKPOINTS.md for the current integration/evidence ledger.
-CP22 source uses shared scoped HTTP leases; read docs/CP22_SCOPED_COLLABORATION.md.
-Actual Crik connector/authorized bridge is absent. Complete CP23's predeclared
-finite native/browser/fault verification and rollout handoff; do not activate a
-bridge, worker or schedule to turn a source adapter into actual transport proof.
-CP19 source extends the same registry; read docs/CP19_REFERENCED_RESEARCH.md.
-Its two-generation receipt uses a model stub and accelerated disposable paper
-coverage, not qualified inference. Continue CP20's existing memory-entry filter
-as the single declared component; do not add another component simultaneously.
-CP20's implemented component is documented in docs/CP20_FROZEN_MEMORY_FILTER.md.
-Next implement CP21 point-in-time stock evidence with currently verified public
-access, explicit provider limitations, no equity execution or paid/account setup.
-CP21 behavior/access is documented in docs/CP21_POINT_IN_TIME_STOCKS.md. Respect
-the persisted SEC cooldown; don't substitute website-tool access for native proof.
-Continue CP22 shared scoped task leases without activating external workers or
-creating a public bridge/schedule. Actual Crik transport remains unconfigured.
-Read docs/CP18_QUALIFIED_ROLE_LOOP.md before touching role/runtime work. CP17 is
-draft #29 at 32b5fc49 with exact-head hosted success. CP18 actual qualification is
-blocked by the operating optional-research guard; preliminary development calls
-are ineligible as qualification. Continue independent source work without waiving
-that guard, installing/restarting the app or activating operating agents.
-Build on merged #27 at main 6fc72dcc. One complete checkpoint per bounded draft
-PR, dependent branches when needed; proceed from CP17 to CP18 without claiming
-an operational LLM layer from tools or schemas. Preserve existing work and all
-historical financial/qualification contracts below.
-Isolated implementation, tests, commits, push and issue updates are authorized.
-No merge, deployment, installed restart, activation, operating data/storage
-changes, new model downloads or paid calls. Trading inference stays on its
-verified dedicated CPU service and outside financial locks. A stopped service
-is a proof blocker, not permission to activate it or use the GIS runtime.
-Publish synthetic/redacted evidence only; keep private runtime evidence ignored.
+This assignment implements issue #28 and its implementation addendum. Read
+`docs/LLM_RESEARCH_CHECKPOINTS.md`, `docs/reviews/cp23/README.md` and
+`docs/CP23_ROLLOUT_HANDOFF.md` for observed evidence and precise remaining work.
+CP17-CP22 are dependent draft PRs #29-34, with exact-head hosted Windows success.
+CP23 integrates native/browser/fault acceptance, late-answer recovery, tied-time
+history cursors, exact stock acknowledgment recovery and truthful quality/results.
+Final product source passes 629 native PostgreSQL tests/no skips, Ruff, strict
+mypy (82 modules), frontend build and authenticated reader checks. Final delivery
+head/hosted results are recorded in its draft and issue; stages stay distinct.
+
+Actual CP18 qualified-model-to-mature-outcome/follow-up remains blocked. The
+operating paper guard repeatedly constrains optional research; corrected development
+waited 601.018 seconds with zero requests. Preliminary incomplete-screen calls are
+ineligible. Current additive role contract v5 needs independent development and
+36-case/three-seed qualification (34 correct minimum, zero critical violations).
+Never waive the guard, use historical scores or relabel stubs as qualified calls.
+CP23's matched qualified A/B/C/D comparison and prospective economic effects remain
+unperformed/insufficient; unknown is not a measured negative result. Continue these
+only when the actual runtime/admission and authorization prerequisites hold.
+
+Native public IBM daily-only study works with declared unadjusted/current-vintage
+limits. SEC denied/rate-limited access retains a ten-minute cooldown. Actual Crik
+connector/authorized bridge is absent; CP22's local scoped HTTP proof is separate.
+Read the CP17-CP22 workflow documents before changing their contracts. Preserve
+merged #27's 600-bar causal warmup/gaps/VWAP and projected latest-120 behavior.
+Preserve the sole financial writer, original six/history, successful frozen parents,
+twenty concurrent active/reserved slots, G: 100 decimal GB per tier and delayed
+outcomes. Keep inference/waiting outside financial and registry locks.
+
+Isolated source/QA, commits, push, issue updates and draft PRs are authorized.
+No merge, deployment, installed restart, operating activation/account/data/storage
+changes, model downloads or paid calls. Prior bounded installed-model QA permission
+does not waive operating admission. Dedicated CPU QA service only; GIS untouched.
+Publish only synthetic/redacted proof. Keep failed/private runtime/credentials and
+provider packets ignored. Preserve unrelated dirty work and existing source owners.
 
 # Historical working agreements
 # Continuous autonomous paper lab assignment — September 30, 2026
