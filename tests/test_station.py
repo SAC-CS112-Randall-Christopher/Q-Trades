@@ -163,7 +163,7 @@ def test_market_evidence_retains_gaps_warmup_and_missing_data(runtime):
     assert missing["detail"]["strategy"]["last_decision"] is None
 
 
-def test_outcome_totals_are_net_and_limited_to_the_selected_market_sample(runtime):
+def test_rolling_trades_cannot_substitute_for_unavailable_durable_outcomes(runtime):
     account = runtime.state["accounts"]["primary"]
     account["recent_trades"] = [
         {"symbol": "BTCUSD", "pnl": "1000", "fees": "1"},
@@ -171,10 +171,9 @@ def test_outcome_totals_are_net_and_limited_to_the_selected_market_sample(runtim
         {"symbol": "ETHUSD", "pnl": "20", "fees": "2"},
     ]
     result = execute_tool(runtime, "outcome_review", "BTCUSD")["result"]
-    assert result["sample_totals"] == {"trades": 30, "net_pnl": "-3.90", "fees": "3.00"}
-    assert result["retained_market_count"] == 31
-    assert result["omitted_retained_market_trades"] == 1
-    assert result["account_totals"]["funding"] == account["funding"]
+    assert result["status"] == "unavailable"
+    assert "rolling trades" in result["reason"]
+    assert "sample_totals" not in result
 
 
 def test_strategy_view_uses_frozen_rules_actual_accounts_and_recorded_review(runtime):
@@ -356,7 +355,7 @@ def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path):
         denied = {**headers, "Origin": "https://testserver"}
         assert client.post("/api/research/tools/run", json=args, headers=denied).status_code == 403
         run = client.post("/api/research/tools/run", json=args, headers=headers).json()
-        assert run["status"] == "completed"
+        assert run["status"] == "completed", run["error"]
         assert client.get(f"/api/research/tools/runs/{run['id']}").json() == run
         assert client.post("/api/research/tools/run", json=args, headers=headers).status_code == 429
         app.state.last_tool_at = 0
@@ -366,7 +365,7 @@ def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path):
             headers=headers,
         ).json()
         assert market_run["status"] == "completed"
-        assert market_run["result"]["version"] == "market-evidence-tools-v2"
+        assert market_run["result"]["version"] == "scoped-research-tools-v3"
         assert len(market_run["result"]["result"]["detail"]["indicators"]["points"]) == 120
         assert client.get(f"/api/research/tools/runs/{market_run['id']}").json() == market_run
         app.state.last_tool_at = 0

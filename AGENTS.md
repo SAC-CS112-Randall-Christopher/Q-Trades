@@ -1,3 +1,19 @@
+# Current work order — issue #28, CP17–CP23
+
+Implement the work order and implementation addendum in GitHub issue #28.
+Read docs/LLM_RESEARCH_CHECKPOINTS.md for the current integration/evidence ledger.
+Build on merged #27 at main 6fc72dcc. One complete checkpoint per bounded draft
+PR, dependent branches when needed; proceed from CP17 to CP18 without claiming
+an operational LLM layer from tools or schemas. Preserve existing work and all
+historical financial/qualification contracts below.
+Isolated implementation, tests, commits, push and issue updates are authorized.
+No merge, deployment, installed restart, activation, operating data/storage
+changes, new model downloads or paid calls. Trading inference stays on its
+verified dedicated CPU service and outside financial locks. A stopped service
+is a proof blocker, not permission to activate it or use the GIS runtime.
+Publish synthetic/redacted evidence only; keep private runtime evidence ignored.
+
+# Historical working agreements
 # Continuous autonomous paper lab assignment — September 30, 2026
 
 Read `docs/CONTINUOUS_PAPER_LAB.md` and issue #1 comment 5915529073 first.

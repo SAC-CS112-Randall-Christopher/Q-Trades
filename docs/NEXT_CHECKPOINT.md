@@ -1,3 +1,12 @@
+# Current: CP17, then the CP18 local-model loop
+
+Implement issue #28 and its addendum in dependency order. Finish selected-account
+tools and durable receipts, then qualified evidence-to-paper-result feedback.
+Read [the current ledger](LLM_RESEARCH_CHECKPOINTS.md) for proof and blockers.
+Leave source PRs draft and unmerged; preserve installed and operating state.
+
+# Historical checkpoints
+
 # Current: complete the continuous autonomous paper lab
 
 Follow `CONTINUOUS_PAPER_LAB.md` and issue #1 comment 5915529073. The September 30

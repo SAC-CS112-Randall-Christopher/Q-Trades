@@ -1,0 +1,84 @@
+{
+  "contract": {
+    "fixture": "Synthetic twenty-account financial ticks and 1103 permanent outcome events",
+    "seconds_per_case": 30,
+    "ticks_per_second": 4,
+    "cases": [
+      "idle",
+      "scoped_reads"
+    ],
+    "loop_p95_limit_ms": 100,
+    "rss_limit_mib": 512,
+    "rss_growth_limit_mib": 64,
+    "scope": "Disposable software evidence; no live-market, model or economic claim"
+  },
+  "declared_at": 1790868573.4287136,
+  "cases": [
+    {
+      "mode": "idle",
+      "accounts": 20,
+      "ticks": 120,
+      "financial_transaction_ms": {
+        "p50": 11.400899849832058,
+        "p95": 26.107999961823225,
+        "p99": 54.117599967867136,
+        "max": 85.597800090909
+      },
+      "query_ms": null,
+      "serialization_ms": null,
+      "result_utf8_bytes": null,
+      "overview_utf8_bytes": null,
+      "reads": 0,
+      "peak_rss_mib": 63.875,
+      "rss_growth_mib": 0.296875,
+      "balanced": true,
+      "errors": []
+    },
+    {
+      "mode": "scoped_reads",
+      "accounts": 20,
+      "ticks": 120,
+      "financial_transaction_ms": {
+        "p50": 11.271199909970164,
+        "p95": 24.773299926891923,
+        "p99": 55.857199942693114,
+        "max": 77.09899987094104
+      },
+      "query_ms": {
+        "p50": 65.97850006073713,
+        "p95": 82.93149992823601,
+        "p99": 100.59149982407689,
+        "max": 100.83709983155131
+      },
+      "serialization_ms": {
+        "p50": 0.1610000617802143,
+        "p95": 0.6405999884009361,
+        "p99": 0.6512999534606934,
+        "max": 0.8853999897837639
+      },
+      "result_utf8_bytes": {
+        "p50": 2138,
+        "p95": 44461,
+        "p99": 44464,
+        "max": 44465
+      },
+      "overview_utf8_bytes": {
+        "p50": 2266,
+        "p95": 4824,
+        "p99": 4828,
+        "max": 4828
+      },
+      "reads": 40,
+      "peak_rss_mib": 66.78515625,
+      "rss_growth_mib": 2.22265625,
+      "balanced": true,
+      "errors": []
+    }
+  ],
+  "proof_stage": "finite_disposable_windows_software",
+  "limitations": [
+    "Synthetic quotes and outcome read-model events, no observed returns",
+    "Thirty seconds per case; not 24/7 or 100 GB proof",
+    "No installed restart, operating financial change, model inference, role qualification or promotion"
+  ]
+}

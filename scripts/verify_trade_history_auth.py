@@ -23,8 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 def verify() -> dict[str, object]:
     dsn = load_dsn(ROOT / "data/paper-database.json")
     params = conninfo_to_dict(dsn)
-    if params.get("host") != "127.0.0.1" or params.get("port") != "55633":
-        raise ValueError("Requires the separately owned QA PostgreSQL on port 55633")
+    if params.get("host") != "127.0.0.1" or params.get("port") not in {"55633", "55641"}:
+        raise ValueError("Requires separately owned QA PostgreSQL on port 55633 or 55641")
     directory = ROOT / "data" / ("trade-history-auth-" + uuid.uuid4().hex)
     directory.mkdir()
     token = uuid.uuid4().hex
@@ -44,19 +44,24 @@ def verify() -> dict[str, object]:
         rule = f"host all {role} 127.0.0.1/32 scram-sha-256\n".encode()
         changed = rule + original
         admin.execute("SET password_encryption = 'scram-sha-256'")
-        admin.execute(sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
-            sql.Identifier(role), sql.Literal(password)
-        ))
+        admin.execute(
+            sql.SQL("CREATE ROLE {} LOGIN PASSWORD {}").format(
+                sql.Identifier(role), sql.Literal(password)
+            )
+        )
         created_role = True
-        admin.execute(sql.SQL("CREATE SCHEMA {} AUTHORIZATION {}").format(
-            sql.Identifier(schema), sql.Identifier(role)
-        ))
+        admin.execute(
+            sql.SQL("CREATE SCHEMA {} AUTHORIZATION {}").format(
+                sql.Identifier(schema), sql.Identifier(role)
+            )
+        )
         created_schema = True
         hba.write_bytes(changed)
         changed_hba = True
         assert admin.execute("SELECT pg_reload_conf()").fetchone()[0]
-        login = make_conninfo(dsn, user=role, password=password, connect_timeout=3,
-                             options=f"-c search_path={schema}")
+        login = make_conninfo(
+            dsn, user=role, password=password, connect_timeout=3, options=f"-c search_path={schema}"
+        )
         store = PaperStore(login, owner=True)
         store.initialize(1790000000)
         # SIGHUP is asynchronous. Require an actually rejected redacted login;
@@ -80,8 +85,27 @@ def verify() -> dict[str, object]:
             assert password not in response.text
         assert state == store.read() and events == store.export(0, 1000)
         assert store.reconcile()["balanced"]
-        receipt.update(auth="scram-sha-256", api_status=200,
-                       financial_state_and_events_preserved=True, credential_in_response=False)
+        from trading.scoped_tools import reader
+
+        with reader(runtime) as view:
+            snapshot = view.research_account("primary", time.time())
+            scoped = view.research_outcomes(snapshot, "BTCUSD")
+            assert scoped["market_totals"]["trades"] == 0
+            assert (
+                view.connection.execute("SHOW transaction_read_only").fetchone()[
+                    "transaction_read_only"
+                ]
+                == "on"
+            )
+        assert state == store.read() and events == store.export(0, 1000)
+        receipt.update(
+            auth="scram-sha-256",
+            api_status=200,
+            financial_state_and_events_preserved=True,
+            credential_in_response=False,
+            scoped_outcome_password_reader=True,
+            repeatable_read_only=True,
+        )
     finally:
         if store is not None:
             store.close()

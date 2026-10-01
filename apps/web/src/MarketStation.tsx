@@ -8,10 +8,12 @@ type Quote = { symbol: string; bid: string | null; ask: string | null; state: st
 type Trade = { id: number; price: string; quantity: string; exchange_ms: number };
 type Live = { enabled: boolean; running: boolean; error: string | null; selected_symbol: string; markets: Quote[]; book: { bids: string[][]; asks: string[][]; metrics: { spread_bps: string } } | null; trades: Trade[]; trade_gaps: number };
 type ScanRow = { symbol: string; eligible: boolean; confirmed: boolean; reason: string; change_percent?: string; quote_volume?: string };
-type Detail = { selected_symbol: string; generated_at: number; scan: { rows: ScanRow[]; total: number; omitted: number; observed_at: number; constrained: boolean; selected: string[] }; candles: Candle[]; indicators?: Indicators; candle_gaps: object[]; candles_stale: boolean; experiments?: Experiments; strategy: { primary_market: boolean; version: string; entries_paused: boolean; last_decision: { reason: string; at: number } | null; features?: { volume_ratio?: string; atr?: string; trend_up?: boolean } }; paper_events: { id: number; at: number; kind: string; body: { reason?: string; side?: string; price?: string; quantity?: string } }[] };
+type Detail = { selected_symbol: string; generated_at: number; scan: { rows: ScanRow[]; total: number; omitted: number; observed_at: number; constrained: boolean; selected: string[] }; candles: Candle[]; indicators?: Indicators; candle_gaps: object[]; candles_stale: boolean; experiments?: Experiments; strategy: { account: string; primary_market: boolean; version: string; entries_paused: boolean; last_decision: { reason: string; at: number } | null; features?: { volume_ratio?: string; atr?: string; trend_up?: boolean } }; paper_events: { id: number; at: number; kind: string; body: { reason?: string; side?: string; price?: string; quantity?: string } }[] };
 type Tool = { id: string; name: string; purpose: string };
-type Run = { id: number; tool: string; symbol: string; status: string; started: number; error: string | null; result?: { result: Record<string, unknown> } };
-type ToolState = { tools: Tool[]; runs: Run[]; total: number; error: string | null };
+type Run = { id: number; tool: string; symbol: string; account?: string; status: string; started: number; error: string | null; result?: { result: Record<string, unknown>; envelope?: { account: string; observation_cutoff: number; overview_scope?: string; coverage?: { saved_candles: number; saved_trades?: number } } } };
+type ToolState = { tools: Tool[]; runs: Run[]; total: number; error: string | null; next_cursor?: string | null };
+type ToolAccounts = { accounts: { account: string; label: string; archived: boolean }[]; next_before?: string | null };
+type EvidencePage = { facts?: Record<string, unknown>; events?: { id: number; at: number; body: Record<string, unknown> }[]; total?: number; offset?: number; next_cursor?: string | null };
 
 const number = (v: string | number | null | undefined, digits = 2) => v == null ? "—" : Number(v).toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits });
 const price = (v: string | null | undefined) => number(v, Math.min(8, Math.max(2, v?.replace(/0+$/, "").split(".")[1]?.length ?? 0)));
@@ -45,30 +47,48 @@ function usePoll<T>(url: string, interval: number, enabled = true) {
 }
 
 const ToolResult = memo(function ToolResult({ run }: { run: Run }) {
+  const [page, setPage] = useState<EvidencePage | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => { setPage(null); setError(null); }, [run.id]);
+  const detail = async (cursor?: string | null) => {
+    setLoading(true); setError(null);
+    try {
+      const response = await fetch(`/api/research/tools/runs/${run.id}/detail${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, { cache: "no-store", signal: AbortSignal.timeout(7000) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail ?? "Captured detail is unavailable");
+      setPage(result as EvidencePage);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Captured detail is unavailable; retry."); }
+    finally { setLoading(false); }
+  };
   const result = run.result?.result;
   let summary = run.status === "running" ? "Reading evidence…" : "Evidence saved. Open the receipt to inspect it.";
   if (run.error) summary = run.error;
   else if (run.tool === "cost_hurdle" && result) summary = `The bid would need to rise ${number(String(result.required_bid_move_percent), 3)}% to cover modeled round-trip costs at the top of this book. This is a cost threshold, not a forecast.`;
   else if (run.tool === "strategy_evidence" && result) {
     const decision = result.last_decision as { reason?: string } | null;
-    summary = decision?.reason ? `Last recorded decision: ${decision.reason}` : "No primary-account decision has been recorded for this market.";
+    summary = decision?.reason ? `Last recorded decision: ${decision.reason}` : "No selected-account decision has been recorded for this market.";
   } else if (run.tool === "outcome_review" && result) {
-    const sample = result.sample_totals as { trades: number; net_pnl: string; fees: string } | undefined;
-    summary = sample ? `${sample.trades} recent ${run.symbol.replace(/USD$/, "")} trades: $${number(sample.net_pnl)} net profit / loss, including $${number(sample.fees)} in fees. This is the selected market's sample, not the whole account.` : `${result.retained_market_count} matching closed trades in the retained primary-account window. The receipt separates these from whole-account totals.`;
+    const totals = result.market_totals as { trades: number; net_pnl: string; fees: string } | undefined;
+    const account = result.account_totals as { net_pnl?: string | null; cash?: string; fresh?: boolean } | undefined;
+    summary = totals ? `${totals.trades} recorded ${run.symbol.replace(/USD$/, "")} trades: $${number(totals.net_pnl)} net P/L, including $${number(totals.fees)} in fees. Whole-account net P/L: ${account?.net_pnl == null ? "unavailable at captured valuation" : `$${number(account.net_pnl)}`}; cash $${number(account?.cash)}. Open holdings and separate-capital comparisons remain in the receipt.` : String(result.reason ?? "Permanent outcome evidence is unavailable.");
   }
   else if (run.tool === "market_evidence" && result) {
     const live = result.live as Live | undefined;
     const detail = result.detail as Detail | undefined;
     const quote = live?.markets.find(q => q.symbol === run.symbol);
-    summary = `Quote ${quote?.state ?? "unavailable"} at capture. Saved ${detail?.candles.length ?? 0} closed candles and ${live?.trades.length ?? 0} observed trades, with the available order book and strategy evidence. Candle and indicator evidence covers up to the latest 120 closed candles for this market; gaps remain visible in the receipt.`;
+    summary = `Quote ${quote?.state ?? "unavailable"} at capture. Saved ${run.result?.envelope?.coverage?.saved_candles ?? detail?.candles.length ?? 0} closed candles and ${run.result?.envelope?.coverage?.saved_trades ?? live?.trades.length ?? 0} observed trades, with the available order book and strategy evidence. Candle and indicator evidence covers up to the latest 120 closed candles for this market; gaps remain visible in the receipt.`;
   }
-  return <div className="tool-result" role="status"><div className="tool-result-heading"><strong>{run.symbol.replace(/USD$/, " / USD")}</strong><span className={run.status === "completed" ? "station-positive" : "station-muted"}>{run.status}</span></div><p>{summary}</p><details><summary>Evidence / diagnostics</summary><pre>{JSON.stringify(run, null, 2)}</pre></details></div>;
+  return <div className="tool-result" role="status"><div className="tool-result-heading"><strong>{run.symbol.replace(/USD$/, " / USD")} · {run.account ?? "primary"}</strong><span className={run.status === "completed" ? "station-positive" : "station-muted"}>{run.status}</span></div><p>{summary}</p>{run.result?.envelope && <p>Captured {new Date(run.result.envelope.observation_cutoff * 1000).toLocaleString()}. {run.result.envelope.overview_scope}</p>}<button type="button" disabled={loading || run.status !== "completed"} onClick={() => void detail()}>{loading ? "Loading…" : "Open captured detail"}</button>{error && <p role="alert">{error}</p>}{page && <details open><summary>Captured evidence {page.total != null ? `· ${page.total} saved rows` : ""}</summary><pre>{JSON.stringify(page.facts ?? page.events, null, 2)}</pre>{page.next_cursor && <button type="button" disabled={loading} onClick={() => void detail(page.next_cursor)}>Next evidence page</button>}</details>}<details><summary>Receipt / diagnostics</summary><pre>{JSON.stringify(run, null, 2)}</pre></details></div>;
 });
 
 export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean }) {
   const section = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
   const [symbol, setSymbol] = useState("BTCUSD");
+  const [account, setAccount] = useState(() => localStorage.getItem("qtrades-tool-account") ?? "primary");
+  const [accountPage, setAccountPage] = useState("");
+  const [historyCursor, setHistoryCursor] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [qualifiedOnly, setQualifiedOnly] = useState(false);
   const [range, setRange] = useState(60);
@@ -77,10 +97,11 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
   const [busy, setBusy] = useState(false);
   const [toolError, setToolError] = useState<string | null>(null);
   const livePoll = usePoll<Live>(`/api/station/live?symbol=${symbol}`, strategyOnly ? 10000 : 1000, visible);
-  const detailPoll = usePoll<Detail>(`/api/station/detail?symbol=${symbol}`, 10000, visible);
-  const toolsPoll = usePoll<ToolState>("/api/research/tools", 10000, visible);
+  const detailPoll = usePoll<Detail>(`/api/station/detail?symbol=${symbol}&account=${encodeURIComponent(account)}`, 10000, visible);
+  const accountsPoll = usePoll<ToolAccounts>(`/api/research/tools/accounts?before=${encodeURIComponent(accountPage)}`, 10000, visible);
+  const toolsPoll = usePoll<ToolState>(`/api/research/tools${historyCursor ? `?cursor=${encodeURIComponent(historyCursor)}` : ""}`, 10000, visible);
   const live = livePoll.data?.selected_symbol === symbol ? livePoll.data : null;
-  const detail = detailPoll.data?.selected_symbol === symbol ? detailPoll.data : null;
+  const detail = detailPoll.data?.selected_symbol === symbol && detailPoll.data.strategy.account === account ? detailPoll.data : null;
   const quote = live?.markets.find(q => q.symbol === symbol);
   const elapsed = Math.max(0, clock - livePoll.at);
   const fresh = !!quote && !livePoll.error && live?.running && !live.error && quote.state === "fresh" && elapsed < quote.valid_for_ms;
@@ -102,20 +123,25 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
   const runTool = async (tool: string) => {
     setBusy(true); setToolError(null);
     try {
-      const response = await fetch("/api/research/tools/run", { method: "POST", headers: { "Content-Type": "application/json", "X-Local-Operator": "1" }, body: JSON.stringify({ tool, symbol }), signal: AbortSignal.timeout(7000) });
+      const response = await fetch("/api/research/tools/run", { method: "POST", headers: { "Content-Type": "application/json", "X-Local-Operator": "1" }, body: JSON.stringify({ tool, symbol, account, request_id: crypto.randomUUID() }), signal: AbortSignal.timeout(7000) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail ?? "Tool could not run");
-      setLatest(result as Run);
+      setLatest(result as Run); localStorage.setItem("qtrades-tool-receipt", String(result.id));
     } catch (cause) { setToolError(cause instanceof DOMException ? "Tool request was not confirmed; check saved runs before retrying." : cause instanceof Error ? cause.message : "Tool request was not confirmed; check saved runs before retrying."); }
     finally { setBusy(false); }
   };
   const openRun = async (id: number) => {
     try {
-      const response = await fetch(`/api/research/tools/runs/${id}`, { signal: AbortSignal.timeout(3000) });
+      const response = await fetch(`/api/research/tools/runs/${id}`, { cache: "no-store", signal: AbortSignal.timeout(3000) });
       if (!response.ok) throw new Error("Saved receipt unavailable");
-      setLatest(await response.json() as Run); setToolError(null);
+      setLatest(await response.json() as Run); setToolError(null); localStorage.setItem("qtrades-tool-receipt", String(id));
     } catch { setToolError("Saved receipt unavailable. The journal has not been reset."); }
   };
+
+  useEffect(() => {
+    const saved = localStorage.getItem("qtrades-tool-receipt");
+    if (saved && /^\d+$/.test(saved)) void openRun(Number(saved));
+  }, []);
 
   return <section ref={section} id="live-quotes" className="market-station" aria-labelledby="station-title">
     <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">{strategyOnly ? "Strategy evidence" : "Market command station"}</h2></div>{strategyOnly ? <label>Market <select value={symbol} onChange={e => setSymbol(e.target.value)}>{[...new Set(["BTCUSD", "ETHUSD", ...(scanner?.selected ?? [])])].map(s => <option key={s}>{s}</option>)}</select></label> : <span className="station-local"><Activity size={14} /> Local workspace</span>}</header>
@@ -152,7 +178,26 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
     </div>
     </>}
     {strategyOnly && (detail?.experiments ? <StrategyLab data={detail.experiments} symbol={symbol} unavailable={!!detailPoll.error || live?.running !== true || !!live?.error} /> : <p className="station-empty">{detailPoll.error ?? "Waiting for recorded strategy evidence…"}</p>)}
-    <section className="station-tools" aria-label="Research tools"><div className="station-pane-title"><h3><Wrench size={15} /> Research tools</h3><span>Read-only · saved results</span></div><div className="station-tool-buttons">{toolsPoll.data?.tools.map(tool => <button key={tool.id} type="button" disabled={busy || !detail} title={tool.purpose} onClick={() => void runTool(tool.id)}>{busy ? "Working…" : tool.name}</button>)}</div>{(toolError || toolsPoll.error || toolsPoll.data?.error) && <p className="station-inline-note" role="alert">{toolError || toolsPoll.error || toolsPoll.data?.error}</p>}{latest && <ToolResult run={latest} />}<div className="station-agents"><span><strong>Researcher · Trainer · Reviewer</strong> — awaiting model qualification</span><a href="#model-lab">View model trials <ChevronRight size={13} /></a></div><details className="station-receipts"><summary>Saved tool runs ({toolsPoll.data?.total ?? 0})</summary>{toolsPoll.data?.runs.map(run => <button key={run.id} type="button" onClick={() => void openRun(run.id)}>{time(run.started * 1000)} · {run.symbol} · {toolsPoll.data?.tools.find(t => t.id === run.tool)?.name ?? run.tool}<span>{run.status}</span></button>)}</details></section>
+    <section className="station-tools" aria-label="Research tools">
+      <div className="station-pane-title"><h3><Wrench size={15} /> Research tools</h3><span>Read-only · saved results</span></div>
+      <label>Evidence account <select aria-label="Evidence account" value={account} onChange={e => { setAccount(e.target.value); localStorage.setItem("qtrades-tool-account", e.target.value); }}>
+        {!accountsPoll.data?.accounts.some(a => a.account === account) && <option value={account}>{account} · identity awaiting lookup</option>}
+        {accountsPoll.data?.accounts.map(a => <option key={a.account} value={a.account}>{a.label || a.account}{a.archived ? " · retired" : ""} · {a.account}</option>)}
+      </select></label>
+      {accountsPoll.data?.next_before && <button type="button" onClick={() => setAccountPage(accountsPoll.data!.next_before!)}>More retired accounts</button>}
+      {accountPage && <button type="button" onClick={() => setAccountPage("")}>First account page</button>}
+      {accountsPoll.error && <p role="alert">{accountsPoll.error}</p>}
+      <p>New tools use {account}. Saved receipts keep their original account and capture date.</p>
+      <div className="station-tool-buttons">{toolsPoll.data?.tools.map(tool => <button key={tool.id} type="button" disabled={busy || !detail} title={tool.purpose} onClick={() => void runTool(tool.id)}>{busy ? "Working…" : tool.name}</button>)}</div>
+      {(toolError || toolsPoll.error || toolsPoll.data?.error) && <p className="station-inline-note" role="alert">{toolError || toolsPoll.error || toolsPoll.data?.error}</p>}
+      {latest && <ToolResult run={latest} />}
+      <div className="station-agents"><span><strong>Researcher · Trainer · Reviewer</strong> — awaiting model qualification</span><a href="#model-lab">View model trials <ChevronRight size={13} /></a></div>
+      <details className="station-receipts"><summary>Saved tool runs ({toolsPoll.data?.total ?? 0})</summary>
+        {toolsPoll.data?.runs.map(run => <button key={run.id} type="button" onClick={() => void openRun(run.id)}>{time(run.started * 1000)} · {run.account ?? "primary"} · {run.symbol} · {toolsPoll.data?.tools.find(t => t.id === run.tool)?.name ?? run.tool}<span>{run.status}</span></button>)}
+        {toolsPoll.data?.next_cursor && <button type="button" onClick={() => setHistoryCursor(toolsPoll.data!.next_cursor!)}>Older saved runs</button>}
+        {historyCursor && <button type="button" onClick={() => setHistoryCursor(null)}>Newest saved runs</button>}
+      </details>
+    </section>
     <details className="station-diagnostics"><summary>Evidence / diagnostics</summary><p>Prices refresh about once a second; charts and decisions refresh every ten seconds. Screened markets do not all have active streams. Charts contain closed candles, including bootstrap history; exchange prints are an incomplete recent window.</p><pre>{JSON.stringify({ quote, scan_observed_at: scanner?.observed_at, details_observed_at: detail?.generated_at, trade_gaps: live?.trade_gaps, live_error: livePoll.error, detail_error: detailPoll.error }, null, 2)}</pre></details>
   </section>;
 }

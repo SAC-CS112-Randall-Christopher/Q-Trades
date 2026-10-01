@@ -1,3 +1,10 @@
+# Current CP17–CP23 implementation
+
+Issue #28 owns the remaining LLM/tools work. Main and prerequisite #27 are
+refreshed to 6fc72dcc. See [current ledger](LLM_RESEARCH_CHECKPOINTS.md).
+CP17 implementation is in progress; no later checkpoint or installed activation
+is claimed. Historical source evidence follows.
+
 # Compact trade history — source verification
 
 Chris requested a separate compact Trade history tab in Orders, with Account first,

@@ -6,6 +6,7 @@ import json
 import re
 import sqlite3
 import time
+import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
@@ -47,7 +48,9 @@ from trading.research_storage import (
     volume,
 )
 from trading.runtime import Monitor
-from trading.station import TOOLS, execute_tool, market_detail, market_live
+from trading.scoped_tools import disclose, outcome_page, reader
+from trading.scoped_tools import run as scoped_tool
+from trading.station import TOOLS, market_detail, market_live
 from trading.storage import MonitorStore
 from trading.tiered_runtime import TieredPaperRuntime as PaperRuntime
 from trading.tool_journal import ToolJournal
@@ -104,6 +107,11 @@ class ToolRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     tool: str = Field(min_length=1, max_length=64)
     symbol: str = Field(min_length=3, max_length=24, pattern=r"^[A-Z0-9]+$")
+    account: str = Field(
+        default="primary", min_length=1, max_length=96, pattern=r"^[a-zA-Z0-9_-]+$"
+    )
+    request_id: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9-]{12,64}$")
+    start: float = Field(default=0, ge=0, allow_inf_nan=False)
 
 
 def create_app(
@@ -155,8 +163,10 @@ def create_app(
                 app.state.last_tool_at = 0.0
                 app.state.tool_error = None
                 try:
-                    tool_journal = ToolJournal(database.parent / "research-tools.sqlite3")
-                except (sqlite3.Error, OSError):
+                    tool_journal = ToolJournal(
+                        database.parent / "research-tools.sqlite3", load_plan(database.parent)
+                    )
+                except (sqlite3.Error, OSError, ValueError):
                     app.state.tool_error = (
                         "Tool receipt storage unavailable; paper operation continues"
                     )
@@ -714,34 +724,221 @@ def create_app(
 
     @app.get("/api/station/detail")
     async def station_detail(
-        request: Request, symbol: str = Query("BTCUSD", pattern=r"^[A-Z0-9]{3,24}$")
+        request: Request,
+        symbol: str = Query("BTCUSD", pattern=r"^[A-Z0-9]{3,24}$"),
+        account: str = Query("primary", pattern=r"^[a-zA-Z0-9_-]{1,96}$"),
     ) -> dict[str, Any]:
         paper: PaperRuntime | None = request.app.state.paper
         if paper is None:
             raise HTTPException(409, "Paper experiment is not enabled")
         try:
-            return market_detail(paper, symbol)
-        except ValueError as exc:
+
+            def selected_detail() -> dict[str, Any]:
+                saved = None
+                if isinstance(paper.store, PaperStore):
+                    with reader(paper) as view:
+                        saved = view.research_account(account)["state"]
+                return market_detail(paper, symbol, account, saved)
+
+            return await asyncio.to_thread(selected_detail)
+        except (ValueError, KeyError) as exc:
             raise HTTPException(422, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Selected evidence is unavailable; retry when connected"
+            ) from exc
 
     @app.get("/api/research/tools")
-    async def research_tools(request: Request) -> dict[str, Any]:
+    async def research_tools(
+        request: Request, cursor: str | None = Query(None, max_length=2048)
+    ) -> dict[str, Any]:
         journal: ToolJournal | None = request.app.state.tool_journal
+        try:
+            history = (
+                await asyncio.to_thread(journal.recent, cursor)
+                if journal
+                else {"runs": [], "total": 0}
+            )
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (OSError, sqlite3.Error) as exc:
+            raise HTTPException(503, "Tool history is waiting for configured storage") from exc
         return {
             "tools": [{"id": key, **value} for key, value in TOOLS.items()],
             "authority": "Read-only evidence; no financial or model authority",
             "agents_enabled": False,
             "error": request.app.state.tool_error,
-            **(await asyncio.to_thread(journal.recent) if journal else {"runs": [], "total": 0}),
+            "capabilities": {
+                "coverage": {"method": "GET", "path": "/api/research/activity"},
+                "prior_experiments": {"method": "GET", "path": "/api/lab"},
+                "historical_analogues": {
+                    "method": "GET",
+                    "path": "/api/research/analogues/{record_id}",
+                },
+                "prior_paper_trials": {"method": "GET", "path": "/api/autonomous/history"},
+                "proposal_bundle": {"method": "GET", "path": "/api/autonomous/bundle"},
+                "proposal_submit": {"method": "POST", "path": "/api/autonomous/proposals"},
+                "proposal_result": {
+                    "method": "GET",
+                    "path": "/api/autonomous/proposals/{request_id}",
+                },
+                "experiment_submit": {
+                    "method": "POST",
+                    "path": "/api/lab/experiments",
+                    "result": "durable asynchronous request_id",
+                },
+                "experiment_result": {"method": "GET", "path": "/api/lab/experiments/{request_id}"},
+            },
+            **history,
         }
+
+    def disclose_tool(request: Request, receipt: dict[str, Any]) -> None:
+        lab: ExperimentLab | None = request.app.state.lab
+        if receipt.get("result") and lab is None:
+            raise HTTPException(
+                503, "Evidence disclosure authority unavailable; retry when connected"
+            )
+        if lab:
+            disclose(lab.registry, receipt)
+
+    @app.get("/api/research/analogues/{record_id}")
+    def historical_analogues(request: Request, record_id: int) -> dict[str, Any]:
+        try:
+            saved = evidence_record(database.parent / "research-evidence.sqlite", record_id)
+            episode = saved["payload"].get("episode")
+            if not isinstance(episode, dict) or not episode.get("retrieval"):
+                raise LookupError("This captured record has no causal analogue lookup")
+            if saved["payload"]["at"] > time.time():
+                raise ValueError("Captured analogue is not yet available")
+            result = {
+                "source": {
+                    "type": "full-evidence-record",
+                    "id": record_id,
+                    "sha256": saved["sha256"],
+                },
+                "lookup": episode["retrieval"],
+                "query_descriptor": episode["descriptor"],
+                "scope": "Captured causal lookup; neighbors do not estimate outcome frequencies",
+            }
+            if len(json.dumps(result).encode()) > 131072:
+                raise ValueError("Analogue lookup exceeds bounded response capacity")
+            lab = request.app.state.lab
+            if lab is None:
+                raise HTTPException(503, "Analogue disclosure authority unavailable")
+            # The existing capture may include old neighbor outcomes. Consume its
+            # entire past conservatively before revealing these saved values.
+            with lab.registry.transaction():
+                lab.registry.db.execute(
+                    "INSERT OR IGNORE INTO evidence_windows "
+                    "VALUES(?,?,?,'analogue tool disclosure')",
+                    ("analogue:" + saved["sha256"], 0, saved["payload"]["at"]),
+                )
+            return result
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except (ValueError, KeyError, TypeError, sqlite3.Error, OSError) as exc:
+            raise HTTPException(
+                409, "Captured analogue unavailable; no current-data substitute"
+            ) from exc
+
+    @app.get("/api/research/tools/accounts")
+    async def tool_accounts(
+        request: Request, before: str = Query("", max_length=96)
+    ) -> dict[str, Any]:
+        paper = request.app.state.paper
+        if paper is None:
+            raise HTTPException(503, "Paper identities are unavailable")
+
+        def identities() -> dict[str, Any]:
+            active = [
+                {"account": name, "label": a.get("label", name), "archived": False}
+                for name, a in paper.state["accounts"].items()
+            ]
+            archived: list[dict[str, Any]] = []
+            if isinstance(paper.store, PaperStore):
+                with reader(paper) as view:
+                    archived = list(
+                        view.connection.execute(
+                            "SELECT account,state->>'label' AS label,true AS archived "
+                            "FROM paper_lab_archives WHERE (%s='' OR account>%s) "
+                            "ORDER BY account LIMIT 21",
+                            (before, before),
+                        ).fetchall()
+                    )
+            return {
+                "accounts": active + archived[:20],
+                "has_more": len(archived) > 20,
+                "next_before": archived[19]["account"] if len(archived) > 20 else None,
+            }
+
+        try:
+            return await asyncio.to_thread(identities)
+        except psycopg.Error as exc:
+            raise HTTPException(503, "Account identities are unavailable; retry") from exc
 
     @app.get("/api/research/tools/runs/{run_id}")
     async def tool_run(request: Request, run_id: int) -> dict[str, Any]:
         journal: ToolJournal | None = request.app.state.tool_journal
-        result = await asyncio.to_thread(journal.get, run_id) if journal else None
+        try:
+            result = await asyncio.to_thread(journal.get, run_id) if journal else None
+            if result:
+                await asyncio.to_thread(disclose_tool, request, result)
+        except (ValueError, LookupError, OSError, sqlite3.Error) as exc:
+            raise HTTPException(
+                503, "Exact saved receipt unavailable; no current-data substitute"
+            ) from exc
         if result is None:
             raise HTTPException(404, "Tool receipt not found")
         return result
+
+    @app.get("/api/research/tools/runs/{run_id}/detail")
+    async def tool_detail(
+        request: Request, run_id: int, cursor: str | None = Query(None, max_length=4096)
+    ) -> dict[str, Any]:
+        journal: ToolJournal | None = request.app.state.tool_journal
+        if journal is None:
+            raise HTTPException(503, "Tool storage is unavailable")
+        try:
+            receipt = await asyncio.to_thread(journal.get, run_id)
+            if receipt is None:
+                raise HTTPException(404, "Tool receipt not found")
+            await asyncio.to_thread(disclose_tool, request, receipt)
+            if receipt["tool"] == "outcome_review" and receipt["result"].get("envelope"):
+                facts = (await asyncio.to_thread(journal.detail, run_id))["facts"]
+                before = 0
+                identity = {
+                    "run_id": run_id,
+                    "sha256": receipt["result_sha256"],
+                    "account": receipt["account"],
+                    "query": receipt["query"],
+                }
+                if cursor:
+                    claims = journal.claims(cursor, kind="outcomes")
+                    if any(claims.get(k) != v for k, v in identity.items()):
+                        raise ValueError("Outcome cursor belongs to a different receipt/snapshot")
+                    before = int(claims["before"])
+                paper = request.app.state.paper
+                page = (
+                    await asyncio.to_thread(outcome_page, paper, receipt, before)
+                    if before
+                    else {k: facts.get(k) for k in ("events", "has_more", "next_before")}
+                )
+                return {
+                    "scope": identity,
+                    **page,
+                    "next_cursor": journal.cursor(
+                        dict(identity, kind="outcomes", before=page["next_before"])
+                    )
+                    if page["has_more"]
+                    else None,
+                }
+            return await asyncio.to_thread(journal.detail, run_id, cursor)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (LookupError, OSError, sqlite3.Error, psycopg.Error) as exc:
+            raise HTTPException(
+                503, "Captured detail is unavailable; retry when connected"
+            ) from exc
 
     @app.post("/api/research/tools/run")
     async def run_tool(command: ToolRequest, request: Request) -> dict[str, Any]:
@@ -771,18 +968,43 @@ def create_app(
         request.app.state.tool_busy = True
         request.app.state.last_tool_at = time.monotonic()
         try:
-            run_id = await asyncio.to_thread(journal.start, command.tool, command.symbol)
+            request_id = command.request_id or str(uuid.uuid4())
+            run_id = await asyncio.to_thread(
+                journal.start,
+                command.tool,
+                command.symbol,
+                account=command.account,
+                request_id=request_id,
+                query=command.model_dump(exclude={"request_id"}),
+            )
+            existing = await asyncio.to_thread(journal.get, run_id)
+            if existing and existing["status"] != "running":
+                await asyncio.to_thread(disclose_tool, request, existing)
+                return existing
             result = None
             error = None
             try:
-                result = execute_tool(paper, command.tool, command.symbol)
+                if command.start > time.time():
+                    raise ValueError(
+                        "Outcome interval begins after the available observation cutoff"
+                    )
+                result = await asyncio.to_thread(
+                    scoped_tool,
+                    paper,
+                    command.tool,
+                    command.symbol,
+                    command.account,
+                    request_id,
+                    start=command.start,
+                )
             except (ValueError, KeyError, ArithmeticError) as exc:
                 error = str(exc)
             await asyncio.to_thread(journal.finish, run_id, result, error)
             saved = await asyncio.to_thread(journal.get, run_id)
             assert saved is not None
+            await asyncio.to_thread(disclose_tool, request, saved)
             return saved
-        except (sqlite3.Error, OSError, ValueError) as exc:
+        except (sqlite3.Error, OSError, ValueError, psycopg.Error) as exc:
             raise HTTPException(
                 503, "Tool receipt could not be saved; inspect local storage"
             ) from exc
@@ -959,7 +1181,8 @@ def create_app(
 
     @app.get("/api/paper/trades")
     def paper_trades(
-        request: Request, before: int = Query(0, ge=0),
+        request: Request,
+        before: int = Query(0, ge=0),
         limit: int = Query(50, ge=1, le=100),
         account: str | None = Query(None, min_length=1, max_length=100),
         status: Literal["all", "open", "closed"] = "all",
@@ -996,8 +1219,14 @@ def create_app(
                 reader.connection.execute(
                     "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
                 )
-                result = reader.trade_history(before=before, limit=limit, account=account,
-                                              status=status, frames=frames, now=now)
+                result = reader.trade_history(
+                    before=before,
+                    limit=limit,
+                    account=account,
+                    status=status,
+                    frames=frames,
+                    now=now,
+                )
             return JSONResponse(result, headers={"Cache-Control": "no-store"})
         except KeyError as exc:
             raise HTTPException(404, "Paper account not found") from exc
