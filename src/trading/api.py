@@ -475,11 +475,16 @@ def create_app(
         return lab.autonomous
 
     @app.get("/api/lab/roles")
-    def role_status(request: Request, before: float = Query(0, ge=0)) -> dict[str, Any]:
+    def role_status(
+        request: Request,
+        before: float = Query(0, ge=0),
+        before_id: str = Query("", max_length=100),
+        search: str = Query("", max_length=100),
+    ) -> dict[str, Any]:
         lab = request.app.state.lab
         if lab is None or lab.roles is None:
             raise HTTPException(503, "Local role registry unavailable; paper management continues")
-        return dict(lab.roles.page(before))
+        return dict(lab.roles.page(before, before_id, search))
 
     @app.post("/api/lab/roles/questions")
     def role_question(request: Request, question: Question) -> dict[str, Any]:

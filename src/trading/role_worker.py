@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import math
 import secrets
 import time
 from collections.abc import Callable
@@ -16,6 +17,7 @@ from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
 from trading.research_storage import ResearchStorage, load_plan
+from trading.role_history import HOT_TASKS, RoleHistory
 from trading.scoped_tools import reader
 
 
@@ -55,6 +57,7 @@ class RoleWorker:
                   WHEN OLD.response IS NOT NULL AND NEW.response IS NOT OLD.response
                   BEGIN SELECT RAISE(ABORT,'Completed model answer is immutable'); END;
             """)
+        self.history = RoleHistory(registry)
 
     def enqueue(self, question: Question, now: float | None = None) -> dict[str, Any]:
         now = time.time() if now is None else now
@@ -160,14 +163,18 @@ class RoleWorker:
         encoded = json.dumps(context, sort_keys=True, allow_nan=False)
         if len(encoded.encode()) > 65536:
             raise ValueError("Role evidence context exceeds 64 KiB")
+        self.history.rollover()
         with self.registry.transaction():
             if not self.registry.db.execute(
                 "SELECT 1 FROM role_tasks WHERE id=?", (identity,)
             ).fetchone():
-                if self.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] >= 512:
-                    raise ValueError(
-                        "Role registry capacity; retain existing tasks and archive before new work"
-                    )
+                if (
+                    self.registry.db.execute(
+                        "SELECT count(*) FROM role_tasks WHERE archive_reference IS NULL"
+                    ).fetchone()[0]
+                    >= HOT_TASKS
+                ):
+                    raise ValueError("Role history continuation awaits verified storage")
                 if (
                     self.registry.db.execute(
                         "SELECT count(*) FROM role_tasks WHERE status NOT IN ('done','failed')"
@@ -178,17 +185,12 @@ class RoleWorker:
                         "Eight retained active role questions; wait for a dependency or completion"
                     )
                 self.registry.db.execute(
-                    "INSERT INTO role_tasks(id,created,updated,stage,status,context) "
-                    "VALUES(?,?,?,'idea','queued',?)",
-                    (identity, now, now, encoded),
+                    "INSERT INTO role_tasks(id,created,updated,stage,status,context,question_text) "
+                    "VALUES(?,?,?,'idea','queued',?,?)",
+                    (identity, now, now, encoded, question.question),
                 )
                 self.registry.event(identity, "role_question", {"question": question.question})
             if question.request_id:
-                if (
-                    self.registry.db.execute("SELECT count(*) FROM role_requests").fetchone()[0]
-                    >= 4096
-                ):
-                    raise ValueError("Retained request identity capacity reached; no question lost")
                 self.registry.db.execute(
                     "INSERT INTO role_requests VALUES(?,?,?)",
                     (question.request_id, question_sha256, identity),
@@ -202,30 +204,42 @@ class RoleWorker:
             ).fetchone()
             if not row:
                 raise ValueError("Unknown role task")
-            result = dict(row)
+            result = self.history.read(row) if row["archive_reference"] else dict(row)
             for key in ("context", "proposal", "evaluation", "result"):
                 result[key] = json.loads(result[key]) if result[key] else None
             result.pop("owner", None)
-            attempts = self.registry.db.execute(
-                "SELECT * FROM role_attempts WHERE task=? ORDER BY started", (identity,)
-            ).fetchall()
-            result["attempts"] = [dict(a) for a in attempts]
+            if "attempts" not in result:
+                attempts = self.registry.db.execute(
+                    "SELECT * FROM role_attempts WHERE task=? ORDER BY started,rowid", (identity,)
+                ).fetchall()
+                result["attempts"] = [dict(a) for a in attempts]
         return result
 
-    def page(self, before: float = 0) -> dict[str, Any]:
+    def page(self, before: float = 0, before_id: str = "", search: str = "") -> dict[str, Any]:
+        if not math.isfinite(before) or len(search) > 100:
+            raise ValueError("Use a finite history cursor and at most 100 search characters")
+        query = (
+            "SELECT t.id,t.created,t.updated,t.stage,t.status,t.reason,t.question_text AS question "
+        )
+        query += "FROM role_tasks t "
+        clauses: list[str] = []
+        params: list[Any] = []
+        if search.strip():
+            query += "JOIN role_task_search s ON s.rowid=t.rowid "
+            clauses.append("role_task_search MATCH ?")
+            params.append('"' + search.strip().replace('"', '""') + '"')
+        if before:
+            clauses.append("(t.created<? OR (t.created=? AND t.id<?))")
+            params.extend([before, before, before_id])
+        if clauses:
+            query += "WHERE " + " AND ".join(clauses) + " "
+        query += "ORDER BY t.created DESC,t.id DESC LIMIT 21"
         with self.registry.lock:
-            rows = self.registry.db.execute(
-                "SELECT id,created,updated,stage,status,reason,"
-                "json_extract(context,'$.question.question') AS question FROM role_tasks ORDER BY "
-                "created DESC LIMIT 21"
-                if before == 0
-                else (
-                    "SELECT id,created,updated,stage,status,reason,"
-                    "json_extract(context,'$.question.question') AS question FROM role_tasks "
-                    "WHERE created<? ORDER BY created DESC LIMIT 21"
-                ),
-                () if before == 0 else (before,),
-            ).fetchall()
+            rows = self.registry.db.execute(query, params).fetchall()
+            counts = self.registry.db.execute(
+                "SELECT count(*),count(archive_reference),"
+                "sum(status NOT IN ('done','failed')) FROM role_tasks"
+            ).fetchone()
         return {
             "enabled": self.enabled,
             "contract": VERSION,
@@ -234,6 +248,13 @@ class RoleWorker:
             else "Separate sequential role worker; task receipts show actual progress",
             "tasks": [dict(r) for r in rows[:20]],
             "next_before": rows[19]["created"] if len(rows) > 20 else None,
+            "next_before_id": rows[19]["id"] if len(rows) > 20 else None,
+            "history": {
+                "retained": counts[0],
+                "archived": counts[1],
+                "active": counts[2] or 0,
+                "hot_limit": HOT_TASKS,
+            },
             "readiness": self.transport.readiness()
             if self.transport
             else {"qualified": False, "reason": "No qualified local role profile configured"},
@@ -271,7 +292,15 @@ class RoleWorker:
         task = self.get(identity)
         if task["stage"] not in {"idea", "review", "followup"} or task["status"] != "failed":
             raise ValueError("Only a failed model transport attempt can be explicitly retried")
+        self.history.restore(identity)
         with self.registry.transaction():
+            if (
+                self.registry.db.execute(
+                    "SELECT count(*) FROM role_tasks WHERE status NOT IN ('done','failed')"
+                ).fetchone()[0]
+                >= 8
+            ):
+                raise ValueError("Eight active role questions; retry when a slot is available")
             attempt = self.registry.db.execute(
                 "SELECT * FROM role_attempts WHERE task=? AND stage=? "
                 "ORDER BY attempt DESC LIMIT 1",
@@ -419,7 +448,7 @@ class RoleWorker:
         with self.registry.transaction():
             used = self.registry.db.execute(
                 "SELECT coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
-                "FROM role_attempts WHERE started>=?",
+                "FROM role_attempt_allowances WHERE started>=? AND actor IS NULL",
                 (started - 3600,),
             ).fetchone()
             if (

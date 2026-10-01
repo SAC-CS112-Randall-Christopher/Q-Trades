@@ -79,3 +79,32 @@ storage migration/cleanup, new model download, paid call or merge was performed.
 No actual-model/paper simultaneous-load claim, 24/7 operation, multi-day
 qualification or economic advantage is established. Continue independent CP19
 source work while preserving this blocker and all historical financial contracts.
+
+## Integrated audit corrections LLM-F3 and LLM-F6
+
+The model adapter exposes its exact existing size preflight as a pure operation.
+Packet construction and memory/follow-up compatibility proof belongs to CP20;
+this extraction preserves the 8192 context, 768 output and 512 template reserves,
+qualification, placement and financial resource guard. Seven adapter tests pass.
+
+The role layer now retains compact, indexed question history and request identities
+without the old 512-task/4096-request lifetime stops. At most 512 complete task
+payloads stay hot; before adding more, at most eight terminal records per pass
+move to the existing verified G: research tiers. Complete questions, contexts,
+answers, attempts, results and unknown completions reopen by exact hash/reference.
+Archive verification and commit precede hot payload replacement. Charged allowance
+projections remain queryable alongside hot attempts; an explicit transport retry
+restores its original attempts rather than resetting them. Evidence windows and
+lessons stay in their authoritative tables. The eight-active-question limit and
+512-MiB physical registry ceiling remain enforced. Actual capacity failure retains
+history and gives a storage recovery reason; it never prunes records or raises quotas.
+
+Native affected tests passed 17 cases in 34.01 seconds: 529 sequential questions,
+4100 stable request identities, complete history paging/search/reopen, unknown
+attempt accounting/retry, archive outage/commit fault/actual G: quota pressure,
+and actual SQLite exhaustion followed by release of only a disposable filler at
+the same ceiling. Ruff, strict typing and the frontend build also pass. The initial
+fixture supplied invalid abstention fields; its failure remains. The corrected
+original-source probe then reproduced the actual 513th-task rejection. Ignored
+data/f6-*.txt retain both original failures and later passing receipts. These are
+isolated software checks, with no model inference or operating data change.
