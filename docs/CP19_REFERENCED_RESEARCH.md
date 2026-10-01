@@ -44,6 +44,13 @@ role/lesson suite covers full waiting capacity, restart/contention, insertion
 failure, typed delayed maturity, unbound text and unchanged data. Receipts remain
 in ignored data/f2-*.txt; final integrated results are recorded separately.
 
+New request-data responses must select an exact offered `e2.request_data_conditions`
+key. A free-text dependency fails validation after the original answer is saved,
+releases its active slot, and cannot fabricate a future eligibility condition.
+Historical unbound waits remain unchanged; their interpretation is not guessed.
+The revised prompt changes the qualification digest. Earlier model receipts are
+historical evidence and cannot qualify this contract.
+
 The finite software trace executes two real ordinary admissions and account
 comparisons on a disposable PostgreSQL engine, with declared accelerated synthetic
 coverage and a model stub. It uses an inconclusive breakout result to investigate
