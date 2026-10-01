@@ -328,9 +328,13 @@ def benchmark(output, soak=False, retired_events=0):
                     "parent_io": {k: io_after[k] - io_before[k] for k in io_after}
                     if io_after and io_before
                     else None,
-                    "io_scope": "Parent process counters only; PostgreSQL server I/O not attributed",
+                    "io_scope": (
+                        "Parent process counters only; PostgreSQL server I/O not attributed"
+                    ),
                     "source_freshness_seconds": time.time() - store.read()["last_tick"],
-                    "freshness_scope": "Last committed synthetic fixture tick, not market freshness",
+                    "freshness_scope": (
+                        "Last committed synthetic fixture tick, not market freshness"
+                    ),
                 }
                 if host_before and host_after:
                     idle, kernel, user = [

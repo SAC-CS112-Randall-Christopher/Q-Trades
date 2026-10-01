@@ -17,7 +17,7 @@ export function ResearchActivity() {
       <p><strong>Durable market data</strong>{when(data?.market?.at)}<br />Closed candle: {when(data?.candle ? (data.candle.open_ms + 60000) / 1000 : null)}</p>
       <p><strong>Paper processing</strong>{when(data?.processing)}<br />Last signal evaluation: {when(data?.signal?.at)}</p>
       <p><strong>Durable replay evidence</strong>{when(data?.full_evidence?.latest?.at)}<br />Archive: {data?.full_evidence?.capacity?.state ?? "Unavailable"}</p>
-      <p><strong>Research inputs and outcomes</strong>Input: {when(data?.training_input?.available)}<br />Mature outcome: {when(data?.mature_outcome?.available)} ({data?.mature_outcome?.status ?? "unknown"})<br />Last executable label: {when(data?.available_outcome?.available)}</p>
+      <p><strong>Executable learning inputs and outcomes</strong>Input: {when(data?.training_input?.available)}<br />Mature executable label: {when(data?.mature_outcome?.available)} ({data?.mature_outcome?.status ?? "unknown"})<br />Last available executable label: {when(data?.available_outcome?.available)}</p>
       <p><strong>Completed learning</strong>{when(data?.completed_learning?.at ?? data?.completed_learning?.finished)}<br />Saved model qualification runs have historical result dates.</p>
     </div><p className="activity-action">{data?.next_action ?? "Reading retained activity…"}{data?.resource_reason && <><br />{data.resource_reason}</>}</p>
     {data?.maturity && <p className="activity-action">Delayed outcomes: {data.maturity.state} · {data.maturity.reason}<br />Checked {when(data.maturity.checked_at)}; next bounded check {when(data.maturity.next_check_at)}. This check is separate from new evidence acquisition.</p>}
