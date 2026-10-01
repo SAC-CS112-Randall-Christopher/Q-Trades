@@ -117,7 +117,8 @@ def test_memory_and_followup_packets_pass_actual_adapter_before_network(
     for _ in range(3):
         assert asyncio.run(worker.step())
     assert_transport_accepts(worker, worker.get(ordinary["id"]), tmp_path, monkeypatch)
-    worker._update(ordinary, "complete", "done", reason="Preflight control only")
+    worker._update(worker.get(ordinary["id"]), "complete", "done", reason="Preflight control only")
+    assert worker.get(ordinary["id"])["status"] == "done"
     worker.transport = MemoryStub()
     parent = admit(lab, START)
     score = close_window(lab, parent, "promising")
