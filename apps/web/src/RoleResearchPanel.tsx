@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { LessonPanel } from "./LessonPanel";
 import { StockResearchPanel } from "./StockResearchPanel";
 import { ResearchActorPanel } from "./ResearchActorPanel";
+import { FrozenComponentPanel } from "./FrozenComponentPanel";
 
 type RoleState = {
   enabled: boolean;
@@ -18,6 +19,8 @@ type RoleState = {
   };
   tasks: { id: string; question?: string; created: number; updated: number; stage: string; status: string; reason: string | null }[];
   next_before: number | null;
+  next_before_id: string | null;
+  history: { retained: number; archived: number; active: number; hot_limit: number };
 };
 type Task = {
   id: string; stage: string; status: string; updated: number; reason: string | null;
@@ -29,6 +32,7 @@ type Task = {
   attempts: { stage: string; status: string; started: number; finished: number | null; profile: unknown; response: { answer?: unknown; tokens?: unknown; wall_seconds?: number } | null; reason: string | null }[];
 };
 type Question = { question: string; horizon: string; parent: string | null; request_id: string };
+type SavedRequest = { body: Question; phase: "unknown" | "rejected"; message?: string };
 const stamp = (seconds: number) => new Date(seconds * 1000).toLocaleString();
 const stages: Record<string, string> = { idea: "Model investigation", evaluate: "Compute method check", archive_evaluation: "Save exact inputs", review: "Independent review", submit: "Ordinary paper admission", outcome: "Await comparison outcome", followup: "Supported follow-up", data_wait: "Await required data", complete: "Research complete" };
 
@@ -37,14 +41,21 @@ export function RoleResearchPanel() {
   const [task, setTask] = useState<Task | null>(null);
   const [selected, setSelected] = useState(() => localStorage.getItem("qtrades-role-task") ?? "");
   const [before, setBefore] = useState(0);
+  const [beforeId, setBeforeId] = useState("");
+  const [search, setSearch] = useState("");
+  const [searchDraft, setSearchDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [question, setQuestion] = useState("Does the reviewed range mechanism differ from its matched breakout reference after costs?");
   const [horizon, setHorizon] = useState("short");
   const [parent, setParent] = useState("");
-  const [retry, setRetry] = useState<Question | null>(() => {
-    try { return JSON.parse(localStorage.getItem("qtrades-role-question-retry") ?? "null") as Question | null; }
+  const [retry, setRetry] = useState<SavedRequest | null>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("qtrades-role-question-retry") ?? "null") as SavedRequest | Question | null;
+      if (!saved) return null;
+      return "body" in saved ? saved : { body: saved, phase: "unknown" };
+    }
     catch { return null; }
   });
   useEffect(() => {
@@ -53,7 +64,7 @@ export function RoleResearchPanel() {
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
-        const response = await fetch(`/api/lab/roles?before=${before}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) });
+        const response = await fetch(`/api/lab/roles?before=${before}&before_id=${encodeURIComponent(beforeId)}&search=${encodeURIComponent(search)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) });
         if (!response.ok) throw new Error("Role status disconnected. Saved questions and paper operation remain separate.");
         const value = await response.json() as RoleState;
         if (live) { setState(value); setError(null); }
@@ -68,17 +79,35 @@ export function RoleResearchPanel() {
     };
     void poll();
     return () => { live = false; controller.abort(); clearTimeout(timer); };
-  }, [selected, before, refresh]);
+  }, [selected, before, beforeId, search, refresh]);
   const open = (id: string) => { setSelected(id); setTask(null); localStorage.setItem("qtrades-role-task", id); };
+  const remember = (saved: SavedRequest) => {
+    localStorage.setItem("qtrades-role-question-retry", JSON.stringify(saved)); setRetry(saved);
+  };
+  const forget = () => { localStorage.removeItem("qtrades-role-question-retry"); setRetry(null); };
   const submit = async (body: Question) => {
-    setBusy(true); setError(null); setRetry(body);
-    localStorage.setItem("qtrades-role-question-retry", JSON.stringify(body));
+    setBusy(true); setError(null);
     try {
+      remember({ body, phase: "unknown" });
       const response = await fetch("/api/lab/roles/questions", { method: "POST", headers: { "Content-Type": "application/json", "X-Local-Operator": "1" }, body: JSON.stringify(body), signal: AbortSignal.timeout(10000) });
       const value = await response.json();
-      if (!response.ok) throw new Error(value.detail ?? "Question could not be saved.");
-      open((value as Task).id); setTask(value as Task); setRetry(null);
-      localStorage.removeItem("qtrades-role-question-retry"); setRefresh(r => r + 1);
+      if (!response.ok) {
+        const receipt = value.detail;
+        const sameIntent = receipt?.request_id === body.request_id && receipt?.intent?.question === body.question && receipt?.intent?.horizon === body.horizon && receipt?.intent?.parent === body.parent;
+        if (sameIntent && receipt.outcome === "not_created") {
+          remember({ body, phase: "rejected", message: receipt.message });
+          setRefresh(r => r + 1);
+          return;
+        }
+        if (sameIntent && receipt.outcome === "created" && typeof receipt.task === "string") {
+          open(receipt.task); forget(); setRefresh(r => r + 1);
+          setError("Your question was saved. Its detail is temporarily unavailable; reopen the saved question when connected.");
+          return;
+        }
+        throw new Error(typeof receipt === "string" ? receipt : receipt?.message ?? "Question acknowledgment is unknown; reconcile the saved request.");
+      }
+      if (typeof value.id !== "string") throw new Error("Question acknowledgment is incomplete; reconcile the saved request.");
+      open((value as Task).id); setTask(value as Task); forget(); setRefresh(r => r + 1);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Question acknowledgment unknown; retry the same saved request."); }
     finally { setBusy(false); }
   };
@@ -108,22 +137,38 @@ export function RoleResearchPanel() {
     <p>{state?.reason}</p>
     {error && <p role="alert">{error} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
     <form onSubmit={enqueue}>
-      <label>Research question <textarea required minLength={12} maxLength={500} value={question} onChange={e => setQuestion(e.target.value)} /></label>
-      <label>Holding horizon <select value={horizon} onChange={e => setHorizon(e.target.value)}><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select></label>
-      <label>Preserved parent trial (optional) <input value={parent} maxLength={100} onChange={e => setParent(e.target.value)} /></label>
+      <label>Research question <textarea disabled={busy || !!retry} required minLength={12} maxLength={500} value={retry?.body.question ?? question} onChange={e => setQuestion(e.target.value)} /></label>
+      <label>Holding horizon <select disabled={busy || !!retry} value={retry?.body.horizon ?? horizon} onChange={e => setHorizon(e.target.value)}><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select></label>
+      <label>Preserved parent trial (optional) <input disabled={busy || !!retry} value={retry ? retry.body.parent ?? "" : parent} maxLength={100} onChange={e => setParent(e.target.value)} /></label>
       <button disabled={busy || !!retry} type="submit">{busy ? "Saving…" : "Save research question"}</button>
-      {retry && <button disabled={busy} type="button" onClick={() => void submit(retry)}>Reconcile saved request</button>}
+      {retry?.phase === "unknown" && <>
+        <p role="status">We do not know whether this question was saved. Reconcile this original request before changing it.</p>
+        <button disabled={busy} type="button" onClick={() => void submit(retry.body)}>Reconcile saved request</button>
+      </>}
+      {retry?.phase === "rejected" && <>
+        <p role="status">Your question was not saved. {retry.message} You can correct or discard it.</p>
+        <button disabled={busy} type="button" onClick={() => { setQuestion(retry.body.question); setHorizon(retry.body.horizon); setParent(retry.body.parent ?? ""); forget(); setError(null); }}>Edit rejected question</button>
+        <button disabled={busy} type="button" onClick={() => { forget(); setError(null); }}>Discard rejected question</button>
+        <button disabled={busy} type="button" onClick={() => void submit({ ...retry.body, request_id: crypto.randomUUID() })}>Try rejected question again</button>
+      </>}
     </form>
     <p>Saving a question does not enable inference. A declared paper policy, current role qualification and separate activation are required.</p>
+    {state?.history && <p>{state.history.retained} retained questions · {state.history.active} active · {state.history.archived} archived. Completed details reopen from their verified original record.</p>}
+    <form onSubmit={e => { e.preventDefault(); setSearch(searchDraft.trim()); setBefore(0); setBeforeId(""); }}>
+      <label>Search saved questions <input value={searchDraft} maxLength={100} onChange={e => setSearchDraft(e.target.value)} /></label>
+      <button type="submit">Search history</button>
+      {search && <button type="button" onClick={() => { setSearch(""); setSearchDraft(""); setBefore(0); setBeforeId(""); }}>Show all questions</button>}
+    </form>
     <div className="table-scroll"><table><thead><tr><th>Saved question</th><th>Stage</th><th>Status</th><th>Actual last progress</th></tr></thead><tbody>{state?.tasks.map(t => <tr key={t.id}><td><button type="button" onClick={() => open(t.id)}>{t.question ?? t.id}</button></td><td>{stages[t.stage] ?? t.stage}</td><td>{t.status}{t.reason ? ` · ${t.reason}` : ""}</td><td>{stamp(t.updated)}</td></tr>)}</tbody></table></div>
-    {before !== 0 && <button type="button" onClick={() => setBefore(0)}>Latest questions</button>}
-    {state?.next_before && <button type="button" onClick={() => setBefore(state.next_before!)}>Older questions</button>}
+    {before !== 0 && <button type="button" onClick={() => { setBefore(0); setBeforeId(""); }}>Latest questions</button>}
+    {state?.next_before && <button type="button" onClick={() => { setBefore(state.next_before!); setBeforeId(state.next_before_id ?? ""); }}>Older questions</button>}
     {task && <article aria-label="Saved research task">
       <h3>{task.context.question.question}</h3><p>{task.context.question.horizon} horizon · {stages[task.stage] ?? task.stage} · {task.status} · progress {stamp(task.updated)}</p>
       <p>Current ownership: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
       {task.reason && <p>{task.reason}</p>}
       {task.status === "failed" && task.attempts.length > 0 && !task.attempts.at(-1)?.response && <button disabled={busy} type="button" onClick={() => void retryTransport()}>Authorize one recorded transport retry</button>}
       <h4>Captured causal evidence</h4><p>{task.context.tool_evidence.security} · {task.context.tool_evidence.closed_bar_count} closed bars · captured {stamp(task.context.tool_evidence.observed_at)} · {task.context.tool_evidence.source_basis}</p>
+      <FrozenComponentPanel task={task.id} catalog={task.context.catalog} />
       <ul>{Object.entries(task.context.tool_evidence.features).map(([key, feature]) => <li key={key}>{key}: {feature.eligible ? "Entry qualified at capture" : "No eligible entry at capture"}. {feature.reason} {feature.close ? `Close $${feature.close}.` : ""}</li>)}</ul>
       <details><summary>Exact evidence, executed input tool and permitted capabilities</summary><pre>{JSON.stringify({ inputs: task.context.tool_evidence, issued: task.context.issued, capabilities: task.context.catalog }, null, 2)}</pre></details>
       {task.evaluation && <><h4>Computed method check</h4><p>{task.evaluation.input_count} causal input bars checked at {stamp(task.evaluation.evaluated_at)}. {task.evaluation.feature.reason} {task.evaluation.replay}</p><details><summary>Exact calculated result and saved input reference</summary><pre>{JSON.stringify(task.evaluation, null, 2)}</pre></details></>}

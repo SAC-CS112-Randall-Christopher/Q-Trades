@@ -29,6 +29,32 @@ reference, horizon, fields, holdings/funding/history and risk stay frozen. Commo
 costs stay equal; marginal component cost is reported and subtracted once from
 the corresponding candidate/reference, with full-period passive and cash.
 
+LLM-F3 correction retains each exact artifact once in the existing registry and
+freezes source-bound summaries plus complete method hashes in role catalogs.
+Dispatch resolves and validates the full method; the financial/evaluation contract
+still embeds the original artifact. Model packets share identical causal facts,
+summarize input/descriptor/neighbor details and give identity, purpose, support,
+timing, limitations and costs. Completed evidence explicitly reports total/shown/
+omitted counts and binds the exact retained bundle. Lessons reference the original
+method by task/hash and retain its facts without repeating every training row.
+The normal selected-task UI opens eight exact component rows per page, with
+contract/normalization/calibration, original full-artifact hash and disclosure
+recorded before delivery. Reading does not add support or change any label.
+
+`tests/test_role_packet_preflight.py` builds ordinary and minimum/maximum supported
+12/128-row synthetic memory tasks, runs the real local adapter until a deliberate
+no-network sentinel, and exercises ordinary review, memory review, ordinary paper
+outcome, follow-up and lesson-backed different research. Every complete actual
+system/schema/packet/output/template byte reservation fits the unchanged 8192
+allowance. The maximum memory researcher/reviewer packets are 4177/4427 bytes;
+their total conservative reservations are 8053/7917. Follow-up is 2508 bytes and
+the lesson-backed question 3732 bytes. These are bytes/reservations, not tokenizer
+measurements, model inference, qualification or market support. Full artifacts
+remain byte-equivalent in the numerical proposal and retained registry. The
+128-row fixture is explicitly a synthetic size case. The 30 affected native tests
+pass; original failed fixture, context-bound and preflight attempts are retained
+under ignored data/f3-*.txt. Final stack checks remain separate evidence.
+
 Verification includes real parent-versus-filtered buy-intent behavior on explicit
 synthetic causal bars, exact replay reproduction/corruption refusal, legacy
 round-trip, artifact/horizon/cost rejection, fallback, real ordinary preserved

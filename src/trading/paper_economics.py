@@ -22,12 +22,25 @@ def fresh(at: Any, now: float) -> bool:
     )
 
 
-def sample(a: dict[str, Any], now: float) -> dict[str, Any]:
-    valid = a.get("valuation_fresh") is True and fresh(a.get("valuation_at"), now)
+def sample(a: dict[str, Any], now: float, *, final_at: float | None = None) -> dict[str, Any]:
+    priced = a.get("valuation_fresh") is True and fresh(a.get("valuation_at"), now)
+    # The sole writer archives only reconciled terminal accounts. Cash requires
+    # no quote; unresolved positions/orders/faults can never use this exception.
+    final = (
+        final_at is not None
+        and math.isfinite(final_at)
+        and 0 < final_at <= now
+        and not a["positions"]
+        and not a["pending"]
+        and not a.get("fault")
+        and not a.get("execution_uncertain")
+        and D(a["equity"]) == D(a["cash"])
+    )
+    valid = priced or final
     reserve = sum((D(o["reserved"]) for o in a["pending"].values()), D(0))
     basis = sum((D(p["cost"]) for p in a["positions"].values()), D(0))
     equity, cash = D(a["equity"]), D(a["cash"])
-    return {
+    result = {
         "equity": str(equity),
         "cash": str(cash),
         "reserved": str(reserve),
@@ -41,7 +54,7 @@ def sample(a: dict[str, Any], now: float) -> dict[str, Any]:
         "nav": str(equity / D(a["units"]))
         if valid and D(a["units"]) > 0 and not a.get("economics_nav_unavailable")
         else None,
-        "fresh": valid,
+        "fresh": priced,
         "valuation_at": a.get("valuation_at"),
         "execution_drag": a.get("execution_drag_usd", "0"),
         "liquidation_fee": a.get("liquidation_fee_usd", "0"),
@@ -57,6 +70,13 @@ def sample(a: dict[str, Any], now: float) -> dict[str, Any]:
         "wins": a["wins"],
         "valuation_issues": dict(a.get("valuation_issues", {})),
     }
+    if final_at is not None:
+        result.update(
+            final=final,
+            final_at=final_at,
+            accounting_basis="Terminal reconciled cash" if final else "Closure unresolved",
+        )
+    return result
 
 
 def new_benchmark(

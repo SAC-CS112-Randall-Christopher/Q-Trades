@@ -2,9 +2,11 @@
 
 import asyncio
 import json
+import math
 import secrets
 import time
 from collections.abc import Callable
+from contextlib import nullcontext
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -17,6 +19,15 @@ from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
 from trading.research_lessons import ResearchLessons
 from trading.research_storage import ResearchStorage, load_plan
+from trading.role_evidence import (
+    artifact_summary,
+    bundle_summary,
+    feature_set,
+    feature_summary,
+    method_summary,
+    outcome_summary,
+)
+from trading.role_history import HOT_TASKS, RoleHistory
 from trading.rule_components import reviewed_feature
 from trading.scoped_tools import reader
 
@@ -55,24 +66,96 @@ class RoleWorker:
                     PRIMARY KEY(task,stage,attempt));
                 CREATE TABLE IF NOT EXISTS role_requests(
                     request_id TEXT PRIMARY KEY, question_sha256 TEXT NOT NULL, task TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS role_components(
+                    sha256 TEXT PRIMARY KEY, body TEXT NOT NULL);
+                CREATE TRIGGER IF NOT EXISTS role_component_frozen BEFORE UPDATE ON role_components
+                  BEGIN SELECT RAISE(ABORT,'Role component is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS role_component_retained
+                  BEFORE DELETE ON role_components
+                  BEGIN SELECT RAISE(ABORT,'Role component is permanent'); END;
+                CREATE TABLE IF NOT EXISTS role_rejections(
+                    request_id TEXT PRIMARY KEY,question_sha256 TEXT NOT NULL,
+                    reason TEXT NOT NULL,created REAL NOT NULL);
+                CREATE TRIGGER IF NOT EXISTS role_rejection_frozen BEFORE UPDATE ON role_rejections
+                  BEGIN SELECT RAISE(ABORT,'Rejected request intent is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS role_rejection_retained
+                  BEFORE DELETE ON role_rejections
+                  BEGIN SELECT RAISE(ABORT,'Request recovery history is permanent'); END;
                 CREATE TRIGGER IF NOT EXISTS role_answer_frozen BEFORE UPDATE ON role_attempts
                   WHEN OLD.response IS NOT NULL AND NEW.response IS NOT OLD.response
                   BEGIN SELECT RAISE(ABORT,'Completed model answer is immutable'); END;
             """)
+        self.history = RoleHistory(registry)
 
-    def enqueue(self, question: Question, now: float | None = None) -> dict[str, Any]:
+    def _requested(self, question: Question) -> str | None:
+        if not question.request_id:
+            return None
+        sha = fingerprint(question.model_dump(exclude={"request_id"}))
+        existing = self.registry.db.execute(
+            "SELECT * FROM role_requests WHERE request_id=?", (question.request_id,)
+        ).fetchone()
+        if existing:
+            if existing["question_sha256"] != sha:
+                raise ValueError("Question request identity cannot be rewritten")
+            return str(existing["task"])
+        rejection = self.registry.db.execute(
+            "SELECT * FROM role_rejections WHERE request_id=?", (question.request_id,)
+        ).fetchone()
+        if rejection:
+            if rejection["question_sha256"] != sha:
+                raise ValueError("Rejected request identity cannot be rewritten")
+            raise ValueError(str(rejection["reason"]))
+        return None
+
+    def reject(self, question: Question, reason: str) -> dict[str, Any]:
+        """Fence a confirmed non-creation against every late copy of the same request."""
+        intent = question.model_dump(exclude={"request_id"})
+        sha = fingerprint(intent)
+        receipt: dict[str, Any] = {
+            "request_id": question.request_id,
+            "intent": intent,
+            "message": reason[:500],
+            "outcome": "unknown",
+        }
+        if not question.request_id:
+            return receipt
+        with self.registry.transaction():
+            existing = self.registry.db.execute(
+                "SELECT * FROM role_requests WHERE request_id=?", (question.request_id,)
+            ).fetchone()
+            if existing:
+                return receipt | {
+                    "outcome": "created"
+                    if existing["question_sha256"] == sha
+                    else "intent_conflict",
+                    "task": existing["task"],
+                }
+            self.registry.db.execute(
+                "INSERT OR IGNORE INTO role_rejections VALUES(?,?,?,?)",
+                (question.request_id, sha, reason[:500], time.time()),
+            )
+            rejection = self.registry.db.execute(
+                "SELECT * FROM role_rejections WHERE request_id=?", (question.request_id,)
+            ).fetchone()
+            if rejection["question_sha256"] != sha:
+                return receipt | {"outcome": "intent_conflict"}
+            return receipt | {"outcome": "not_created", "message": rejection["reason"]}
+
+    def enqueue(
+        self,
+        question: Question,
+        now: float | None = None,
+        *,
+        _resume_from: dict[str, Any] | None = None,
+        _dependency_evidence: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         now = time.time() if now is None else now
         question_body = question.model_dump(exclude={"request_id"})
         question_sha256 = fingerprint(question_body)
-        if question.request_id:
-            with self.registry.lock:
-                existing = self.registry.db.execute(
-                    "SELECT * FROM role_requests WHERE request_id=?", (question.request_id,)
-                ).fetchone()
-            if existing:
-                if existing["question_sha256"] != question_sha256:
-                    raise ValueError("Question request identity cannot be rewritten")
-                return self.get(existing["task"])
+        with self.registry.lock:
+            requested = self._requested(question)
+        if requested:
+            return self.get(requested)
         c = self.controller
         if c is None or not c.paper.state.get("autonomous_lab"):
             raise ValueError("Declare an ordinary paper lab policy before creating role research")
@@ -165,7 +248,12 @@ class RoleWorker:
             if prior["context"]["horizon"] != question.horizon:
                 raise ValueError("Lesson and new comparison require the same declared horizon")
             catalog = {
-                k: v for k, v in catalog.items() if v["strategy"] != prior["context"]["strategy"]
+                k: v
+                for k, v in catalog.items()
+                if fingerprint(v["strategy"])
+                != prior["context"].get(
+                    "strategy_sha256", fingerprint(prior["context"]["strategy"])
+                )
             }
             if not catalog:
                 raise ValueError("No supported different capability; wait for new evidence")
@@ -198,6 +286,42 @@ class RoleWorker:
             },
             "scope": "Current causal features; no historical fills or profitable backtest inferred",
         }
+        waits: dict[str, Any] = {
+            "new_closed_bars": {
+                "kind": "closed_bars",
+                "horizon": question.horizon,
+                "source_sha256": causal_inputs["closed_bar_sha256"],
+                "last_closed_at": max((b.close_ms / 1000 for b in bars), default=0),
+            }
+        }
+        pending = sorted(
+            (
+                t
+                for t in c.paper.state["autonomous_lab"]["trials"].values()
+                if t["status"] in {"active", "draining"}
+                and t["contract"]["proposal"]["strategy"]["holding_horizon"] == question.horizon
+            ),
+            key=lambda t: (t["started_at"], t["id"]),
+        )
+        if pending:
+            waits["mature_outcome"] = {
+                "kind": "mature_outcome",
+                "trial_id": pending[0]["id"],
+                "eligible_at": pending[0]["review_at"],
+                "other_pending_comparisons": len(pending) - 1,
+            }
+        artifacts: dict[str, Any] = {}
+        for value in catalog.values():
+            for key in ("strategy", "reference"):
+                value[key + "_sha256"] = fingerprint(value[key])
+                component = value[key].get("entry_filter")
+                if component:
+                    artifact = component["artifact"]
+                    artifacts[artifact["sha256"]] = artifact
+                    value[key] = value[key] | {
+                        "entry_filter": component
+                        | {"artifact": artifact_summary(artifact) | {"retained": True}}
+                    }
         context = {
             "contract": VERSION,
             "question": question_body,
@@ -207,6 +331,9 @@ class RoleWorker:
             "issued": issued,
             "tool_evidence": causal_inputs,
             "lesson": prior,
+            "wait_requirements": waits,
+            "predecessor_task": _resume_from["id"] if _resume_from else None,
+            "dependency_evidence": _dependency_evidence,
         }
         identity = (
             "role-"
@@ -217,20 +344,50 @@ class RoleWorker:
                     "catalog": catalog,
                     "evidence": issued["bundle"]["novelty_sha256"],
                     "source": causal_inputs["closed_bar_sha256"],
+                    "waits": waits,
+                    "dependency_evidence": _dependency_evidence,
                 }
             )[:32]
         )
         encoded = json.dumps(context, sort_keys=True, allow_nan=False)
         if len(encoded.encode()) > 65536:
             raise ValueError("Role evidence context exceeds 64 KiB")
+        self.history.rollover()
         with self.registry.transaction():
+            requested = self._requested(question)
+            if requested:
+                return self.get(requested)
+            for sha256, artifact in artifacts.items():
+                self.registry.db.execute(
+                    "INSERT OR IGNORE INTO role_components VALUES(?,?)",
+                    (sha256, json.dumps(artifact, sort_keys=True, allow_nan=False)),
+                )
+            if _resume_from:
+                if identity == _resume_from["id"]:
+                    raise ValueError("Unchanged evidence cannot resume the same question")
+                changed = self.registry.db.execute(
+                    "UPDATE role_tasks SET stage='complete',status='done',updated=?,reason=? "
+                    "WHERE id=? AND stage='data_wait' AND status='waiting' AND owner IS NULL "
+                    "AND context=?",
+                    (
+                        now,
+                        "Eligible dependency resumes as " + identity,
+                        _resume_from["id"],
+                        json.dumps(_resume_from["context"], sort_keys=True, allow_nan=False),
+                    ),
+                ).rowcount
+                if not changed:
+                    raise ValueError("Waiting predecessor already resumed or ownership changed")
             if not self.registry.db.execute(
                 "SELECT 1 FROM role_tasks WHERE id=?", (identity,)
             ).fetchone():
-                if self.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] >= 512:
-                    raise ValueError(
-                        "Role registry capacity; retain existing tasks and archive before new work"
-                    )
+                if (
+                    self.registry.db.execute(
+                        "SELECT count(*) FROM role_tasks WHERE archive_reference IS NULL"
+                    ).fetchone()[0]
+                    >= HOT_TASKS
+                ):
+                    raise ValueError("Role history continuation awaits verified storage")
                 if (
                     self.registry.db.execute(
                         "SELECT count(*) FROM role_tasks WHERE status NOT IN ('done','failed')"
@@ -241,17 +398,32 @@ class RoleWorker:
                         "Eight retained active role questions; wait for a dependency or completion"
                     )
                 self.registry.db.execute(
-                    "INSERT INTO role_tasks(id,created,updated,stage,status,context) "
-                    "VALUES(?,?,?,'idea','queued',?)",
-                    (identity, now, now, encoded),
+                    "INSERT INTO role_tasks(id,created,updated,stage,status,context,question_text) "
+                    "VALUES(?,?,?,'idea','queued',?,?)",
+                    (identity, now, now, encoded, question.question),
                 )
                 self.registry.event(identity, "role_question", {"question": question.question})
+            if _resume_from:
+                self.registry.event(
+                    _resume_from["id"],
+                    "role_dependency_resumed",
+                    {
+                        "successor": identity,
+                        "requirement": (_resume_from["result"] or {}).get("wait_requirement"),
+                    },
+                )
+            if _dependency_evidence:
+                outcome = _dependency_evidence["body"]
+                self.registry.db.execute(
+                    "INSERT OR IGNORE INTO evidence_windows "
+                    "VALUES(?,?,?,'role dependency disclosure')",
+                    (
+                        "role-dependency:" + identity,
+                        outcome["window_start"],
+                        outcome["available_at"],
+                    ),
+                )
             if question.request_id:
-                if (
-                    self.registry.db.execute("SELECT count(*) FROM role_requests").fetchone()[0]
-                    >= 4096
-                ):
-                    raise ValueError("Retained request identity capacity reached; no question lost")
                 self.registry.db.execute(
                     "INSERT INTO role_requests VALUES(?,?,?)",
                     (question.request_id, question_sha256, identity),
@@ -259,47 +431,68 @@ class RoleWorker:
         return self.get(identity)
 
     def get(self, identity: str) -> dict[str, Any]:
-        with self.registry.lock:
+        with (
+            self.registry.lock,
+            nullcontext() if self.registry.db.in_transaction else self.registry.transaction(),
+        ):
             row = self.registry.db.execute(
                 "SELECT * FROM role_tasks WHERE id=?", (identity,)
             ).fetchone()
             if not row:
                 raise ValueError("Unknown role task")
-            result = dict(row)
-            for key in ("context", "proposal", "evaluation", "result"):
-                result[key] = json.loads(result[key]) if result[key] else None
-            result.pop("owner", None)
-            result["execution"] = {
-                "kind": "external"
-                if str(row["owner"]).startswith("actor:")
-                else "local"
-                if row["owner"]
-                else "unclaimed",
-                "lease_until": row["lease_until"],
-            }
-            attempts = self.registry.db.execute(
-                "SELECT * FROM role_attempts WHERE task=? ORDER BY started", (identity,)
-            ).fetchall()
+            attempts = (
+                self.registry.db.execute(
+                    "SELECT * FROM role_attempts WHERE task=? ORDER BY started,rowid", (identity,)
+                ).fetchall()
+                if not row["archive_reference"]
+                else []
+            )
+        # A single registry snapshot sees either all hot attempts or the exact
+        # cold reference, even when another process archives this task.
+        result = self.history.read(row) if row["archive_reference"] else dict(row)
+        for key in ("context", "proposal", "evaluation", "result"):
+            result[key] = json.loads(result[key]) if result[key] else None
+        result.pop("owner", None)
+        if "attempts" not in result:
             result["attempts"] = [dict(a) for a in attempts]
-            if row["owner"] and attempts:
-                last_profile = json.loads(attempts[-1]["profile"])
-                result["execution"]["actor"] = last_profile.get("actor", "Local worker")
+        result["execution"] = {
+            "kind": "external"
+            if str(row["owner"]).startswith("actor:")
+            else "local"
+            if row["owner"]
+            else "unclaimed",
+            "lease_until": row["lease_until"],
+        }
+        if row["owner"] and result["attempts"]:
+            last_profile = json.loads(result["attempts"][-1]["profile"])
+            result["execution"]["actor"] = last_profile.get("actor", "Local worker")
         return result
 
-    def page(self, before: float = 0) -> dict[str, Any]:
+    def page(self, before: float = 0, before_id: str = "", search: str = "") -> dict[str, Any]:
+        if not math.isfinite(before) or len(search) > 100:
+            raise ValueError("Use a finite history cursor and at most 100 search characters")
+        query = (
+            "SELECT t.id,t.created,t.updated,t.stage,t.status,t.reason,t.question_text AS question "
+        )
+        query += "FROM role_tasks t "
+        clauses: list[str] = []
+        params: list[Any] = []
+        if search.strip():
+            query += "JOIN role_task_search s ON s.rowid=t.rowid "
+            clauses.append("role_task_search MATCH ?")
+            params.append('"' + search.strip().replace('"', '""') + '"')
+        if before:
+            clauses.append("(t.created<? OR (t.created=? AND t.id<?))")
+            params.extend([before, before, before_id])
+        if clauses:
+            query += "WHERE " + " AND ".join(clauses) + " "
+        query += "ORDER BY t.created DESC,t.id DESC LIMIT 21"
         with self.registry.lock:
-            rows = self.registry.db.execute(
-                "SELECT id,created,updated,stage,status,reason,"
-                "json_extract(context,'$.question.question') AS question FROM role_tasks ORDER BY "
-                "created DESC LIMIT 21"
-                if before == 0
-                else (
-                    "SELECT id,created,updated,stage,status,reason,"
-                    "json_extract(context,'$.question.question') AS question FROM role_tasks "
-                    "WHERE created<? ORDER BY created DESC LIMIT 21"
-                ),
-                () if before == 0 else (before,),
-            ).fetchall()
+            rows = self.registry.db.execute(query, params).fetchall()
+            counts = self.registry.db.execute(
+                "SELECT count(*),count(archive_reference),"
+                "sum(status NOT IN ('done','failed')) FROM role_tasks"
+            ).fetchone()
         return {
             "enabled": self.enabled,
             "contract": VERSION,
@@ -308,6 +501,13 @@ class RoleWorker:
             else "Separate sequential role worker; task receipts show actual progress",
             "tasks": [dict(r) for r in rows[:20]],
             "next_before": rows[19]["created"] if len(rows) > 20 else None,
+            "next_before_id": rows[19]["id"] if len(rows) > 20 else None,
+            "history": {
+                "retained": counts[0],
+                "archived": counts[1],
+                "active": counts[2] or 0,
+                "hot_limit": HOT_TASKS,
+            },
             "readiness": self.transport.readiness()
             if self.transport
             else {"qualified": False, "reason": "No qualified local role profile configured"},
@@ -345,7 +545,15 @@ class RoleWorker:
         task = self.get(identity)
         if task["stage"] not in {"idea", "review", "followup"} or task["status"] != "failed":
             raise ValueError("Only a failed model transport attempt can be explicitly retried")
+        self.history.restore(identity)
         with self.registry.transaction():
+            if (
+                self.registry.db.execute(
+                    "SELECT count(*) FROM role_tasks WHERE status NOT IN ('done','failed')"
+                ).fetchone()[0]
+                >= 8
+            ):
+                raise ValueError("Eight active role questions; retry when a slot is available")
             attempt = self.registry.db.execute(
                 "SELECT * FROM role_attempts WHERE task=? AND stage=? "
                 "ORDER BY attempt DESC LIMIT 1",
@@ -447,16 +655,45 @@ class RoleWorker:
                 "question": context["question"]["question"],
                 "capabilities": {},
                 "evidence": {
-                    "e0": {"method": task["proposal"], "cost_policy": context["policy"]},
+                    "e0": {
+                        "method": method_summary(task["proposal"]),
+                        "cost_policy": context["policy"],
+                    },
                     "e1": {k: v for k, v in task["evaluation"].items() if k != "inputs"}
                     | {
                         "input_count": task["evaluation"]["input_count"],
                         "input_sha256": task["evaluation"]["input_sha256"],
+                        "feature": feature_summary(task["evaluation"]["feature"]),
                     },
                 },
             }
-        evidence: dict[str, Any] = {"e0": context["issued"]["bundle"]}
-        evidence["e2"] = context["tool_evidence"]
+        evidence: dict[str, Any] = {"e0": bundle_summary(context["issued"]["bundle"])}
+        evidence["e2"] = context["tool_evidence"] | {
+            "features": feature_set(context["tool_evidence"]["features"]),
+            "executable_book": {
+                k: context["tool_evidence"]["executable_book"][k]
+                for k in ("observed_at", "at", "bids", "asks", "update_id")
+                if k in context["tool_evidence"]["executable_book"]
+            },
+        }
+        evidence["e2"] = evidence["e2"] | {
+            "request_data_conditions": {
+                key: {
+                    "kind": value["kind"],
+                    "condition": (
+                        "A later closed bar from the same horizon"
+                        if value["kind"] == "closed_bars"
+                        else "The sole writer records this mature outcome"
+                    ),
+                }
+                for key, value in context.get("wait_requirements", {}).items()
+            },
+            "wait_selection": (
+                "For automatic resumption, dependency must equal one offered condition key"
+            ),
+        }
+        if context.get("dependency_evidence"):
+            evidence["e4"] = outcome_summary(context["dependency_evidence"])
         if context.get("lesson"):
             prior = context["lesson"]
             evidence["e3"] = {
@@ -480,28 +717,79 @@ class RoleWorker:
                     "basis": "Earlier causal inputs; the new score is training information",
                 }
             }
-            evidence["e1"] = task["result"]["outcome"]
+            evidence["e1"] = outcome_summary(task["result"]["outcome"])
         capabilities = {
             key: {
                 "kind": value["kind"],
                 "family": value["strategy"]["family"],
-                "holding_horizon": value["strategy"]["holding_horizon"],
                 "lookback": value["strategy"]["lookback"],
                 "reference_family": value["reference"]["family"],
                 "reference_lookback": value["reference"]["lookback"],
-                "authority": "Reviewed rules; identical frozen costs/risk, prospective paper only",
-                "entry_component": value["strategy"].get("entry_filter", {}).get("kind"),
-                "component_horizon_seconds": value["strategy"]
-                .get("entry_filter", {})
-                .get("horizon_seconds"),
             }
+            | (
+                {"component": value["strategy"]["entry_filter"]}
+                if value["strategy"].get("entry_filter")
+                else {}
+            )
             for key, value in context["catalog"].items()
         }
         return "researcher", {
             "question": context["question"]["question"],
             "capabilities": capabilities,
+            "scope": "Prospective paper; same declared horizon, frozen costs/risk",
             "evidence": evidence,
         }
+
+    def _capability(self, value: dict[str, Any]) -> dict[str, Any]:
+        """Resolve the frozen full numerical method; model summaries grant no authority."""
+        result = {
+            k: v for k, v in value.items() if k not in {"strategy_sha256", "reference_sha256"}
+        }
+        for key in ("strategy", "reference"):
+            strategy = result[key]
+            component = strategy.get("entry_filter")
+            if component and component["artifact"].get("retained"):
+                with self.registry.lock:
+                    row = self.registry.db.execute(
+                        "SELECT body FROM role_components WHERE sha256=?",
+                        (component["artifact"]["sha256"],),
+                    ).fetchone()
+                if not row:
+                    raise InputWait("Retained component unavailable; frozen method not substituted")
+                strategy = strategy | {"entry_filter": component | {"artifact": json.loads(row[0])}}
+            if key + "_sha256" in value and fingerprint(strategy) != value[key + "_sha256"]:
+                raise ValueError("Frozen numerical method reference mismatch")
+            result[key] = RuleSpec.model_validate(strategy).model_dump()
+        return result
+
+    def component_detail(self, identity: str, capability: str, offset: int = 0) -> dict[str, Any]:
+        task = self.get(identity)
+        value = task["context"]["catalog"].get(capability)
+        if not value or not value["strategy"].get("entry_filter") or not 0 <= offset <= 128:
+            raise ValueError("No such frozen component page in the selected task")
+        artifact = self._capability(value)["strategy"]["entry_filter"]["artifact"]
+        result = {
+            "capability": capability,
+            "artifact_sha256": artifact["sha256"],
+            "artifact_metadata": {k: v for k, v in artifact.items() if k != "library"},
+            "library_count": len(artifact["library"]),
+            "offset": offset,
+            "library": artifact["library"][offset : offset + 8],
+            "next_offset": offset + 8 if offset + 8 < len(artifact["library"]) else None,
+            "scope": "Eight retained training rows per page; no prospective result inferred",
+        }
+        if len(json.dumps(result).encode()) > 131072:
+            raise ValueError("Component page exceeds response allowance; exact artifact retained")
+        with self.registry.transaction():
+            self.registry.db.execute(
+                "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,'role component disclosure')",
+                (
+                    "role-component:" + artifact["sha256"],
+                    min(row["at"] for row in artifact["library"]) - 600,
+                    max(artifact["train_end"], artifact["calibration_end"]),
+                ),
+            )
+        return result
 
     async def _answer(self, task: dict[str, Any]) -> Idea | Review:
         role, packet = self._packet(task)
@@ -541,7 +829,7 @@ class RoleWorker:
                 raise InputWait("Role ownership changed before inference; no new attempt")
             used = self.registry.db.execute(
                 "SELECT coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
-                "FROM role_attempts WHERE started>=? AND json_extract(profile,'$.actor') IS NULL",
+                "FROM role_attempt_allowances WHERE started>=? AND actor IS NULL",
                 (started - 3600,),
             ).fetchone()
             if (
@@ -658,11 +946,18 @@ class RoleWorker:
                         task,
                         "data_wait" if answer.action == "request_data" else "complete",
                         "waiting" if answer.action == "request_data" else "done",
-                        result=answer.model_dump(),
+                        result=answer.model_dump()
+                        | {
+                            "wait_requirement": task["context"]
+                            .get("wait_requirements", {})
+                            .get(answer.dependency)
+                            if answer.action == "request_data"
+                            else None,
+                        },
                         reason=answer.dependency or answer.rationale,
                     )
                 else:
-                    capability = task["context"]["catalog"][answer.capability]
+                    capability = self._capability(task["context"]["catalog"][answer.capability])
                     proposal = LabProposal(
                         request_id="role-proposal-" + task["id"][5:],
                         policy_id=task["context"]["policy"]["request_id"],
@@ -861,7 +1156,7 @@ class RoleWorker:
         return {"selected": selected, "waiting": waiting}
 
     def resume_sources(self, now: float | None = None) -> int:
-        """A new closed source prefix, not clock refresh, may replace a data wait."""
+        """Exchange one waiting slot atomically, using its frozen typed dependency."""
         if self.controller is None:
             return 0
         now = time.time() if now is None else now
@@ -874,29 +1169,38 @@ class RoleWorker:
         for row in rows:
             task = self.get(row["id"])
             question = Question.model_validate(task["context"]["question"])
-            dependency = (task["result"] or {}).get("dependency") or task["reason"] or ""
-            if any(word in dependency.lower() for word in ("label", "outcome")):
-                # A newer price prefix cannot resolve a missing delayed outcome.
-                continue
-            if not any(
-                word in dependency.lower() for word in ("bar", "candle", "prefix", "source")
-            ):
-                continue  # Ambiguous dependency requires an explicit new investigation.
-            current = fingerprint(
-                [str(b) for b in self.controller.paper.lab_history(now, question.horizon)]
-            )
-            if current == task["context"]["tool_evidence"]["closed_bar_sha256"]:
+            requirement = (task["result"] or {}).get("wait_requirement")
+            if not requirement:
+                continue  # Historical free text is retained; no guessed dependency/maturity.
+            outcome = None
+            if requirement["kind"] == "closed_bars":
+                bars = self.controller.paper.lab_history(now, requirement["horizon"])
+                if (
+                    fingerprint([str(b) for b in bars]) == requirement["source_sha256"]
+                    or max((b.close_ms / 1000 for b in bars), default=0)
+                    <= requirement["last_closed_at"]
+                ):
+                    continue
+            elif requirement["kind"] == "mature_outcome":
+                with reader(self.controller.paper) as view:
+                    outcome = view.connection.execute(
+                        "SELECT id,at,body FROM paper_events WHERE kind='lab_trial_scored' "
+                        "AND body->>'trial_id'=%s AND at<=%s ORDER BY id DESC LIMIT 1",
+                        (requirement["trial_id"], now),
+                    ).fetchone()
+                if not outcome or outcome["body"]["available_at"] > now:
+                    continue
+            else:
                 continue
             try:
-                new_task = self.enqueue(question.model_copy(update={"request_id": None}), now)
+                self.enqueue(
+                    question.model_copy(update={"request_id": None}),
+                    now,
+                    _resume_from=task,
+                    _dependency_evidence=dict(outcome) if outcome else None,
+                )
             except ValueError:
                 continue
-            with self.registry.transaction():
-                self.registry.db.execute(
-                    "UPDATE role_tasks SET stage='complete',status='done',updated=?,reason=? "
-                    "WHERE id=? AND stage='data_wait' AND status='waiting'",
-                    (now, "New closed source evidence resumes as " + new_task["id"], task["id"]),
-                )
             resumed += 1
         return resumed
 

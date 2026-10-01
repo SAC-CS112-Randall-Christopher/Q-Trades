@@ -225,8 +225,7 @@ class ResearchActors:
                 )
             used = self.registry.db.execute(
                 "SELECT coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
-                "FROM role_attempts WHERE started>=? "
-                "AND json_extract(profile,'$.actor') IS NOT NULL",
+                "FROM role_attempt_allowances WHERE started>=? AND actor IS NOT NULL",
                 (now - 3600,),
             ).fetchone()
             if used[0] + 90 > 600 or used[1] + 8192 > 32768:
@@ -316,8 +315,8 @@ class ResearchActors:
         result = {"claim": claim_id, "lease_until": until}
         with self.registry.lock:
             used = self.registry.db.execute(
-                "SELECT coalesce(sum(wall_reserved),0) FROM role_attempts "
-                "WHERE started>=? AND json_extract(profile,'$.actor') IS NOT NULL",
+                "SELECT coalesce(sum(wall_reserved),0) FROM role_attempt_allowances "
+                "WHERE started>=? AND actor IS NOT NULL",
                 (now - 3600,),
             ).fetchone()[0]
             attempt = self.registry.db.execute(

@@ -100,6 +100,22 @@ writer's responsibility. Inference and external waiting hold no financial lock.
 
 ## Verification and limitations
 
+LLM-F1 makes authentication, byte debit, expiry checks and stage reservation one
+immediate transaction. Revocation either prevents that reservation or sees the
+committed claim and releases it. Renewals, answers and release use the same fresh
+authorization boundary. Already committed delivery cannot recall bytes in flight;
+revocation blocks subsequent authorized operations and preserves existing answers.
+The actual HTTP/thread tests cover both orderings and expiry after debit, with
+rollback of allowance and reservation. No contributor has been connected.
+
+Integrating LLM-F6 preserves archived external attempts in the shared hourly
+allowance projection. Four normally answered claims can move to cold storage and
+still exhaust the shared allowance; a fifth claim is refused and exact old answer
+replay remains available. Archival never resets consumed work. The 13 actor cases
+and seven role-history cases pass together on disposable native PostgreSQL;
+Ruff, strict Windows mypy and the frontend build pass separately. These receipts
+prove software boundaries, not a real Crik bridge or qualified model operation.
+
 `tests/test_research_actors.py` covers local HTTP claim/answer/replay, required
 review, actual disposable ordinary paper funding/mature outcome, newly granted
 follow-up and disclosed result; cross-scope/spoof/URL/operator failures; expiry and

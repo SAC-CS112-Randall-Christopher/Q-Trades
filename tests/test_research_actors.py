@@ -68,6 +68,60 @@ def answer(scope, claim, **change):
     return ActorAnswer(claim=claim["claim"], answer=value | change)
 
 
+def test_archived_external_answers_keep_shared_hourly_allowance(scope, monkeypatch):
+    s = scope
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    first_answer = None
+    for i in range(4):
+        task = (
+            s.task
+            if i == 0
+            else s.worker.enqueue(
+                Question(question=f"Retain external allowance for ordinary question {i}.")
+            )
+        )
+        grant = (
+            s.grant
+            if i == 0
+            else s.actors.grant(
+                ActorGrant(
+                    actor="qa-external",
+                    tasks=[task["id"]],
+                    processing_location="Local disposable retained-allowance fixture",
+                )
+            )
+        )
+        claim = s.actors.claim(grant["token"], task["id"])
+        command = answer(s, claim, action="no_change", capability=None)
+        s.actors.answer(grant["token"], command)
+        assert asyncio.run(s.worker.step(START))
+        s.worker.history.rollover()
+        assert s.worker.get(task["id"])["archive_reference"]
+        if i == 0:
+            first_answer = command
+    assert first_answer is not None
+    assert s.actors.answer(s.grant["token"], first_answer)["status"] == "already_recorded"
+    used = s.lab.registry.db.execute(
+        "SELECT sum(tokens_reserved),sum(wall_reserved) FROM role_attempt_allowances "
+        "WHERE actor IS NOT NULL"
+    ).fetchone()
+    assert tuple(used) == (32768, 360)
+    next_task = s.worker.enqueue(
+        Question(question="A fifth external question needs a fresh hourly allowance.")
+    )
+    grant = s.actors.grant(
+        ActorGrant(
+            actor="qa-external",
+            tasks=[next_task["id"]],
+            processing_location="Local disposable retained-allowance fixture",
+        )
+    )
+    with pytest.raises(ValueError, match="hourly allowance"):
+        s.actors.claim(grant["token"], next_task["id"])
+    assert not s.worker.get(next_task["id"])["attempts"]
+    assert s.store.reconcile()["balanced"]
+
+
 def test_http_external_proposal_normal_paper_outcome_and_granted_result(scope):
     s = scope
     original = copy.deepcopy(s.lab.paper.state["accounts"]["primary"])
