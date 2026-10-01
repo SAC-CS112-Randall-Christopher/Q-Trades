@@ -12,7 +12,7 @@ from trading.paper_engine import filters, fresh_frame
 from trading.paper_strategy import VARIANTS
 from trading.tiered_runtime import TieredPaperRuntime
 
-VERSION = "market-evidence-tools-v1"
+VERSION = "market-evidence-tools-v2"
 TOOLS = {
     "market_evidence": {
         "name": "Inspect market evidence",
@@ -147,6 +147,36 @@ def market_detail(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
     }
 
 
+def market_evidence(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
+    """Save selected-market evidence without duplicating the full chart/scanner."""
+    live = market_live(runtime, symbol)
+    markets = live["markets"]
+    live["markets"] = [quote for quote in markets if quote["symbol"] == symbol]
+    live["markets_total"] = len(markets)
+    live["markets_omitted"] = len(markets) - len(live["markets"])
+    live["markets_scope"] = "Selected market only; other quotes remain available in Markets"
+
+    detail = market_detail(runtime, symbol)
+    scan = detail["scan"]
+    scan["rows"] = copy.deepcopy(
+        [row for row in runtime.universe.rows if row["symbol"] == symbol]
+    )
+    scan["omitted"] = scan["total"] - len(scan["rows"])
+    scan["scope"] = "Selected market only; other scanner rows remain available in Markets"
+
+    indicators = detail["indicators"]
+    points = indicators["points"]
+    candle_times = {candle["open_ms"] for candle in detail["candles"]}
+    # Preserve the chart's full-history values, warmup and gap resets before projection.
+    indicators["points"] = [point for point in points if point["open_ms"] in candle_times]
+    indicators["points_omitted"] = len(points) - len(indicators["points"])
+    indicators["calculation_history_bars"] = len(runtime.history.get(symbol, [])[-600:])
+    indicators["scope"] = (
+        "Full chart calculation history; saved points match the latest 120-candle evidence window"
+    )
+    return {"live": live, "detail": detail}
+
+
 def strategy_experiments(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
     """Describe frozen rules and recorded outcomes; never run or approve a strategy."""
     state = runtime.state
@@ -270,7 +300,7 @@ def execute_tool(runtime: TieredPaperRuntime, tool: str, symbol: str) -> dict[st
     validate_symbol(symbol, runtime)
     result: dict[str, Any]
     if tool == "market_evidence":
-        result = {"live": market_live(runtime, symbol), "detail": market_detail(runtime, symbol)}
+        result = market_evidence(runtime, symbol)
     elif tool == "cost_hurdle":
         result = cost_hurdle(runtime, symbol)
     elif tool == "strategy_evidence":

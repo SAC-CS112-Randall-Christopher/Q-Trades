@@ -22,7 +22,7 @@ from trading.station import (
     strategy_experiments,
 )
 from trading.tiered_runtime import TieredPaperRuntime
-from trading.tool_journal import ToolJournal
+from trading.tool_journal import MAX_RESULT_BYTES, ToolJournal
 
 
 @pytest.fixture
@@ -79,6 +79,88 @@ def test_tools_read_real_inputs_without_changing_account_or_sequence_state(runti
         execute_tool(runtime, "place_order", "BTCUSD")
     with pytest.raises(ValueError, match="known USD"):
         execute_tool(runtime, "market_evidence", "../../secrets")
+
+
+def test_full_history_market_evidence_can_be_saved_and_reopened(runtime, tmp_path, monkeypatch):
+    runtime.history["BTCUSD"] = [
+        Bar(
+            n * 60000,
+            Decimal(100),
+            Decimal(102),
+            Decimal(99),
+            Decimal("100.1234567890123456789012345") + Decimal(n % 37) / 1000,
+            Decimal("5.123456789012345678901234567"),
+            n * 60000 + 59999,
+        )
+        for n in range(600)
+    ]
+    quotes = runtime.quotes()
+    selected_quote = next(row for row in quotes["markets"] if row["symbol"] == "BTCUSD")
+    quotes["markets"] += [{**selected_quote, "symbol": f"AAA{n}USD"} for n in range(100)]
+    monkeypatch.setattr(runtime, "quotes", lambda: quotes)
+    runtime.universe.rows = [
+        {"symbol": f"AAA{n}USD", "eligible": True, "reason": "Qualified"} for n in range(100)
+    ] + [{"symbol": "BTCUSD", "eligible": True, "reason": "Qualified"}]
+    runtime.stream.plan = {}
+    original_detail = market_detail(runtime, "BTCUSD")
+    original = {"live": market_live(runtime, "BTCUSD"), "detail": original_detail}
+    assert len(json.dumps(original, separators=(",", ":")).encode()) > MAX_RESULT_BYTES
+    assert all(row["symbol"] != "BTCUSD" for row in original_detail["scan"]["rows"])
+    before = copy.deepcopy((runtime.state, runtime.history, runtime.study, runtime.universe.rows))
+
+    result = execute_tool(runtime, "market_evidence", "BTCUSD")
+    journal = ToolJournal(tmp_path / "tools.sqlite3")
+    try:
+        run_id = journal.start("market_evidence", "BTCUSD")
+        journal.finish(run_id, result, None)
+        saved = journal.get(run_id)
+        assert saved["status"] == "completed", saved["error"]
+        assert saved["result"] == result
+        assert len(json.dumps(result, separators=(",", ":")).encode()) <= MAX_RESULT_BYTES
+        evidence = saved["result"]["result"]
+        assert [q["symbol"] for q in evidence["live"]["markets"]] == ["BTCUSD"]
+        assert evidence["live"]["markets_omitted"] == len(quotes["markets"]) - 1
+        detail = evidence["detail"]
+        assert [row["symbol"] for row in detail["scan"]["rows"]] == ["BTCUSD"]
+        assert detail["scan"]["omitted"] == 100
+        assert detail["candles"] == original_detail["candles"]
+        assert detail["indicators"]["points"] == original_detail["indicators"]["points"][-120:]
+        assert detail["indicators"]["points_omitted"] == 480
+        assert detail["indicators"]["calculation_history_bars"] == 600
+        assert (
+            detail["indicators"]["vwap_anchor_ms"]
+            == original_detail["indicators"]["vwap_anchor_ms"]
+        )
+        encoded = json.dumps(result, sort_keys=True, separators=(",", ":")).encode()
+        assert saved["result_sha256"] == hashlib.sha256(encoded).hexdigest()
+    finally:
+        journal.close()
+    reopened = ToolJournal(tmp_path / "tools.sqlite3")
+    try:
+        assert reopened.get(run_id) == saved
+    finally:
+        reopened.close()
+    assert before == (runtime.state, runtime.history, runtime.study, runtime.universe.rows)
+    assert len(market_detail(runtime, "BTCUSD")["indicators"]["points"]) == 600
+    assert len(market_live(runtime, "BTCUSD")["markets"]) == len(quotes["markets"])
+
+
+def test_market_evidence_retains_gaps_warmup_and_missing_data(runtime):
+    runtime.history["BTCUSD"].pop(-5)
+    original = market_detail(runtime, "BTCUSD")
+    evidence = execute_tool(runtime, "market_evidence", "BTCUSD")["result"]
+    detail = evidence["detail"]
+    assert detail["candle_gaps"] == original["candle_gaps"] and detail["candle_gaps"]
+    assert detail["candles_stale"]
+    assert detail["indicators"]["points"] == original["indicators"]["points"][-120:]
+    assert detail["indicators"]["points"][-1]["ema"] is None  # Gap restarts chart warmup.
+    missing = execute_tool(runtime, "market_evidence", "ETHUSD")["result"]
+    assert missing["live"]["book"] is None and missing["live"]["trades"] == []
+    assert missing["detail"]["candles"] == []
+    assert missing["detail"]["indicators"]["points"] == []
+    assert missing["detail"]["indicators"]["calculation_history_bars"] == 0
+    assert missing["detail"]["indicators"]["points_omitted"] == 0
+    assert missing["detail"]["strategy"]["last_decision"] is None
 
 
 def test_outcome_totals_are_net_and_limited_to_the_selected_market_sample(runtime):
@@ -278,11 +360,21 @@ def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path):
         assert client.get(f"/api/research/tools/runs/{run['id']}").json() == run
         assert client.post("/api/research/tools/run", json=args, headers=headers).status_code == 429
         app.state.last_tool_at = 0
+        market_run = client.post(
+            "/api/research/tools/run",
+            json={"tool": "market_evidence", "symbol": "BTCUSD"},
+            headers=headers,
+        ).json()
+        assert market_run["status"] == "completed"
+        assert market_run["result"]["version"] == "market-evidence-tools-v2"
+        assert len(market_run["result"]["result"]["detail"]["indicators"]["points"]) == 120
+        assert client.get(f"/api/research/tools/runs/{market_run['id']}").json() == market_run
+        app.state.last_tool_at = 0
         bad = client.post(
             "/api/research/tools/run", json={**args, "tool": "place_order"}, headers=headers
         )
         assert bad.json()["status"] == "failed"
-        assert client.get("/api/research/tools").json()["total"] == 2
+        assert client.get("/api/research/tools").json()["total"] == 3
         runtime.running = False
         assert client.post("/api/research/tools/run", json=args, headers=headers).status_code == 503
     assert runtime.state == before
