@@ -134,3 +134,34 @@ def test_action_fields_cannot_be_silently_omitted():
                 "rationale": "Only the permitted exploratory paper comparison",
             }
         )
+
+
+def test_data_wait_uses_exact_offered_condition_and_preserves_legacy_contract():
+    from trading.lab_role_contract import validate
+
+    answer = {
+        "action": "request_data",
+        "evidence_ids": ["e2"],
+        "capability": None,
+        "mechanism": "Wait for a later eligible closed causal source.",
+        "falsification": "Do not infer without the declared missing evidence.",
+        "rationale": "No new support is available until the recorded condition occurs.",
+        "dependency": "new_closed_bars",
+    }
+    packet = {
+        "capabilities": {},
+        "evidence": {
+            "e2": {"request_data_conditions": {"new_closed_bars": {"kind": "closed_bars"}}}
+        },
+    }
+    assert validate("researcher", answer, packet).dependency == "new_closed_bars"
+    free_text = answer | {"dependency": "Wait for arbitrary labels"}
+    with pytest.raises(ValueError, match="offered wait requirement"):
+        validate("researcher", free_text, packet)
+    with pytest.raises(ValueError, match="offered wait requirement"):
+        validate(
+            "researcher", answer, packet | {"evidence": {"e2": {"request_data_conditions": {}}}}
+        )
+    assert validate(
+        "researcher", free_text, {"capabilities": {}, "evidence": {"e2": {}}}
+    ).dependency
