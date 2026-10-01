@@ -18,6 +18,7 @@ from test_role_worker import ModelStub, make_lab
 from trading.api import create_app
 from trading.config import Settings
 from trading.evidence_runtime import EvidenceRecorder
+from trading.lab_role_contract import packet_json
 from trading.local_role_model import LocalRoles
 from trading.memory_quality import validate_artifact
 from trading.research_evidence import digest
@@ -43,7 +44,7 @@ def assert_transport_accepts(worker, task, tmp_path, monkeypatch):
         json.dumps(
             {
                 "role": role,
-                "packet_bytes": len(json.dumps(packet).encode()),
+                "packet_bytes": len(packet_json(packet).encode()),
                 "parts": {k: len(json.dumps(v).encode()) for k, v in packet.items()},
                 "evidence_parts": {
                     k: len(json.dumps(v).encode()) for k, v in packet["evidence"].items()
@@ -72,8 +73,9 @@ def assert_transport_accepts(worker, task, tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize("library_rows", [12, 128])
+@pytest.mark.parametrize("maximum_question", [False, True])
 def test_memory_and_followup_packets_pass_actual_adapter_before_network(
-    pg_store, tmp_path, monkeypatch, library_rows
+    pg_store, tmp_path, monkeypatch, library_rows, maximum_question
 ):
     clock = [START]
     monkeypatch.setattr("trading.role_worker.time.time", lambda: clock[0])
@@ -123,7 +125,9 @@ def test_memory_and_followup_packets_pass_actual_adapter_before_network(
     tick_lab(lab, clock[0])
     task = worker.enqueue(
         Question(
-            question="Compare the supported frozen memory filter with its preserved parent.",
+            question=("Compare supported frozen memory with its preserved parent. " * 12)[:500]
+            if maximum_question
+            else "Compare the supported frozen memory filter with its preserved parent.",
             parent=parent["id"],
         )
     )
