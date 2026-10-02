@@ -161,3 +161,7 @@ an after-cost edge. The CP7 human/28-day policy and all paper-only limits remain
 
 These sources inform the next training study; they are not proof that the installed
 checkpoint, masking, memory footprint or training performance has been verified.
+
+## Retained software verification
+
+See [the observed proof and failures](reviews/llm-training-pilot/README.md).

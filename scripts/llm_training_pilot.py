@@ -2,12 +2,15 @@
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
-from qualify_rule_roles import cases
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from trading.lab_role_contract import packet_json
-from trading.llm_training import (
+from qualify_rule_roles import cases  # noqa: E402
+
+from trading.lab_role_contract import packet_json  # noqa: E402
+from trading.llm_training import (  # noqa: E402
     MAX_ROW_BYTES,
     Candidate,
     Example,
@@ -16,7 +19,7 @@ from trading.llm_training import (
     verify_bundle,
     write_bundle,
 )
-from trading.llm_training_eval import compare, score
+from trading.llm_training_eval import compare, score  # noqa: E402
 
 
 def read_object(path: Path) -> dict:

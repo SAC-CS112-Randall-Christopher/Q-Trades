@@ -4,6 +4,7 @@ import copy
 import json
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -421,3 +422,31 @@ def test_private_export_api_authorization_no_cache_and_retry(tmp_path):
             == 422
         )
         app.state.lab = None
+
+
+def test_cli_requirements_only_checkout_without_editable_install():
+    # -S excludes .pth/editable hooks; expose dependencies, but not project src.
+    command = (
+        "import runpy, sys; "
+        "sys.path.append(sys.argv[1]); "
+        "sys.path.insert(0, sys.argv[2]); "
+        "script = sys.argv[3]; sys.argv = [script, '--help']; "
+        "runpy.run_path(script, run_name='__main__')"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-S",
+            "-c",
+            command,
+            sysconfig.get_path("purelib"),
+            str(CLI.parent),
+            str(CLI),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        cwd=ROOT,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "review-template" in result.stdout and "compare" in result.stdout

@@ -82,7 +82,12 @@ export function RoleResearchPanel() {
     void poll();
     return () => { live = false; controller.abort(); clearTimeout(timer); };
   }, [selected, before, beforeId, search, refresh]);
-  const open = (id: string) => { setSelected(id); setTask(null); localStorage.setItem("qtrades-role-task", id); };
+  const open = (id: string) => {
+    if (id !== selected) setTask(null);
+    setSelected(id);
+    localStorage.setItem("qtrades-role-task", id);
+    setRefresh(r => r + 1);
+  };
   const remember = (saved: SavedRequest) => {
     localStorage.setItem("qtrades-role-question-retry", JSON.stringify(saved)); setRetry(saved);
   };
