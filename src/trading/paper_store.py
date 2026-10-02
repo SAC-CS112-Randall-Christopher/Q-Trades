@@ -75,6 +75,8 @@ class PaperStore:
         self.transaction_lock = RLock()
         self.owner = owner
         self.last_commit_receipt: dict[str, Any] | None = None
+        self.last_transaction_diagnostics: dict[str, float] | None = None
+        self._transaction_lock_wait_ms = 0.0
         self.connection = psycopg.connect(dsn, autocommit=True, row_factory=dict_row)
         self.connection.execute("SET statement_timeout = '5s'")
         self.connection.execute("SET lock_timeout = '3s'")
@@ -167,18 +169,25 @@ class PaperStore:
         return references
 
     def transact(self, now: float, work: Callable[[PaperEngine], None]) -> dict[str, Any]:
+        waiting = time.perf_counter()
         with self.transaction_lock:
+            self._transaction_lock_wait_ms = (time.perf_counter() - waiting) * 1000
             return self._transact(now, work)
 
     def _transact(self, now: float, work: Callable[[PaperEngine], None]) -> dict[str, Any]:
         self.require_owner()
         self.last_commit_receipt = None
+        self.last_transaction_diagnostics = None
+        stages = {"writer_lock_wait": self._transaction_lock_wait_ms}
+        started = time.perf_counter()
         with self.connection.transaction():
             row = self.connection.execute(
                 "SELECT * FROM paper_state WHERE id=1 FOR UPDATE"
             ).fetchone()
             if not row:
                 raise RuntimeError("Paper account was not initialized")
+            measured = time.perf_counter()
+            stages["read_decode"] = (measured - started) * 1000
             state: dict[str, Any] = row["body"]
             if state.get("schema") != 1:
                 raise RuntimeError("Unsupported paper state version")
@@ -193,14 +202,36 @@ class PaperStore:
                     if retained is None:
                         raise ValueError("Retained report journal missing; projection not changed")
                     state["learning"]["reports"][request_id] = report_summary(retained)
+            verified = time.perf_counter()
+            stages["projection_verification"] = (verified - measured) * 1000
             work(engine)
+            calculated = time.perf_counter()
+            stages["financial_calculation"] = (calculated - verified) * 1000
             engine.assert_invariants()
+            checked = time.perf_counter()
+            stages["invariant_check"] = (checked - calculated) * 1000
             revision = row["revision"] + 1
             references = self._append(engine, revision)
+            appended = time.perf_counter()
+            stages["journal_append"] = (appended - checked) * 1000
+            encoding_ms = 0.0
+
+            def encode_projection(value: Any) -> str:
+                nonlocal encoding_ms
+                encoding_started = time.perf_counter()
+                encoded = json.dumps(value)
+                encoding_ms += (time.perf_counter() - encoding_started) * 1000
+                return encoded
+
             self.connection.execute(
                 "UPDATE paper_state SET revision=%s, body=%s WHERE id=1",
-                (revision, Jsonb(engine.state)),
+                (revision, Jsonb(engine.state, dumps=encode_projection)),
             )
+            updated = time.perf_counter()
+            stages["projection_encode"] = encoding_ms
+            stages["projection_update"] = max(0, (updated - appended) * 1000 - encoding_ms)
+        stages["database_commit"] = (time.perf_counter() - updated) * 1000
+        self.last_transaction_diagnostics = {key: round(value, 3) for key, value in stages.items()}
         self.last_commit_receipt = {
             "revision": revision,
             "events": references,
@@ -291,7 +322,9 @@ class PaperStore:
         self.require_owner()
         inserted = 0
         cutoff = now * 1000 if closed_before_ms is None else closed_before_ms
-        with self.connection.transaction():
+        # The driver serializes individual commands, not whole transaction scopes.
+        # Candle collection shares the sole writer connection with threaded controls.
+        with self.transaction_lock, self.connection.transaction():
             for row in raw:
                 if row[6] >= cutoff:
                     continue

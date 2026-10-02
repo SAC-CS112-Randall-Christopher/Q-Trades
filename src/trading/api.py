@@ -403,7 +403,8 @@ def create_app(
     @app.get("/api/research/activity")
     def research_activity(request: Request) -> dict[str, Any]:
         paper = request.app.state.paper
-        dsn = paper.store.connection.info.dsn if paper else None
+        info = paper.store.connection.info if paper else None
+        dsn = make_conninfo(info.dsn, password=info.password, connect_timeout=3) if info else None
         return activity_view.snapshot(dsn, paper, request.app.state.lab)
 
     @app.get("/api/research/storage")

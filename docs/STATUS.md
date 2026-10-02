@@ -1,4 +1,32 @@
-# Current issue #28: source stack delivered; operational LLM proof blocked
+# Current issue #28: stack installed; operational CP18 in progress
+
+GitHub main `4c3e78a8569254eca2b3717d8d20a79325bd0b96` includes merged PRs
+#29-35. The explicitly authorized existing updater installed that revision and
+restarted the original paper task. Its preservation receipt retains all 709,832
+pre-update events/7,828 journal lines, original accounts and pending trial,
+configuration and G: identity. Normal installed history/filtering/pagination and
+Journal checks passed. See [the rollout record](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/28#issuecomment-5944587183).
+
+The immediate work is the authenticated activity reader, a separately reproduced
+shared-writer transaction race, measured resource diagnosis, current qualification
+of both installed model roles, and one genuinely mature ordinary paper-feedback
+cycle. Source verification is not installed repair acceptance. Role qualification
+does not enable operating research. Existing guard thresholds, frozen horizons,
+financial authority, accounts/history and storage policy remain unchanged.
+
+The installed candle transaction race recurred at 2026-10-02 04:05:14 UTC.
+The new development attempt was refused by full stale/error financial admission
+for 602.747 seconds, with zero model requests. Source repairs also correct the
+coarse Windows duration measurement without changing guard thresholds. See
+[the observed repair evidence](reviews/cp23/OPERATING_READER_RECOVERY.md);
+installed recovery and current qualified answers remain pending.
+
+Use [the current handoff](CP23_ROLLOUT_HANDOFF.md). Retain the earlier source,
+model, rollout and failed-run receipts as separately dated evidence. CP23 matched
+A/B/C usefulness and sustained observation remain unperformed; SEC native access
+and actual Crik connection remain open. A qualified real cycle is still required.
+
+# Historical pre-rollout source delivery
 
 LLM-F1–F7 are repaired in the existing CP17-CP23 drafts #29-35, preserving ancestry.
 All seven repair source heads have successful hosted Windows gates. CP23 source

@@ -1,4 +1,55 @@
-# CP17–CP23 source delivery and remaining operational proof
+# Current operational CP18 handoff under issue #28
+
+The delivered PRs #29-35 were merged together at
+`4c3e78a8569254eca2b3717d8d20a79325bd0b96`. Final-main hosted Windows checks
+passed (361 passed/145 conditional PostgreSQL skips); the separate native product
+suite passed 686 with no skips on CPython 3.12.10/PostgreSQL 17.2. The approved
+normal updater installed/restarted the original application and retained all
+709,832 pre-update events and 7,828 journal lines, account/trial/configuration and
+G: identities. Installed history filters/paging/details and two Journal pages were
+verified in the normal UI. See [the rollout receipt](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/28#issuecomment-5944587183).
+
+The installation succeeded; operational model research did not qualify or activate.
+The financial-activity reader warning remained. A private read-only installed
+probe confirms password omission fails authentication and the authenticated reader
+retrieves the durable activity. A separate actual-driver concurrency reproduction
+confirms the shared candle/financial transaction nesting failure. Do not conflate
+those diagnoses or call the earlier healthy restart a race repair.
+
+The next bounded source repair retains the authenticated scoped-reader approach,
+serializes whole candle transactions with the existing writer lock, and separates
+database/capture timing. The entire engine-work guard and its thresholds remain
+unchanged. The duration now uses the precise counter: actual retained receipts
+show 49 coarse-clock false slow classifications among 1,060 selected samples.
+The installed candle race recurred before qualification, leaving stale/error
+financial admission; the new development wait lasted 602.747 seconds/zero requests.
+See [the reader/capacity evidence](reviews/cp23/OPERATING_READER_RECOVERY.md).
+Private retained-projection and read-only operating measurements are
+diagnostic evidence; they do not establish full retained-history load acceptance
+or justify changing compression, resource limits or operating data.
+
+The current assignment expressly requests current local role qualification and a
+separately owned real-paper feedback cycle. Reuse approved weights and CPU profile
+on 11435, with a full operating admission check before every actual call. Preserve
+GIS/11434. Pass independent 4/4 development for both roles, then 36 completed cases
+per role/three frozen seeds, at least 34 correct and zero critical violations.
+Retain original responses, placement and costs. Qualification is not activation.
+
+For the first cycle, use existing causal market evidence and a supported comparison
+through AI Lab -> Local model research. Record the actual question/evidence,
+qualified proposal, deterministic method check, mandatory review, ordinary matched
+accounts, frozen horizon, genuine elapsed maturity, outcome and justified successor
+or evidence-specific resumable wait. Do not shorten an existing trial or use a test
+clock. Sustained observation/housekeeping and matched CP23 A/B/C contribution stay
+separate; economic benefit needs subsequent whole-account observation.
+
+New repair PRs stay draft pending applicable explicit merge/install authorization;
+the previous permission applied to the delivered stack. Operating activation and
+changes to original accounts/configuration/G: data remain separate decisions. SEC
+native source access and actual Crik connectivity remain open issue #28 scope.
+Historical sections below retain their original pre-rollout stage and limitations.
+
+# Historical CP17–CP23 source delivery and remaining operational proof
 
 Issue #28 owns this stack. Main/prerequisite #27 were refreshed to
 `6fc72dccb51e07e00b30bd5c880234c13099297b`. Preserve #27's complete 600-bar

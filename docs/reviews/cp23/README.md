@@ -1,4 +1,14 @@
-# Current re-audit interaction repair evidence
+# Current installed stage; operational model proof remains open
+
+The seven delivery PRs #29-35 are merged and installed at main `4c3e78a`.
+See [the authorized rollout receipt](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/28#issuecomment-5944587183)
+for final-main checks, account/history/configuration/G: preservation and normal
+installed history/Journal verification. The recorded activity warning, separate
+reader race and resource constraint now have an operational CP18 assignment.
+Current model qualification, genuine mature paper-feedback and measured CP23
+usefulness remain separate acceptance. Read [the current handoff](../../CP23_ROLLOUT_HANDOFF.md).
+
+# Historical re-audit interaction repair evidence
 
 The independent re-audit closed F1/F3/F4/F5/F7 and found three remaining F2/F6
 interactions. The existing drafts now correct supervisor outage recovery,

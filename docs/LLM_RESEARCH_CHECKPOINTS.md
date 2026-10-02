@@ -1,6 +1,21 @@
 # Current implementation: issue #28, CP17–CP23
 
-## Current re-audit interaction repair delivery
+## Current installed stage and operational assignment
+
+PRs #29-35 were merged together at main `4c3e78a` and installed through the
+explicitly approved existing updater. Original account/history, active trial,
+configuration and G: preservation and normal history/Journal UI acceptance are
+recorded in [issue #28](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/28#issuecomment-5944587183).
+The delivered strategy infrastructure is installed; current qualified-model
+research and a genuine mature feedback cycle remain separate unfinished work.
+
+The immediate assignment is activity-reader repair, separate transaction-race and
+resource diagnosis, current researcher/reviewer qualification, and one owned real
+paper-feedback cycle. The resource guard and frozen maturity policies stay intact.
+CP23 sustained operation and matched A/B/C usefulness follow. SEC native access and
+actual Crik connectivity remain outstanding. See [the current handoff](CP23_ROLLOUT_HANDOFF.md).
+
+## Historical re-audit interaction repair delivery
 
 The independent re-audit of `a21637d` closed F1/F3/F4/F5/F7 and reproduced
 three F2/F6 interactions. Their corrections remain in the existing owning drafts:
