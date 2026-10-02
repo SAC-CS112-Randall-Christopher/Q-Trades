@@ -2,10 +2,11 @@
 
 ## Current installed stage and operational assignment
 
-Approved PRs #37/#38 are installed at main `6bfd3cd`. Activity reporting and private
-financial preservation acceptance passed, including all 771,895 pre-update events
-and 9,154 journal lines. Fresh five-minute observation still reports engine-work
-cooldown. Read [the current measurements and opt-in candidate](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
+Approved PRs #37-39 are installed at main `9d45f71`. Activity reporting, the approved
+LZ4 future-write setting and private preservation acceptance passed, including all
+780,193 pre-update events and 9,154 journal lines. Fresh ten-minute observation
+reports engine-work cooldown on every full-health poll; no model work was admitted.
+Read [the completed rollout and current measurements](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
 Current qualification and the genuinely mature feedback cycle remain unfinished.
 
 ### Historical first stack rollout
