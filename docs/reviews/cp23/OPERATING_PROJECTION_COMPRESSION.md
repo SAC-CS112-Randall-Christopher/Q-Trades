@@ -117,7 +117,13 @@ but the old assertion expected source copying had not happened. The corrected
 assertion accepts the existing updater's actual ordering and still requires the
 service stopped/disabled, no health-success claim and all sentinel data unchanged.
 Whole-repository Ruff and strict Windows mypy pass, 85 source files. Full native
-suite, frontend and exact-head hosted receipts follow as separate proof stages.
+source `41278649fc341bba04b45c16e28bf3ddc5bd9458` passes **721 tests, zero skips,
+278.76 seconds** on Windows/CPython 3.12.10 and disposable PostgreSQL 17.2. The
+frontend build passes, 1,926 modules. Its exact source-head [hosted gate](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/37023250745)
+passes 378 selected cases with 162 conditional database skips in 152.75 seconds.
+Later receipt/documentation commits keep the same tested product source; their
+exact final-head gate is recorded in draft PR #39 and issue #28 before approval.
+See [the public source receipt](projection-compression-software-checks.json).
 
 ## Applicable approval and acceptance
 
@@ -131,6 +137,11 @@ This command needs the owner's explicit approval for the new merge/install/resta
 and this narrowly scoped database metadata change. The fulfilled PR #38 approval
 does not authorize it. Before/after history/configuration/G:/task/source preservation
 and normal installed UI/API acceptance remain mandatory.
+
+Invoke this new option from a clean checkout refreshed to the approved merged main.
+An older updater script cannot bind a new parameter before its own internal fetch.
+The existing separate updater checkout can fast-forward from installed main; do
+not run from the feature branch or overwrite installed data/configuration.
 
 Then observe the original full guard through its real cooldown, without changing
 four-of-twenty/100 ms, the one-second stall, 300-second cooldown, disk/capture or full
