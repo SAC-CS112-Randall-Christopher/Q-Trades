@@ -1,0 +1,66 @@
+{
+  "purpose": "Issue 28 operational CP18 capacity candidate; source proof only",
+  "product_source_head": "41278649fc341bba04b45c16e28bf3ddc5bd9458",
+  "installed_main": "6bfd3cda405644763b7a7b8d5b67f772219315d9",
+  "environment": {
+    "execution": "Native Windows",
+    "python": "3.12.10",
+    "disposable_postgresql": "17.2",
+    "installed_readonly_postgresql": "18.6"
+  },
+  "checks": {
+    "corrected_focused": {"passed": 57, "skipped": 0, "seconds": 73.44},
+    "full_native": {"passed": 721, "skipped": 0, "seconds": 278.76},
+    "ruff": "passed",
+    "strict_mypy_windows": {"result": "passed", "source_files": 85},
+    "frontend": {"result": "passed", "modules": 1926},
+    "hosted_source_head": {
+      "result": "passed",
+      "passed": 378,
+      "conditional_database_skips": 162,
+      "seconds": 152.75,
+      "url": "https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/37023250745"
+    },
+    "warning": "One existing Starlette/httpx deprecation warning",
+    "retained_initial_focus": {
+      "passed": 27,
+      "failed": 1,
+      "cause": "Old fixture expected source unchanged after post-copy compression failure",
+      "correction": "Preserve actual updater ordering and assert stopped/disabled/no health claim/data sentinels unchanged"
+    }
+  },
+  "disposable_probe": {
+    "workload": "Initial synthetic accounts plus private retained-size payload; normal no-op PaperStore commits",
+    "randomized_samples_per_arm": 40,
+    "complete_value_equivalence": true,
+    "synthetic_journal_balanced": true,
+    "arms": {
+      "ordinary_pglz": {"median_ms": 66.041, "p95_ms": 111.151, "stored_bytes": 202756},
+      "candidate_cache_pglz": {"median_ms": 68.385, "p95_ms": 100.229, "stored_bytes": 202756},
+      "ordinary_lz4": {"median_ms": 57.169, "p95_ms": 97.977, "stored_bytes": 190860},
+      "candidate_cache_lz4": {"median_ms": 52.748, "p95_ms": 89.434, "stored_bytes": 190860}
+    },
+    "ordinary_projection_update_median_ms": {"pglz": 29.343, "lz4": 16.511},
+    "selected": "Explicit opt-in future-write projection compression",
+    "not_selected": ["Projection cache", "Alternate JSON decoder"],
+    "limitation": "Not installed guard, operational load, model qualification or mature paper proof"
+  },
+  "installed_preview": {
+    "read_only": true,
+    "build_supports_lz4": true,
+    "current_column_setting": "default",
+    "current_value_compression": "pglz",
+    "applied": false
+  },
+  "remaining": {
+    "new_merge_install_compression_approval": "required",
+    "installed_candidate_capacity": "unproved",
+    "current_actual_role_qualification": "unperformed",
+    "actual_model_requests_this_turn": 0,
+    "real_mature_feedback_cycle": "incomplete",
+    "cp23_sustained_and_matched_usefulness": "unperformed",
+    "prospective_economic_benefit": "unknown",
+    "sec_native_and_actual_crik": "outstanding"
+  },
+  "privacy": "Private financial payloads, workstation inventories, screenshots, DSNs and failed runtime receipts stay ignored"
+}

@@ -78,7 +78,19 @@ function robocopy {
 }
 Set-Item -LiteralPath ('Function:\'+$python) -Value {
     $global:LASTEXITCODE=0
-    if($args -contains 'pip'){
+    if($args -contains (Join-Path $Source 'scripts/configure_paper_projection.py')){
+        if($args -contains '--apply'){
+            $global:operations.Add('compression_apply')
+            if($global:running){throw 'Compression applied before owned service stopped'}
+            if($Scenario -eq 'compression_apply_failure'){$global:LASTEXITCODE=1}
+            '{"mode":"applied"}'
+        }else{
+            $global:operations.Add('compression_preview')
+            if(-not $global:running){throw 'Preview must happen before service stop'}
+            if($Scenario -eq 'compression_preview_failure'){$global:LASTEXITCODE=1}
+            '{"mode":"preview"}'
+        }
+    }elseif($args -contains 'pip'){
         $global:operations.Add('pip')
         'native-dependency-output'
         if($Scenario -eq 'dependency_failure'){$global:LASTEXITCODE=1}
@@ -88,7 +100,14 @@ Set-Item -LiteralPath ('Function:\'+$python) -Value {
         '{"fixture":true}'
     }
 }
-& (Join-Path $Source 'scripts/Update-QTrades.ps1') -LogDirectory (Join-Path $Source 'logs')
+$updateOptions=@{LogDirectory=(Join-Path $Source 'logs')}
+if($Scenario.StartsWith('compression_')){
+    $updateOptions.PaperProjectionCompression='lz4'
+    if($Scenario -ne 'compression_missing_expected'){
+        $updateOptions.ExpectedPaperProjectionCompression='default'
+    }
+}
+& (Join-Path $Source 'scripts/Update-QTrades.ps1') @updateOptions
 $code=$LASTEXITCODE
 @{exit_code=$code;operations=@($global:operations.ToArray());running=$global:running;
   enabled=$global:enabled}|ConvertTo-Json|Set-Content $Report
@@ -113,6 +132,10 @@ $code=$LASTEXITCODE
         "stop_failure",
         "dependency_failure",
         "health_failure",
+        "compression_success",
+        "compression_preview_failure",
+        "compression_apply_failure",
+        "compression_missing_expected",
     ],
 )
 def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenario):
@@ -132,6 +155,7 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
         "README.md",
         "AGENTS.md",
         "scripts/qtrades_health.py",
+        "scripts/configure_paper_projection.py",
     ):
         p = source / relative
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -222,7 +246,7 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     outcome = json.loads(report.read_text(encoding="utf-8-sig"))
     ops = outcome["operations"]
     assert all((runtime / p).read_bytes() == b for p, b in protected.items())
-    success = scenario in {"success", "known_previous"}
+    success = scenario in {"success", "known_previous", "compression_success"}
     if scenario == "log_failure":
         assert logs.read_text() == "do not overwrite this existing file"
         assert not ops, outcome
@@ -258,6 +282,16 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
         if scenario != "dirty":
             # Logs must not themselves make an otherwise clean source checkout dirty.
             assert "logs" not in git(source, "status", "--porcelain")
+    if scenario == "compression_success":
+        assert ops.index("compression_preview") < ops.index("disable") < ops.index("stop")
+        assert ops.index("compression_apply") < ops.index("start") < ops.index("health")
+    elif scenario in {"compression_preview_failure", "compression_missing_expected"}:
+        assert "disable" not in ops and "stop" not in ops and "compression_apply" not in ops
+    elif scenario == "compression_apply_failure":
+        assert "compression_apply" in ops and "start" not in ops and "health" not in ops
+        assert not outcome["enabled"] and not outcome["running"]
+    elif not scenario.startswith("compression_"):
+        assert "compression_preview" not in ops and "compression_apply" not in ops
     if success:
         assert outcome["exit_code"] == 0, result.stdout + result.stderr
         assert (runtime / "src/trading/api.py").read_text() == "new fixture"
@@ -271,7 +305,7 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     else:
         assert outcome["exit_code"] != 0, outcome
         assert "updated and running:" not in result.stdout
-        if scenario not in {"dependency_failure", "health_failure"}:
+        if scenario not in {"dependency_failure", "health_failure", "compression_apply_failure"}:
             assert (runtime / "src/trading/api.py").read_text() == "old fixture"
             assert "pip" not in ops and "start" not in ops
         if scenario in {"dirty", "diverged", "wrong_remote", "foreign_task", "missing_main"}:

@@ -1,12 +1,14 @@
 # Current issue #28: stack installed; operational CP18 in progress
 
-Approved PR #37 is installed at main `17b11e3`. Normal activity reporting works;
-all 722,673 pre-update events and 8,202 journal lines, original accounts/contracts,
-existing trials, configuration, G: and twenty-slot capacity are preserved. The
-remaining admission condition is engine-work cooldown. A fresh healthy-worker
-development wait exhausted 600.491 seconds with zero model requests. Qualification
-and the real mature feedback cycle are still incomplete. Read
-[the measured capacity repair](reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md).
+Approved PRs #37/#38 are installed at main `6bfd3cd`. Normal activity reporting
+works; all 771,895 pre-update events and 9,154 journal lines, original accounts/
+contracts, existing trials, configuration, G: and twenty-slot capacity are preserved.
+The new five-minute inference-off observation still reports engine-work cooldown:
+166 of 353 sampled work entries exceed 100 ms. Whole-work median/p95 are
+97.431/162.603 ms; financial calculation remains about one millisecond.
+Qualification and the real mature feedback cycle are still incomplete. Read
+[the current capacity evidence and opt-in candidate](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
+No model request, operating activation or new paper question occurred in this rollout.
 
 ## Historical first stack rollout and pre-repair diagnosis
 
