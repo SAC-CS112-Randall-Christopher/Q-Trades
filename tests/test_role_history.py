@@ -32,6 +32,65 @@ class NoChange(ModelStub):
         }
 
 
+def test_failed_task_cannot_archive_while_original_call_can_still_finish(
+    pg_store, tmp_path, monkeypatch
+):
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    lab = make_lab(pg_store[0], tmp_path)
+    save_plan(tmp_path, plan_at(tmp_path))
+
+    class Delayed(NoChange):
+        calls_started = 0
+
+        def infer(self, *args):
+            self.calls_started += 1
+            self.entered.set()
+            assert self.release.wait(5)
+            return super().infer(*args)
+
+    model = Delayed()
+    worker = RoleWorker(lab.registry, lab, model)
+    worker.enabled = True
+    question = worker.enqueue(
+        Question(question="Keep the original unresolved call until it returns.")
+    )
+
+    async def check():
+        pending = asyncio.create_task(worker.step(START))
+        assert await asyncio.to_thread(model.entered.wait, 5)
+        replacement = RoleWorker(lab.registry, lab)
+        with lab.registry.transaction():
+            lab.registry.db.execute(
+                "UPDATE role_tasks SET lease_until=? WHERE id=?", (START - 1, question["id"])
+            )
+        replacement.enabled = True
+        try:
+            assert not await replacement.step(START)
+            assert replacement.get(question["id"])["status"] == "failed"
+            replacement.history.rollover()
+            retained = replacement.get(question["id"])
+            assert retained["archive_reference"] is None
+            assert len(retained["attempts"]) == 1 and retained["attempts"][0]["finished"] is None
+            replacement.retry(question["id"])
+            assert replacement.get(question["id"])["attempts"][0]["status"] == "retry_authorized"
+        finally:
+            model.release.set()
+            await pending
+        current = worker.get(question["id"])
+        assert current["attempts"][0]["response"]
+        if current["status"] != "done":
+            assert await replacement.step(START)  # Reuse the receipt under the current owner.
+            current = replacement.get(question["id"])
+        worker.history.rollover()
+        cold = RoleWorker(lab.registry, lab).get(question["id"])
+        assert cold["archive_reference"] and cold["attempts"] == current["attempts"]
+        assert model.calls_started == 1 and pg_store[0].reconcile()["balanced"]
+
+    asyncio.run(check())
+    lab.registry.close()
+
+
 def test_sequential_questions_cross_old_lifetime_limit_and_reopen(pg_store, tmp_path, monkeypatch):
     store, _ = pg_store
     clock = [START]
