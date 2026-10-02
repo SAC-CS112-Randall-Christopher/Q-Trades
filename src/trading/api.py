@@ -621,6 +621,26 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
 
+    @app.get("/api/lab/roles/tasks/{identity}/training-candidate")
+    def role_training_candidate(
+        request: Request, identity: str,
+        stage: str = Query(pattern="^(idea|review|followup)$"),
+        attempt: int = Query(ge=1, le=100),
+    ) -> JSONResponse:
+        lab = lab_operator(request)
+        if lab.roles is None:
+            raise HTTPException(503, "Local role registry unavailable")
+        try:
+            result = lab.roles.training_candidate(identity, stage, attempt)
+            return JSONResponse(result, headers={
+                "Cache-Control": "no-store",
+                "Content-Disposition": 'attachment; filename="qtrades-training-candidate.json"',
+                "X-Content-Type-Options": "nosniff",
+            })
+        except (ValueError, OSError, LookupError) as exc:
+            raise HTTPException(409, "Selected original attempt cannot be exported; "
+                                "it remains retained. Reopen its details and retry.") from exc
+
     @app.post("/api/lab/roles/tasks/{identity}/retry")
     def role_retry(request: Request, identity: str) -> dict[str, Any]:
         lab = lab_operator(request)

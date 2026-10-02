@@ -555,6 +555,15 @@ class RoleWorker:
             )
         return task
 
+    def training_candidate(self, identity: str, stage: str, attempt: int) -> dict[str, Any]:
+        """Private operator export; preserve the normal outcome-disclosure boundary."""
+        from trading.llm_training import candidate_from_task
+
+        # view records disclosure before any retained outcome can leave the registry.
+        # get reopens the original hot/archived attempt; it does not rerun inference.
+        self.view(identity)
+        return candidate_from_task(self.get(identity), stage, attempt)
+
     def retry(self, identity: str) -> dict[str, Any]:
         """One explicit operational retry; never request a preferred verdict."""
         task = self.get(identity)
