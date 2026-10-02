@@ -1,5 +1,12 @@
 # Current operational CP18 handoff under issue #28
 
+Approved PR #37 is merged/installed at main `17b11e3`; activity authentication and
+actual normal-screen dates are accepted, with all 722,673 pre-update events and
+8,202 journal lines preserved. Engine-work cooldown remains the actual capacity
+condition. Read [the fresh measurements and bounded serialization repair](reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md)
+before treating the older reader/rollout stages below as current blockers. Current
+qualified-model feedback and sustained/usefulness acceptance remain outstanding.
+
 The delivered PRs #29-35 were merged together at
 `4c3e78a8569254eca2b3717d8d20a79325bd0b96`. Final-main hosted Windows checks
 passed (361 passed/145 conditional PostgreSQL skips); the separate native product

@@ -1,10 +1,11 @@
 # Current: operational CP18, then measured CP23 usefulness
 
-PRs #29-35 are merged and installed at main `4c3e78a`. The current issue #28
-assignment begins with the installed activity reader and separate transaction-race
-diagnosis, then measured operating capacity, current local researcher/reviewer
-qualification, and one real paper-feedback cycle. Do not start another strategy
-checkpoint series or repeat the completed rollout.
+Approved PR #37 is installed at main `17b11e3`; normal activity reporting and
+preservation acceptance passed. Engine-work cooldown still blocks qualification.
+Continue the [bounded measured serialization repair](reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md),
+verify actual installed capacity, then qualify the current researcher/reviewer and
+complete one real paper-feedback cycle. Do not start another strategy checkpoint
+series or repeat the completed reader rollout.
 
 The actual development screen must pass 4/4 for each role, followed by each
 36-case/three-seed population with at least 34 correct and zero critical failures.

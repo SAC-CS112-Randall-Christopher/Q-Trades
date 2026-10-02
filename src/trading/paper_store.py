@@ -1,5 +1,6 @@
 """PostgreSQL atomic projection and append-only, per-asset balanced financial journal."""
 
+import hashlib
 import json
 import time
 from collections.abc import Callable
@@ -168,13 +169,36 @@ class PaperStore:
                 )
         return references
 
-    def transact(self, now: float, work: Callable[[PaperEngine], None]) -> dict[str, Any]:
+    def transact(
+        self,
+        now: float,
+        work: Callable[[PaperEngine], None],
+    ) -> dict[str, Any]:
+        state, _ = self.transact_with_receipt(now, work)
+        return state
+
+    def transact_with_receipt(
+        self,
+        now: float,
+        work: Callable[[PaperEngine], None],
+        *,
+        capture_projection: bool = False,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Return this commit's state and provenance together under the writer lock."""
         waiting = time.perf_counter()
         with self.transaction_lock:
             self._transaction_lock_wait_ms = (time.perf_counter() - waiting) * 1000
-            return self._transact(now, work)
+            state = self._transact(now, work, capture_projection=capture_projection)
+            assert self.last_commit_receipt is not None
+            return state, self.last_commit_receipt
 
-    def _transact(self, now: float, work: Callable[[PaperEngine], None]) -> dict[str, Any]:
+    def _transact(
+        self,
+        now: float,
+        work: Callable[[PaperEngine], None],
+        *,
+        capture_projection: bool = False,
+    ) -> dict[str, Any]:
         self.require_owner()
         self.last_commit_receipt = None
         self.last_transaction_diagnostics = None
@@ -215,11 +239,22 @@ class PaperStore:
             appended = time.perf_counter()
             stages["journal_append"] = (appended - checked) * 1000
             encoding_ms = 0.0
+            projection_sha256: str | None = None
 
             def encode_projection(value: Any) -> str:
-                nonlocal encoding_ms
+                nonlocal encoding_ms, projection_sha256
                 encoding_started = time.perf_counter()
-                encoded = json.dumps(value)
+                # PostgreSQL JSONB discards whitespace/key ordering. Selected
+                # capture uses the existing exact canonical evidence encoding
+                # once, binding its digest to the projection actually committed.
+                encoded = json.dumps(
+                    value,
+                    sort_keys=capture_projection,
+                    separators=(",", ":"),
+                    allow_nan=False,
+                )
+                if capture_projection:
+                    projection_sha256 = hashlib.sha256(encoded.encode()).hexdigest()
                 encoding_ms += (time.perf_counter() - encoding_started) * 1000
                 return encoded
 
@@ -238,6 +273,8 @@ class PaperStore:
             "committed_at": time.time(),
             "commit_mono": time.monotonic(),
         }
+        if projection_sha256 is not None:
+            self.last_commit_receipt["projection_sha256"] = projection_sha256
         return engine.state
 
     def read(self) -> dict[str, Any]:

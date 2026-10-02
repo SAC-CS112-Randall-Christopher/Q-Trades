@@ -7,6 +7,14 @@ wait. The current user assignment prioritizes the installed activity reader,
 diagnosis of the earlier reader fault and resource constraint, current model
 qualification, and one real cycle. Do not substitute more strategy infrastructure.
 
+Approved reader/race/clock PR #37 is now installed at main `17b11e3`. Normal AI Lab
+activity and private preservation acceptance passed. The actual capacity condition
+is engine-work cooldown; disk/capture health pass. Fresh phase measurements locate
+full projection read/update and repeated capture serialization, with financial tick
+around one millisecond. See docs/reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md.
+The bounded follow-up preserves every field and exact financial/provenance hashes;
+its installed capacity effect and current role qualification remain separate proof.
+
 PRs #29-35 were merged together at main
 `4c3e78a8569254eca2b3717d8d20a79325bd0b96` and installed through the existing
 updater after explicit merge/restart authorization. The rollout preserved all
