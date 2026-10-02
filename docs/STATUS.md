@@ -1,3 +1,37 @@
+# Current issue #28: source stack delivered; operational LLM proof blocked
+
+LLM-F1–F7 are repaired in the existing CP17-CP23 drafts #29-35, preserving ancestry.
+All seven repair source heads have successful hosted Windows gates. CP23 source
+`6b5a926` passes 668 native/disposable PostgreSQL tests, zero skips in 231.81 s,
+Ruff, strict mypy (84 modules), frontend build (1926 modules), eight predeclared
+finite load cases and normal desktop/mobile/reload/recovery/cold-history UI.
+Worst finite financial p95 is 51.126 ms under the unchanged 100-ms limit.
+Its final documentation/receipt delivery head and hosted gate are recorded
+separately in the draft/issue. Earlier checkpoint counts remain historical.
+See [the integrated ledger](LLM_RESEARCH_CHECKPOINTS.md),
+[CP23 evidence](reviews/cp23/README.md) and
+[rollout handoff](CP23_ROLLOUT_HANDOFF.md).
+
+Finite one/ten/twenty idle/numerical and twenty-account scoped-read workloads
+pass the predeclared financial/RSS limits with accumulated synthetic retired
+history and balanced ledgers. Actual busy LLM work is excluded by the operating
+resource guard. Small owned G: fixtures retain the 100 decimal GB tier policy;
+they do not prove 100-GB throughput or 24/7 reliability.
+
+Actual CP18 qualified-model -> ordinary mature outcome -> follow-up remains
+blocked: current v5 role qualification is absent and installed optional research
+is constrained. Corrected development waited 601.018 seconds/zero model calls;
+earlier incomplete-screen calls are ineligible. CP23's qualified matched quality
+comparison is unperformed, and prospective economic effects remain insufficient.
+The UI preserves these unknowns rather than claiming model value from stubs.
+
+Actual native public IBM daily-only archive/save/reopen works. SEC denied/rate-
+limited access/cooldown and absent Crik/authorized bridge remain provider blockers.
+No install/restart/activation, merge/deployment, operating financial/data/storage
+change, model download or paid service was performed. Source delivery, software
+verification, actual role qualification, installed acceptance and economic support
+remain separate. Historical evidence below keeps its original stage/date.
+
 # Compact trade history — source verification
 
 Chris requested a separate compact Trade history tab in Orders, with Account first,

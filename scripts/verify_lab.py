@@ -14,6 +14,7 @@ import sysconfig
 import threading
 import time
 import uuid
+from decimal import Decimal
 from pathlib import Path
 
 import httpx
@@ -23,6 +24,7 @@ from verify_cp3 import disposable, features, frames, rss_bytes, summary
 from trading.numerical_candidates import evaluate_families
 from trading.numerical_resources import constrain_child, own_limits
 from trading.paper_campaigns import CampaignSpec, create_campaign
+from trading.paper_engine import account
 from trading.paper_runtime import PaperRuntime
 from trading.venue import PublicVenue
 
@@ -48,6 +50,31 @@ def host_times():
     if not ctypes.windll.kernel32.GetSystemTimes(*(ctypes.byref(x) for x in values)):
         raise OSError("Cannot measure host CPU")
     return [x.value for x in values]
+
+
+def process_io():
+    if os.name != "nt":
+        return None
+
+    class Counters(ctypes.Structure):
+        _fields_ = [
+            (name, ctypes.c_ulonglong)
+            for name in (
+                "read_ops",
+                "write_ops",
+                "other_ops",
+                "read_bytes",
+                "write_bytes",
+                "other_bytes",
+            )
+        ]
+
+    result = Counters()
+    get = ctypes.windll.kernel32.GetProcessIoCounters
+    get.argtypes = [ctypes.c_void_p, ctypes.POINTER(Counters)]
+    if not get(ctypes.c_void_p(-1), ctypes.byref(result)):
+        raise OSError("Cannot measure parent process I/O")
+    return {name: getattr(result, name) for name, _ in result._fields_}
 
 
 def busy_worker(seconds, output):
@@ -102,7 +129,7 @@ def setup(engine, count):
         engine.state["accounts"] = {n: engine.state["accounts"][n] for n in names}
 
 
-def benchmark(output, soak=False):
+def benchmark(output, soak=False, retired_events=0):
     seconds = 300 if soak else 30
     contract = {
         "seconds_per_case": seconds,
@@ -114,6 +141,7 @@ def benchmark(output, soak=False):
         "cpu_scope": "Parent and fixed fit child separately; host includes all other work",
         "gpu": "No GPU calls; numerical path is CPU-only",
         "authority": "Synthetic QA only; paid $0; no market/24x7 inference",
+        "retired_event_fixture": retired_events,
         "membership_scope": (
             "Twenty is the full retained synthetic account set. One/ten are generated "
             "projection subsets for capacity comparison; no operating history is edited."
@@ -148,7 +176,42 @@ def benchmark(output, soak=False):
     for count in contract["accounts"]:
         for research in contract["research"]:
             with disposable() as store:
-                store.transact(time.time(), lambda e, count=count: setup(e, count))
+
+                def seed(engine, count=count):
+                    setup(engine, count)
+                    if retired_events:
+                        retired = "retired-cp23-history"
+                        saved = account("breakout-v1", time.time(), "100")
+                        engine.emit(
+                            "initial_funding",
+                            retired,
+                            {"amount": "100", "currency": "USD"},
+                            [
+                                engine.line("USD", "cash", Decimal(100)),
+                                engine.line("USD", "fake_funding", Decimal(-100)),
+                            ],
+                        )
+                        for i in range(retired_events):
+                            engine.emit(
+                                "trade_closed",
+                                retired,
+                                {
+                                    "symbol": "BTCUSD",
+                                    "pnl": "-0.13",
+                                    "fees": "0.10",
+                                    "opened_at": time.time() - 60,
+                                    "closed_at": time.time(),
+                                    "reason": "Synthetic accumulated retired-history projection",
+                                    "ordinal": i,
+                                },
+                            )
+                        engine.emit(
+                            "lab_account_archived",
+                            retired,
+                            {"trial_id": "synthetic-cp23", "state": saved},
+                        )
+
+                store.transact(time.time(), seed)
                 # The actual account/economics status projection, with network disabled.
                 venue = PublicVenue(transport=httpx.MockTransport(lambda _: httpx.Response(503)))
                 runtime = PaperRuntime(store, venue)
@@ -192,6 +255,7 @@ def benchmark(output, soak=False):
                         creationflags=flags,
                     )
                 began, cpu, host_before = time.perf_counter(), time.process_time(), host_times()
+                io_before = process_io()
 
                 def produce(began=began, q=q, ticks=ticks):
                     for i in range(ticks):
@@ -232,6 +296,7 @@ def benchmark(output, soak=False):
                     asyncio.run(venue.close())
                 elapsed = time.perf_counter() - began
                 host_after = host_times()
+                io_after = process_io()
                 child_receipt = json.loads(child_path.read_text()) if child_path.exists() else None
                 after = store.storage_usage()
                 case = {
@@ -260,6 +325,16 @@ def benchmark(output, soak=False):
                     "paper_connections": 2,
                     "market_connections": 0,
                     "paid_usd": "0",
+                    "parent_io": {k: io_after[k] - io_before[k] for k in io_after}
+                    if io_after and io_before
+                    else None,
+                    "io_scope": (
+                        "Parent process counters only; PostgreSQL server I/O not attributed"
+                    ),
+                    "source_freshness_seconds": time.time() - store.read()["last_tick"],
+                    "freshness_scope": (
+                        "Last committed synthetic fixture tick, not market freshness"
+                    ),
                 }
                 if host_before and host_after:
                     idle, kernel, user = [

@@ -30,6 +30,7 @@ import { ProspectivePanel } from "./ProspectivePanel";
 import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
+import { RoleResearchPanel } from "./RoleResearchPanel";
 import { ResearchActivity } from "./ResearchActivity";
 import { AutonomousPanel } from "./AutonomousPanel";
 import { EvidencePanel } from "./EvidencePanel";
@@ -123,6 +124,7 @@ const aliases: Record<string, Page> = {
   "experiment-lab": "ai-lab",
   "forward-learning": "ai-lab",
   "model-lab": "ai-lab",
+  "role-research": "ai-lab",
   "strategy-lab": "strategies",
   "live-quotes": "markets",
   "live-readiness": "risk",
@@ -170,6 +172,7 @@ function App() {
       setMenuOpen(false);
       setSearchOpen(false);
       if (location.hash === "#model-lab") setLabTab("models");
+      else if (location.hash === "#role-research") setLabTab("roles");
       else if (location.hash === "#forward-learning") setLabTab("learning");
       else if (location.hash === "#experiment-lab") setLabTab("experiments");
       if (location.hash === "#live-readiness") setRiskTab("readiness");
@@ -572,6 +575,7 @@ function App() {
               <div className="workspace-tabs" aria-label="AI Lab views">
                 {[
                   ["autonomous", "Continuous paper lab"],
+                  ["roles", "Local model research"],
                   ["experiments", "Numerical research"],
                   ["learning", "Forward learning"],
                   ["history", "Historical matches"],
@@ -588,6 +592,7 @@ function App() {
                 ))}
               </div>
               {labTab === "autonomous" && <AutonomousPanel />}
+              {labTab === "roles" && <RoleResearchPanel />}
               {labTab === "experiments" && <ExperimentLab paper={paper} />}
               {labTab === "learning" && (
                 <LearningPanel

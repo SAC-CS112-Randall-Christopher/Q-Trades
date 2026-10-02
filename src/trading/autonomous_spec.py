@@ -90,9 +90,34 @@ class LabPolicy(BaseModel):
         return self
 
 
+class MemoryFilter(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    version: Literal["memory-entry-filter-v1"] = "memory-entry-filter-v1"
+    kind: Literal["frozen_historical_memory"] = "frozen_historical_memory"
+    horizon_seconds: Literal[2700] = 2700
+    units: Literal["net_basis_points"] = "net_basis_points"
+    fallback: Literal["unchanged_baseline"] = "unchanged_baseline"
+    artifact: dict[str, Any]
+    marginal_daily_usd: str = Field(max_length=32)
+
+    @model_validator(mode="after")
+    def supported(self) -> Self:
+        from trading.memory_quality import validate_artifact
+
+        validate_artifact(self.artifact)
+        try:
+            value = Decimal(self.marginal_daily_usd)
+        except InvalidOperation as exc:
+            raise ValueError("Component daily cost must be an exact decimal USD amount") from exc
+        if not value.is_finite() or not 0 <= value <= 10:
+            raise ValueError("Declare a finite component cost between zero and ten USD per day")
+        return self
+
+
 class RuleSpec(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-    version: Literal["reviewed-lab-rules-v2"] = "reviewed-lab-rules-v2"
+    version: Literal["reviewed-lab-rules-v2", "reviewed-lab-rules-v3"] = "reviewed-lab-rules-v2"
+    entry_filter: MemoryFilter | None = Field(default=None, exclude_if=lambda value: value is None)
     family: Literal["breakout", "range_reversion"] = "breakout"
     lookback: int = Field(default=10, ge=5, le=30)
     volume_multiple: Literal["2"] = "2"
@@ -116,6 +141,14 @@ class RuleSpec(BaseModel):
 
     @model_validator(mode="after")
     def coherent(self) -> Self:
+        if self.entry_filter is not None and (
+            self.version != "reviewed-lab-rules-v3" or self.holding_horizon != "short"
+        ):
+            raise ValueError(
+                "The frozen memory component requires v3 and its genuine short horizon"
+            )
+        if self.version == "reviewed-lab-rules-v3" and self.entry_filter is None:
+            raise ValueError("The additive v3 contract requires its explicit component")
         if (
             self.exit_seconds != self.timing["maximum_hold"]
             or self.progress_seconds != self.timing["progress"]
@@ -156,8 +189,13 @@ class LabProposal(BaseModel):
                 self.reference.model_dump()
             ):
                 raise ValueError("A child must identify its exact frozen parent trial and strategy")
-            if set(changed) != {"lookback"} or self.strategy.family != self.reference.family:
-                raise ValueError("The reviewed child changes exactly one lookback setting")
+            component_delta = set(changed) == {"entry_filter", "version"}
+            if (set(changed) != {"lookback"} and not component_delta) or (
+                self.strategy.family != self.reference.family
+            ):
+                raise ValueError(
+                    "The reviewed child changes one lookback or frozen memory component"
+                )
         elif self.kind == "replication":
             if not self.replication_of or changed:
                 raise ValueError("An exact replication must be labelled and match its reference")
@@ -182,7 +220,9 @@ class LabControl(BaseModel):
 
 def changes(parent: RuleSpec, child: RuleSpec) -> dict[str, Any]:
     a, b = parent.model_dump(), child.model_dump()
-    return {k: {"from": a[k], "to": b[k]} for k in a if a[k] != b[k]}
+    return {
+        k: {"from": a.get(k), "to": b.get(k)} for k in a.keys() | b.keys() if a.get(k) != b.get(k)
+    }
 
 
 def contract(proposal: LabProposal, policy: LabPolicy) -> dict[str, Any]:

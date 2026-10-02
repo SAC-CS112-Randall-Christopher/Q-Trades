@@ -27,6 +27,8 @@ CREATE INDEX IF NOT EXISTS paper_events_recent ON paper_events(account, id DESC)
 CREATE INDEX IF NOT EXISTS paper_events_kind ON paper_events(kind, id DESC);
 CREATE INDEX IF NOT EXISTS paper_trade_entry ON paper_events(account, (body->>'symbol'), at)
 WHERE kind='fill' AND body->>'side'='buy';
+CREATE INDEX IF NOT EXISTS paper_research_scope
+ON paper_events(account, (body->>'symbol'), kind, id DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS lab_proposal_once ON paper_events ((body->>'proposal_id'))
 WHERE kind='lab_trial_reserved';
 CREATE INDEX IF NOT EXISTS lab_trial_events ON paper_events ((body->>'trial_id'), id DESC)
@@ -357,8 +359,13 @@ class PaperStore:
         }
 
     def trade_history(
-        self, *, before: int = 0, limit: int = 50, account: str | None = None,
-        status: str = "all", frames: dict[str, dict[str, Any]] | None = None,
+        self,
+        *,
+        before: int = 0,
+        limit: int = 50,
+        account: str | None = None,
+        status: str = "all",
+        frames: dict[str, dict[str, Any]] | None = None,
         now: float | None = None,
     ) -> dict[str, Any]:
         from trading.trade_history import closed_row, open_row
@@ -375,15 +382,20 @@ class PaperStore:
             rows = self.connection.execute(
                 "SELECT id,revision,account,at,body FROM paper_events WHERE kind='trade_closed' "
                 "AND (%s=0 OR id<%s) AND (%s::text IS NULL OR account=%s) "
-                "ORDER BY id DESC LIMIT %s", (before, before, account, account, limit + 1),
+                "ORDER BY id DESC LIMIT %s",
+                (before, before, account, account, limit + 1),
             ).fetchall()
             for event in rows[:limit]:
                 entries = self.connection.execute(
                     "SELECT id,body FROM paper_events WHERE kind='fill' AND body->>'side'='buy' "
                     "AND account=%s AND body->>'symbol'=%s AND at=%s AND revision<=%s "
                     "ORDER BY id DESC LIMIT 2",
-                    (event["account"], event["body"]["symbol"], event["body"]["opened_at"],
-                     event["revision"]),
+                    (
+                        event["account"],
+                        event["body"]["symbol"],
+                        event["body"]["opened_at"],
+                        event["revision"],
+                    ),
                 ).fetchall()
                 closed.append(closed_row(event, entries))
         else:
@@ -393,8 +405,9 @@ class PaperStore:
             for name, saved in accounts.items():
                 if account is None or name == account:
                     for symbol, position in saved["positions"].items():
-                        opened.append(open_row(name, symbol, position, saved,
-                                               (frames or {}).get(symbol), now))
+                        opened.append(
+                            open_row(name, symbol, position, saved, (frames or {}).get(symbol), now)
+                        )
         opened.sort(key=lambda r: (r["opened_at"], r["id"]), reverse=True)
         records = opened + closed
         records.sort(key=lambda r: (r["closed_at"] or r["opened_at"], r["id"]), reverse=True)
@@ -402,10 +415,138 @@ class PaperStore:
             record["label"] = accounts.get(record["account"], {}).get("label", record["account"])
             record["archived"] = record["account"] not in accounts
         return {
-            "records": records, "has_more": len(rows) > limit,
+            "records": records,
+            "has_more": len(rows) > limit,
             "next_before": rows[limit - 1]["id"] if len(rows) > limit else before,
-            "before": before, "observed_at": now, "revision": state["revision"],
-            "open_count": len(opened), "closed_count": len(closed),
+            "before": before,
+            "observed_at": now,
+            "revision": state["revision"],
+            "open_count": len(opened),
+            "closed_count": len(closed),
+        }
+
+    def research_account(self, account: str, cutoff: float | None = None) -> dict[str, Any]:
+        """Select one durable identity without loading all account/history projections."""
+        row = self.connection.execute(
+            "SELECT revision,(body->'accounts'->%s)-'recent_trades'-'economics_windows' AS account,"
+            "(body->>'last_tick')::double precision AS state_at FROM paper_state WHERE id=1",
+            (account,),
+        ).fetchone()
+        if row is None:
+            raise KeyError("Paper state not found")
+        if cutoff is None:
+            cutoff = time.time()
+        if row["state_at"] > cutoff:
+            raise ValueError("Financial snapshot is later than the requested cutoff; retry")
+        saved = row["account"]
+        archive = None
+        if saved is None:
+            archive = self.connection.execute(
+                "SELECT trial_id,retired_at,state-'recent_trades'-'economics_windows' AS state "
+                "FROM paper_lab_archives WHERE account=%s AND retired_at<=%s",
+                (account, cutoff),
+            ).fetchone()
+            if archive is None:
+                raise KeyError("Paper account not found")
+            saved = {
+                k: v
+                for k, v in archive["state"].items()
+                if k not in {"recent_trades", "economics_windows"}
+            }
+        maximum = self.connection.execute(
+            "SELECT coalesce(max(id),0) AS id FROM paper_events WHERE at<=%s",
+            (cutoff,),
+        ).fetchone()
+        return {
+            "account": account,
+            "state": saved,
+            "revision": row["revision"],
+            "cutoff": cutoff,
+            "maximum_event_id": maximum["id"] if maximum else 0,
+            "archived": archive is not None,
+            "retired_at": archive["retired_at"] if archive else None,
+            "trial_id": saved.get("lab_trial", archive["trial_id"] if archive else None),
+        }
+
+    def research_events(
+        self,
+        account: str,
+        symbol: str,
+        cutoff: float,
+        maximum: int,
+        *,
+        before: int = 0,
+        start: float = 0,
+    ) -> dict[str, Any]:
+        """Bounded permanent events pinned to immutable membership and observation cutoff."""
+        rows = self.connection.execute(
+            "SELECT id,revision,account,at,kind,body FROM paper_events WHERE account=%s "
+            "AND body->>'symbol'=%s AND kind='trade_closed' AND id<=%s "
+            "AND at>=%s AND at<=%s AND (%s=0 OR id<%s) ORDER BY id DESC LIMIT 21",
+            (account, symbol, maximum, start, cutoff, before, before),
+        ).fetchall()
+        return {
+            "events": rows[:20],
+            "has_more": len(rows) > 20,
+            "next_before": rows[19]["id"] if len(rows) > 20 else None,
+        }
+
+    def research_outcomes(
+        self, snapshot: dict[str, Any], symbol: str, *, start: float = 0
+    ) -> dict[str, Any]:
+        from trading.paper_economics import sample
+
+        account, cutoff, maximum = (snapshot[k] for k in ("account", "cutoff", "maximum_event_id"))
+        totals = self.connection.execute(
+            "SELECT count(*) AS trades,coalesce(sum((body->>'pnl')::numeric),0)::text AS net_pnl,"
+            "coalesce(sum((body->>'fees')::numeric),0)::text AS fees,"
+            "min((body->>'opened_at')::double precision) AS first_opened_at "
+            "FROM paper_events WHERE account=%s AND body->>'symbol'=%s "
+            "AND kind='trade_closed' AND id<=%s AND at>=%s AND at<=%s",
+            (account, symbol, maximum, start, cutoff),
+        ).fetchone()
+        saved = snapshot["state"]
+        account_totals = sample(
+            saved, cutoff, final_at=snapshot["retired_at"] if snapshot["archived"] else None
+        )
+        page = self.research_events(account, symbol, cutoff, maximum, start=start)
+        comparison = (
+            self.connection.execute(
+                "SELECT id,at,body FROM paper_events WHERE kind='lab_trial_scored' "
+                "AND body->>'trial_id'=%s AND id<=%s AND at<=%s ORDER BY id DESC LIMIT 1",
+                (snapshot["trial_id"], maximum, cutoff),
+            ).fetchone()
+            if snapshot["trial_id"]
+            else None
+        )
+        return {
+            "account": account,
+            "symbol": symbol,
+            "archived": snapshot["archived"],
+            "market_totals": dict(totals) if totals else None,
+            **page,
+            "account_totals": account_totals,
+            "account_totals_basis": (
+                "Final historical reconciled cash-only account; no current quote valuation"
+                if account_totals.get("final")
+                else "Cumulative whole account at captured revision; current marks may be missing"
+            ),
+            "accounting_at": snapshot["retired_at"]
+            if account_totals.get("final")
+            else saved.get("valuation_at"),
+            "queried_at": cutoff,
+            "open_holdings": saved["positions"],
+            "pending_orders": saved["pending"],
+            "max_drawdown": saved["max_drawdown"],
+            "operating_daily_usd": saved.get("operating_daily_usd"),
+            "trial_id": snapshot["trial_id"],
+            "trial_comparison": dict(comparison) if comparison else None,
+            "comparison_basis": "Recorded matched whole-account review, unavailable until maturity",
+            "scope": "Permanent selected-account market events; net P/L already includes fees. "
+            "Cumulative account equity includes cash and open holdings; stale valuation "
+            "remains unavailable. Separate accounts have separate capital.",
+            "interval": {"start": start, "end": cutoff},
+            "snapshot": {k: v for k, v in snapshot.items() if k != "state"},
         }
 
     def reconcile(self) -> dict[str, Any]:

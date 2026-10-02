@@ -12,7 +12,7 @@ from trading.paper_engine import filters, fresh_frame
 from trading.paper_strategy import VARIANTS
 from trading.tiered_runtime import TieredPaperRuntime
 
-VERSION = "market-evidence-tools-v2"
+VERSION = "scoped-research-tools-v3"
 TOOLS = {
     "market_evidence": {
         "name": "Inspect market evidence",
@@ -24,7 +24,7 @@ TOOLS = {
     },
     "strategy_evidence": {
         "name": "Explain the recorded decision",
-        "purpose": "Inspect the primary strategy's actual last decision and its feature values.",
+        "purpose": "Inspect the selected account's recorded decision and causal inputs.",
     },
     "outcome_review": {
         "name": "Review paper outcomes",
@@ -70,17 +70,29 @@ def market_live(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
     }
 
 
-def strategy_evidence(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
-    primary = runtime.state["accounts"]["primary"]
+def strategy_evidence(
+    runtime: TieredPaperRuntime,
+    symbol: str,
+    account: str = "primary",
+    saved: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    primary = saved if saved is not None else runtime.state["accounts"].get(account)
+    if primary is None:
+        raise ValueError("Selected account is unavailable; no primary fallback")
+    decision = primary["last_decision"].get(symbol)
     return copy.deepcopy(
         {
             "symbol": symbol,
+            "account": account,
             "version": primary["version"],
-            "last_decision": primary["last_decision"].get(symbol),
-            "features": runtime.study.get(symbol, {}).get(primary["version"]),
+            "last_decision": decision,
+            "features": decision.get("features") if decision else None,
+            "feature_basis": (
+                "Exact recorded causal inputs; absent legacy inputs remain unavailable"
+            ),
             "primary_market": symbol in primary.get("symbols", ("BTCUSD", "ETHUSD")),
-            "entries_paused": runtime.state["paused"],
-            "next_review": runtime.state["next_review"],
+            "entries_paused": runtime.state["paused"] or primary.get("entries_paused", False),
+            "next_review": runtime.state["next_review"] if account == "primary" else None,
             "position": primary["positions"].get(symbol),
             "pending": primary["pending"].get(symbol),
             "note": "Recorded decisions retain their timestamps; no new entry approval is given",
@@ -88,7 +100,12 @@ def strategy_evidence(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any
     )
 
 
-def market_detail(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
+def market_detail(
+    runtime: TieredPaperRuntime,
+    symbol: str,
+    account: str = "primary",
+    saved: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     validate_symbol(symbol, runtime)
     history = runtime.history.get(symbol, [])[-120:]
     gaps = [
@@ -127,7 +144,7 @@ def market_detail(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
         "indicators": overlays(runtime.history.get(symbol, [])[-600:]),
         "candles_stale": bool(history and time.time() * 1000 - history[-1].close_ms > 90000),
         "history_scope": "Up to 120 closed minute candles; bootstrap history is not paper trading",
-        "strategy": strategy_evidence(runtime, symbol),
+        "strategy": strategy_evidence(runtime, symbol, account, saved),
         "experiments": strategy_experiments(runtime, symbol),
         "paper_events": [
             {
@@ -147,7 +164,12 @@ def market_detail(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
     }
 
 
-def market_evidence(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
+def market_evidence(
+    runtime: TieredPaperRuntime,
+    symbol: str,
+    account: str = "primary",
+    saved: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Save selected-market evidence without duplicating the full chart/scanner."""
     live = market_live(runtime, symbol)
     markets = live["markets"]
@@ -156,11 +178,9 @@ def market_evidence(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
     live["markets_omitted"] = len(markets) - len(live["markets"])
     live["markets_scope"] = "Selected market only; other quotes remain available in Markets"
 
-    detail = market_detail(runtime, symbol)
+    detail = market_detail(runtime, symbol, account, saved)
     scan = detail["scan"]
-    scan["rows"] = copy.deepcopy(
-        [row for row in runtime.universe.rows if row["symbol"] == symbol]
-    )
+    scan["rows"] = copy.deepcopy([row for row in runtime.universe.rows if row["symbol"] == symbol])
     scan["omitted"] = scan["total"] - len(scan["rows"])
     scan["scope"] = "Selected market only; other scanner rows remain available in Markets"
 
@@ -257,14 +277,22 @@ def strategy_experiments(runtime: TieredPaperRuntime, symbol: str) -> dict[str, 
     }
 
 
-def cost_hurdle(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
+def cost_hurdle(
+    runtime: TieredPaperRuntime,
+    symbol: str,
+    account: str = "primary",
+    saved: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     live = market_live(runtime, symbol)
     quote = next((q for q in live["markets"] if q["symbol"] == symbol), None)
     if not quote or quote["state"] != "fresh":
         raise ValueError("A fresh quote is required; no cost estimate was fabricated")
     if time.time() - runtime.metadata_at > 900:
         raise ValueError("Market filters are stale; wait for refreshed instrument metadata")
-    profile = execution(runtime.state["accounts"]["primary"])
+    selected = saved if saved is not None else runtime.state["accounts"].get(account)
+    if selected is None:
+        raise ValueError("Selected account is unavailable; no primary fallback")
+    profile = execution(selected)
     fee, slippage = profile.fee(symbol), Decimal(profile.slippage)
     tick = filters(runtime.instruments[symbol])["tick"]
     bid, ask = Decimal(quote["bid"]), Decimal(quote["ask"])
@@ -276,8 +304,32 @@ def cost_hurdle(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
     required_bid = (minimum_exit / (1 - slippage) / tick).to_integral_value(
         rounding=ROUND_UP
     ) * tick
+    position = selected["positions"].get(symbol)
+    position_hurdle = None
+    if position:
+        quantity = Decimal(position["quantity"])
+        original_cost = Decimal(position["total_cost"])
+        partial_proceeds = Decimal(position.get("exit_proceeds", "0"))
+        remaining = max(Decimal(0), original_cost - partial_proceeds)
+        remaining_bid = (
+            (remaining / quantity / (1 - fee) / (1 - slippage) / tick).to_integral_value(
+                rounding=ROUND_UP
+            )
+            * tick
+            if quantity > 0
+            else None
+        )
+        position_hurdle = {
+            "original_cost_including_entry_fees": str(original_cost),
+            "partial_exit_net_proceeds": str(partial_proceeds),
+            "remaining_required_net_proceeds": str(remaining),
+            "remaining_quantity": str(quantity),
+            "required_bid": str(remaining_bid) if remaining_bid is not None else None,
+            "basis": "Original cost minus recorded net partial proceeds; exit costs applied once",
+        }
     return {
         "execution_profile": profile.id,
+        "account": account,
         "symbol": symbol,
         "quote": quote,
         "round_trip_loss_percent": str((1 - exit_value / entry_cost) * 100),
@@ -287,6 +339,7 @@ def cost_hurdle(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
         "adverse_price_per_side": str(slippage),
         "participation_cap": profile.participation,
         "price_tick": str(tick),
+        "position_hurdle": position_hurdle,
         "scope": (
             "Top-of-book cost hurdle per unit; deeper impact, quantity filters, timing "
             "and fill uncertainty are excluded. No order or fill is created."
@@ -294,46 +347,35 @@ def cost_hurdle(runtime: TieredPaperRuntime, symbol: str) -> dict[str, Any]:
     }
 
 
-def execute_tool(runtime: TieredPaperRuntime, tool: str, symbol: str) -> dict[str, Any]:
+def execute_tool(
+    runtime: TieredPaperRuntime,
+    tool: str,
+    symbol: str,
+    account: str = "primary",
+    saved: dict[str, Any] | None = None,
+    outcomes: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     if tool not in TOOLS:
         raise ValueError("Tool is not registered")
     validate_symbol(symbol, runtime)
     result: dict[str, Any]
     if tool == "market_evidence":
-        result = market_evidence(runtime, symbol)
+        result = market_evidence(runtime, symbol, account, saved)
     elif tool == "cost_hurdle":
-        result = cost_hurdle(runtime, symbol)
+        result = cost_hurdle(runtime, symbol, account, saved)
     elif tool == "strategy_evidence":
-        result = strategy_evidence(runtime, symbol)
+        result = strategy_evidence(runtime, symbol, account, saved)
     else:
-        account = runtime.state["accounts"]["primary"]
-        retained = [trade for trade in account["recent_trades"] if trade.get("symbol") == symbol]
-        sample = retained[-30:]
-        result = {
-            "symbol": symbol,
-            "recent_market_trades": copy.deepcopy(sample),
-            "sample_totals": {
-                "trades": len(sample),
-                "net_pnl": str(sum((Decimal(trade["pnl"]) for trade in sample), Decimal(0))),
-                "fees": str(sum((Decimal(trade["fees"]) for trade in sample), Decimal(0))),
-            },
-            "retained_market_count": len(retained),
-            "omitted_retained_market_trades": max(0, len(retained) - 30),
-            "scope": (
-                "Latest 30 matching trades from the primary account's 1,000-trade memory; "
-                "durable history remains in the journal"
-            ),
-            "account_totals": {
-                key: copy.deepcopy(account[key])
-                for key in (
-                    "equity",
-                    "funding",
-                    "fees",
-                    "realized",
-                    "closed",
-                    "attempt",
-                    "replenishments",
-                )
-            },
-        }
+        result = (
+            outcomes
+            if outcomes is not None
+            else {
+                "symbol": symbol,
+                "account": account,
+                "status": "unavailable",
+                "reason": (
+                    "Durable account reader unavailable; rolling trades are not outcome evidence"
+                ),
+            }
+        )
     return {"tool": tool, "version": VERSION, "observed_at": time.time(), "result": result}

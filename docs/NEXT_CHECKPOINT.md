@@ -1,3 +1,29 @@
+# Current: audit repairs delivered; actual model/quality proof remains blocked
+
+Issue #28 CP17-CP22 drafts #29-34 have exact-head hosted green source gates.
+CP23 adds integrated source/native/browser/fault acceptance and a concrete
+[rollout handoff](CP23_ROLLOUT_HANDOFF.md); read its
+[observed evidence](reviews/cp23/README.md) and
+[current ledger](LLM_RESEARCH_CHECKPOINTS.md). LLM-F1–F7 are repaired within these
+existing drafts. Final product source `6b5a926` passes 668 native tests/no skips,
+all eight declared finite cases and browser recovery/cold-history checks. Source
+tests and exact delivery-head hosted checks are separate receipts in the draft/issue.
+
+The next required operational result is still CP18's real evidence -> currently
+qualified proposal -> deterministic experiment/required review -> ordinary paper
+comparison -> recorded mature outcome -> supported different follow-up. The
+installed optional-research guard currently prevents qualified dispatch. No
+current v5 role qualifies; prior/ineligible scores and software stubs cannot fill
+this gap. Do not waive admission or modify/restart the operating app.
+
+CP23 matched qualified A/B/C/D usefulness/cost comparison and subsequent whole-
+account economic observation remain incomplete/unknown. Actual SEC transport is
+denied/rate-limited; actual Crik connector/authorized bridge is absent. Reuse
+existing installed models and the existing updater only under applicable explicit
+authorization. Leave all PRs draft/unmerged and operating accounts/history/G: intact.
+
+# Historical checkpoints
+
 # Current: complete the continuous autonomous paper lab
 
 Follow `CONTINUOUS_PAPER_LAB.md` and issue #1 comment 5915529073. The September 30

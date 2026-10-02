@@ -114,6 +114,11 @@ def validate_parent(state: dict[str, Any], proposal: LabProposal) -> None:
 
 
 def reserve(engine: "PaperEngine", proposal: LabProposal) -> dict[str, Any]:
+    for spec in (proposal.strategy, proposal.reference):
+        if spec.entry_filter:
+            synthetic = "synthetic" in engine.state.get("evidence_kind", "")
+            if (spec.entry_filter.artifact["evidence_kind"] == "synthetic_qa") != synthetic:
+                raise InvalidProposal("Synthetic memory cannot enter an observed-market trial")
     lab = engine.state["autonomous_lab"]
     policy = LabPolicy.model_validate(lab["policy"])
     if proposal.policy_id != policy.request_id:
@@ -202,7 +207,10 @@ def fund(engine: "PaperEngine", trial_id: str) -> dict[str, Any]:
             admitted_at=engine.now,
             symbols=["BTCUSD"],
             benchmark_symbols=["BTCUSD"],
-            operating_daily_usd=p.daily_operating_usd,
+            operating_daily_usd=str(
+                D(p.daily_operating_usd)
+                + D(spec.get("entry_filter", {}).get("marginal_daily_usd", "0"))
+            ),
             entries_paused=lab["entries_paused"],
             control_version=0,
             lab_protected=False,
@@ -316,8 +324,19 @@ def review(engine: "PaperEngine", trial_id: str) -> dict[str, Any]:
     )
     elapsed = D(str(window["available_at"] - t["started_at"]))
     operating = D(p.daily_operating_usd) * elapsed / 86400
+    component_costs = {
+        role: D(
+            t["contract"]["proposal"][key].get("entry_filter", {}).get("marginal_daily_usd", "0")
+        )
+        * elapsed
+        / 86400
+        for role, key in (("candidate", "strategy"), ("reference", "reference"))
+    }
     values = {
-        role: D(window[role]["equity"]) - D(p.starting_cash) - operating
+        role: D(window[role]["equity"])
+        - D(p.starting_cash)
+        - operating
+        - component_costs.get(role, D(0))
         for role in ("candidate", "reference", "passive")
     }
     scores = {role: str(values[role]) if valid else None for role in ("candidate", "reference")}
@@ -381,6 +400,8 @@ def review(engine: "PaperEngine", trial_id: str) -> dict[str, Any]:
         ),
         "qualification": "Exploration only; no CP7 or live promotion",
     }
+    if any(t["contract"]["proposal"][key].get("entry_filter") for key in ("strategy", "reference")):
+        score["component_operating_usd"] = {k: str(v) for k, v in component_costs.items()}
     t["score"] = score
     lab["last_score_at"] = engine.now
     engine.emit("lab_trial_scored", "system", deepcopy(score))

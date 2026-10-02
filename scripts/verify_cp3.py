@@ -325,6 +325,7 @@ def summary(values):
     ordered = sorted(values)
     return {
         "mean": statistics.mean(values),
+        "p50": statistics.median(values),
         "p95": ordered[int((len(values) - 1) * 0.95)],
         "p99": ordered[int((len(values) - 1) * 0.99)],
         "max": max(values),

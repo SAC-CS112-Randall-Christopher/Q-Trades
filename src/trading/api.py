@@ -6,12 +6,14 @@ import json
 import re
 import sqlite3
 import time
+import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 from typing import Any, Literal
 from urllib.parse import urlsplit
 
+import httpx
 import psycopg
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
@@ -26,6 +28,7 @@ from trading.config import Settings
 from trading.evidence_runtime import feature_reproduction
 from trading.experiment_lab import ExperimentLab
 from trading.experiment_registry import ExperimentPlan
+from trading.local_role_model import LocalRoles
 from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
@@ -35,8 +38,10 @@ from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
 from trading.prospective_review import ProspectiveSpec
 from trading.replay_lab import ReplayLab, ReplayPlan
+from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
 from trading.research_campaigns import ResearchCampaignSpec
 from trading.research_evidence import evidence_page, evidence_record
+from trading.research_quality import quality_report
 from trading.research_storage import (
     StoragePlan,
     compact_path,
@@ -46,8 +51,12 @@ from trading.research_storage import (
     storage_snapshot,
     volume,
 )
+from trading.role_worker import Question, RoleWorker
 from trading.runtime import Monitor
-from trading.station import TOOLS, execute_tool, market_detail, market_live
+from trading.scoped_tools import disclose, outcome_page, reader
+from trading.scoped_tools import run as scoped_tool
+from trading.station import TOOLS, market_detail, market_live
+from trading.stock_research import StockQuestion, StockResearch
 from trading.storage import MonitorStore
 from trading.tiered_runtime import TieredPaperRuntime as PaperRuntime
 from trading.tool_journal import ToolJournal
@@ -104,6 +113,11 @@ class ToolRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     tool: str = Field(min_length=1, max_length=64)
     symbol: str = Field(min_length=3, max_length=24, pattern=r"^[A-Z0-9]+$")
+    account: str = Field(
+        default="primary", min_length=1, max_length=96, pattern=r"^[a-zA-Z0-9_-]+$"
+    )
+    request_id: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9-]{12,64}$")
+    start: float = Field(default=0, ge=0, allow_inf_nan=False)
 
 
 def create_app(
@@ -148,6 +162,7 @@ def create_app(
             tool_journal = None
             lab = None
             lab_task = None
+            role_task = None
             replay_lab = None
             replay_task = None
             try:
@@ -155,8 +170,10 @@ def create_app(
                 app.state.last_tool_at = 0.0
                 app.state.tool_error = None
                 try:
-                    tool_journal = ToolJournal(database.parent / "research-tools.sqlite3")
-                except (sqlite3.Error, OSError):
+                    tool_journal = ToolJournal(
+                        database.parent / "research-tools.sqlite3", load_plan(database.parent)
+                    )
+                except (sqlite3.Error, OSError, ValueError):
                     app.state.tool_error = (
                         "Tool receipt storage unavailable; paper operation continues"
                     )
@@ -245,6 +262,10 @@ def create_app(
                         lab.autonomous = AutonomousLab(
                             lab.registry, app.state.paper, lambda: lab.can_research()
                         )
+                    local_roles = LocalRoles(database.parent)
+                    lab.roles = RoleWorker(lab.registry, lab.autonomous, local_roles)
+                    lab.roles.activation = lambda: bool(local_roles.policy().get("enabled", False))
+                    role_task = asyncio.create_task(lab.roles.run()) if background else None
                 lab_task = asyncio.create_task(lab.run()) if background and lab else None
                 app.state.replay = None
                 try:
@@ -265,6 +286,10 @@ def create_app(
                     )
                 yield
             finally:
+                if role_task:
+                    role_task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await role_task
                 if replay_task:
                     replay_task.cancel()
                     with suppress(asyncio.CancelledError):
@@ -440,6 +465,108 @@ def create_app(
             raise HTTPException(503, "Research registry unavailable; paper management continues")
         return lab
 
+    @app.middleware("http")
+    async def scoped_actor_route(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        # A narrow future transport must preserve this credential and allowlist.
+        # A bearer credential never authorizes operator/dashboard/financial APIs.
+        if request.headers.get("authorization", "").startswith("Bearer ") and not (
+            request.url.path.startswith("/api/research/actors/tasks/")
+            or request.url.path.startswith("/api/research/actors/claims/")
+            or request.url.path == "/api/research/actors/answers"
+        ):
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "detail": "Research credential cannot access operator or unrelated routes"
+                },
+            )
+        return await call_next(request)
+
+    def actors(request: Request) -> ResearchActors:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Scoped research registry unavailable")
+        return ResearchActors(lab.roles)
+
+    def actor_token(request: Request) -> str:
+        authorization = request.headers.get("authorization", "")
+        if not authorization.startswith("Bearer "):
+            raise HTTPException(403, "Scoped research bearer credential required")
+        return authorization[7:]
+
+    @app.get("/api/research/actors/grants")
+    def actor_grants(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        return actors(request).snapshot()
+
+    @app.post("/api/research/actors/grants")
+    def actor_grant(request: Request, grant: ActorGrant) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return actors(request).grant(grant)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/actors/grants/{identity}/revoke")
+    def actor_revoke(request: Request, identity: str) -> dict[str, str]:
+        lab_operator(request)
+        try:
+            actors(request).revoke(identity)
+            return {
+                "status": "revoked",
+                "effect": "Completed receipts, paper positions and history preserved",
+            }
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/actors/tasks/claim")
+    def actor_claim(request: Request, command: ActorTask) -> dict[str, Any]:
+        try:
+            return actors(request).claim(actor_token(request), command.task)
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.post("/api/research/actors/claims/renew")
+    def actor_renew(request: Request, command: ActorClaim) -> dict[str, Any]:
+        try:
+            return actors(request).renew(actor_token(request), command.claim)
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.post("/api/research/actors/claims/release")
+    def actor_release(request: Request, command: ActorClaim) -> dict[str, str]:
+        try:
+            actors(request).release(actor_token(request), command.claim)
+            return {
+                "status": "released",
+                "next": "Unknown completion retained; one explicit local retry allowed",
+            }
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.post("/api/research/actors/answers")
+    def actor_answer(request: Request, command: ActorAnswer) -> dict[str, Any]:
+        try:
+            return actors(request).answer(actor_token(request), command)
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.get("/api/research/actors/tasks/{identity}/result")
+    def actor_result(request: Request, identity: str) -> dict[str, Any]:
+        try:
+            return actors(request).result(actor_token(request), identity)
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
+    @app.get("/api/research/actors/tasks/maintenance")
+    def actor_maintenance(request: Request) -> dict[str, Any]:
+        try:
+            return actors(request).maintenance(actor_token(request))
+        except ValueError as exc:
+            raise HTTPException(403, str(exc)) from exc
+
     @app.get("/api/lab")
     def research_lab(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:
         lab: ExperimentLab | None = request.app.state.lab
@@ -452,6 +579,166 @@ def create_app(
         if lab is None or lab.autonomous is None:
             raise HTTPException(503, "Autonomous lab requires the paper service and registry")
         return lab.autonomous
+
+    @app.get("/api/lab/roles")
+    def role_status(
+        request: Request,
+        before: float = Query(0, ge=0, allow_inf_nan=False),
+        before_id: str = Query("", max_length=100),
+        search: str = Query("", max_length=100),
+    ) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Local role registry unavailable; paper management continues")
+        return dict(lab.roles.page(before, before_id, search))
+
+    @app.post("/api/lab/roles/questions")
+    def role_question(request: Request, question: Question) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            identity = lab.roles.enqueue(question)["id"]
+        except ValueError as exc:
+            receipt = lab.roles.reject(question, str(exc))
+            raise HTTPException(503 if receipt["outcome"] == "created" else 409, receipt) from exc
+        try:
+            return dict(lab.roles.view(identity))
+        except (ValueError, OSError, LookupError) as exc:
+            # A detail/disclosure failure after commit is a positive creation receipt.
+            # Never tell the form this already-saved intent was rejected.
+            receipt = lab.roles.reject(
+                question, "Question saved; detail is temporarily unavailable"
+            )
+            raise HTTPException(503, receipt) from exc
+
+    @app.get("/api/lab/roles/tasks/{identity}")
+    def role_detail(request: Request, identity: str) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Local role registry unavailable")
+        try:
+            return dict(lab.roles.view(identity))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/lab/roles/tasks/{identity}/retry")
+    def role_retry(request: Request, identity: str) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return dict(lab.roles.retry(identity))
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/lab/roles/tasks/{identity}/components/{capability}")
+    def role_component_detail(
+        request: Request, identity: str, capability: str, offset: int = Query(0, ge=0, le=128)
+    ) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Local role registry unavailable")
+        try:
+            return dict(lab.roles.component_detail(identity, capability, offset))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/research/lessons")
+    def lesson_search(
+        request: Request,
+        before: int = Query(0, ge=0),
+        text: str = "",
+        family: str = "",
+        parent: str = "",
+        horizon: str = "",
+        outcome: str = "",
+        cost_sha: str = "",
+        data_basis: str = "",
+    ) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Research lesson registry unavailable")
+        try:
+            return dict(
+                lab.roles.lessons.retrieve(
+                    before=before,
+                    text=text,
+                    family=family,
+                    parent=parent,
+                    horizon=horizon,
+                    outcome=outcome,
+                    cost_sha=cost_sha,
+                    data_basis=data_basis,
+                )
+            )
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/research/lessons/{identity}")
+    def lesson_detail(request: Request, identity: str) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Research lesson registry unavailable")
+        try:
+            return dict(lab.roles.lessons.get(identity))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/research/selection")
+    def selection_metrics(request: Request) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Research selector unavailable")
+        return dict(lab.roles.selection_metrics())
+
+    @app.get("/api/research/quality")
+    def research_quality(request: Request) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None or lab.roles is None:
+            raise HTTPException(503, "Research metrics unavailable")
+        return quality_report(lab.roles)
+
+    @app.post("/api/research/stocks/investigations")
+    def stock_investigate(request: Request, question: StockQuestion) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return StockResearch(lab.registry).investigate(question)
+        except (ValueError, httpx.HTTPError) as exc:
+            raise HTTPException(409, str(exc)[:300]) from exc
+
+    @app.post("/api/research/stocks/market-study")
+    def stock_market_study(request: Request, question: StockQuestion) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return StockResearch(lab.registry).market_study(question)
+        except (ValueError, httpx.HTTPError) as exc:
+            raise HTTPException(409, str(exc)[:300]) from exc
+
+    @app.get("/api/research/stocks/studies/{identity}")
+    def stock_study(request: Request, identity: str) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research registry unavailable")
+        try:
+            return StockResearch(lab.registry).get(identity)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/research/stocks/studies/{identity}/section")
+    def stock_section(
+        request: Request,
+        identity: str,
+        phrase: str = Query(min_length=3, max_length=100),
+        index: int = Query(0, ge=0, le=1),
+        compare: bool = False,
+    ) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            research = StockResearch(lab.registry)
+            return (
+                research.compare_filings(identity, phrase)
+                if compare
+                else research.section(identity, index, phrase)
+            )
+        except (ValueError, httpx.HTTPError) as exc:
+            raise HTTPException(409, str(exc)[:300]) from exc
 
     @app.get("/api/autonomous")
     async def autonomous_snapshot(request: Request) -> dict[str, Any]:
@@ -714,34 +1001,221 @@ def create_app(
 
     @app.get("/api/station/detail")
     async def station_detail(
-        request: Request, symbol: str = Query("BTCUSD", pattern=r"^[A-Z0-9]{3,24}$")
+        request: Request,
+        symbol: str = Query("BTCUSD", pattern=r"^[A-Z0-9]{3,24}$"),
+        account: str = Query("primary", pattern=r"^[a-zA-Z0-9_-]{1,96}$"),
     ) -> dict[str, Any]:
         paper: PaperRuntime | None = request.app.state.paper
         if paper is None:
             raise HTTPException(409, "Paper experiment is not enabled")
         try:
-            return market_detail(paper, symbol)
-        except ValueError as exc:
+
+            def selected_detail() -> dict[str, Any]:
+                saved = None
+                if isinstance(paper.store, PaperStore):
+                    with reader(paper) as view:
+                        saved = view.research_account(account)["state"]
+                return market_detail(paper, symbol, account, saved)
+
+            return await asyncio.to_thread(selected_detail)
+        except (ValueError, KeyError) as exc:
             raise HTTPException(422, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Selected evidence is unavailable; retry when connected"
+            ) from exc
 
     @app.get("/api/research/tools")
-    async def research_tools(request: Request) -> dict[str, Any]:
+    async def research_tools(
+        request: Request, cursor: str | None = Query(None, max_length=2048)
+    ) -> dict[str, Any]:
         journal: ToolJournal | None = request.app.state.tool_journal
+        try:
+            history = (
+                await asyncio.to_thread(journal.recent, cursor)
+                if journal
+                else {"runs": [], "total": 0}
+            )
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (OSError, sqlite3.Error) as exc:
+            raise HTTPException(503, "Tool history is waiting for configured storage") from exc
         return {
             "tools": [{"id": key, **value} for key, value in TOOLS.items()],
             "authority": "Read-only evidence; no financial or model authority",
             "agents_enabled": False,
             "error": request.app.state.tool_error,
-            **(await asyncio.to_thread(journal.recent) if journal else {"runs": [], "total": 0}),
+            "capabilities": {
+                "coverage": {"method": "GET", "path": "/api/research/activity"},
+                "prior_experiments": {"method": "GET", "path": "/api/lab"},
+                "historical_analogues": {
+                    "method": "GET",
+                    "path": "/api/research/analogues/{record_id}",
+                },
+                "prior_paper_trials": {"method": "GET", "path": "/api/autonomous/history"},
+                "proposal_bundle": {"method": "GET", "path": "/api/autonomous/bundle"},
+                "proposal_submit": {"method": "POST", "path": "/api/autonomous/proposals"},
+                "proposal_result": {
+                    "method": "GET",
+                    "path": "/api/autonomous/proposals/{request_id}",
+                },
+                "experiment_submit": {
+                    "method": "POST",
+                    "path": "/api/lab/experiments",
+                    "result": "durable asynchronous request_id",
+                },
+                "experiment_result": {"method": "GET", "path": "/api/lab/experiments/{request_id}"},
+            },
+            **history,
         }
+
+    def disclose_tool(request: Request, receipt: dict[str, Any]) -> None:
+        lab: ExperimentLab | None = request.app.state.lab
+        if receipt.get("result") and lab is None:
+            raise HTTPException(
+                503, "Evidence disclosure authority unavailable; retry when connected"
+            )
+        if lab:
+            disclose(lab.registry, receipt)
+
+    @app.get("/api/research/analogues/{record_id}")
+    def historical_analogues(request: Request, record_id: int) -> dict[str, Any]:
+        try:
+            saved = evidence_record(database.parent / "research-evidence.sqlite", record_id)
+            episode = saved["payload"].get("episode")
+            if not isinstance(episode, dict) or not episode.get("retrieval"):
+                raise LookupError("This captured record has no causal analogue lookup")
+            if saved["payload"]["at"] > time.time():
+                raise ValueError("Captured analogue is not yet available")
+            result = {
+                "source": {
+                    "type": "full-evidence-record",
+                    "id": record_id,
+                    "sha256": saved["sha256"],
+                },
+                "lookup": episode["retrieval"],
+                "query_descriptor": episode["descriptor"],
+                "scope": "Captured causal lookup; neighbors do not estimate outcome frequencies",
+            }
+            if len(json.dumps(result).encode()) > 131072:
+                raise ValueError("Analogue lookup exceeds bounded response capacity")
+            lab = request.app.state.lab
+            if lab is None:
+                raise HTTPException(503, "Analogue disclosure authority unavailable")
+            # The existing capture may include old neighbor outcomes. Consume its
+            # entire past conservatively before revealing these saved values.
+            with lab.registry.transaction():
+                lab.registry.db.execute(
+                    "INSERT OR IGNORE INTO evidence_windows "
+                    "VALUES(?,?,?,'analogue tool disclosure')",
+                    ("analogue:" + saved["sha256"], 0, saved["payload"]["at"]),
+                )
+            return result
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except (ValueError, KeyError, TypeError, sqlite3.Error, OSError) as exc:
+            raise HTTPException(
+                409, "Captured analogue unavailable; no current-data substitute"
+            ) from exc
+
+    @app.get("/api/research/tools/accounts")
+    async def tool_accounts(
+        request: Request, before: str = Query("", max_length=96)
+    ) -> dict[str, Any]:
+        paper = request.app.state.paper
+        if paper is None:
+            raise HTTPException(503, "Paper identities are unavailable")
+
+        def identities() -> dict[str, Any]:
+            active = [
+                {"account": name, "label": a.get("label", name), "archived": False}
+                for name, a in paper.state["accounts"].items()
+            ]
+            archived: list[dict[str, Any]] = []
+            if isinstance(paper.store, PaperStore):
+                with reader(paper) as view:
+                    archived = list(
+                        view.connection.execute(
+                            "SELECT account,state->>'label' AS label,true AS archived "
+                            "FROM paper_lab_archives WHERE (%s='' OR account>%s) "
+                            "ORDER BY account LIMIT 21",
+                            (before, before),
+                        ).fetchall()
+                    )
+            return {
+                "accounts": active + archived[:20],
+                "has_more": len(archived) > 20,
+                "next_before": archived[19]["account"] if len(archived) > 20 else None,
+            }
+
+        try:
+            return await asyncio.to_thread(identities)
+        except psycopg.Error as exc:
+            raise HTTPException(503, "Account identities are unavailable; retry") from exc
 
     @app.get("/api/research/tools/runs/{run_id}")
     async def tool_run(request: Request, run_id: int) -> dict[str, Any]:
         journal: ToolJournal | None = request.app.state.tool_journal
-        result = await asyncio.to_thread(journal.get, run_id) if journal else None
+        try:
+            result = await asyncio.to_thread(journal.get, run_id) if journal else None
+            if result:
+                await asyncio.to_thread(disclose_tool, request, result)
+        except (ValueError, LookupError, OSError, sqlite3.Error) as exc:
+            raise HTTPException(
+                503, "Exact saved receipt unavailable; no current-data substitute"
+            ) from exc
         if result is None:
             raise HTTPException(404, "Tool receipt not found")
         return result
+
+    @app.get("/api/research/tools/runs/{run_id}/detail")
+    async def tool_detail(
+        request: Request, run_id: int, cursor: str | None = Query(None, max_length=4096)
+    ) -> dict[str, Any]:
+        journal: ToolJournal | None = request.app.state.tool_journal
+        if journal is None:
+            raise HTTPException(503, "Tool storage is unavailable")
+        try:
+            receipt = await asyncio.to_thread(journal.get, run_id)
+            if receipt is None:
+                raise HTTPException(404, "Tool receipt not found")
+            await asyncio.to_thread(disclose_tool, request, receipt)
+            if receipt["tool"] == "outcome_review" and receipt["result"].get("envelope"):
+                facts = (await asyncio.to_thread(journal.detail, run_id))["facts"]
+                before = 0
+                identity = {
+                    "run_id": run_id,
+                    "sha256": receipt["result_sha256"],
+                    "account": receipt["account"],
+                    "query": receipt["query"],
+                }
+                if cursor:
+                    claims = journal.claims(cursor, kind="outcomes")
+                    if any(claims.get(k) != v for k, v in identity.items()):
+                        raise ValueError("Outcome cursor belongs to a different receipt/snapshot")
+                    before = int(claims["before"])
+                paper = request.app.state.paper
+                page = (
+                    await asyncio.to_thread(outcome_page, paper, receipt, before)
+                    if before
+                    else {k: facts.get(k) for k in ("events", "has_more", "next_before")}
+                )
+                return {
+                    "scope": identity,
+                    **page,
+                    "next_cursor": journal.cursor(
+                        dict(identity, kind="outcomes", before=page["next_before"])
+                    )
+                    if page["has_more"]
+                    else None,
+                }
+            return await asyncio.to_thread(journal.detail, run_id, cursor)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (LookupError, OSError, sqlite3.Error, psycopg.Error) as exc:
+            raise HTTPException(
+                503, "Captured detail is unavailable; retry when connected"
+            ) from exc
 
     @app.post("/api/research/tools/run")
     async def run_tool(command: ToolRequest, request: Request) -> dict[str, Any]:
@@ -771,18 +1245,43 @@ def create_app(
         request.app.state.tool_busy = True
         request.app.state.last_tool_at = time.monotonic()
         try:
-            run_id = await asyncio.to_thread(journal.start, command.tool, command.symbol)
+            request_id = command.request_id or str(uuid.uuid4())
+            run_id = await asyncio.to_thread(
+                journal.start,
+                command.tool,
+                command.symbol,
+                account=command.account,
+                request_id=request_id,
+                query=command.model_dump(exclude={"request_id"}),
+            )
+            existing = await asyncio.to_thread(journal.get, run_id)
+            if existing and existing["status"] != "running":
+                await asyncio.to_thread(disclose_tool, request, existing)
+                return existing
             result = None
             error = None
             try:
-                result = execute_tool(paper, command.tool, command.symbol)
+                if command.start > time.time():
+                    raise ValueError(
+                        "Outcome interval begins after the available observation cutoff"
+                    )
+                result = await asyncio.to_thread(
+                    scoped_tool,
+                    paper,
+                    command.tool,
+                    command.symbol,
+                    command.account,
+                    request_id,
+                    start=command.start,
+                )
             except (ValueError, KeyError, ArithmeticError) as exc:
                 error = str(exc)
             await asyncio.to_thread(journal.finish, run_id, result, error)
             saved = await asyncio.to_thread(journal.get, run_id)
             assert saved is not None
+            await asyncio.to_thread(disclose_tool, request, saved)
             return saved
-        except (sqlite3.Error, OSError, ValueError) as exc:
+        except (sqlite3.Error, OSError, ValueError, psycopg.Error) as exc:
             raise HTTPException(
                 503, "Tool receipt could not be saved; inspect local storage"
             ) from exc
@@ -959,7 +1458,8 @@ def create_app(
 
     @app.get("/api/paper/trades")
     def paper_trades(
-        request: Request, before: int = Query(0, ge=0),
+        request: Request,
+        before: int = Query(0, ge=0),
         limit: int = Query(50, ge=1, le=100),
         account: str | None = Query(None, min_length=1, max_length=100),
         status: Literal["all", "open", "closed"] = "all",
@@ -996,8 +1496,14 @@ def create_app(
                 reader.connection.execute(
                     "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY"
                 )
-                result = reader.trade_history(before=before, limit=limit, account=account,
-                                              status=status, frames=frames, now=now)
+                result = reader.trade_history(
+                    before=before,
+                    limit=limit,
+                    account=account,
+                    status=status,
+                    frames=frames,
+                    now=now,
+                )
             return JSONResponse(result, headers={"Cache-Control": "no-store"})
         except KeyError as exc:
             raise HTTPException(404, "Paper account not found") from exc

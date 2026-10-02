@@ -1,0 +1,52 @@
+{
+  "full_source_commit": "197e5a1894b16b01af71604664048dc23a03bd34",
+  "complete_native": {
+    "passed": 629,
+    "skipped": 0,
+    "failed": 0,
+    "warning_count": 1,
+    "seconds": 201.19,
+    "database": "Real owned disposable PostgreSQL; Windows/Python 3.12"
+  },
+  "preceding_complete_native": {
+    "passed": 628,
+    "skipped": 0,
+    "seconds": 213.68
+  },
+  "affected_prior": {
+    "passed": 37,
+    "skipped": 0,
+    "seconds": 13.34
+  },
+  "affected_after_database_fix": {
+    "passed": 17,
+    "skipped": 0,
+    "seconds": 8.88
+  },
+  "ruff": "passed",
+  "strict_mypy": {
+    "passed": true,
+    "source_files": 82
+  },
+  "frontend": {
+    "passed": true,
+    "modules_transformed": 1925,
+    "build_ms": 992
+  },
+  "scram_reader": {
+    "bad_login_rejected": true,
+    "read_only_repeatable_read": true,
+    "financial_history_preserved": true,
+    "credential_in_response": false,
+    "hba_restored": true,
+    "generated_role_schema_removed": true
+  },
+  "hosted_scope": "Conditional PostgreSQL tests may skip on hosted runner; native complete zero-skip suite is separate",
+  "initial_failed_focused": {
+    "passed": 26,
+    "failed": 1,
+    "seconds": 11.18,
+    "cause": "Synthetic market fixture below declared two-row minimum; fixture fixed without changing validator"
+  },
+  "limits": "Model stubs/accelerated disposable maturity never qualify roles or establish economic value"
+}

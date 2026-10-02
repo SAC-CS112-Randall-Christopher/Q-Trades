@@ -1,3 +1,51 @@
+# Current work order - issue #28, CP17-CP23 source delivery
+
+This assignment implements issue #28 and its implementation addendum. Read
+`docs/LLM_RESEARCH_CHECKPOINTS.md`, `docs/reviews/cp23/README.md` and
+`docs/CP23_ROLLOUT_HANDOFF.md` for observed evidence and precise remaining work.
+CP17-CP22 are dependent draft PRs #29-34. Current heads/hosted results are recorded
+in the issue/drafts; keep the stack draft and unmerged.
+CP23 integrates native/browser/fault acceptance, late-answer recovery, tied-time
+history cursors, exact stock acknowledgment recovery and truthful quality/results.
+The independent a21637d re-audit closed F1/F3/F4/F5/F7. The remaining F2/F6
+supervisor outage, late-answer archival and lost follow-up interactions are repaired
+in the existing owning drafts. Read docs/reviews/cp23/REAUDIT_INTEGRATION_REPAIRS.md.
+Integrated product source d435c881 passes 686 native PostgreSQL tests/no skips,
+Ruff, strict Windows-targeted mypy (84 files), frontend build and 66 integration
+checks. This run directly verifies CPython 3.12.10 / PostgreSQL 17.2. The earlier
+668-case/eight finite/browser receipts and independent Linux run stay separately
+attributed historical evidence. Preserve unanswered attempts until transport return,
+the small durable follow-up queue/cursor and visible bounded supervisor retries.
+Final delivery head/hosted results are recorded in its draft and issue; stages
+stay distinct. The earlier 629-case receipts remain historical.
+
+Actual CP18 qualified-model-to-mature-outcome/follow-up remains blocked. The
+operating paper guard repeatedly constrains optional research; corrected development
+waited 601.018 seconds with zero requests. Preliminary incomplete-screen calls are
+ineligible. Current additive role contract v5 needs independent development and
+36-case/three-seed qualification (34 correct minimum, zero critical violations).
+Never waive the guard, use historical scores or relabel stubs as qualified calls.
+CP23's matched qualified A/B/C/D comparison and prospective economic effects remain
+unperformed/insufficient; unknown is not a measured negative result. Continue these
+only when the actual runtime/admission and authorization prerequisites hold.
+
+Native public IBM daily-only study works with declared unadjusted/current-vintage
+limits. SEC denied/rate-limited access retains a ten-minute cooldown. Actual Crik
+connector/authorized bridge is absent; CP22's local scoped HTTP proof is separate.
+Read the CP17-CP22 workflow documents before changing their contracts. Preserve
+merged #27's 600-bar causal warmup/gaps/VWAP and projected latest-120 behavior.
+Preserve the sole financial writer, original six/history, successful frozen parents,
+twenty concurrent active/reserved slots, G: 100 decimal GB per tier and delayed
+outcomes. Keep inference/waiting outside financial and registry locks.
+
+Isolated source/QA, commits, push, issue updates and draft PRs are authorized.
+No merge, deployment, installed restart, operating activation/account/data/storage
+changes, model downloads or paid calls. Prior bounded installed-model QA permission
+does not waive operating admission. Dedicated CPU QA service only; GIS untouched.
+Publish only synthetic/redacted proof. Keep failed/private runtime/credentials and
+provider packets ignored. Preserve unrelated dirty work and existing source owners.
+
+# Historical working agreements
 # Continuous autonomous paper lab assignment — September 30, 2026
 
 Read `docs/CONTINUOUS_PAPER_LAB.md` and issue #1 comment 5915529073 first.

@@ -17,6 +17,42 @@
   font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   font-size: 14px;
 }
+.role-research { padding: 24px; line-height: 1.55; }
+.role-research h2 { margin: 0 0 12px; }
+.role-research p { margin: 10px 0; overflow-wrap: anywhere; }
+.role-research form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 22px 0;
+}
+.role-research form label { display: grid; gap: 7px; }
+.role-research form label:first-child { grid-column: 1 / -1; }
+.role-research input, .role-research select, .role-research textarea { width: 100%; }
+.role-research button {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  padding: 9px 14px;
+  text-align: left;
+}
+.role-research button:hover { background: var(--surface-hover); }
+.role-research table { width: 100%; border-collapse: collapse; }
+.role-research th, .role-research td {
+  padding: 12px 9px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+.role-research th { color: var(--muted); }
+.role-research article { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 20px; }
+.role-research details { margin: 12px 0; }
+.role-research summary { cursor: pointer; color: var(--muted); }
+.role-research pre { max-height: 360px; overflow: auto; padding: 16px; background: var(--background); }
+@media (max-width: 700px) {
+  .role-research { padding: 16px; }
+  .role-research form { grid-template-columns: 1fr; }
+}
 html {
   scroll-behavior: auto;
   scroll-padding-top: 90px;
