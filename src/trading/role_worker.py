@@ -882,12 +882,14 @@ class RoleWorker:
                 raise ValueError("Model final output exceeds the recorded answer bound")
             # Persist before validation or dispatch. A restart reuses the completed answer.
             with self.registry.transaction():
-                self.registry.db.execute(
+                retained = self.registry.db.execute(
                     "UPDATE role_attempts SET response=?,finished=?,status='answered', "
                     "wall_reserved=max(wall_reserved,?-started) "
                     "WHERE task=? AND stage=? AND attempt=?",
                     (body, time.time(), time.time(), task["id"], task["stage"], attempt_number),
                 )
+                if retained.rowcount != 1:
+                    raise ValueError("Completed answer has no retained attempt; repair required")
                 # An expired owner may have reported unknown completion before
                 # this immutable receipt arrives. Reconcile that uncertainty,
                 # only if no newer attempt/owner/verdict has superseded it.

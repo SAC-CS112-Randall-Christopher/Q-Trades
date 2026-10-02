@@ -142,13 +142,16 @@ def test_role_history_equal_timestamp_cursor_conserves_all_ids(pg_store, tmp_pat
     lab.registry.close()
 
 
+@pytest.mark.parametrize("archive_first", [False, True])
+@pytest.mark.parametrize("explicit_retry", [False, True])
 def test_late_native_completion_recovers_unknown_without_fresh_verdict(
-    pg_store, tmp_path, monkeypatch
+    pg_store, tmp_path, monkeypatch, archive_first, explicit_retry
 ):
     monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
     lab = make_lab(pg_store[0], tmp_path)
     model = ModelStub()
     model.slow = True
+    save_plan(tmp_path, plan_at(tmp_path))
     original = RoleWorker(lab.registry, lab, model)
     original.enabled = True
     task = original.enqueue(
@@ -166,15 +169,59 @@ def test_late_native_completion_recovers_unknown_without_fresh_verdict(
         replacement.enabled = True
         assert not await replacement.step(START)
         assert replacement.get(task["id"])["status"] == "failed"
+        if archive_first:
+            monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+            original.history.rollover()
+        assert replacement.get(task["id"])["archive_reference"] is None
+        if explicit_retry:
+            replacement.retry(task["id"])
+            assert await replacement.step(START)
+            assert replacement.get(task["id"])["stage"] == "evaluate"
+            newer = replacement.get(task["id"])["attempts"][1]["response"]
         model.release.set()
         assert not await pending  # Expired original cannot dispatch its receipt.
-        assert replacement.get(task["id"])["status"] == "queued"
-        assert await replacement.step(START)
+        if not explicit_retry:
+            assert replacement.get(task["id"])["status"] == "queued"
+            assert await replacement.step(START)
         assert replacement.get(task["id"])["stage"] == "evaluate"
-        assert replacement.transport.calls == [] and model.calls == ["researcher"]
+        assert replacement.transport.calls == (["researcher"] if explicit_retry else [])
+        assert model.calls == ["researcher"]
+        answered = replacement.get(task["id"])
+        assert answered["attempts"][0]["response"] is not None
+        if explicit_retry:
+            assert answered["attempts"][1]["response"] == newer
+        assert answered["archive_reference"] is None
+        reserved = tuple(
+            lab.registry.db.execute(
+                "SELECT count(*),sum(wall_reserved),sum(tokens_reserved) "
+                "FROM role_attempt_allowances WHERE task=?",
+                (task["id"],),
+            ).fetchone()
+        )
+        assert reserved == (
+            2 if explicit_retry else 1,
+            10 if explicit_retry else 5,
+            16384 if explicit_retry else 8192,
+        )
+        replacement._update(answered, "complete", "done")
+        monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+        replacement.history.rollover()
+        restarted = RoleWorker(lab.registry, lab)
+        cold = restarted.get(task["id"])
+        assert cold["archive_reference"] and cold["attempts"] == answered["attempts"]
+        assert (
+            tuple(
+                lab.registry.db.execute(
+                    "SELECT count(*),sum(wall_reserved),sum(tokens_reserved) "
+                    "FROM role_attempt_allowances WHERE task=?",
+                    (task["id"],),
+                ).fetchone()
+            )
+            == reserved
+        )
 
     asyncio.run(check())
-    assert len(original.get(task["id"])["attempts"]) == 1
+    assert len(original.get(task["id"])["attempts"]) == (2 if explicit_retry else 1)
     assert pg_store[0].reconcile()["balanced"]
     lab.registry.close()
 
