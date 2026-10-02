@@ -65,5 +65,22 @@ matched qualified-model versus deterministic selection comparison are not yet
 available. The operating research guard/CP18 qualification blocker persists. This
 delivery does not establish two actual-model generations or market benefit.
 
+The October 1 re-audit integration repairs exercise the normal background loop
+through an actual PostgreSQL connection refusal, restored connection and one
+correct dependency continuation. Missing successor storage similarly preserves
+the waiting question until the owned storage plan is restored. Per-question and
+supervisor phase failures record a thirty-second retry; unrelated work continues.
+Restart respects a saved phase cooldown, cancellation still exits the loop, and
+programming failures remain visible instead of becoming indefinite retries.
+
+Follow-up eligibility is retained in a small indexed queue independently of the
+large result. Selection resumes after archival before initial selection, after
+deferral, and after an unknown acknowledgment; consumed selections remain consumed.
+A legacy history migration reads at most eight records per pass, saves its cursor
+and never rescans records already examined. The combined regressions use ordinary
+disposable paper comparisons and declared software answers. They establish
+supervisor, archival and selection behavior, not actual-model qualification or
+market benefit.
+
 Original failed receipts remain ignored in `data/cp19-focused1.txt` and
 `data/cp19-lint-fix.txt`; subsequent focused/affected verification is separate.
