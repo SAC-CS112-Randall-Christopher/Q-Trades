@@ -99,3 +99,24 @@ See [verification receipts](reviews/cp18/README.md) for exact software evidence,
 failed attempts, browser proof and remaining limits. Source delivery, role
 qualification, installed activation, prospective observation and economic benefit
 remain separate stages.
+
+## Re-audit lifecycle corrections
+
+An expired research lease does not establish that its original transport call
+returned. Rollover now excludes any task with an unfinished, unanswered attempt,
+including an explicit retry racing the old call. The actual returning call keeps
+its original attempt/charges and immutable answer; final cold retirement happens
+only after that receipt is retained. A transport that has actually returned an
+unknown-completion error still archives normally with the existing explicit retry
+and conservative allowance. Unreturned uncertainty remains visible and bounded
+by existing hot/physical limits; archival cannot silently abandon it.
+
+Small durable follow-up eligibility is inserted in the existing registry in the
+same transaction as a completed result. It is independent of the large result
+payload and survives cold retirement. Indexed pending/consumed state and retry
+time prevent completed selection from being regenerated. Older rows are covered
+by a one-time durable cursor, with at most eight records per maintenance pass and
+no repeated scan of archived JSON. CP19 owns selection/recovery; CP23 verifies
+delayed answers, archive ordering, restart and exact ordinary follow-up together.
+These changes use disposable software answers only and confer no qualification
+or operational activation authority.

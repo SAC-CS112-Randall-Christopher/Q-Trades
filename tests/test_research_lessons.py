@@ -43,6 +43,133 @@ class FollowupStub(ModelStub):
         return result
 
 
+@pytest.mark.parametrize("boundary", ["before", "deferred", "lost_ack", "selected"])
+@pytest.mark.parametrize("archive", [False, True])
+def test_followup_discovery_survives_archive_and_restart_at_each_selection_boundary(
+    pg_store, tmp_path, monkeypatch, boundary, archive
+):
+    store, _ = pg_store
+    clock = [START]
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: clock[0])
+    lab = make_lab(store, tmp_path, horizon_seconds=3600)
+    save_plan(tmp_path, plan_at(tmp_path))
+    worker = RoleWorker(lab.registry, lab, FollowupStub())
+    worker.enabled = True
+    first = worker.enqueue(
+        Question(question="After this comparison investigate a different range.")
+    )
+    done, score = complete(worker, lab, first, START)
+    clock[0] = score["available_at"] + 3
+    enqueue = worker.enqueue
+    if boundary in {"deferred", "lost_ack"}:
+
+        def interrupted(*args, **kwargs):
+            if boundary == "lost_ack":
+                enqueue(*args, **kwargs)
+            raise OSError("Owned follow-up save interrupted before acknowledgment")
+
+        monkeypatch.setattr(worker, "enqueue", interrupted)
+        assert worker.select_followups() == {"selected": 0, "waiting": 0}
+        monkeypatch.setattr(worker, "enqueue", enqueue)
+    elif boundary == "selected":
+        assert worker.select_followups() == {"selected": 1, "waiting": 0}
+    if archive:
+        monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+        worker.history.rollover()
+        assert worker.get(first["id"])["archive_reference"]
+    replacement = RoleWorker(lab.registry, lab, FollowupStub())
+    assert replacement.get(first["id"])["result"] == done["result"]
+    clock[0] += 61
+    assert replacement.select_followups() == {
+        "selected": 0 if boundary == "selected" else 1,
+        "waiting": 0,
+    }
+    assert replacement.select_followups() == {"selected": 0, "waiting": 0}
+    assert lab.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 2
+    selected = lab.registry.db.execute("SELECT state,next_task FROM research_selection").fetchall()
+    assert len(selected) == 1 and selected[0]["state"] == "selected"
+    assert selected[0]["next_task"] != first["id"]
+    assert len(worker.transport.calls) == 3 and replacement.transport.calls == []
+    assert store.reconcile()["balanced"]
+    lab.registry.close()
+
+
+@pytest.mark.parametrize("already_selected", [False, True])
+def test_legacy_cold_followup_migration_preserves_selection_and_never_rescans(
+    pg_store, tmp_path, monkeypatch, already_selected
+):
+    clock = [START]
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: clock[0])
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    lab = make_lab(pg_store[0], tmp_path, horizon_seconds=3600)
+    save_plan(tmp_path, plan_at(tmp_path))
+    worker = RoleWorker(lab.registry, lab, FollowupStub())
+    worker.enabled = True
+    task = worker.enqueue(
+        Question(question="Preserve the older cold comparison's next experiment.")
+    )
+    done, score = complete(worker, lab, task, START)
+    clock[0] = score["available_at"] + 3
+    if already_selected:
+        assert worker.select_followups()["selected"] == 1
+    worker.history.rollover()
+    assert worker.get(task["id"])["archive_reference"]
+    # Only owned fixture metadata: represent the pre-repair archive exactly.
+    with lab.registry.transaction():
+        for trigger in ("role_followup_insert", "role_followup_update"):
+            lab.registry.db.execute(f"DROP TRIGGER {trigger}")
+        lab.registry.db.execute("DROP TABLE role_followups")
+        lab.registry.db.execute("DROP TABLE role_followup_backfill")
+    replacement = RoleWorker(lab.registry, lab, FollowupStub())
+    reads = []
+    read = replacement.history.read
+
+    def tracked(row):
+        reads.append(row["id"])
+        return read(row)
+
+    monkeypatch.setattr(replacement.history, "read", tracked)
+    assert replacement.select_followups()["selected"] == (0 if already_selected else 1)
+    assert replacement.get(task["id"])["result"] == done["result"]
+    read_count = len(reads)
+    assert replacement.select_followups() == {"selected": 0, "waiting": 0}
+    assert len(reads) == read_count
+    migration = lab.registry.db.execute("SELECT * FROM role_followup_backfill").fetchone()
+    assert migration["cursor"] == migration["through"]
+    assert lab.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 2
+    assert pg_store[0].reconcile()["balanced"]
+    lab.registry.close()
+
+
+def test_legacy_history_migration_is_bounded_and_restart_advances_cursor(
+    pg_store, tmp_path, monkeypatch
+):
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    lab = make_lab(pg_store[0], tmp_path)
+    save_plan(tmp_path, plan_at(tmp_path))
+    worker = RoleWorker(lab.registry, lab, NoChange())
+    worker.enabled = True
+    for i in range(12):
+        worker.enqueue(Question(question=f"Retain older terminal software question {i}."))
+        assert asyncio.run(worker.step())
+    worker.history.rollover()
+    with lab.registry.transaction():
+        for trigger in ("role_followup_insert", "role_followup_update"):
+            lab.registry.db.execute(f"DROP TRIGGER {trigger}")
+        lab.registry.db.execute("DROP TABLE role_followups")
+        lab.registry.db.execute("DROP TABLE role_followup_backfill")
+    replacement = RoleWorker(lab.registry, lab)
+    assert replacement.history.discover_followups() == 0
+    migration = lab.registry.db.execute("SELECT * FROM role_followup_backfill").fetchone()
+    assert migration["cursor"] == 8 and migration["through"] == 12
+    restarted = RoleWorker(lab.registry, lab)
+    assert restarted.history.discover_followups() == 0
+    assert lab.registry.db.execute("SELECT cursor FROM role_followup_backfill").fetchone()[0] == 12
+    assert restarted.history.discover_followups() == 0 and pg_store[0].reconcile()["balanced"]
+    lab.registry.close()
+
+
 def complete(worker, lab, task, at):
     recorder = EvidenceRecorder(lab.registry.path.parent / "research-evidence.sqlite")
     recorder.enqueue({"kind": "wire", "at": at, "source": "synthetic-two-generation-fixture"})
