@@ -92,7 +92,7 @@ conversion/error behavior and exact committed hash/event provenance after anothe
 financial commit and a rollback. Existing replay, journal, reader-concurrency,
 supervisor, archival, guard and complete native suites remain required.
 
-The final native suite passed **706 cases, zero skips, 259.14 seconds**, using
+The first complete native suite passed **706 cases, zero skips, 259.14 seconds**, using
 CPython 3.12.10 and owned PostgreSQL 17.2. Focused financial/capture/replay/reader/
 guard coverage passed 40 cases in 15.39 seconds. Ruff and strict Windows-targeted
 mypy passed (84 source files). The first focused setup incorrectly assumed an
@@ -105,9 +105,16 @@ and one fixture-setup error; dashboard steps were skipped. The new test's plugin
 registration depended on collection order. Running the paper-store file before
 the capture file reproduced 18 passes/one setup error locally. The repository's
 explicit fixture import replaces that registration; the identical ordered pair
-then passed all 19. The complete native and new exact-head hosted gates are rerun;
-the original failure is retained and never relabeled green. Product source is
-unchanged by this test-registration correction.
+then passed all 19. At corrected head `0d49ddd`, the complete native suite passed
+**706 cases, zero skips, 327.15 seconds**. Its exact-head hosted Windows run
+[36970347293](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/36970347293)
+passed **372 selected cases with 153 conditional PostgreSQL skips** in 200.00
+seconds, followed by the successful 1,926-module TypeScript/Vite build. The native
+run exercised the owned PostgreSQL cases that the hosted environment skips.
+The original failure is retained and never relabeled green. Product source is
+unchanged by this test-registration correction; this receipt update changes
+documentation only. Final review-head and rollout checks are recorded separately
+in the draft and issue.
 
 The new repair stays a bounded draft until its own source and hosted checks are
 complete and applicable merge/install authorization is established. Its installed
