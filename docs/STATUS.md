@@ -1,5 +1,15 @@
 # Current issue #28: stack installed; operational CP18 in progress
 
+Approved PR #37 is installed at main `17b11e3`. Normal activity reporting works;
+all 722,673 pre-update events and 8,202 journal lines, original accounts/contracts,
+existing trials, configuration, G: and twenty-slot capacity are preserved. The
+remaining admission condition is engine-work cooldown. A fresh healthy-worker
+development wait exhausted 600.491 seconds with zero model requests. Qualification
+and the real mature feedback cycle are still incomplete. Read
+[the measured capacity repair](reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md).
+
+## Historical first stack rollout and pre-repair diagnosis
+
 GitHub main `4c3e78a8569254eca2b3717d8d20a79325bd0b96` includes merged PRs
 #29-35. The explicitly authorized existing updater installed that revision and
 restarted the original paper task. Its preservation receipt retains all 709,832

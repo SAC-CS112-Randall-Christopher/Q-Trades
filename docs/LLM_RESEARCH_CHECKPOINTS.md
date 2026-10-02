@@ -2,6 +2,13 @@
 
 ## Current installed stage and operational assignment
 
+Approved PR #37 is now installed at main `17b11e3`. Activity reporting and private
+financial preservation acceptance passed; the actual remaining capacity condition
+is engine-work cooldown. Read [the fresh measurements and bounded repair](reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md).
+Current qualification and the genuinely mature feedback cycle remain unfinished.
+
+### Historical first stack rollout
+
 PRs #29-35 were merged together at main `4c3e78a` and installed through the
 explicitly approved existing updater. Original account/history, active trial,
 configuration and G: preservation and normal history/Journal UI acceptance are

@@ -1,5 +1,13 @@
 # Current installed stage; operational model proof remains open
 
+Approved PR #37 is installed at main `17b11e3`. Normal activity dates and financial
+preservation are accepted. Engine-work cooldown remains; current qualification and
+the real mature feedback cycle are incomplete. Read
+[OPERATING_CAPACITY_SERIALIZATION.md](OPERATING_CAPACITY_SERIALIZATION.md) for fresh
+measurements, the bounded source candidate and its explicit proof limits.
+
+## Historical first delivery rollout
+
 The seven delivery PRs #29-35 are merged and installed at main `4c3e78a`.
 See [the authorized rollout receipt](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/28#issuecomment-5944587183)
 for final-main checks, account/history/configuration/G: preservation and normal

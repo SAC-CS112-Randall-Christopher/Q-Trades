@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import json
+import math
 import sqlite3
 import time
 import uuid
@@ -31,6 +32,37 @@ from trading.research_storage import ResearchStorage, load_plan
 
 def plain(value: Any) -> Any:
     return json.loads(json.dumps(value, default=str, allow_nan=False))
+
+
+class _PlainFallback(Exception):
+    pass
+
+
+def _copy_json(value: Any, depth: int = 0) -> Any:
+    kind = type(value)
+    if kind is str or kind is int or kind is bool or value is None:
+        return value
+    if kind is float:
+        if math.isfinite(value):
+            return value
+        raise _PlainFallback
+    if depth > 64:
+        raise _PlainFallback
+    if kind is list:
+        return [_copy_json(child, depth + 1) for child in value]
+    if kind is dict and all(type(key) is str for key in value):
+        return {key: _copy_json(child, depth + 1) for key, child in value.items()}
+    raise _PlainFallback
+
+
+def state_snapshot(value: Any) -> Any:
+    """Detach an ordinary JSON projection without encoding and decoding it again."""
+    try:
+        return _copy_json(value)
+    except _PlainFallback:
+        # Preserve the existing conversion/error contract for Decimal, tuples,
+        # unusual keys, nonfinite values, deep structures and circular objects.
+        return plain(value)
 
 
 def compact_prefix(
@@ -409,9 +441,13 @@ class EvidenceRecorder:
         packet.update(
             events=plain(events),
             dispatch_accounts=list(packet["state_before"].get("accounts", {})),
-            # The committed engine state is already JSON-compatible. Hash it directly;
-            # the digest owns its serialization and retains no mutable state reference.
-            after_tick_sha256=digest(after),
+            # Reuse the exact committed projection hash. Older receipts retain
+            # their original direct hashing path, without retaining mutable state.
+            after_tick_sha256=(
+                commit_receipt.get("projection_sha256")
+                if commit_receipt and commit_receipt.get("projection_sha256")
+                else digest(after)
+            ),
             event_timing=timing,
             stages_ms=stages,
             receipt_to_dispatch_ms={

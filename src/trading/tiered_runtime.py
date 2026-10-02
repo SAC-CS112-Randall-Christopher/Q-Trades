@@ -15,7 +15,7 @@ from typing import Any
 
 from trading.compact_memory import linked_events
 from trading.engine_diagnostics import EngineWorkDiagnostics
-from trading.evidence_runtime import EvidenceRecorder, compact_prefix, plain
+from trading.evidence_runtime import EvidenceRecorder, compact_prefix, state_snapshot
 from trading.futures_context import POLL_SECONDS, FuturesContext, FuturesPublicData
 from trading.live_quotes import quote_snapshot
 from trading.market import parse_book
@@ -586,7 +586,7 @@ class TieredPaperRuntime(PaperRuntime):
                     if "packet" in evidence_tick:
                         state_capture_started = time.perf_counter()
                         try:
-                            evidence_tick["packet"]["state_before"] = plain(engine.state)
+                            evidence_tick["packet"]["state_before"] = state_snapshot(engine.state)
                             engine.evidence_trace = []
                             evidence_tick["event_offset"] = len(engine.events)
                             evidence_tick["packet"]["event_offset"] = len(engine.events)
@@ -609,7 +609,9 @@ class TieredPaperRuntime(PaperRuntime):
 
                 measured_commit = time.perf_counter()
                 stage_ms["prepare"] = (measured_commit - measured_start) * 1000
-                self.state = self.store.transact(now, apply)
+                self.state, commit_receipt = self.store.transact_with_receipt(
+                    now, apply, capture_projection="packet" in evidence_tick
+                )
                 committed = time.perf_counter()
                 self._commit_ms.append((committed - measured_commit) * 1000)
                 stage_ms["transaction"] = (committed - measured_commit) * 1000
@@ -617,7 +619,7 @@ class TieredPaperRuntime(PaperRuntime):
                     stage_ms["transaction_" + name] = duration
                 try:
                     linked = linked_events(
-                        evidence_tick.get("compact_events", []), self.store.last_commit_receipt
+                        evidence_tick.get("compact_events", []), commit_receipt
                     )
                     if study_key != self._last_study_key or linked:
                         self.evidence.compact(
@@ -643,7 +645,7 @@ class TieredPaperRuntime(PaperRuntime):
                             evidence_tick["trace"],
                             dict(stage_ms),
                             started,
-                            self.store.last_commit_receipt,
+                            commit_receipt,
                         )
                     except (ValueError, TypeError, KeyError, ArithmeticError):
                         self.evidence.dropped += 1
