@@ -100,6 +100,15 @@ initial account label field; its five failures were retained privately, the
 fixture mutation was corrected to the existing cash field, and the complete
 affected group and full suite then passed. Product guards were unchanged.
 
+The first hosted run on `28ab14e` failed with 372 passed, 152 conditional skips
+and one fixture-setup error; dashboard steps were skipped. The new test's plugin
+registration depended on collection order. Running the paper-store file before
+the capture file reproduced 18 passes/one setup error locally. The repository's
+explicit fixture import replaces that registration; the identical ordered pair
+then passed all 19. The complete native and new exact-head hosted gates are rerun;
+the original failure is retained and never relabeled green. Product source is
+unchanged by this test-registration correction.
+
 The new repair stays a bounded draft until its own source and hosted checks are
 complete and applicable merge/install authorization is established. Its installed
 capacity effect remains unmeasured. Current role qualification still requires both

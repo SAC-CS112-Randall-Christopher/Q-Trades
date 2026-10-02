@@ -7,12 +7,11 @@ from decimal import Decimal
 
 import pytest
 from test_paper_engine import START, frame, study
+from test_paper_store import pg_store as pg_store
 
 from trading.evidence_runtime import EvidenceRecorder, plain, state_snapshot
 from trading.paper_engine import PaperEngine, initial_state
 from trading.research_evidence import digest
-
-pytest_plugins = ("test_paper_store",)
 
 
 def test_frozen_before_state_survives_subsequent_fills_and_nested_mutation():
