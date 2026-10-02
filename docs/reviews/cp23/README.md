@@ -1,10 +1,13 @@
 # Current installed stage; operational model proof remains open
 
-Approved PR #37 is installed at main `17b11e3`. Normal activity dates and financial
-preservation are accepted. Engine-work cooldown remains; current qualification and
-the real mature feedback cycle are incomplete. Read
-[OPERATING_CAPACITY_SERIALIZATION.md](OPERATING_CAPACITY_SERIALIZATION.md) for fresh
-measurements, the bounded source candidate and its explicit proof limits.
+Approved PRs #37/#38 are installed at main `6bfd3cd`. Normal activity dates and
+financial preservation are accepted, including all 771,895 pre-update events and
+9,154 journal lines. A new five-minute observation still reports engine-work
+cooldown; qualification and the real mature feedback cycle are incomplete. Read
+[OPERATING_PROJECTION_COMPRESSION.md](OPERATING_PROJECTION_COMPRESSION.md) for the
+current measurements, explicit opt-in candidate and precise proof limits.
+[The earlier serialization receipt](OPERATING_CAPACITY_SERIALIZATION.md) retains
+its original source measurements and failures; its approved rollout is now complete.
 
 ## Historical first delivery rollout
 

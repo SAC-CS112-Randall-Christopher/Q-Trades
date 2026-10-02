@@ -1,5 +1,11 @@
 [CmdletBinding()]
-param([string] $LogDirectory = 'C:\Projects\Q-Trades\logs')
+param(
+    [string] $LogDirectory = 'C:\Projects\Q-Trades\logs',
+    [ValidateSet('', 'default', 'pglz', 'lz4')]
+    [string] $PaperProjectionCompression = '',
+    [ValidateSet('', 'default', 'pglz', 'lz4')]
+    [string] $ExpectedPaperProjectionCompression = ''
+)
 $ErrorActionPreference = 'Stop'
 $source = (Resolve-Path -LiteralPath (Split-Path -Parent $PSScriptRoot)).Path
 $taskName = 'TradingResearch-Paper-20260927'
@@ -76,6 +82,9 @@ try {
     Write-Host "Update log: $logPath"
     Write-Host "Source checkout: $source"
     Write-Host 'Local diagnostic log. Review before sharing; dependency output may contain private details.'
+    if (([bool] $PaperProjectionCompression) -ne ([bool] $ExpectedPaperProjectionCompression)) {
+        throw 'Compression changes require both the reviewed target and expected previous setting.'
+    }
     Write-Stage 'Validate the existing installation'
     . (Join-Path $PSScriptRoot 'PaperStartupIdentity.ps1')
     . (Join-Path $PSScriptRoot 'PaperUpdateShutdown.ps1')
@@ -136,6 +145,16 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $source 'apps/web/dist/index.html'))) { throw 'Dashboard build is missing.' }
     if (Git-Read status --porcelain --untracked-files=normal) { throw 'Build changed source; preserve and review it.' }
     if ((Git-Read rev-parse HEAD) -ne $commit) { throw 'Source commit changed during the build; no application update applied.' }
+    if ($PaperProjectionCompression) {
+        Write-Stage 'Preview the explicitly requested projection compression'
+        $projectionArguments = @('-X', 'utf8', '-B',
+            (Join-Path $source 'scripts/configure_paper_projection.py'),
+            '--settings', (Join-Path $runtime 'data/paper-database.json'),
+            '--compression', $PaperProjectionCompression,
+            '--expected', $ExpectedPaperProjectionCompression)
+        $commandExit = Invoke-LoggedNative $python $projectionArguments
+        if ($commandExit -ne 0) { throw 'Compression preview failed; the running app is unchanged.' }
+    }
     Write-Stage 'Back up installed source code'
     # Back up source only. Runtime data and experiment evidence never enter this copy.
     $backup = Join-Path $runtime ('data/update-backups/' + (Get-Date -Format 'yyyyMMdd-HHmmss-ffff'))
@@ -173,6 +192,11 @@ try {
     $commandExit = Invoke-LoggedNative $python @('-B', '-m', 'pip', 'install', '--no-input',
         '--no-deps', '-e', $runtime)
     if ($commandExit -ne 0) { throw 'Application installation failed; retry after resolving the error.' }
+    if ($PaperProjectionCompression) {
+        Write-Stage 'Apply the explicitly requested projection compression'
+        $commandExit = Invoke-LoggedNative $python ($projectionArguments + @('--apply'))
+        if ($commandExit -ne 0) { throw 'Compression was not confirmed; the application remains stopped.' }
+    }
     [IO.File]::WriteAllText((Join-Path $runtime 'data/installed-commit.txt'), $commit)
     Write-Host 'Installed-version marker written; restart health is not confirmed yet.'
     Write-Stage 'Restart the existing application'

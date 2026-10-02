@@ -7,13 +7,21 @@ wait. The current user assignment prioritizes the installed activity reader,
 diagnosis of the earlier reader fault and resource constraint, current model
 qualification, and one real cycle. Do not substitute more strategy infrastructure.
 
-Approved reader/race/clock PR #37 is now installed at main `17b11e3`. Normal AI Lab
-activity and private preservation acceptance passed. The actual capacity condition
-is engine-work cooldown; disk/capture health pass. Fresh phase measurements locate
-full projection read/update and repeated capture serialization, with financial tick
-around one millisecond. See docs/reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md.
-The bounded follow-up preserves every field and exact financial/provenance hashes;
-its installed capacity effect and current role qualification remain separate proof.
+Approved PRs #37 and #38 are merged/installed at main `6bfd3cd`. Normal AI Lab
+activity and private preservation acceptance passed, including all 771,895
+pre-update events and 9,154 journal lines. A new five-minute inference-off
+observation still reports engine-work cooldown alone; disk/capture health pass.
+Full projection transfer/update remains costly while financial calculation is
+about one millisecond. Current qualification and real mature feedback are open.
+See docs/reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md for exact current evidence.
+
+The next bounded source change makes projection compression an explicit opt-in
+decision through the existing updater. Default updates retain their behavior.
+Preview is authenticated/read-only; apply refuses a live financial writer and
+changes only the compression metadata for future ordinary projection writes.
+No projection cache, decoder change, financial rewrite, history truncation or
+guard relaxation is selected. New merge/install/compression authorization remains
+required after its source/QA proof; the PR #38 approval is already fulfilled.
 
 PRs #29-35 were merged together at main
 `4c3e78a8569254eca2b3717d8d20a79325bd0b96` and installed through the existing

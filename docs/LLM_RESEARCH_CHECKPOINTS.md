@@ -2,9 +2,10 @@
 
 ## Current installed stage and operational assignment
 
-Approved PR #37 is now installed at main `17b11e3`. Activity reporting and private
-financial preservation acceptance passed; the actual remaining capacity condition
-is engine-work cooldown. Read [the fresh measurements and bounded repair](reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md).
+Approved PRs #37/#38 are installed at main `6bfd3cd`. Activity reporting and private
+financial preservation acceptance passed, including all 771,895 pre-update events
+and 9,154 journal lines. Fresh five-minute observation still reports engine-work
+cooldown. Read [the current measurements and opt-in candidate](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
 Current qualification and the genuinely mature feedback cycle remain unfinished.
 
 ### Historical first stack rollout

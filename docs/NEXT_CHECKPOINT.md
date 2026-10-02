@@ -1,11 +1,11 @@
 # Current: operational CP18, then measured CP23 usefulness
 
-Approved PR #37 is installed at main `17b11e3`; normal activity reporting and
-preservation acceptance passed. Engine-work cooldown still blocks qualification.
-Continue the [bounded measured serialization repair](reviews/cp23/OPERATING_CAPACITY_SERIALIZATION.md),
-verify actual installed capacity, then qualify the current researcher/reviewer and
-complete one real paper-feedback cycle. Do not start another strategy checkpoint
-series or repeat the completed reader rollout.
+Approved PRs #37/#38 are installed at main `6bfd3cd`; normal activity reporting and
+preservation acceptance passed. Fresh engine-work cooldown still blocks qualification.
+Complete the [bounded opt-in compression candidate](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md),
+obtain its applicable authorization, verify actual installed capacity, then qualify
+the researcher/reviewer and complete one real paper-feedback cycle. Do not start another strategy checkpoint
+series or repeat the completed reader/serialization rollouts.
 
 The actual development screen must pass 4/4 for each role, followed by each
 36-case/three-seed population with at least 34 correct and zero critical failures.
