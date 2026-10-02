@@ -3,12 +3,19 @@
 This assignment implements issue #28 and its implementation addendum. Read
 `docs/LLM_RESEARCH_CHECKPOINTS.md`, `docs/reviews/cp23/README.md` and
 `docs/CP23_ROLLOUT_HANDOFF.md` for observed evidence and precise remaining work.
-CP17-CP22 are dependent draft PRs #29-34, with exact-head hosted Windows success.
+CP17-CP22 are dependent draft PRs #29-34. Current heads/hosted results are recorded
+in the issue/drafts; keep the stack draft and unmerged.
 CP23 integrates native/browser/fault acceptance, late-answer recovery, tied-time
 history cursors, exact stock acknowledgment recovery and truthful quality/results.
-The integrated LLM-F1–F7 repair source passes 668 native PostgreSQL tests/no skips,
-Ruff, strict mypy (84 modules), frontend build and the eight declared finite cases.
-Normal browser recovery/cold-history checks use explicitly synthetic fixtures.
+The independent a21637d re-audit closed F1/F3/F4/F5/F7. The remaining F2/F6
+supervisor outage, late-answer archival and lost follow-up interactions are repaired
+in the existing owning drafts. Read docs/reviews/cp23/REAUDIT_INTEGRATION_REPAIRS.md.
+Integrated product source d435c881 passes 686 native PostgreSQL tests/no skips,
+Ruff, strict Windows-targeted mypy (84 files), frontend build and 66 integration
+checks. This run directly verifies CPython 3.12.10 / PostgreSQL 17.2. The earlier
+668-case/eight finite/browser receipts and independent Linux run stay separately
+attributed historical evidence. Preserve unanswered attempts until transport return,
+the small durable follow-up queue/cursor and visible bounded supervisor retries.
 Final delivery head/hosted results are recorded in its draft and issue; stages
 stay distinct. The earlier 629-case receipts remain historical.
 

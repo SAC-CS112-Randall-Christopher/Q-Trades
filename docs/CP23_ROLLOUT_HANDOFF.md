@@ -21,7 +21,25 @@ Read [the integrated ledger](LLM_RESEARCH_CHECKPOINTS.md),
 in issue/PR receipts. Measurement source hashes are public; private runtime,
 failed attempts, database configuration and original provider packets stay ignored.
 
-## Integrated audit repair handoff
+## Current re-audit interaction repair handoff
+
+Five original findings are independently closed. The three remaining F2/F6
+interactions now have combined software acceptance in their existing drafts:
+normal-supervisor outage/restoration, delayed answers with archival/explicit retry,
+and durable pending follow-up discovery across archival/restart. Full product source
+`d435c881ccb091e5a48c3a3252ed3b14de9367fe` passes **686 native tests, zero skips,
+253.73 s**, CPython 3.12.10 / owned PostgreSQL 17.2. Ruff, strict mypy (84 files),
+dashboard build and 66 affected integration checks pass. See
+[the new evidence](reviews/cp23/REAUDIT_INTEGRATION_REPAIRS.md).
+
+Current read-only installed evidence remains fresh/balanced on main `6fc72dcc`,
+with optional research constrained and the dedicated QA model service absent.
+No installed restart or operating change is made by this work; identity stability
+across other activity is not claimed. All drafts stay unmerged, issue #28 stays
+open for independent confirmation and the actual qualified-model milestone.
+Earlier finite/browser/model/provider receipts below are historical stages.
+
+## Historical first integrated audit repair handoff
 
 LLM-F1–F7 are corrected in their existing owning drafts and integrated through
 PR #35. Full native source `6b5a9263b41eb0f23d0440b492a450d305d162c1` passes

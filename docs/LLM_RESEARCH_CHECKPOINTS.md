@@ -1,9 +1,35 @@
 # Current implementation: issue #28, CP17–CP23
 
-## Integrated audit repair delivery
+## Current re-audit interaction repair delivery
+
+The independent re-audit of `a21637d` closed F1/F3/F4/F5/F7 and reproduced
+three F2/F6 interactions. Their corrections remain in the existing owning drafts:
+
+| Draft | Current product source | Re-audit integration behavior |
+|---|---|---|
+| #29 / CP17 | `dc7d155afc2d082ccccfaa9c639927c0cd013e27` | Closed F4 preserved |
+| #30 / CP18 | `8ccfdfc0e83d3178a9c0ea5fa3260939055261b2` | Unreturned attempts cannot archive; durable follow-up eligibility and bounded legacy cursor |
+| #31 / CP19 | `528d5471e4f5e32b0ecd33de8e09d587a3f71c17` | Normal supervisor recovery, saved cooldowns, independent progress and cold-result selection |
+| #32 / CP20 | `1e6af83300aef1c74c36c262a1ba5cf818733018` | Inherits repairs; closed F3 preserved |
+| #33 / CP21 | `08313a0b643887bfeebe3de0133085be08c00008` | Inherits repairs; closed F5 preserved |
+| #34 / CP22 | `099d57f49499d400ecd4eb3ef218f412d7f036a6` | Inherits repairs; closed F1 preserved |
+| #35 / CP23 | `d435c881ccb091e5a48c3a3252ed3b14de9367fe` | One-row answer-persistence fence and paired late-answer/explicit-retry/archival proof |
+
+The complete native suite passes **686 tests, zero skips, 253.73 s** on Windows,
+CPython **3.12.10** and owned PostgreSQL **17.2**, directly verified. The integrated
+selection passes 66 tests; Ruff, strict Windows-targeted mypy (84 source files) and
+TypeScript/Vite (1926 modules) pass. Later delivery edits only documentation/receipts;
+the issue/draft records the exact final head and hosted gate. See
+[the interaction repair evidence](reviews/cp23/REAUDIT_INTEGRATION_REPAIRS.md).
+The earlier finite/browser and independent Linux evidence retains its own attribution.
+Actual current-qualified CP18 and subsequent model/economic proof remain unresolved;
+the fresh read-only installed sample still constrains optional research.
+
+## Historical first integrated audit repair delivery
 
 The independent integrated audit of `446bd319` identified LLM-F1–F7. All seven
-are repaired in the existing dependent drafts, with original ancestry preserved:
+received initial repair source in the existing drafts, with ancestry preserved.
+The later re-audit and additional interactions are recorded above.
 
 | Draft | Repair head | Finding and behavior |
 |---|---|---|

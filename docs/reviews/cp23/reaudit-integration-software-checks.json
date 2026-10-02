@@ -1,0 +1,162 @@
+{
+  "audited_baseline": "a21637dd543368f8ed405b9bde575ea8ea122838",
+  "changed_product_files_working_copy_sha256": {
+    "src/trading/role_history.py": "16fc08ad01f265e32bcd49dab704547d75c2aea76797f5be96344482b71aa29f",
+    "src/trading/role_worker.py": "692ea4bb305f982e6ae8af1924c1617b177dda67ca22a7eaebe82a56bba8deb4"
+  },
+  "combined_scenario_actual_model_requests": 0,
+  "combined_scenario_market_provider_requests": 0,
+  "combined_scenario_scope": "Owned disposable PostgreSQL and storage; declared software answers and synthetic maturity",
+  "environment": {
+    "owned_data_directory_verified": true,
+    "owned_loopback_port": 55641,
+    "platform": "win32",
+    "postgres": "17.2",
+    "python": "3.12.10",
+    "server_version": 170002
+  },
+  "full_native_source": "d435c881ccb091e5a48c3a3252ed3b14de9367fe",
+  "installed_read_only_observation": {
+    "agent_initiated_installed_restarts": 0,
+    "code_commit": "6fc72dccb51e07e00b30bd5c880234c13099297b",
+    "commit_p95_ms": 110.0,
+    "dedicated_qa_model_listening": false,
+    "engine_p95_ms": 141.0,
+    "journal_balanced": true,
+    "observed_at_utc": "2026-10-02T01:06:08.501115+00:00",
+    "paper_error_reported": false,
+    "paper_fresh": true,
+    "read_only": true,
+    "research_constrained": true,
+    "service": "running"
+  },
+  "integrated_selection": {
+    "passed": 66,
+    "seconds": 86.13,
+    "skipped": 0
+  },
+  "legacy_followup_records_per_pass": 8,
+  "limitations": [
+    "An unreturned original transport attempt remains uncertain and hot under existing physical/hot bounds; no invented completion or automatic abandonment",
+    "An unwritable registry cannot persist its own failure at that instant; the supervisor retains an in-memory cooldown and visible fault until storage recovers",
+    "Hash or metadata disagreement remains a permanent visible failure; consistency checks are not relaxed",
+    "Actual current-contract role qualification, the qualified-model CP18 milestone, matched qualified A/B/C/D value and prospective economic effects remain unresolved",
+    "Earlier finite load, rendered browser and independent Linux receipts are separately attributed historical evidence, not repeated in this backend repair pass"
+  ],
+  "native": {
+    "existing_deprecation_warnings": 1,
+    "passed": 686,
+    "seconds": 253.73,
+    "skipped": 0
+  },
+  "receipts": [
+    {
+      "checkpoint": "cp19",
+      "local_ignored_receipt": "data/reaudit-r1-original.txt",
+      "result": "Setup error: nonexistent reader helper; retained before actual-driver probe",
+      "sha256": "6fedf4293db7659bdf80dbc6d203fb27f73383f468c4f45a3b82193b8ab918e2"
+    },
+    {
+      "checkpoint": "cp19",
+      "local_ignored_receipt": "data/reaudit-r1-driver-original.txt",
+      "result": "Original supervisor exits on actual PostgreSQL connection refusal",
+      "sha256": "bf4ee98015242da65abb987b691cffeb28260767fd9cf01ccf6566d26ae5421a"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-r2-original.txt",
+      "result": "Setup refusal: disposable storage plan missing; admission guard preserved",
+      "sha256": "9e5deca6f2757936c3777c9232a66f4921e16ec1084a9d209003afbeb15150ad"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-r2-configured-original.txt",
+      "result": "Original archive-before-answer mismatch: one failure and one passing control",
+      "sha256": "d30611e07755f1a56f95d57984c0bd9bfc74a27ea8bce2cbfc86c772974ae688"
+    },
+    {
+      "checkpoint": "cp19",
+      "local_ignored_receipt": "data/reaudit-r3-original.txt",
+      "result": "Three archived follow-up failures; five passing controls",
+      "sha256": "8415cbbd7f17d89e96a37cf70e025703b11f882bbc21bbe726bd13aea5e32b87"
+    },
+    {
+      "checkpoint": "cp19",
+      "local_ignored_receipt": "data/reaudit-supervisor-followups1.txt",
+      "result": "Fixture context-key error: one failure and seventeen passes; retained",
+      "sha256": "3db1aad07ed971ee6ed650e5593484ffcc9d94d591ca5318c61aeccffef90629"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-environment-setup-failed.txt",
+      "result": "Read-only identity probe omitted source import path; suite not started",
+      "sha256": "1378388e18566090dc1a81ae9a4888f924a346ca56745e5786f994b52cf57977"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-environment-setup-failed2.txt",
+      "result": "Read-only identity probe compared inet text including /32; suite not started",
+      "sha256": "0e435cb95b38438426c72eb0920b4b02ac908246e0f95681e50f0a1f2741ed35"
+    },
+    {
+      "checkpoint": "cp18",
+      "local_ignored_receipt": "data/reaudit-history-complete.txt",
+      "result": "15 affected history/recovery passes",
+      "sha256": "872dc6bd8beb6b07aff919c869bcf002a6716f134f2f341e4b52dc696bfa2abc"
+    },
+    {
+      "checkpoint": "cp19",
+      "local_ignored_receipt": "data/reaudit-roles-complete1.txt",
+      "result": "38 supervisor/lesson/history passes",
+      "sha256": "e5c571b3d54b32ee3835594268f7328fb596abd120442dd41fa3aa1fbd87e4d6"
+    },
+    {
+      "checkpoint": "cp19",
+      "local_ignored_receipt": "data/reaudit-supervisor-final.txt",
+      "result": "3 final supervisor passes including visible fault state",
+      "sha256": "85610be49d2da1d2a22141eeb5abbb8b643d20b7ad32695f75730b26470b73f2"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-integrated-focused1.txt",
+      "result": "66 integrated passes, zero skips, 86.13 seconds",
+      "sha256": "e63af2b09a0572bb4295560b8bfd6f42a391d005eb0dff33a91782578dcf1851"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-native-full1.txt",
+      "result": "686 native passes, zero skips, 253.73 seconds",
+      "sha256": "db3c56bb0619435ff0a2e37d96c232c9ad4dd23aa538cd40a0c502ba0fbce1aa"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-ruff.txt",
+      "result": "Whole-repository Ruff passes",
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-mypy.txt",
+      "result": "Strict Windows-targeted mypy passes, 84 source files",
+      "sha256": "8227aa84d79369db03f4582ec792ab58f3093cdde56af5590424db3800698e03"
+    },
+    {
+      "checkpoint": "cp23",
+      "local_ignored_receipt": "data/reaudit-web-build.txt",
+      "result": "TypeScript/Vite build passes, 1926 transformed modules",
+      "sha256": "09bc14547a12a67aeb15f41d15f3185f5ad6f3e2fc6931e0c64dbaf105b8f26d"
+    }
+  ],
+  "retry_seconds": 30,
+  "role_contract_sha256": "71f90342b3781819e690cf9bb8890a750e97a34b3818fb1a8d04b2324682b7f5",
+  "ruff": "passed",
+  "schema": "cp23-reaudit-integration-software-evidence-v1",
+  "strict_windows_mypy": {
+    "passed": true,
+    "source_files": 84
+  },
+  "typescript_vite": {
+    "modules": 1926,
+    "passed": true
+  }
+}

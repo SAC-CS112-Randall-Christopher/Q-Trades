@@ -1,10 +1,21 @@
-# Current integrated audit repair evidence
+# Current re-audit interaction repair evidence
+
+The independent re-audit closed F1/F3/F4/F5/F7 and found three remaining F2/F6
+interactions. The existing drafts now correct supervisor outage recovery,
+unreturned-answer archival and durable follow-up discovery. Read
+[REAUDIT_INTEGRATION_REPAIRS.md](REAUDIT_INTEGRATION_REPAIRS.md) and
+[the new software receipt](reaudit-integration-software-checks.json).
+Full native source `d435c881` passes **686 tests, zero skips, 253.73 s**;
+66 integrated checks, Ruff, strict mypy and the dashboard build pass.
+Independent confirmation and actual qualified-model proof remain separate.
+
+# Historical first integrated audit repair evidence
 
 LLM-F1–F7 are repaired within the existing draft PRs #29–35. Read
-[AUDIT_REPAIRS.md](AUDIT_REPAIRS.md) for each fix, current exact source heads,
+[AUDIT_REPAIRS.md](AUDIT_REPAIRS.md) for each initial fix and its source heads,
 668 complete native passes/no skips, the eight finite cases, normal browser
 recovery/cold-history checks, retained failures and precise unresolved model proof.
-Current public receipts are
+The initial public receipts are
 [software](audit-repair-software-checks.json),
 [finite load](audit-repair-finite-native.json) and
 [browser](audit-repair-browser-checks.json).
