@@ -58,5 +58,7 @@ class EngineWorkDiagnostics:
             "unreported_triggers": self._unreported,
             "unreported_peak": self._peak,
             "last_trigger": self.last_trigger,
+            "latest_work": self.samples[-1] if self.samples else None,
+            "current_window": list(self.samples),
             "retention": "Latest 20 work samples in memory; coalesced trigger receipts in journal",
         }

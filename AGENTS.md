@@ -1,4 +1,51 @@
-# Current work order - issue #28, CP17-CP23 source delivery
+# Current work order - issue #28, operational CP18 and CP23
+
+The next milestone is an actually qualified local researcher/reviewer completing
+real evidence -> hypothesis -> deterministic check -> required review -> ordinary
+paper comparison -> genuinely mature outcome -> supported follow-up or resumable
+wait. The current user assignment prioritizes the installed activity reader,
+diagnosis of the earlier reader fault and resource constraint, current model
+qualification, and one real cycle. Do not substitute more strategy infrastructure.
+
+PRs #29-35 were merged together at main
+`4c3e78a8569254eca2b3717d8d20a79325bd0b96` and installed through the existing
+updater after explicit merge/restart authorization. The rollout preserved all
+709,832 pre-update events and 7,828 journal lines, original account identities,
+active trial/contract, configuration and G: identity. Normal installed history,
+filters, pagination, details and Journal were verified. See issue #28 comment
+5944587183. The earlier source-only headings below are historical receipts.
+
+The installed activity query's missing authentication is reproduced privately,
+and actual-driver shared-connection concurrency reproduces the earlier
+`OutOfOrderTransactionNesting`. New repairs require their own source/QA and
+installed acceptance stages. The old combined commit/capture metric cannot locate
+the capacity bottleneck. Keep the whole-work guard unchanged; measure database
+read/decode, calculation, encoding/update, commit and capture separately.
+Retained installed receipts also prove coarse-clock slow-work misclassification;
+use the precise counter for the identical full interval without changing limits.
+The installed candle race recurred before the new development attempt. Full
+stale/error admission withheld every request during its 602.747-second bounded
+wait. This is refused dispatch evidence, not a negative model-quality result.
+
+Use existing approved weights and the dedicated sequential CPU runtime on 11435;
+leave GIS/11434 untouched. Current contract v5 requires independent 4/4 development
+for both roles, followed by 36 completed cases per role across three frozen seeds,
+at least 34 correct and zero critical violations. Qualifying a role does not
+activate operating research. The owned real-paper demonstration must retain its
+normal frozen horizon and genuine elapsed maturity; never accelerate its clock.
+CP23 sustained observation and matched A/B/C usefulness remain separate proof.
+
+Source/QA, commits/push, issue updates and bounded draft PRs are authorized. Prior
+merge/restart approval was for the delivered stack; obtain applicable explicit
+authorization for a new repair merge/install. Operating activation and changes to
+original accounts/data/configuration/storage remain separate operator decisions.
+No model downloads or paid calls. Preserve the sole financial writer, original
+six/history, successful frozen parents, twenty-slot capacity, G: 100 decimal GB
+per tier and delayed outcomes. Inference/waiting stays outside financial locks.
+SEC native access and actual Crik connectivity remain open issue #28 work.
+Publish synthetic/redacted evidence only; preserve private and failed receipts.
+
+# Historical CP17-CP23 source delivery before the authorized rollout
 
 This assignment implements issue #28 and its implementation addendum. Read
 `docs/LLM_RESEARCH_CHECKPOINTS.md`, `docs/reviews/cp23/README.md` and

@@ -1,6 +1,25 @@
 from trading.engine_diagnostics import EngineWorkDiagnostics
 
 
+def test_current_window_distinguishes_fresh_work_from_an_expired_trigger():
+    diagnostics = EngineWorkDiagnostics()
+    stalled = {"at": 1000, "elapsed_ms": 1200, "stages_ms": {"transaction": 900}}
+    diagnostics.record(stalled, 1000, repeated=False, severe=True)
+    for offset in range(25):
+        diagnostics.record(
+            {"at": 1400 + offset, "elapsed_ms": 20, "stages_ms": {"compact_capture": 2}},
+            1400 + offset,
+            repeated=False,
+            severe=False,
+        )
+    snapshot = diagnostics.snapshot(1500, 1300)
+    assert snapshot["cooldown_remaining_seconds"] == 0
+    assert snapshot["last_trigger"]["sample"] == stalled
+    assert snapshot["latest_work"]["at"] == 1424
+    assert len(snapshot["current_window"]) == 20
+    assert all(row["elapsed_ms"] == 20 for row in snapshot["current_window"])
+
+
 def sample(elapsed, **stages):
     return {"at": 1000, "elapsed_ms": elapsed, "stages_ms": stages}
 
@@ -34,9 +53,12 @@ def test_diagnostics_coalesce_without_losing_peak_and_keep_memory_bounded():
     first = diagnostics.record(sample(1100), 0, repeated=False, severe=True)
     for i in range(1, 60):
         duration = 2500 if i == 4 else 150
-        assert diagnostics.record(
-            sample(duration, transaction=duration), i, repeated=True, severe=duration >= 1000
-        ) is None
+        assert (
+            diagnostics.record(
+                sample(duration, transaction=duration), i, repeated=True, severe=duration >= 1000
+            )
+            is None
+        )
     pending = diagnostics.snapshot(59, 359)
     assert pending["unreported_peak"]["elapsed_ms"] == 2500
     second = diagnostics.record(sample(150), 60, repeated=True, severe=False)

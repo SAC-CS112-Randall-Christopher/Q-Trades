@@ -1,4 +1,25 @@
-# Current: audit repairs delivered; actual model/quality proof remains blocked
+# Current: operational CP18, then measured CP23 usefulness
+
+PRs #29-35 are merged and installed at main `4c3e78a`. The current issue #28
+assignment begins with the installed activity reader and separate transaction-race
+diagnosis, then measured operating capacity, current local researcher/reviewer
+qualification, and one real paper-feedback cycle. Do not start another strategy
+checkpoint series or repeat the completed rollout.
+
+The actual development screen must pass 4/4 for each role, followed by each
+36-case/three-seed population with at least 34 correct and zero critical failures.
+Calls use the approved dedicated sequential CPU runtime only while the normal
+operating paper guard admits them. Original accounts, parents/history, twenty-slot
+capacity and G: tier policy remain intact. A new repair merge/install and operating
+activation keep their applicable explicit-authorization boundary.
+
+Seed the separately owned paper demonstration through the normal workflow, retain
+actual model answers and required review, and wait through its frozen genuine
+maturity period. One supported different experiment or evidence-specific wait that
+correctly resumes completes continuation proof. Sustained operation and matched
+A/B/C usefulness follow separately. See [the current handoff](CP23_ROLLOUT_HANDOFF.md).
+
+# Historical pre-rollout audit repair handoff
 
 Issue #28 CP17-CP22 drafts #29-34 have exact-head hosted green source gates.
 CP23 adds integrated source/native/browser/fault acceptance and a concrete

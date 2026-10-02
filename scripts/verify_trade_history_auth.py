@@ -77,13 +77,35 @@ def verify(qa_cluster: Path | None = None) -> dict[str, object]:
                 stripped.close()
                 time.sleep(0.2)
         assert receipt.get("redacted_login_rejected"), "SCRAM rejection not observed"
+        observed_at = 1790000001
+
+        def activity_inputs(engine):
+            for kind in ("market_minute", "decision", "scheduled_review"):
+                engine.emit(kind, "primary", {"source": "synthetic-auth-fixture"})
+
+        store.transact(observed_at, activity_inputs)
         state, events = store.read(), store.export(0, 1000)
         runtime = PaperRuntime(store, None)
+        # The retained-report path opens its own authenticated reader too. A missing
+        # journal reference must remain unavailable, rather than fail authentication.
+        runtime.state["learning"] = {"reports": {"auth-fixture": {"sha256": "0" * 64}}}
+        assert runtime.retained_learning_report("auth-fixture") is None
+        runtime.state = store.read()
         with TestClient(create_app(Settings(), directory / "monitor", background=False)) as client:
             client.app.state.paper = runtime
             response = client.get("/api/paper/trades?status=closed")
             assert response.status_code == 200 and response.json()["records"] == []
             assert password not in response.text
+            activity_response = client.get("/api/research/activity")
+            assert activity_response.status_code == 200
+            activity = activity_response.json()
+            assert "Durable financial activity query unavailable" not in activity["warnings"]
+            assert all(
+                activity[key]["at"] == observed_at
+                for key in ("market", "signal", "scheduled_review")
+            )
+            assert observed_at < activity["queried_at"]
+            assert password not in activity_response.text
         assert state == store.read() and events == store.export(0, 1000)
         assert store.reconcile()["balanced"]
         from trading.scoped_tools import reader
@@ -106,6 +128,10 @@ def verify(qa_cluster: Path | None = None) -> dict[str, object]:
             credential_in_response=False,
             scoped_outcome_password_reader=True,
             repeatable_read_only=True,
+            activity_api_authenticated=True,
+            activity_dates_are_original_observations=True,
+            activity_query_time_is_separate=True,
+            retained_report_authenticated_reader=True,
         )
     finally:
         if store is not None:

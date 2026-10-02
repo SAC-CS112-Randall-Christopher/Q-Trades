@@ -524,11 +524,10 @@ class PaperRuntime:
             return None
         # Export runs in a worker thread. Never share its query/transaction with
         # the exclusive financial writer's connection.
-        reader = PaperStore(self.store.connection.info.dsn)
-        try:
-            return reader.learning_report(request_id, reference["sha256"])
-        finally:
-            reader.close()
+        from trading.scoped_tools import reader
+
+        with reader(self) as view:
+            return view.learning_report(request_id, reference["sha256"])
 
     def learning_role(
         self, action: str, version: int, report_id: str = "", sha: str = ""

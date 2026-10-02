@@ -550,6 +550,7 @@ class TieredPaperRuntime(PaperRuntime):
                     now: float = now,
                     evidence_tick: dict[str, Any] = evidence_tick,
                     study_key: str = study_key,
+                    stage_ms: dict[str, float] = stage_ms,
                 ) -> None:
                     if engine.state["model"] != FEED_MODEL:
                         previous = engine.state["model"]
@@ -583,6 +584,7 @@ class TieredPaperRuntime(PaperRuntime):
                     engine.state["study_bars"] += added
                     engine.state["book_sequences"] = self._previous_books
                     if "packet" in evidence_tick:
+                        state_capture_started = time.perf_counter()
                         try:
                             evidence_tick["packet"]["state_before"] = plain(engine.state)
                             engine.evidence_trace = []
@@ -591,17 +593,28 @@ class TieredPaperRuntime(PaperRuntime):
                         except (ValueError, TypeError, KeyError, ArithmeticError):
                             self.evidence.dropped += 1
                             evidence_tick.pop("packet", None)
+                        stage_ms["before_state_capture"] = (
+                            time.perf_counter() - state_capture_started
+                        ) * 1000
+                    financial_tick_started = time.perf_counter()
                     engine.tick(frames, study)
+                    stage_ms["financial_tick"] = (
+                        time.perf_counter() - financial_tick_started
+                    ) * 1000
                     evidence_tick["compact_events"] = engine.events
                     if "packet" in evidence_tick:
                         evidence_tick["events"] = engine.events[evidence_tick["event_offset"] :]
                         evidence_tick["after"] = engine.state
                         evidence_tick["trace"] = engine.evidence_trace or []
 
-                commit_started = time.monotonic()
                 measured_commit = time.perf_counter()
                 stage_ms["prepare"] = (measured_commit - measured_start) * 1000
                 self.state = self.store.transact(now, apply)
+                committed = time.perf_counter()
+                self._commit_ms.append((committed - measured_commit) * 1000)
+                stage_ms["transaction"] = (committed - measured_commit) * 1000
+                for name, duration in (self.store.last_transaction_diagnostics or {}).items():
+                    stage_ms["transaction_" + name] = duration
                 try:
                     linked = linked_events(
                         evidence_tick.get("compact_events", []), self.store.last_commit_receipt
@@ -619,9 +632,9 @@ class TieredPaperRuntime(PaperRuntime):
                         )
                 except (ValueError, TypeError, KeyError, ArithmeticError):
                     self.evidence.compact_dropped += 1
-                self._commit_ms.append((time.monotonic() - commit_started) * 1000)
-                stage_ms["transaction"] = (time.perf_counter() - measured_commit) * 1000
+                stage_ms["compact_capture"] = (time.perf_counter() - committed) * 1000
                 if "packet" in evidence_tick:
+                    full_capture_started = time.perf_counter()
                     try:
                         self.evidence.complete(
                             evidence_tick["packet"],
@@ -634,6 +647,7 @@ class TieredPaperRuntime(PaperRuntime):
                         )
                     except (ValueError, TypeError, KeyError, ArithmeticError):
                         self.evidence.dropped += 1
+                    stage_ms["full_capture"] = (time.perf_counter() - full_capture_started) * 1000
                 self._last_commit, self._last_study_key = now, study_key
                 self._last_status_key, self._last_sources = status_key, sources
                 self.error = None
@@ -652,14 +666,16 @@ class TieredPaperRuntime(PaperRuntime):
                     self.recent = self.store.recent()
                     stage_ms["recent"] = (time.perf_counter() - stage_started) * 1000
                     self._last_receipts = now
-                elapsed = (time.monotonic() - started) * 1000
+                # Python 3.12's Windows monotonic clock has 15.625 ms resolution.
+                # Use the high-resolution duration of the identical complete work;
+                # retain the coarse reading for comparison, never for admission.
+                elapsed = (time.perf_counter() - measured_start) * 1000
                 self.observe_engine_work(
                     elapsed,
                     time.monotonic(),
                     {
-                        "measured_elapsed_ms": round(
-                            (time.perf_counter() - measured_start) * 1000, 3
-                        ),
+                        "measured_elapsed_ms": round(elapsed, 3),
+                        "coarse_elapsed_ms": round((time.monotonic() - started) * 1000, 3),
                         "thread_cpu_ms": round((time.thread_time() - cpu_start) * 1000, 3),
                         "stages_ms": {name: round(value, 3) for name, value in stage_ms.items()},
                         "active_portfolios": active,
@@ -686,6 +702,17 @@ class TieredPaperRuntime(PaperRuntime):
 
     def snapshot(self) -> dict[str, Any]:
         result = super().snapshot()
+        observed_mono = time.monotonic()
+        resource_guard = self._work_diagnostics.snapshot(observed_mono, self._constrained_until)
+        resource_guard["blocking_conditions"] = [
+            name
+            for name, active in (
+                ("engine_work_cooldown", observed_mono < self._constrained_until),
+                ("local_capture_disk_space", self.disk_free < 5 * 1024**3),
+                ("raw_capture_failure", self._capture_failure is not None),
+            )
+            if active
+        ]
         elapsed = max(1, time.monotonic() - self._started_mono)
         rate = self._captured_bytes / elapsed
         frames, _ = self.current_frames()
@@ -716,9 +743,7 @@ class TieredPaperRuntime(PaperRuntime):
                     ),
                     "engine_p95_ms": self._percentile(self._loop_ms),
                     "commit_p95_ms": self._percentile(self._commit_ms),
-                    "resource_guard": self._work_diagnostics.snapshot(
-                        time.monotonic(), self._constrained_until
-                    ),
+                    "resource_guard": resource_guard,
                 },
                 "storage": {
                     **self.capture_status,
