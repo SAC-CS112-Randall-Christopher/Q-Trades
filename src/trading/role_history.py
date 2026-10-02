@@ -13,6 +13,10 @@ WRITE_HEADROOM = 256 * 1024
 ROLLOVER_BYTES = 384 * 1024**2
 
 
+class HistoryUnavailable(ValueError):
+    """Recoverable storage admission failure; original records remain authoritative."""
+
+
 class RoleHistory:
     def __init__(self, registry: ExperimentRegistry):
         self.registry = registry
@@ -39,6 +43,35 @@ class RoleHistory:
             )
             registry.db.execute(
                 "CREATE INDEX IF NOT EXISTS role_attempt_started ON role_attempts(started)"
+            )
+            registry.db.execute(
+                "CREATE INDEX IF NOT EXISTS role_unreturned_attempt ON role_attempts(task) "
+                "WHERE finished IS NULL AND response IS NULL"
+            )
+            registry.db.execute(
+                "CREATE TABLE IF NOT EXISTS role_followups(task TEXT PRIMARY KEY,"
+                "state TEXT NOT NULL DEFAULT 'pending',retry_at REAL NOT NULL DEFAULT 0)"
+            )
+            registry.db.execute(
+                "CREATE INDEX IF NOT EXISTS role_followup_due ON role_followups(retry_at,task) "
+                "WHERE state='pending'"
+            )
+            for event in ("INSERT", "UPDATE OF stage,status,result"):
+                name = "role_followup_insert" if event == "INSERT" else "role_followup_update"
+                registry.db.execute(
+                    f"CREATE TRIGGER IF NOT EXISTS {name} AFTER {event} ON role_tasks "
+                    "WHEN NEW.stage='complete' AND NEW.status='done' "
+                    "AND json_extract(NEW.result,'$.outcome') IS NOT NULL "
+                    "BEGIN INSERT OR IGNORE INTO role_followups(task) VALUES(NEW.id); END"
+                )
+            registry.db.execute(
+                "CREATE TABLE IF NOT EXISTS role_followup_backfill(id INTEGER PRIMARY KEY,"
+                "through INTEGER NOT NULL,cursor INTEGER NOT NULL DEFAULT 0,"
+                "retry_at REAL NOT NULL DEFAULT 0,reason TEXT)"
+            )
+            registry.db.execute(
+                "INSERT OR IGNORE INTO role_followup_backfill(id,through) "
+                "SELECT 1,coalesce(max(rowid),0) FROM role_tasks"
             )
             registry.db.execute(
                 "CREATE TABLE IF NOT EXISTS role_archive_attempts("
@@ -103,7 +136,9 @@ class RoleHistory:
     def _storage(self) -> ResearchStorage:
         plan = load_plan(self.registry.path.parent)
         if plan is None:
-            raise ValueError("Role history continuation requires the configured G: research tiers")
+            raise HistoryUnavailable(
+                "Role history continuation requires the configured G: research tiers"
+            )
         return ResearchStorage(plan)
 
     def _snapshot(self, row: sqlite3.Row) -> dict[str, Any]:
@@ -132,6 +167,8 @@ class RoleHistory:
             rows = self.registry.db.execute(
                 "SELECT * FROM role_tasks WHERE archive_reference IS NULL AND "
                 "status IN ('done','failed') AND owner IS NULL AND lease_until IS NULL "
+                "AND NOT EXISTS(SELECT 1 FROM role_attempts a WHERE a.task=role_tasks.id "
+                "AND a.finished IS NULL AND a.response IS NULL) "
                 "ORDER BY created,id LIMIT 8"
             ).fetchall()
             if rows:
@@ -190,7 +227,7 @@ class RoleHistory:
                                     ),
                                 )
                 except (sqlite3.Error, OSError, LookupError) as exc:
-                    raise ValueError(
+                    raise HistoryUnavailable(
                         "Role history continuation unavailable; original work retained"
                     ) from exc
                 finally:
@@ -201,11 +238,11 @@ class RoleHistory:
                 ).fetchone()[0]
                 >= HOT_TASKS
             ):
-                raise ValueError(
+                raise HistoryUnavailable(
                     "Role history continuation awaits verified storage or terminal work"
                 )
             if self._usage()[1] < WRITE_HEADROOM:
-                raise ValueError(
+                raise HistoryUnavailable(
                     "Role history lacks physical write headroom; retained history is intact. "
                     "Restore space in the declared tiers before retrying."
                 )
@@ -215,7 +252,9 @@ class RoleHistory:
         try:
             packet = store.reopen(row["archive_reference"])
         except (OSError, LookupError, sqlite3.Error) as exc:
-            raise ValueError("Saved role history unavailable; no replacement inferred") from exc
+            raise HistoryUnavailable(
+                "Saved role history unavailable; no replacement inferred"
+            ) from exc
         finally:
             store.close()
         if fingerprint(packet) != row["archive_sha256"] or packet["kind"] != "role_task_history_v1":
@@ -229,6 +268,56 @@ class RoleHistory:
             "archive_reference": row["archive_reference"],
             "archive_sha256": row["archive_sha256"],
         }
+
+    def discover_followups(self, now: float | None = None) -> int:
+        """One-time legacy discovery, at most eight records; never rescan cold history."""
+        now = time.time() if now is None else now
+        with self.registry.lock:
+            progress = self.registry.db.execute(
+                "SELECT * FROM role_followup_backfill WHERE id=1"
+            ).fetchone()
+            if progress["retry_at"] > now or progress["cursor"] >= progress["through"]:
+                return 0
+            rows = self.registry.db.execute(
+                "SELECT rowid AS migration_row,* FROM role_tasks "
+                "WHERE rowid>? AND rowid<=? ORDER BY rowid LIMIT 8",
+                (progress["cursor"], progress["through"]),
+            ).fetchall()
+            found = 0
+            for row in rows:
+                state = "pending"
+                eligible = row["stage"] == "complete" and row["status"] == "done"
+                try:
+                    saved = self.read(row) if eligible and row["archive_reference"] else dict(row)
+                except HistoryUnavailable as exc:
+                    with self.registry.transaction():
+                        self.registry.db.execute(
+                            "UPDATE role_followup_backfill SET retry_at=?,reason=? WHERE id=1",
+                            (now + 30, str(exc)[:500]),
+                        )
+                    raise
+                result = json.loads(saved["result"]) if eligible and saved["result"] else {}
+                eligible = eligible and bool(result.get("outcome"))
+                with self.registry.transaction():
+                    if eligible:
+                        if self.registry.db.execute(
+                            "SELECT 1 FROM sqlite_master WHERE name='research_selection'"
+                        ).fetchone() and self.registry.db.execute(
+                            "SELECT 1 FROM research_selection s JOIN research_lessons l "
+                            "ON l.id=s.lesson WHERE l.task=? AND s.state IN ('selected','waiting')",
+                            (row["id"],),
+                        ).fetchone():
+                            state = "consumed"
+                        found += self.registry.db.execute(
+                            "INSERT OR IGNORE INTO role_followups(task,state) VALUES(?,?)",
+                            (row["id"], state),
+                        ).rowcount
+                    self.registry.db.execute(
+                        "UPDATE role_followup_backfill SET cursor=?,retry_at=0,reason=NULL "
+                        "WHERE id=1",
+                        (row["migration_row"],),
+                    )
+            return found
 
     def restore(self, identity: str) -> None:
         """Explicit transport retry restores the same answers and charged attempts."""
