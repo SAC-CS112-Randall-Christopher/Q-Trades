@@ -4,11 +4,13 @@ import asyncio
 import json
 import math
 import secrets
+import sqlite3
 import time
 from collections.abc import Callable
 from contextlib import nullcontext
 from typing import Any, Literal
 
+import psycopg
 from pydantic import BaseModel, ConfigDict, Field
 
 from trading import autonomous_finance as finance
@@ -19,7 +21,7 @@ from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
 from trading.research_lessons import ResearchLessons
 from trading.research_storage import ResearchStorage, load_plan
-from trading.role_history import HOT_TASKS, RoleHistory
+from trading.role_history import HOT_TASKS, HistoryUnavailable, RoleHistory
 from trading.scoped_tools import reader
 
 
@@ -70,6 +72,12 @@ class RoleWorker:
                   BEGIN SELECT RAISE(ABORT,'Completed model answer is immutable'); END;
             """)
         self.history = RoleHistory(registry)
+        self._maintenance_due: dict[str, float] = {}
+        with registry.transaction():
+            registry.db.execute(
+                "CREATE TABLE IF NOT EXISTS role_supervision(phase TEXT PRIMARY KEY,"
+                "status TEXT NOT NULL,reason TEXT,retry_at REAL NOT NULL,updated REAL NOT NULL)"
+            )
 
     def _requested(self, question: Question) -> str | None:
         if not question.request_id:
@@ -395,6 +403,12 @@ class RoleWorker:
                 "SELECT count(*),count(archive_reference),"
                 "sum(status NOT IN ('done','failed')) FROM role_tasks"
             ).fetchone()
+            supervision = [
+                dict(r)
+                for r in self.registry.db.execute(
+                    "SELECT * FROM role_supervision WHERE reason IS NOT NULL ORDER BY phase LIMIT 3"
+                )
+            ]
         return {
             "enabled": self.enabled,
             "contract": VERSION,
@@ -410,6 +424,7 @@ class RoleWorker:
                 "active": counts[2] or 0,
                 "hot_limit": HOT_TASKS,
             },
+            "supervision": supervision,
             "readiness": self.transport.readiness()
             if self.transport
             else {"qualified": False, "reason": "No qualified local role profile configured"},
@@ -894,10 +909,66 @@ class RoleWorker:
                 except (ValueError, OSError, KeyError):
                     self.enabled = False
             if self.enabled:
-                await asyncio.to_thread(self.resume_sources)
-                await asyncio.to_thread(self.select_followups)
-                await self.step()
+                await self._maintain("dependencies", self.resume_sources)
+                await self._maintain("followups", self.select_followups)
+                await self._maintain("dispatch", self.step, thread=False)
             await asyncio.sleep(1)
+
+    def _supervision(self, phase: str, reason: str | None, retry_at: float, status: str) -> None:
+        with self.registry.transaction():
+            old = self.registry.db.execute(
+                "SELECT * FROM role_supervision WHERE phase=?", (phase,)
+            ).fetchone()
+            if reason is None and (old is None or old["reason"] is None):
+                return
+            self.registry.db.execute(
+                "INSERT INTO role_supervision VALUES(?,?,?,?,?) ON CONFLICT(phase) DO UPDATE "
+                "SET status=excluded.status,reason=excluded.reason,retry_at=excluded.retry_at,"
+                "updated=excluded.updated",
+                (phase, status, reason, retry_at, time.time()),
+            )
+            if old is None or old["reason"] != reason or old["status"] != status:
+                self.registry.event(
+                    "role-supervisor:" + phase,
+                    "role_supervisor_" + status,
+                    {"reason": reason, "retry_at": retry_at},
+                )
+
+    async def _maintain(
+        self, phase: str, operation: Callable[[], Any], *, thread: bool = True
+    ) -> None:
+        now = time.time()
+        if self._maintenance_due.get(phase, 0) > now:
+            return
+        try:
+            with self.registry.lock:
+                state = self.registry.db.execute(
+                    "SELECT retry_at FROM role_supervision WHERE phase=?", (phase,)
+                ).fetchone()
+            if state and state["retry_at"] > now:
+                return
+            if thread:
+                await asyncio.to_thread(operation)
+            else:
+                await operation()
+            self._supervision(phase, None, 0, "recovered")
+        except (
+            psycopg.OperationalError,
+            psycopg.InterfaceError,
+            sqlite3.OperationalError,
+            OSError,
+            HistoryUnavailable,
+        ) as exc:
+            self.reason = f"Research {phase} unavailable ({type(exc).__name__}); bounded retry"
+            self._maintenance_due[phase] = now + 30
+            try:
+                self._supervision(phase, self.reason, now + 30, "waiting")
+            except sqlite3.OperationalError:
+                pass  # Cannot persist while this registry is unwritable; keep the visible fault.
+        except Exception as exc:
+            self.reason = f"Research {phase} failed ({type(exc).__name__}); repair required"
+            self._supervision(phase, self.reason, 0, "failed")
+            raise  # Programming/permanent failures are exposed, not retried as an outage.
 
     def select_followups(self) -> dict[str, int]:
         """Bounded completed-comparison trigger; unchanged/replayed results coalesce.
@@ -905,19 +976,40 @@ class RoleWorker:
         Required qualification gates remain at dispatch. This selector never
         changes the numerical learner, financial allocation or family quotas.
         """
+        try:
+            self.history.discover_followups()
+        except HistoryUnavailable:
+            self.reason = "Older follow-up storage unavailable; bounded migration retry recorded"
         with self.registry.lock:
             rows = self.registry.db.execute(
-                "SELECT id FROM role_tasks WHERE stage='complete' AND "
-                "json_extract(result,'$.outcome') IS NOT NULL AND NOT EXISTS "
+                "SELECT task AS id FROM role_followups f WHERE state='pending' AND retry_at<=? "
+                "AND NOT EXISTS "
                 "(SELECT 1 FROM research_selection s JOIN research_lessons l ON l.id=s.lesson "
-                "WHERE l.task=role_tasks.id AND (s.state IN ('selected','waiting') "
-                "OR s.retry_at>?)) ORDER BY updated,id LIMIT 20",
-                (time.time(),),
+                "WHERE l.task=f.task AND s.retry_at>?) ORDER BY retry_at,task LIMIT 20",
+                (time.time(), time.time()),
             ).fetchall()
         selected = waiting = 0
         for row in rows:
-            task = self.get(row["id"])
-            identity = self.lessons.record(task)
+            try:
+                task = self.get(row["id"])
+                identity = self.lessons.record(task)
+            except (HistoryUnavailable, OSError, sqlite3.OperationalError):
+                with self.registry.transaction():
+                    self.registry.db.execute(
+                        "UPDATE role_followups SET retry_at=? WHERE task=?",
+                        (time.time() + 30, row["id"]),
+                    )
+                continue
+            with self.registry.lock:
+                prior = self.registry.db.execute(
+                    "SELECT state FROM research_selection WHERE lesson=?", (identity,)
+                ).fetchone()
+            if prior and prior["state"] in {"selected", "waiting"}:
+                with self.registry.transaction():
+                    self.registry.db.execute(
+                        "UPDATE role_followups SET state='consumed' WHERE task=?", (task["id"],)
+                    )
+                continue
             followup = task["result"].get("followup", {})
             choice = task["context"]["catalog"].get(followup.get("capability"))
             if (
@@ -931,6 +1023,10 @@ class RoleWorker:
                     followup.get("dependency")
                     or "No supported different test; wait for new mature/source evidence",
                 )
+                with self.registry.transaction():
+                    self.registry.db.execute(
+                        "UPDATE role_followups SET state='consumed' WHERE task=?", (task["id"],)
+                    )
                 waiting += 1
                 continue
             try:
@@ -950,9 +1046,18 @@ class RoleWorker:
                     "New mature comparison and supported different capability",
                     next_task["id"],
                 )
+                with self.registry.transaction():
+                    self.registry.db.execute(
+                        "UPDATE role_followups SET state='consumed' WHERE task=?", (task["id"],)
+                    )
                 selected += 1
             except (ValueError, OSError) as exc:
                 self.lessons.selected(identity, "deferred", str(exc)[:500])
+                with self.registry.transaction():
+                    self.registry.db.execute(
+                        "UPDATE role_followups SET retry_at=? WHERE task=?",
+                        (time.time() + 60, task["id"]),
+                    )
         return {"selected": selected, "waiting": waiting}
 
     def resume_sources(self, now: float | None = None) -> int:
@@ -963,46 +1068,78 @@ class RoleWorker:
         with self.registry.lock:
             rows = self.registry.db.execute(
                 "SELECT id FROM role_tasks WHERE stage='data_wait' AND status='waiting' "
-                "ORDER BY updated,id LIMIT 20"
+                "AND retry_at<=? AND owner IS NULL ORDER BY updated,id LIMIT 20",
+                (now,),
             ).fetchall()
         resumed = 0
         for row in rows:
-            task = self.get(row["id"])
-            question = Question.model_validate(task["context"]["question"])
-            requirement = (task["result"] or {}).get("wait_requirement")
-            if not requirement:
-                continue  # Historical free text is retained; no guessed dependency/maturity.
-            outcome = None
-            if requirement["kind"] == "closed_bars":
-                bars = self.controller.paper.lab_history(now, requirement["horizon"])
-                if (
-                    fingerprint([str(b) for b in bars]) == requirement["source_sha256"]
-                    or max((b.close_ms / 1000 for b in bars), default=0)
-                    <= requirement["last_closed_at"]
-                ):
-                    continue
-            elif requirement["kind"] == "mature_outcome":
-                with reader(self.controller.paper) as view:
-                    outcome = view.connection.execute(
-                        "SELECT id,at,body FROM paper_events WHERE kind='lab_trial_scored' "
-                        "AND body->>'trial_id'=%s AND at<=%s ORDER BY id DESC LIMIT 1",
-                        (requirement["trial_id"], now),
-                    ).fetchone()
-                if not outcome or outcome["body"]["available_at"] > now:
-                    continue
-            else:
-                continue
             try:
-                self.enqueue(
-                    question.model_copy(update={"request_id": None}),
-                    now,
-                    _resume_from=task,
-                    _dependency_evidence=dict(outcome) if outcome else None,
-                )
-            except ValueError:
-                continue
-            resumed += 1
+                resumed += self._resume_source(row["id"], now)
+            except (
+                psycopg.OperationalError,
+                psycopg.InterfaceError,
+                sqlite3.OperationalError,
+                OSError,
+                HistoryUnavailable,
+            ) as exc:
+                with self.registry.transaction():
+                    self.registry.db.execute(
+                        "UPDATE role_tasks SET reason=?,retry_at=? WHERE id=? "
+                        "AND stage='data_wait' AND status='waiting' AND owner IS NULL",
+                        (
+                            "Dependency database/storage unavailable: " + type(exc).__name__,
+                            now + 30,
+                            row["id"],
+                        ),
+                    )
         return resumed
+
+    def _resume_source(self, identity: str, now: float) -> int:
+        task = self.get(identity)
+        question = Question.model_validate(task["context"]["question"])
+        requirement = (task["result"] or {}).get("wait_requirement")
+        if not requirement:
+            return 0  # Historical free text is retained; never guess a dependency.
+        outcome = None
+        if requirement["kind"] == "closed_bars":
+            assert self.controller is not None
+            bars = self.controller.paper.lab_history(now, requirement["horizon"])
+            if (
+                fingerprint([str(b) for b in bars]) == requirement["source_sha256"]
+                or max((b.close_ms / 1000 for b in bars), default=0)
+                <= requirement["last_closed_at"]
+            ):
+                return 0
+        elif requirement["kind"] == "mature_outcome":
+            assert self.controller is not None
+            with reader(self.controller.paper) as view:
+                outcome = view.connection.execute(
+                    "SELECT id,at,body FROM paper_events WHERE kind='lab_trial_scored' "
+                    "AND body->>'trial_id'=%s AND at<=%s ORDER BY id DESC LIMIT 1",
+                    (requirement["trial_id"], now),
+                ).fetchone()
+            if not outcome or outcome["body"]["available_at"] > now:
+                return 0
+        else:
+            return 0
+        try:
+            self.enqueue(
+                question.model_copy(update={"request_id": None}),
+                now,
+                _resume_from=task,
+                _dependency_evidence=dict(outcome) if outcome else None,
+            )
+        except HistoryUnavailable:
+            raise
+        except ValueError as exc:
+            with self.registry.transaction():
+                self.registry.db.execute(
+                    "UPDATE role_tasks SET reason=?,retry_at=? WHERE id=? "
+                    "AND stage='data_wait' AND status='waiting' AND owner IS NULL",
+                    ("Continuation blocked: " + str(exc)[:300], now + 30, identity),
+                )
+            return 0
+        return 1
 
     def selection_metrics(self) -> dict[str, Any]:
         with self.registry.lock:
