@@ -83,6 +83,15 @@ class ExecutionWindow:
             return at >= request.not_before
         return True  # Includes the first actual tick at or beyond the complete horizon.
 
+    def defer_retention(self, at: float) -> bool:
+        if self.request is None:
+            return False
+        if self.status["state"] == "armed":
+            return abs(at - self.request.not_before) <= self.request.start_grace_seconds
+        return bool(
+            self.status["state"] == "capturing" and at <= self.status.get("required_end_at", 0) + 5
+        )
+
     def attach(self, packet: dict[str, Any], omissions: int) -> None:
         if not self.selected(packet["at"]):
             return

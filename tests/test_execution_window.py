@@ -194,3 +194,16 @@ def test_auxiliary_omissions_do_not_replace_required_tick_continuity(tmp_path):
     missing["financial_commit"]["revision"] += 2
     assert not window.committed(missing)
     assert window.status["state"] == "incomplete"
+
+
+def test_retention_deferral_has_real_time_bounds(tmp_path):
+    request(tmp_path)
+    window = ExecutionWindow(tmp_path)
+    assert not window.defer_retention(1.0)  # A far-future request cannot pause maintenance.
+    assert window.defer_retention(24001.0)
+    assert not window.defer_retention(24602.0)
+    window.status.update(state="capturing", required_end_at=26701.0)
+    assert window.defer_retention(26000.0)
+    assert not window.defer_retention(26707.0)
+    window.fail("Synthetic terminal request")
+    assert not window.defer_retention(26000.0)

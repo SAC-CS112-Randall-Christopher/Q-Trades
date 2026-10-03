@@ -578,10 +578,9 @@ class EvidenceRecorder:
                     self._storage.housekeeping(time.time(), capacity_triggered=True)
                     self._storage.admission(self._capture_retry_bytes, "temporary")
                     self._storage.admission(self._compact_retry_bytes, "research")
-                defer_retention = self.execution_window.status["state"] in {
-                    "armed",
-                    "capturing",
-                } or any(p.get("execution_window") for p in packets)
+                defer_retention = self.execution_window.defer_retention(time.time()) or any(
+                    p.get("execution_window") for p in packets
+                )
                 if defer_retention:
                     refs = self._storage.append(packets, time.time(), defer_retention=True)
                 else:
