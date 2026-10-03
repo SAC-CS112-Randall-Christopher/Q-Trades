@@ -45,9 +45,11 @@ class TieredPaperRuntime(PaperRuntime):
         self._studied: dict[str, int] = {}
         self._feature_times: dict[str, float] = {}
         self._feature_timing: dict[str, dict[str, Any]] = {}
+        self._input_eligibility: dict[str, Any] = {}
         self._fallback: dict[str, dict[str, Any]] = {}
         self._fallback_at: dict[str, float] = {}
         self._rest_retry_at = 0.0
+        self._rest_requests: dict[str, dict[str, float]] = {}
         self._bars_added = 0
         self._notice_queue: list[dict[str, Any]] = []
         self._last_sources: dict[str, str] = {}
@@ -237,6 +239,7 @@ class TieredPaperRuntime(PaperRuntime):
     async def _rest_book(self, symbol: str) -> None:
         try:
             sent, mono = time.time(), time.monotonic()
+            self._rest_requests[symbol] = {"request_sent_at": sent, "request_sent_mono": mono}
             raw = await self.venue.depth(symbol, 20)
             now, arrived = time.time(), time.monotonic()
             if arrived - mono > 1:
@@ -279,6 +282,7 @@ class TieredPaperRuntime(PaperRuntime):
         except (ValueError, KeyError, ArithmeticError) as exc:
             self.feed_errors[symbol] = str(exc)
         finally:
+            self._rest_requests.pop(symbol, None)
             # REST is capped: no attempt to imitate a 100ms stream with HTTP bursts.
             interval = 0.5 if self.stream.plan.get(symbol) == 100 else 5.0
             self._fallback_at[symbol] = time.monotonic() + interval
@@ -303,8 +307,43 @@ class TieredPaperRuntime(PaperRuntime):
 
     def current_frames(self) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
         now, mono = time.time(), time.monotonic()
-        books = self.stream.fresh_books()
+        stream_checks: dict[str, Any] = {}
+        books = self.stream.fresh_books(diagnostics=stream_checks)
+        checks = {
+            symbol: {
+                "subscribed": symbol in self.stream.plan,
+                "interval_ms": self.stream.plan.get(symbol),
+                "frame_present": False,
+                "reason": "no_fresh_book",
+                "stream": stream_checks.get("markets", {}).get(symbol),
+                "fallback": {"present": False, "eligible": False},
+                "rest_request": {
+                    "inflight": dict(self._rest_requests[symbol])
+                    if symbol in self._rest_requests
+                    else None,
+                    "next_allowed_mono": self._fallback_at.get(symbol),
+                    "global_retry_at": self._rest_retry_at,
+                    "retry_blocked": now < self._rest_retry_at,
+                },
+                "instrument_present": symbol in self.instruments,
+                "metadata_age_seconds": now - self.metadata_at,
+            }
+            for symbol in set(self.stream.plan) | set(self._fallback) | set(SYMBOLS) | self.held()
+        }
         for symbol, frame in self._fallback.items():
+            age = mono - frame["received_mono"]
+            checks[symbol]["fallback"] = {
+                "present": True,
+                "eligible": symbol in self.stream.plan and age <= 1,
+                "selected": symbol not in books and symbol in self.stream.plan and age <= 1,
+                "received_age_seconds": age,
+                "freshness_limit_seconds": 1,
+                "observed_at": frame["observed"],
+                "request_sent_at": frame.get("request_sent_at"),
+                "round_trip_ms": frame.get("round_trip_ms"),
+                "source": frame["source"],
+                "sequence": frame["book"].update_id,
+            }
             if (
                 symbol not in books
                 and symbol in self.stream.plan
@@ -314,9 +353,16 @@ class TieredPaperRuntime(PaperRuntime):
         frames = {}
         study = {}
         for symbol, observed in books.items():
+            check = checks[symbol]
+            check["selected_book_source"] = observed["source"]
             if observed["source"] == "binance.us-depth-websocket":
                 previous = self._previous_books.get(symbol)
+                check["sequence"] = {
+                    "current": observed["book"].update_id,
+                    "previous": previous[0] if previous else None,
+                }
                 if previous and observed["book"].update_id < previous[0]:
+                    check["reason"] = "sequence_regressed"
                     continue
                 digest = hashlib.sha256(
                     json.dumps(observed["raw"], sort_keys=True).encode()
@@ -325,11 +371,14 @@ class TieredPaperRuntime(PaperRuntime):
                 self.feed_errors.pop(symbol, None)
             instrument = self.instruments.get(symbol)
             if instrument is None:
+                check["reason"] = "instrument_absent"
                 continue
             try:
                 rules = filters(instrument)
             except (ValueError, KeyError, ArithmeticError):
+                check.update(reason="instrument_rules_invalid", instrument_rules_valid=False)
                 continue
+            check["instrument_rules_valid"] = True
             frame = {
                 **observed,
                 "rules": rules,
@@ -338,12 +387,24 @@ class TieredPaperRuntime(PaperRuntime):
                 "entry_allowed": now - self.metadata_at <= 900 and self.stream.plan[symbol] == 100,
             }
             frames[symbol] = frame
+            check.update(
+                frame_present=True, reason="eligible_frame", entry_allowed=frame["entry_allowed"]
+            )
             study[symbol] = {v: dict(f) for v, f in self.study.get(symbol, {}).items()}
             for feature in study[symbol].values():
                 if now * 1000 - feature.get("bar_open_ms", 0) - 59999 > 90000:
                     feature.update(eligible=False, reason="Closed candle is stale")
                 if symbol in self._candle_errors:
                     feature.update(eligible=False, reason=self._candle_errors[symbol])
+        self._input_eligibility = {
+            "observed_at": now,
+            "observed_mono": mono,
+            "stream_clock": {k: v for k, v in stream_checks.items() if k != "markets"},
+            "markets": checks,
+            "scope": (
+                "Original frame-selection decisions; no substituted book or financial authority"
+            ),
+        }
         return frames, study
 
     def summarize_books(self, frames: dict[str, dict[str, Any]], now: float) -> None:
@@ -535,6 +596,7 @@ class TieredPaperRuntime(PaperRuntime):
                             self.stream.trade_tape,
                             self.stream.snapshot(),
                             feature_timing=self._feature_timing,
+                            input_eligibility=self._input_eligibility,
                         )
                     except (ValueError, TypeError, KeyError, ArithmeticError):
                         self.evidence.dropped += 1

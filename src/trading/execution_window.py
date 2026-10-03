@@ -114,7 +114,36 @@ class ExecutionWindow:
             and 0 <= at * 1000 - rows[-1]["close_ms"] <= 90000
         )
         if not supported:
+            checks = {
+                "btc_frame_present": frame is not None,
+                "book_fresh_at_tick": frame is not None and 0 <= at - frame["observed"] <= 5,
+                "required_warmup": len(rows) >= 305,
+                "continuous_minutes": all(
+                    b["open_ms"] == a["open_ms"] + 60000
+                    for a, b in zip(rows, rows[1:], strict=False)
+                ),
+                "causal_candles": all(
+                    r["close_ms"] < at * 1000 and r["available_at"] <= at for r in rows
+                ),
+                "feature_origin_present": origin is not None,
+                "feature_available": origin is not None and origin["available_at"] <= at,
+                "feature_without_error": origin is not None and not origin["candle_error"],
+                "last_closed_minute_fresh": bool(rows)
+                and 0 <= at * 1000 - rows[-1]["close_ms"] <= 90000,
+            }
+            diagnosis = {
+                "at": at,
+                "first_failed_check": next(k for k, value in checks.items() if not value),
+                "checks": checks,
+                "input_eligibility": packet.get("input_eligibility", {}),
+                "candle_input_status": packet.get("candle_input_status", {}).get("BTCUSD"),
+                "scope": (
+                    "Original captured inputs; bars/origins are exported only for present frames"
+                ),
+            }
+            self.status["last_input_check"] = diagnosis
             if self.status["state"] == "capturing":
+                self.status["first_input_failure"] = diagnosis
                 self.fail(
                     "Required BTCUSD book, causal minute warmup or continuous input is absent"
                 )

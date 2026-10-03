@@ -90,6 +90,43 @@ def test_capture_is_disabled_until_a_finite_operator_request(tmp_path):
         WindowRequest(request_id="synthetic-window-0001", not_before=24001.0, horizon_seconds=10)
 
 
+def test_failed_frame_keeps_original_selection_checks_and_excluded_candle_context(tmp_path):
+    record = next(synthetic_records(tmp_path, steps=1))
+    recorder = EvidenceRecorder(tmp_path / "diagnostic.sqlite")
+    recorder.execution_window.attach(record["payload"], 0)
+    assert recorder.execution_window.committed(record["payload"])
+    original = record["payload"]["bars"]["BTCUSD"]
+    bars = [
+        Bar(row["open_ms"], D(100), D(101), D(99), D(100), D(10), row["close_ms"])
+        for row in original
+    ]
+    selection = {
+        "observed_at": 24002.0,
+        "markets": {
+            "BTCUSD": {
+                "frame_present": False,
+                "reason": "no_fresh_book",
+                "stream": {"eligible": False, "reason": "book_stale"},
+                "fallback": {"eligible": False, "received_age_seconds": 1.52},
+            }
+        },
+    }
+    packet = recorder.prepare(
+        24002.0, {}, {}, {"BTCUSD": bars}, {"BTCUSD": 24001.0}, 0, {},
+        state_snapshot(initial_state(24001.0)), [], {}, {},
+        feature_timing={"BTCUSD": {"available_at": 24001.0}},
+        input_eligibility=selection,
+    )
+    assert "BTCUSD" not in packet["frames"] and "BTCUSD" not in packet["bars"]
+    assert packet["candle_input_status"]["BTCUSD"]["retained_bars"] == 400
+    failure = recorder.execution_window.status["first_input_failure"]
+    assert failure["first_failed_check"] == "btc_frame_present"
+    assert failure["input_eligibility"] == selection
+    assert failure["candle_input_status"]["continuous"]
+    assert recorder.execution_window.status["state"] == "incomplete"
+    assert "execution_window" not in packet
+
+
 @pytest.mark.parametrize(
     "previous", [[], {"request": []}, {"request": {"request_id": "synthetic-window-0001"}}]
 )

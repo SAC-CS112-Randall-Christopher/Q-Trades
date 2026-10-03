@@ -210,6 +210,124 @@ def test_fallback_records_request_timing_without_fabricating_exchange_timestamp(
     assert not runtime.current_frames()[0]
 
 
+def test_pending_rest_request_is_diagnostic_only_until_original_receipt(tmp_path):
+    async def scenario():
+        runtime = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "raw.sqlite")
+        runtime.stream.plan = {"BTCUSD": 100}
+        runtime.instruments = {"BTCUSD": instrument("BTC")}
+        runtime.metadata_at = time.time()
+        started, release = asyncio.Event(), asyncio.Event()
+        calls = []
+
+        async def depth(symbol, limit):
+            calls.append((symbol, limit))
+            started.set()
+            await release.wait()
+            return snapshot(levels=20)
+
+        runtime.venue.depth = depth
+        task = asyncio.create_task(runtime._rest_book("BTCUSD"))
+        await started.wait()
+        try:
+            assert not runtime.current_frames()[0]
+            pending = runtime._input_eligibility["markets"]["BTCUSD"]["rest_request"]
+            sent = pending["inflight"]["request_sent_at"]
+            assert sent <= time.time() and not runtime._fallback
+        finally:
+            release.set()
+            await task
+        frames, _ = runtime.current_frames()
+        assert frames["BTCUSD"]["observed"] >= sent
+        assert runtime._input_eligibility["markets"]["BTCUSD"]["rest_request"]["inflight"] is None
+        assert calls == [("BTCUSD", 20)]
+
+    asyncio.run(scenario())
+
+
+def test_original_selection_diagnostics_distinguish_stale_stream_and_expired_fallback(
+    tmp_path, monkeypatch
+):
+    from trading.market import parse_book
+
+    wall, mono = 10000.0, 200.0
+    monkeypatch.setattr(time, "time", lambda: wall)
+    monkeypatch.setattr(time, "monotonic", lambda: mono)
+    runtime = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "raw.sqlite")
+    runtime.stream.plan = {"BTCUSD": 100}
+    runtime.stream.clock = clock_at(wall, mono)
+    runtime.instruments = {"BTCUSD": instrument("BTC")}
+    runtime.metadata_at = wall
+    raw = snapshot(levels=20)
+    runtime.stream.books["BTCUSD"] = {
+        "book": parse_book(raw, 20),
+        "raw": raw,
+        "source": "binance.us-depth-websocket",
+        "observed": wall - 0.813,
+        "received_mono": mono - 0.813,
+        "event_age_ms": 179.5,
+        "clock_uncertainty_ms": 70.5,
+        "exchange_event_ms": int((wall - 0.99) * 1000),
+    }
+    runtime._fallback["BTCUSD"] = {
+        "book": parse_book(raw, 20),
+        "raw": raw,
+        "source": "binance.us-rest-fallback",
+        "observed": wall - 1.52,
+        "received_mono": mono - 1.52,
+        "request_sent_at": wall - 1.66,
+        "round_trip_ms": 140,
+        "exchange_event_ms": None,
+    }
+    direct = runtime.stream.fresh_books()
+    diagnostic = {}
+    assert runtime.stream.fresh_books(diagnostics=diagnostic) == direct == {}
+    frames, _ = runtime.current_frames()
+    check = runtime._input_eligibility["markets"]["BTCUSD"]
+    assert not frames and not check["frame_present"]
+    assert check["stream"]["reason"] == "book_stale"
+    assert check["stream"]["freshness_score_ms"] == pytest.approx(1063)
+    assert check["stream"]["freshness_limit_ms"] == 1000
+    assert check["fallback"]["received_age_seconds"] == pytest.approx(1.52)
+    assert not check["fallback"]["eligible"] and check["instrument_present"]
+    # A genuinely later receipt can restore input; it is never backdated into the gap.
+    runtime._fallback["BTCUSD"].update(observed=wall, received_mono=mono)
+    frames, _ = runtime.current_frames()
+    assert frames["BTCUSD"]["observed"] == wall
+    assert runtime._input_eligibility["markets"]["BTCUSD"]["fallback"]["selected"]
+
+
+@pytest.mark.parametrize(
+    "problem", ["sequence_regressed", "instrument_absent", "instrument_rules_invalid"]
+)
+def test_selection_records_the_actual_exclusion_after_a_fresh_book(tmp_path, monkeypatch, problem):
+    from trading.market import parse_book
+
+    wall, mono = 10000.0, 200.0
+    monkeypatch.setattr(time, "time", lambda: wall)
+    monkeypatch.setattr(time, "monotonic", lambda: mono)
+    runtime = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "raw.sqlite")
+    runtime.stream.plan = {"BTCUSD": 100}
+    runtime.stream.clock = clock_at(wall, mono)
+    runtime.instruments = {"BTCUSD": instrument("BTC")}
+    runtime.metadata_at = wall
+    raw = snapshot(levels=20)
+    runtime.stream.books["BTCUSD"] = {
+        "book": parse_book(raw, 20), "raw": raw,
+        "source": "binance.us-depth-websocket", "observed": wall,
+        "received_mono": mono, "event_age_ms": 10, "clock_uncertainty_ms": 25,
+        "exchange_event_ms": int(wall * 1000),
+    }
+    if problem == "sequence_regressed":
+        runtime._previous_books["BTCUSD"] = [101, "old-hash"]
+    elif problem == "instrument_absent":
+        runtime.instruments.clear()
+    else:
+        runtime.instruments["BTCUSD"]["filters"] = []
+    assert not runtime.current_frames()[0]
+    check = runtime._input_eligibility["markets"]["BTCUSD"]
+    assert check["reason"] == problem and check["stream"]["eligible"]
+
+
 def test_minute_summary_preserves_observed_depth_and_avoids_duplicate_sample(tmp_path):
     runtime = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "raw.sqlite")
     from trading.market import parse_book
