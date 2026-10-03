@@ -31,6 +31,8 @@ from trading.venue import FeedError, PublicVenue
 
 logger = logging.getLogger(__name__)
 FEED_MODEL = "paper-tiered-feed-ioc-v2"
+# Scheduling lead only: the stream/REST eligibility predicates stay unchanged.
+FALLBACK_REFRESH_LEAD_MS = 500
 
 
 class TieredPaperRuntime(PaperRuntime):
@@ -287,17 +289,27 @@ class TieredPaperRuntime(PaperRuntime):
             interval = 0.5 if self.stream.plan.get(symbol) == 100 else 5.0
             self._fallback_at[symbol] = time.monotonic() + interval
 
+    def _fallback_due(self) -> list[str]:
+        checks: dict[str, Any] = {}
+        fresh = self.stream.fresh_books(diagnostics=checks)
+        if time.time() < self._rest_retry_at:
+            return []
+        mono = time.monotonic()
+        due = []
+        for symbol in self.stream.plan:
+            if symbol in self._rest_requests or mono < self._fallback_at.get(symbol, 0):
+                continue
+            stream = checks.get("markets", {}).get(symbol, {})
+            remaining = stream.get("freshness_limit_ms", 0) - stream.get("freshness_score_ms", 0)
+            if symbol not in fresh or remaining <= FALLBACK_REFRESH_LEAD_MS:
+                due.append(symbol)
+        return due
+
     async def _fallback_loop(self) -> None:
         while True:
-            fresh = self.stream.fresh_books()
-            if time.time() >= self._rest_retry_at:
-                due = [
-                    symbol
-                    for symbol in self.stream.plan
-                    if symbol not in fresh and time.monotonic() >= self._fallback_at.get(symbol, 0)
-                ]
-                if due:
-                    await asyncio.gather(*(self._rest_book(symbol) for symbol in due))
+            due = self._fallback_due()
+            if due:
+                await asyncio.gather(*(self._rest_book(symbol) for symbol in due))
             await asyncio.sleep(0.05)
 
     def quotes(self) -> dict[str, Any]:
