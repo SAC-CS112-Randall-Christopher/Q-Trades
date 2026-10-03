@@ -7,21 +7,26 @@ wait. The current user assignment prioritizes the installed activity reader,
 diagnosis of the earlier reader fault and resource constraint, current model
 qualification, and one real cycle. Do not substitute more strategy infrastructure.
 
-Approved PRs #37 and #38 are merged/installed at main `6bfd3cd`. Normal AI Lab
-activity and private preservation acceptance passed, including all 771,895
-pre-update events and 9,154 journal lines. A new five-minute inference-off
-observation still reports engine-work cooldown alone; disk/capture health pass.
-Full projection transfer/update remains costly while financial calculation is
-about one millisecond. Current qualification and real mature feedback are open.
+Approved PRs #37-39 are merged/installed at main `9d45f71`. The authorized existing
+updater applied LZ4 metadata while the writer was stopped; ordinary future writes
+now use LZ4. Normal AI Lab/API and private preservation acceptance passed for all
+780,193 pre-update events and 9,154 journal lines. All 186 checked source/dashboard
+files match, original contracts/history/configuration/G:/twenty slots are preserved,
+and the task is running. A ten-minute inference-off observation still reports
+engine-work cooldown alone: 366 of 981 sampled work entries exceed 100 ms;
+whole-work median/p95 are 89.674/173.079 ms. All 185 full-health polls pass but none
+admit research. Disk/raw-capture health pass. Do not repeat this completed rollout.
+Full projection read/decode remains costly; current qualification and real mature
+feedback are open. No model request or owned paper question was dispatched.
 See docs/reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md for exact current evidence.
 
-The next bounded source change makes projection compression an explicit opt-in
-decision through the existing updater. Default updates retain their behavior.
-Preview is authenticated/read-only; apply refuses a live financial writer and
-changes only the compression metadata for future ordinary projection writes.
-No projection cache, decoder change, financial rewrite, history truncation or
-guard relaxation is selected. New merge/install/compression authorization remains
-required after its source/QA proof; the PR #38 approval is already fulfilled.
+PR #39's explicit merge/install/compression approval is fulfilled. Its preview was
+authenticated/read-only; apply preserved the stored projection exactly and changed
+only future-write metadata. No history truncation, financial rewrite or guard
+relaxation occurred. Continue measured capacity work, then actual qualification and
+the authorized separately owned genuine paper cycle when the full guard admits it.
+New source changes require their own reviewable proof and applicable merge/install
+authorization. Do not infer original operating-model activation from qualification.
 
 PRs #29-35 were merged together at main
 `4c3e78a8569254eca2b3717d8d20a79325bd0b96` and installed through the existing

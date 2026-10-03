@@ -1,10 +1,103 @@
-# CP18 current installed evidence and explicit projection compression candidate
+# CP18 installed projection compression and continuing capacity evidence
 
 The activity reader works in the actual application. The qualified real-model
 research/feedback cycle and subsequent CP23 sustained/usefulness work remain open.
 Issue #28 owns this bounded operating-capacity repair.
 
-## Approved PR #38 rollout is complete
+## Approved PR #39 rollout is complete
+
+The owner approved PR #39's merge/install/restart and LZ4 future-write metadata
+change. Main and the installed application are
+`9d45f71c686e2e6c6c8c487c86861a1da35794a8`. The existing updater completed in
+75.2 seconds; its third normal health probe confirmed readiness. Exact merged-main
+[Windows checks](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/37030436512)
+passed 378 selected cases with 162 conditional PostgreSQL skips in 252.71 seconds;
+the frontend transformed 1,926 modules. The earlier full native product run passed
+721 with no skips, as recorded separately below.
+
+The authenticated preview succeeded on PostgreSQL 18.6. Apply ran with the sole
+financial writer stopped and preserved the exact current projection text hash,
+revision, size and stored codec. Only future-write metadata changed. After ordinary
+financial commits, the read-only check confirms both column metadata and the stored
+projection use LZ4. No journal/history/account rewrite was performed.
+
+Ordered canonical prefixes of all 780,193 pre-update events and 9,154 journal lines
+match exactly. Original six contracts, eight account identities, trial/parent
+contracts, configuration, G: identity, twenty-slot capacity, scheduled-task action/
+principal and five unrelated files are preserved. All 186 checked source/dashboard
+files match main; the journal is balanced and the service fresh. The normal AI Lab
+screen still shows actual durable dates without the activity-query warning. Browser
+execution used a fresh isolated Chrome/Playwright context because the in-app
+execution binding was unavailable; actual service/UI assertions and screenshot
+inspection passed, and the context closed afterward. Original model research
+remains disabled/unqualified with zero questions.
+
+## Current inference-off observation after PR #39
+
+A ten-minute observation samples the latest twenty work entries every three seconds,
+so it does not count every financial iteration. It retained 981 distinct entries:
+366 exceeded 100 ms, zero reached one second. All 185 status polls were running,
+fresh and error-free, with no query or raw-capture errors. None admitted inference;
+`engine_work_cooldown` was the sole reported condition and continued to renew.
+The last cooldown was 299.344 seconds; local free space was 64.84 GiB.
+
+| Work | Median ms | p95 ms |
+| --- | ---: | ---: |
+| Entire guarded work | 89.674 | 173.079 |
+| Financial tick | 0.892 | 2.159 |
+| Transaction read/decode | 39.933 | 75.560 |
+| Projection encoding | 8.963 | 21.744 |
+| Projection database update | 21.812 | 47.032 |
+| Database commit | 3.425 | 19.254 |
+| Detached before-state capture | 10.175 | 23.989 |
+| Full capture completion | 11.982 | 25.329 |
+
+Subphases overlap; do not add them twice. The pre/post observations have different
+host/state conditions and are not a controlled speed comparison. This rollout
+does not establish safe inference capacity. No model call, owned question,
+qualification, genuine trial maturity or research usefulness is claimed.
+
+Read-only size diagnosis found a 713,518-byte compact projection with 437,234 bytes
+in accounts (mostly retained recent trades) and 229,177 bytes in review history.
+These records remain intact. A separate encoded-reuse probe matched the full typed,
+ordered PostgreSQL projection and 10,000 finite float cases in disposable QA; forty
+randomized no-op samples per LZ4 arm were 56.781/94.617 ms ordinary versus
+48.988/75.975 ms candidate. The modest gain is not sufficient installed-capacity
+evidence, and that cache is not selected.
+
+Two further isolated comparisons retain all history. The JSONB patch arm is slower
+than its ordinary control (median/p95 66.048/98.342 versus 57.093/72.371 ms).
+The final detached-copy arm also does not improve its paired workload
+(32.661/54.867 versus 30.183/50.348 ms). Each used forty randomized no-op samples
+per arm plus nested/deleted-field equivalence checks in owned PostgreSQL 17.2
+schemas. The detached arm also matched ordered types and 10,000 finite float
+cases. These probes use different workloads/host conditions; compare each only to
+its own control. Neither is selected. The initial patch probe failed when its
+test wrapper assumed a deliberately removed history field still existed; its
+private failed log is retained, the wrapper was corrected and paired deletion
+checks then passed. All disposable schemas were removed; operating data was
+read-only throughout.
+
+A short host observation found about 59 GiB available physical RAM, zero paging
+input, no disk queue and 14-37 percent whole-machine CPU across five one-second
+native samples. This does not establish sustained resource capacity or rule out
+short scheduling/I/O delays; it does not support describing the blocker as memory
+exhaustion. The actual adapter's full operating `paper_guard()` still refuses
+dispatch after these probes. No qualification runner or model request was started
+merely to repeat the already observed closed admission. More source changes must
+show a measured, safe benefit before a new installation is proposed; the current
+guard cannot be waived to obtain a qualifying run.
+
+See [the public installed receipt](projection-compression-installed-checks.json).
+The unsuccessful alternatives are retained in
+[the redacted diagnostic receipt](projection-capacity-alternative-probes.json).
+Private full packets, failed attempts, source hashes, preservation evidence and
+screenshots remain ignored locally. PR #39's approval is fulfilled. Future repairs
+retain their own review/merge/install boundary; original operating activation is
+separate. Actual current qualification and the owned genuine paper-feedback cycle
+remain next when the full guard admits them.
+
+## Historical approved PR #38 rollout
 
 Main and the installed application are `6bfd3cda405644763b7a7b8d5b67f772219315d9`.
 The explicitly authorized existing updater completed in 72.0 seconds; its third
@@ -28,7 +121,7 @@ and closed afterward. No original user browser session or application mocks were
 used. Research remains disabled/unqualified with zero retained role questions.
 See [the exact issue receipt](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/28#issuecomment-5954763031).
 
-## Current inference-off capacity
+## Historical PR #38 inference-off capacity
 
 A new five-minute observation samples the latest work window every three seconds:
 353 distinct work entries, 166 exceeding 100 ms, zero reaching one second.
@@ -125,7 +218,7 @@ Later receipt/documentation commits keep the same tested product source; their
 exact final-head gate is recorded in draft PR #39 and issue #28 before approval.
 See [the public source receipt](projection-compression-software-checks.json).
 
-## Applicable approval and acceptance
+## Historical PR #39 approval request and required acceptance
 
 After source/QA and final-main gates, the proposed existing-updater command is:
 

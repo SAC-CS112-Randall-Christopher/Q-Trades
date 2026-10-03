@@ -1,13 +1,16 @@
 # Current issue #28: stack installed; operational CP18 in progress
 
-Approved PRs #37/#38 are installed at main `6bfd3cd`. Normal activity reporting
-works; all 771,895 pre-update events and 9,154 journal lines, original accounts/
+Approved PRs #37-39 are installed at main `9d45f71`. Normal activity reporting
+works; all 780,193 pre-update events and 9,154 journal lines, original accounts/
 contracts, existing trials, configuration, G: and twenty-slot capacity are preserved.
-The new five-minute inference-off observation still reports engine-work cooldown:
-166 of 353 sampled work entries exceed 100 ms. Whole-work median/p95 are
-97.431/162.603 ms; financial calculation remains about one millisecond.
+The approved existing updater completed the LZ4 future-write metadata change and
+restart in 75.2 seconds. All 186 checked source/dashboard files and task identity
+match. The new ten-minute inference-off observation still reports engine-work
+cooldown: 366 of 981 sampled work entries exceed 100 ms. Whole-work median/p95 are
+89.674/173.079 ms; all 185 full-health polls pass, but none admit research. Disk/
+raw-capture health pass; financial calculation remains about one millisecond.
 Qualification and the real mature feedback cycle are still incomplete. Read
-[the current capacity evidence and opt-in candidate](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
+[the completed rollout and current capacity evidence](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
 No model request, operating activation or new paper question occurred in this rollout.
 
 ## Historical first stack rollout and pre-repair diagnosis

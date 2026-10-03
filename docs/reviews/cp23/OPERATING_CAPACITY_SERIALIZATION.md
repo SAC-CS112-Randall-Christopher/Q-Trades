@@ -4,8 +4,9 @@ This is issue #28 operational capacity work. The qualified real-model feedback
 cycle and CP23 usefulness remain incomplete.
 
 The bounded source below was approved, merged as PR #38 and installed at main
-`6bfd3cd`. Its normal activity/preservation rollout passed; actual capacity still
-does not admit inference. Read [the current observation and follow-up candidate](OPERATING_PROJECTION_COMPRESSION.md).
+`6bfd3cd`. PR #39's explicitly approved LZ4 follow-up is now installed at `9d45f71`;
+its normal activity/preservation rollout passed, but actual capacity still does not
+admit inference. Read [the current observation and completed rollout](OPERATING_PROJECTION_COMPRESSION.md).
 The earlier source measurements, failed hosted fixture run and corrected receipts
 below remain historical evidence and are not overwritten by the new rollout.
 
