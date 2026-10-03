@@ -45,13 +45,22 @@ class ExecutionWindow:
                 if self.path.is_symlink() or self.path.stat().st_size > 16384:
                     raise ValueError("Use a bounded ordinary window status file")
                 previous = json.loads(self.path.read_text())
+                if not isinstance(previous, dict):
+                    raise ValueError("Invalid finite-window status shape")
                 if previous.get("request", {}).get("request_id") == self.request.request_id:
+                    if previous.get("state") not in {
+                        "armed",
+                        "capturing",
+                        "incomplete",
+                        "captured_pending_reconciliation",
+                    }:
+                        raise ValueError("Invalid finite-window status state")
                     self.status = previous
                     if self.status["state"] in {"armed", "capturing"}:
                         self.fail(
                             "Restart interrupted this request; missing inputs cannot be bridged"
                         )
-        except (OSError, ValueError, TypeError):
+        except (OSError, ValueError, TypeError, KeyError, AttributeError):
             self.request = None
             self.status = {
                 "state": "refused",

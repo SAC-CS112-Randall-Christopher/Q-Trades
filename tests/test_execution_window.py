@@ -90,6 +90,16 @@ def test_capture_is_disabled_until_a_finite_operator_request(tmp_path):
         WindowRequest(request_id="synthetic-window-0001", not_before=24001.0, horizon_seconds=10)
 
 
+@pytest.mark.parametrize(
+    "previous", [[], {"request": []}, {"request": {"request_id": "synthetic-window-0001"}}]
+)
+def test_malformed_optional_status_refuses_capture_without_stopping_startup(tmp_path, previous):
+    request(tmp_path)
+    (tmp_path / "execution-window-status.json").write_text(json.dumps(previous))
+    window = ExecutionWindow(tmp_path)
+    assert window.status["state"] == "refused" and not window.selected(24001.0)
+
+
 def test_pre_tick_replay_keeps_original_operations_and_order(tmp_path):
     records = list(synthetic_records(tmp_path, steps=2))
     result = run_replay(records, source_hashes())
