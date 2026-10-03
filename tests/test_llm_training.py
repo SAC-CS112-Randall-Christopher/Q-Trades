@@ -19,6 +19,7 @@ from trading.llm_training import (
     MAX_INPUT_BYTES,
     Candidate,
     Example,
+    candidate_from_instruction,
     candidate_from_task,
     load_jsonl,
     prepare,
@@ -125,6 +126,55 @@ def reseal(candidate):
     candidate["candidate_sha256"] = fingerprint(
         {k: v for k, v in candidate.items() if k != "candidate_sha256"}
     )
+
+
+def instructional_example():
+    row = example()
+    row["candidate"] = candidate_from_instruction(
+        identity="teaching-case-01",
+        role="researcher",
+        packet=row["candidate"]["packet"],
+        authored_at=100.0,
+        author="User-delegated instructional author",
+        rights_basis="Original authored case; no third-party market records or returns.",
+        draft_sha256="a" * 64,
+        family_ids=["authored:teaching-case-01"],
+    )
+    row["review"].update(data_basis="instructional", reviewer_kind="delegated_semantic")
+    return row
+
+
+def test_instructional_admission_does_not_require_or_fabricate_a_model_episode():
+    row = instructional_example()
+    accepted = Example.model_validate(row).model_dump()
+    assert accepted["candidate"]["original_answer"] is None
+    assert accepted["candidate"]["attempt"] == 0
+    assert accepted["review"]["data_basis"] == "instructional"
+    assert "source_kind" not in Example.model_validate(example()).model_dump()["candidate"]
+    assert "reviewer_kind" not in Example.model_validate(example()).model_dump()["review"]
+
+
+@pytest.mark.parametrize("change", ["future", "empirical", "false_authorship", "fake_attempt"])
+def test_instructional_admission_preserves_evidence_and_empirical_boundaries(change):
+    row = instructional_example()
+    if change == "future":
+        row["review"]["target_available_at"] = 101.0
+    elif change == "empirical":
+        row["review"]["data_basis"] = "prospective"
+    elif change == "false_authorship":
+        row["candidate"]["authorship"]["empirical_performance_claim"] = True
+    else:
+        row["candidate"]["attempt"] = 1
+    reseal(row["candidate"])
+    with pytest.raises(ValueError):
+        Example.model_validate(row)
+
+
+def test_delegated_instructional_review_cannot_replace_empirical_adjudication():
+    row = example()
+    row["review"]["reviewer_kind"] = "delegated_semantic"
+    with pytest.raises(ValueError, match="empirical"):
+        Example.model_validate(row)
 
 
 def run_cli(*args):

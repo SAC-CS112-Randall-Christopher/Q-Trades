@@ -1,6 +1,6 @@
 """Reviewed, offline role-training data; never a model or financial authority.
 
-Exports are unreviewed. Human adjudication establishes target correctness, rights,
+Exports are unreviewed. Explicit semantic adjudication establishes target correctness, rights,
 point-in-time source availability and episode-family membership. Hashes detect
 accidental changes; they are not signatures or proof that an assertion is true.
 """
@@ -29,13 +29,25 @@ class Checked(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
 
 
+class InstructionalAuthorship(Checked):
+    author: str = Field(min_length=3, max_length=120)
+    authored_at: float = Field(ge=0)
+    rights_basis: str = Field(min_length=20, max_length=1000)
+    original_draft_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    empirical_performance_claim: Literal[False]
+
+
 class Candidate(Checked):
     format: Literal["qtrades-role-training-v1"]
     contract_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     role: Literal["researcher", "reviewer"]
     stage: Literal["idea", "review", "followup"]
     task_id: str = Field(min_length=1, max_length=100)
-    attempt: int = Field(ge=1, le=100)
+    attempt: int = Field(ge=0, le=100)
+    source_kind: Literal["model_attempt", "instructional"] = Field(
+        default="model_attempt", exclude_if=lambda v: v == "model_attempt"
+    )
+    authorship: InstructionalAuthorship | None = Field(default=None, exclude_if=lambda v: v is None)
     decision_at: float = Field(ge=0)
     finished_at: float = Field(ge=0)
     group_ids: list[str] = Field(min_length=1, max_length=32)
@@ -46,6 +58,20 @@ class Candidate(Checked):
 
     @model_validator(mode="after")
     def intact(self) -> Self:
+        if self.source_kind == "instructional":
+            if (
+                self.authorship is None
+                or self.attempt != 0
+                or self.original_answer is not None
+                or not self.task_id.startswith("authored:")
+                or self.decision_at != self.finished_at
+                or self.decision_at != self.authorship.authored_at
+            ):
+                raise ValueError(
+                    "Instructional authorship must not imitate a completed model attempt"
+                )
+        elif self.attempt < 1 or self.authorship is not None:
+            raise ValueError("Model examples require their retained completed attempt")
         if self.contract_sha256 != contract_hash():
             raise ValueError("Stale role contract; do not silently relabel its examples")
         if (self.stage == "review") != (self.role == "reviewer"):
@@ -74,7 +100,12 @@ class Approval(Checked):
     reviewed_at: float = Field(ge=0)
     rationale: str = Field(min_length=20, max_length=2000)
     rights_confirmed: Literal[True]
-    data_basis: Literal["synthetic", "observed"]
+    data_basis: Literal[
+        "instructional", "synthetic", "observed", "historical_replay", "prospective"
+    ]
+    reviewer_kind: Literal["human", "delegated_semantic"] = Field(
+        default="human", exclude_if=lambda v: v == "human"
+    )
     family_ids: list[str] = Field(min_length=1, max_length=32)
     categories: list[str] = Field(min_length=1, max_length=12)
     episode_start: float = Field(ge=0)
@@ -91,6 +122,10 @@ class Example(Checked):
     @model_validator(mode="after")
     def supported(self) -> Self:
         c, r = self.candidate, self.review
+        if (c.source_kind == "instructional") != (r.data_basis == "instructional"):
+            raise ValueError("Keep authored instruction separate from empirical/model episodes")
+        if r.reviewer_kind == "delegated_semantic" and c.source_kind != "instructional":
+            raise ValueError("Delegated instructional review cannot approve empirical episodes")
         if r.reviewed_at < c.finished_at:
             raise ValueError("Review must follow the retained attempt")
         if not (r.episode_start <= r.episode_end <= c.decision_at):
@@ -105,6 +140,48 @@ class Example(Checked):
             raise ValueError("Use nonempty bounded family and category identifiers")
         validate(c.role, self.target, c.packet)
         return self
+
+
+def candidate_from_instruction(
+    *,
+    identity: str,
+    role: str,
+    packet: dict[str, Any],
+    authored_at: float,
+    author: str,
+    rights_basis: str,
+    draft_sha256: str,
+    family_ids: list[str],
+) -> dict[str, Any]:
+    """Freeze an authored nonempirical question, never fabricate an operating episode.
+
+    All target facts still must exist at authorship. A claim about measured trading
+    performance must instead use its genuinely completed empirical episode.
+    """
+    candidate = {
+        "format": FORMAT,
+        "contract_sha256": contract_hash(),
+        "role": role,
+        "stage": "review" if role == "reviewer" else "idea",
+        "task_id": "authored:" + identity,
+        "attempt": 0,
+        "source_kind": "instructional",
+        "authorship": {
+            "author": author,
+            "authored_at": authored_at,
+            "rights_basis": rights_basis,
+            "original_draft_sha256": draft_sha256,
+            "empirical_performance_claim": False,
+        },
+        "decision_at": authored_at,
+        "finished_at": authored_at,
+        "group_ids": family_ids,
+        "packet": packet,
+        "original_answer": None,
+        "packet_sha256": fingerprint(packet),
+    }
+    candidate["candidate_sha256"] = fingerprint(candidate)
+    return Candidate.model_validate(candidate).model_dump()
 
 
 def candidate_from_task(task: dict[str, Any], stage: str, attempt: int) -> dict[str, Any]:
@@ -293,7 +370,8 @@ def prepare(
             },
             "data_basis": dict(Counter(e.review.data_basis for e in examples)),
             "limitations": [
-                "Human review attests facts/rights/families; hashes are not proof of truth.",
+                "Recorded semantic reviewer attests facts/rights/families; "
+                "hashes are not proof of truth.",
                 "Exact/near-copy exclusions cannot prove semantic or pretrained-data independence.",
                 "Public procedural fixtures are not blind qualification or trading evidence.",
                 "No training, role qualification, activation or financial permission is implied.",
