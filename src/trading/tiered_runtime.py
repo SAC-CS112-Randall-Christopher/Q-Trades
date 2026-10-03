@@ -16,6 +16,7 @@ from typing import Any
 from trading.compact_memory import linked_events
 from trading.engine_diagnostics import EngineWorkDiagnostics
 from trading.evidence_runtime import EvidenceRecorder, compact_prefix, state_snapshot
+from trading.execution_window import tick_preamble
 from trading.futures_context import POLL_SECONDS, FuturesContext, FuturesPublicData
 from trading.live_quotes import quote_snapshot
 from trading.market import parse_book
@@ -552,44 +553,40 @@ class TieredPaperRuntime(PaperRuntime):
                     study_key: str = study_key,
                     stage_ms: dict[str, float] = stage_ms,
                 ) -> None:
-                    if engine.state["model"] != FEED_MODEL:
-                        previous = engine.state["model"]
-                        for name, a in engine.state["accounts"].items():
-                            for symbol, order in list(a["pending"].items()):
-                                order.setdefault("model", previous)
-                                if order["side"] == "buy":
-                                    engine.cancel(
-                                        name, a, symbol, "Feed model upgraded; re-evaluate"
-                                    )
-                        engine.state["model"] = FEED_MODEL
-                        engine.emit(
-                            "feed_model_changed",
-                            "primary",
-                            {
-                                "previous": previous,
-                                "selected": FEED_MODEL,
-                                "note": "Risk, fees and one-second fill delay unchanged",
-                            },
-                        )
-                    if status_key != self._last_status_key:
-                        engine.emit(
-                            "feed_status", "system", {"errors": current_error, "sources": sources}
-                        )
-                    for notice in notices:
-                        if notice["kind"] == "futures_context":
-                            engine.record_futures_context(notice["body"])
-                        else:
-                            engine.emit(notice["kind"], "system", notice["body"])
-                    engine.universe_experiment(list(self.stream.plan))
-                    engine.state["study_bars"] += added
-                    engine.state["book_sequences"] = self._previous_books
+                    pre_tick = {
+                        "feed_model": FEED_MODEL,
+                        "status_changed": status_key != self._last_status_key,
+                        "errors": current_error,
+                        "sources": sources,
+                        "notices": notices,
+                        "universe_plan": list(self.stream.plan),
+                        "bars_added": added,
+                        "book_sequences": self._previous_books,
+                    }
+                    complete_window = bool(evidence_tick.get("packet", {}).get("execution_window"))
+                    if complete_window:
+                        try:
+                            evidence_tick["packet"]["state_before"] = state_snapshot(engine.state)
+                            evidence_tick["packet"]["pre_tick"] = state_snapshot(pre_tick)
+                            evidence_tick["event_offset"] = len(engine.events)
+                            evidence_tick["packet"]["event_offset"] = len(engine.events)
+                        except (ValueError, TypeError, KeyError, ArithmeticError):
+                            self.evidence.dropped += 1
+                            self.evidence.execution_window.fail(
+                                "Pre-tick inputs could not be captured"
+                            )
+                            evidence_tick.pop("packet", None)
+                    tick_preamble(engine, pre_tick)
                     if "packet" in evidence_tick:
                         state_capture_started = time.perf_counter()
                         try:
-                            evidence_tick["packet"]["state_before"] = state_snapshot(engine.state)
+                            if not complete_window:
+                                evidence_tick["packet"]["state_before"] = state_snapshot(
+                                    engine.state
+                                )
+                                evidence_tick["event_offset"] = len(engine.events)
+                                evidence_tick["packet"]["event_offset"] = len(engine.events)
                             engine.evidence_trace = []
-                            evidence_tick["event_offset"] = len(engine.events)
-                            evidence_tick["packet"]["event_offset"] = len(engine.events)
                         except (ValueError, TypeError, KeyError, ArithmeticError):
                             self.evidence.dropped += 1
                             evidence_tick.pop("packet", None)
@@ -609,18 +606,20 @@ class TieredPaperRuntime(PaperRuntime):
 
                 measured_commit = time.perf_counter()
                 stage_ms["prepare"] = (measured_commit - measured_start) * 1000
-                self.state, commit_receipt = self.store.transact_with_receipt(
-                    now, apply, capture_projection="packet" in evidence_tick
-                )
+                try:
+                    self.state, commit_receipt = self.store.transact_with_receipt(
+                        now, apply, capture_projection="packet" in evidence_tick
+                    )
+                except Exception:
+                    self.evidence.execution_window.fail("Financial transaction did not commit")
+                    raise
                 committed = time.perf_counter()
                 self._commit_ms.append((committed - measured_commit) * 1000)
                 stage_ms["transaction"] = (committed - measured_commit) * 1000
                 for name, duration in (self.store.last_transaction_diagnostics or {}).items():
                     stage_ms["transaction_" + name] = duration
                 try:
-                    linked = linked_events(
-                        evidence_tick.get("compact_events", []), commit_receipt
-                    )
+                    linked = linked_events(evidence_tick.get("compact_events", []), commit_receipt)
                     if study_key != self._last_study_key or linked:
                         self.evidence.compact(
                             {
@@ -689,11 +688,15 @@ class TieredPaperRuntime(PaperRuntime):
         except asyncio.CancelledError:
             raise
         except Exception:
+            self.evidence.execution_window.fail("Paper processing stopped; no input bridge")
             self.error = (
                 "Paper engine stopped after a storage or invariant error; inspect local logs"
             )
             logger.exception("Tiered paper engine stopped")
         finally:
+            self.evidence.execution_window.fail("Paper worker stopped during the finite request")
+            with suppress(OSError, ValueError):
+                await asyncio.to_thread(self.evidence.execution_window.persist)
             for task in tasks:
                 task.cancel()
             for task in tasks:
