@@ -55,6 +55,7 @@ jobs:
             tests/test_lab_resilience.py tests/test_live_readiness.py tests/test_efficiency_contracts.py `
             tests/test_research_evidence.py tests/test_pattern_memory.py tests/test_execution_replay.py `
             tests/test_memory_quality.py tests/test_context_flow.py tests/test_incremental_memory.py `
+            tests/test_execution_window.py tests/test_streaming.py `
             tests/test_portfolio_components.py tests/test_integrated_research.py `
             tests/test_research_audit_corrections.py tests/test_memory_accounts.py `
             tests/test_autonomous_lab.py tests/test_continuous_safety.py tests/test_research_storage.py `

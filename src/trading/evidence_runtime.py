@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from trading.compact_memory import CompactMemory, prefix
+from trading.execution_window import ExecutionWindow
 from trading.outcome_continuation import OutcomeContinuation
 from trading.paper_strategy import VARIANTS, Bar, features
 from trading.research_evidence import (
@@ -220,6 +221,7 @@ class EvidenceRecorder:
     def __init__(self, path: Path):
         self.path = path
         self.plan = EvidencePlan()
+        self.execution_window = ExecutionWindow(path.parent)
         self.session = uuid.uuid4().hex
         self.source_files = {
             name: hashlib.sha256((Path(__file__).parent / name).read_bytes()).hexdigest()
@@ -233,6 +235,7 @@ class EvidenceRecorder:
                 "memory_quality.py",
                 "autonomous_spec.py",
                 "rule_components.py",
+                "execution_window.py",
             )
         }
         self.pending: deque[dict[str, Any]] = deque()
@@ -311,32 +314,38 @@ class EvidenceRecorder:
         self.compact_pending.append(packet)
 
     def selected(self, at: float, study_changed: bool) -> bool:
+        requested = self.execution_window.selected(at)
+        if len(self.pending) >= self.queue_limit:
+            self.dropped += 1
+            if requested:
+                self.execution_window.fail("Capture queue filled during the finite window")
+            return False
+        if requested and self.status.get("state") in {"capacity", "unavailable", "disk_pressure"}:
+            self.execution_window.fail("Existing capture protection refused the finite window")
+        return self.status.get("state") not in {"capacity", "unavailable", "disk_pressure"} and (
+            requested or self.plan.selected(at) or study_changed
+        )
+
+    def enqueue(self, packet: dict[str, Any]) -> bool:
+        if self.status.get("state") in {"capacity", "unavailable", "disk_pressure"}:
+            self.dropped += 1
+            return False
         if len(self.pending) >= self.queue_limit:
             self.dropped += 1
             return False
-        return self.status.get("state") not in {"capacity", "unavailable", "disk_pressure"} and (
-            self.plan.selected(at) or study_changed
-        )
-
-    def enqueue(self, packet: dict[str, Any]) -> None:
-        if self.status.get("state") in {"capacity", "unavailable", "disk_pressure"}:
-            self.dropped += 1
-            return
-        if len(self.pending) >= self.queue_limit:
-            self.dropped += 1
-            return
         if packet["kind"] != "decision" and len(self.pending) >= self.queue_limit - 2:
             self.dropped += 1
-            return
+            return False
         try:
             if len(json.dumps(packet, allow_nan=False).encode()) > MAX_PACKET:
                 self.dropped += 1
-                return
+                return False
         except (ValueError, TypeError):
             self.dropped += 1
-            return
+            return False
         packet["queued_mono"] = time.perf_counter()
         self.pending.append(packet)
+        return True
 
     def prepare(
         self,
@@ -353,11 +362,12 @@ class EvidenceRecorder:
         feed_status: dict[str, Any],
         *,
         feature_timing: dict[str, dict[str, Any]] | None = None,
+        input_eligibility: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         frozen_frames = plain(
             {s: {k: v for k, v in f.items() if k != "book"} for s, f in frames.items()}
         )
-        return {
+        packet = {
             "at": at,
             "kind": "decision",
             "schema": VERSION,
@@ -394,6 +404,21 @@ class EvidenceRecorder:
             "observed_trades": plain({s: list(trade_tapes.get(s, [])) for s in frames}),
             "feed_status": plain(feed_status),
             "feature_timing": plain(feature_timing or {}),
+            "input_eligibility": plain(input_eligibility or {}),
+            "candle_input_status": {
+                s: {
+                    "retained_bars": len(rows),
+                    "continuous": all(
+                        b.open_ms == a.open_ms + 60000
+                        for a, b in zip(rows, rows[1:], strict=False)
+                    ),
+                    "last_close_ms": rows[-1].close_ms if rows else None,
+                    "computed_at": origins.get(s),
+                    "available_at": (feature_timing or {}).get(s, {}).get("available_at"),
+                    "candle_error": candle_errors.get(s),
+                }
+                for s, rows in history.items()
+            },
             "sampling": {
                 "fixed_utc_window": self.plan.selected(at),
                 "entry_outcome_used_for_selection": False,
@@ -406,6 +431,8 @@ class EvidenceRecorder:
             "coverage": "Sampled decisions and fixed UTC windows; intervening input gaps remain",
             "scope": "Local paper loop; recorded sources; no broker acknowledgment timing",
         }
+        self.execution_window.attach(packet, self.dropped)
+        return packet
 
     def complete(
         self,
@@ -458,7 +485,14 @@ class EvidenceRecorder:
             financial_commit=plain(commit_receipt) if commit_receipt else None,
             commit_mono=commit_receipt["commit_mono"] if commit_receipt else time.monotonic(),
         )
-        self.enqueue(packet)
+        if packet.get("execution_window"):
+            if not self.execution_window.committed(packet):
+                self.dropped += 1
+                return
+            if not self.enqueue(packet):
+                self.execution_window.fail("A committed window tick could not be enqueued")
+        else:
+            self.enqueue(packet)
 
     def summary(self, at: float, frames: dict[str, dict[str, Any]], errors: dict[str, str]) -> None:
         minute = int(at // self.plan.summary_seconds)
@@ -507,6 +541,27 @@ class EvidenceRecorder:
     def _write_batch(
         self, compact: list[dict[str, Any]], packets: list[dict[str, Any]], disk_available: bool
     ) -> None:
+        try:
+            self._write_batch_inner(compact, packets, disk_available)
+        except BaseException:
+            if any(p.get("execution_window") for p in packets):
+                self.execution_window.fail("Window archive write failed")
+            raise
+        finally:
+            if (
+                any(p.get("execution_window") for p in packets)
+                and self.status.get("state") != "recording"
+            ):
+                self.execution_window.fail("Storage protection refused window packets")
+            try:
+                self.execution_window.persist()
+            except OSError:
+                self.execution_window.fail("Finite-window status could not be retained")
+                self.status = {"state": "unavailable", "financial_authority": False}
+
+    def _write_batch_inner(
+        self, compact: list[dict[str, Any]], packets: list[dict[str, Any]], disk_available: bool
+    ) -> None:
         if self._external_expected:
             maturity_checked = False
             try:
@@ -539,8 +594,14 @@ class EvidenceRecorder:
                     self._storage.housekeeping(time.time(), capacity_triggered=True)
                     self._storage.admission(self._capture_retry_bytes, "temporary")
                     self._storage.admission(self._compact_retry_bytes, "research")
-                refs = self._storage.append(packets, time.time())
-                if not retrying_empty:
+                defer_retention = self.execution_window.defer_retention(time.time()) or any(
+                    p.get("execution_window") for p in packets
+                )
+                if defer_retention:
+                    refs = self._storage.append(packets, time.time(), defer_retention=True)
+                else:
+                    refs = self._storage.append(packets, time.time())
+                if not retrying_empty and not defer_retention:
                     self._storage.housekeeping(time.time())
                 prior_reference = self.storage_status.get("latest_reference")
                 self.storage_status = self._storage.snapshot()
@@ -689,6 +750,8 @@ class EvidenceRecorder:
                 self._maturity.close()
 
     def _write_failed(self) -> None:
+        if any(p.get("execution_window") for p in self.pending):
+            self.execution_window.fail("Window packets could not be durably written")
         self.status = {
             "state": "unavailable",
             "financial_authority": False,
@@ -704,6 +767,7 @@ class EvidenceRecorder:
             "queue_limit": self.queue_limit,
             "queue_dropped": self.dropped,
             "selection": asdict(self.plan),
+            "execution_window": self.execution_window.status,
             "storage": self.storage_status,
             "maturity": self.maturity_status,
             "compact_memory": {
