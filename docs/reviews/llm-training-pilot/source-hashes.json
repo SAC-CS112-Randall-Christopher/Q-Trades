@@ -1,0 +1,12 @@
+{
+  "apps/web/src/RoleResearchPanel.tsx": "091ca88fc29af13773005c5d587369b81a9864328614ed4e3a09961136241f14",
+  "apps/web/src/TrainingCandidateExport.tsx": "3cc26eceb6ba2a992d40f07278c168f3b7518c5c56a9bbbe2a9c05da3ae2240b",
+  "apps/web/src/theme.css": "756775a250c2fb9c83ab0fc7b892ece07e35d072ec43ce4f4bc23dace5aac450",
+  "src/trading/api.py": "2eca02d7070aebd640c99499be09ae119290be9b8db3223d3f750154671f686a",
+  "src/trading/role_worker.py": "bf91d370ad08447375a26d838b7400b87e2c08172147502bf1fae6061fc72bc8",
+  "src/trading/llm_training.py": "bdc998210cf7cb0d9336fa8cd5ce014a1f9cc0d4da9c3a86856ee7c1834b8c7e",
+  "src/trading/llm_training_eval.py": "a583eb2a031a4c5f1f3a14df06dc6c511c373d83c670c841c61c0875a2c17a7c",
+  "scripts/llm_training_pilot.py": "cf066f70d2ae976e0c06625b58971197a3338dfccfb0d63697d8bb3210f08946",
+  "tests/test_llm_training.py": "4c02065aa862c1484ed6681dad10eb0fe295fe3247000f343bf047f1c755a43c",
+  "tests/test_role_worker.py": "226ab9def604cdde04cfaa3b5538bf041b7b0ce0760c12ec534fb3287115e255"
+}

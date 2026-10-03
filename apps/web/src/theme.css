@@ -2059,6 +2059,7 @@ progress::-webkit-progress-value {
     transition: transform 0.2s ease;
   }
   .q-workspace .sidebar.is-open {
+    display: flex;
     transform: translateX(0);
   }
   .q-workspace main {
