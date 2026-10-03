@@ -178,3 +178,32 @@ def test_finite_byte_budget_refuses_the_packet_before_enqueue(tmp_path):
     )
     assert not window.committed(record["payload"])
     assert window.status["state"] == "incomplete" and window.status["records"] == 0
+
+
+def test_auxiliary_omissions_do_not_replace_required_tick_continuity(tmp_path):
+    records = list(synthetic_records(tmp_path, steps=2))
+    window = ExecutionWindow(tmp_path)
+    for omissions, record in enumerate(records):
+        packet = record["payload"]
+        window.attach(packet, omissions)
+        assert window.committed(packet)
+    assert window.status["state"] == "capturing"
+    assert window.status["auxiliary_capture_omissions_since_start"] == 1
+    assert window.status["records"] == 2
+    missing = records[-1]["payload"]
+    missing["financial_commit"]["revision"] += 2
+    assert not window.committed(missing)
+    assert window.status["state"] == "incomplete"
+
+
+def test_retention_deferral_has_real_time_bounds(tmp_path):
+    request(tmp_path)
+    window = ExecutionWindow(tmp_path)
+    assert not window.defer_retention(1.0)  # A far-future request cannot pause maintenance.
+    assert window.defer_retention(24001.0)
+    assert not window.defer_retention(24602.0)
+    window.status.update(state="capturing", required_end_at=26701.0)
+    assert window.defer_retention(26000.0)
+    assert not window.defer_retention(26707.0)
+    window.fail("Synthetic terminal request")
+    assert not window.defer_retention(26000.0)

@@ -83,6 +83,15 @@ class ExecutionWindow:
             return at >= request.not_before
         return True  # Includes the first actual tick at or beyond the complete horizon.
 
+    def defer_retention(self, at: float) -> bool:
+        if self.request is None:
+            return False
+        if self.status["state"] == "armed":
+            return abs(at - self.request.not_before) <= self.request.start_grace_seconds
+        return bool(
+            self.status["state"] == "capturing" and at <= self.status.get("required_end_at", 0) + 5
+        )
+
     def attach(self, packet: dict[str, Any], omissions: int) -> None:
         if not self.selected(packet["at"]):
             return
@@ -117,13 +126,19 @@ class ExecutionWindow:
                 required_end_at=at + 2700,
                 omissions_at_start=omissions,
             )
-        if omissions != self.status["omissions_at_start"]:
-            self.fail("A capture omission occurred inside the requested window")
-            return
+        # The shared counter includes auxiliary wire/summary refusals. Required
+        # tick queue/commit/archive failures independently invalidate the request.
+        # Each complete tick already retains its original supported book/candles.
+        self.status["auxiliary_capture_omissions_since_start"] = (
+            omissions - self.status["omissions_at_start"]
+        )
         packet["execution_window"] = {
             "request_id": self.request.request_id,
             "first_at": self.status["first_at"],
             "required_end_at": self.status["required_end_at"],
+            "wire_coverage": (
+                "Original financial inputs per tick; auxiliary wire capture remains sampled"
+            ),
         }
 
     def committed(self, packet: dict[str, Any]) -> bool:
