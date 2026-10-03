@@ -336,7 +336,9 @@ class ResearchStorage:
         os.replace(staged, destination)
         return destination
 
-    def append(self, packets: list[dict[str, Any]], now: float) -> list[str]:
+    def append(
+        self, packets: list[dict[str, Any]], now: float, *, defer_retention: bool = False
+    ) -> list[str]:
         if len(packets) > 8:
             raise ValueError("Research batch exceeds eight shared observations")
         refs = []
@@ -487,11 +489,12 @@ class ResearchStorage:
             # USB latency. A failed index acknowledgment recovers from exact rows.
             for segment in segments.values():
                 segment.commit()
-        self.housekeeping(
-            now,
-            capacity_triggered=_bytes(self.temporary)
-            > self.plan.temporary_bytes - 2 * self.plan.scratch_bytes,
-        )
+        pressure = _bytes(self.temporary) > self.plan.temporary_bytes - 2 * self.plan.scratch_bytes
+        # One finite original-window request can defer optional cold transfers.
+        # Every packet still passes admission and FULL durability; pressure keeps
+        # the existing maintenance authority and can refuse the window.
+        if pressure or not defer_retention:
+            self.housekeeping(now, capacity_triggered=pressure)
         return refs
 
     def protect(self, reference: str, until_at: float, reason: str) -> None:

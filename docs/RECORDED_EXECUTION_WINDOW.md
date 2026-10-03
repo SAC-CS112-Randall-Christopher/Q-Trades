@@ -12,6 +12,19 @@ data/execution-window-request.json selects every financial tick for one actual
 2,700-second horizon. The existing capture queue, per-packet limits, disk/tier
 budgets, financial writer and resource-demotion guard remain authoritative.
 
+The first installed request was refused before its first complete-window packet:
+the existing eight-packet queue was full while the writer verified older retention
+segments. A finite armed/capturing request now defers optional cold transfers to
+keep the same writer available for current packets. Per-packet admission, FULL
+durability, queue bounds and pressure-triggered maintenance still apply; normal
+retention resumes after the finite request. No quota, disk or guard is bypassed.
+
+The complete window covers original supported financial inputs and accounting
+at every tick. Auxiliary raw-wire/summary capture remains sampled and may report
+omissions. Its shared omission counter is retained as auxiliary coverage, while
+missing required tick, queue, commit or archive inputs invalidate the window.
+Do not describe this as a complete exchange wire feed.
+
 Request format:
 
 ~~~json

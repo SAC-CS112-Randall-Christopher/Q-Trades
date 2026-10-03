@@ -117,13 +117,19 @@ class ExecutionWindow:
                 required_end_at=at + 2700,
                 omissions_at_start=omissions,
             )
-        if omissions != self.status["omissions_at_start"]:
-            self.fail("A capture omission occurred inside the requested window")
-            return
+        # The shared counter includes auxiliary wire/summary refusals. Required
+        # tick queue/commit/archive failures independently invalidate the request.
+        # Each complete tick already retains its original supported book/candles.
+        self.status["auxiliary_capture_omissions_since_start"] = (
+            omissions - self.status["omissions_at_start"]
+        )
         packet["execution_window"] = {
             "request_id": self.request.request_id,
             "first_at": self.status["first_at"],
             "required_end_at": self.status["required_end_at"],
+            "wire_coverage": (
+                "Original financial inputs per tick; auxiliary wire capture remains sampled"
+            ),
         }
 
     def committed(self, packet: dict[str, Any]) -> bool:

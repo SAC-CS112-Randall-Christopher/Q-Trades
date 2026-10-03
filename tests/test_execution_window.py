@@ -178,3 +178,19 @@ def test_finite_byte_budget_refuses_the_packet_before_enqueue(tmp_path):
     )
     assert not window.committed(record["payload"])
     assert window.status["state"] == "incomplete" and window.status["records"] == 0
+
+
+def test_auxiliary_omissions_do_not_replace_required_tick_continuity(tmp_path):
+    records = list(synthetic_records(tmp_path, steps=2))
+    window = ExecutionWindow(tmp_path)
+    for omissions, record in enumerate(records):
+        packet = record["payload"]
+        window.attach(packet, omissions)
+        assert window.committed(packet)
+    assert window.status["state"] == "capturing"
+    assert window.status["auxiliary_capture_omissions_since_start"] == 1
+    assert window.status["records"] == 2
+    missing = records[-1]["payload"]
+    missing["financial_commit"]["revision"] += 2
+    assert not window.committed(missing)
+    assert window.status["state"] == "incomplete"
