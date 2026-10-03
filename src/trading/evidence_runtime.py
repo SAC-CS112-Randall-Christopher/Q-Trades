@@ -362,6 +362,7 @@ class EvidenceRecorder:
         feed_status: dict[str, Any],
         *,
         feature_timing: dict[str, dict[str, Any]] | None = None,
+        input_eligibility: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         frozen_frames = plain(
             {s: {k: v for k, v in f.items() if k != "book"} for s, f in frames.items()}
@@ -403,6 +404,21 @@ class EvidenceRecorder:
             "observed_trades": plain({s: list(trade_tapes.get(s, [])) for s in frames}),
             "feed_status": plain(feed_status),
             "feature_timing": plain(feature_timing or {}),
+            "input_eligibility": plain(input_eligibility or {}),
+            "candle_input_status": {
+                s: {
+                    "retained_bars": len(rows),
+                    "continuous": all(
+                        b.open_ms == a.open_ms + 60000
+                        for a, b in zip(rows, rows[1:], strict=False)
+                    ),
+                    "last_close_ms": rows[-1].close_ms if rows else None,
+                    "computed_at": origins.get(s),
+                    "available_at": (feature_timing or {}).get(s, {}).get("available_at"),
+                    "candle_error": candle_errors.get(s),
+                }
+                for s, rows in history.items()
+            },
             "sampling": {
                 "fixed_utc_window": self.plan.selected(at),
                 "entry_outcome_used_for_selection": False,

@@ -308,16 +308,56 @@ class StreamFeed:
             await asyncio.sleep(delay)
             delay = min(60.0, delay * 2)
 
-    def fresh_books(self) -> dict[str, dict[str, Any]]:
+    def fresh_books(
+        self, *, diagnostics: dict[str, Any] | None = None
+    ) -> dict[str, dict[str, Any]]:
         now, mono = time.time(), time.monotonic()
         result: dict[str, dict[str, Any]] = {}
-        if not self.clock.valid(now, mono):
+        clock_valid = self.clock.valid(now, mono)
+        if diagnostics is not None:
+            diagnostics.update(
+                observed_at=now,
+                observed_mono=mono,
+                clock_valid=clock_valid,
+                clock_offset_ms=self.clock.offset_ms,
+                clock_uncertainty_ms=(
+                    self.clock.uncertainty_ms
+                    if math.isfinite(self.clock.uncertainty_ms)
+                    else None
+                ),
+                markets={
+                    symbol: {
+                        "subscribed": True,
+                        "interval_ms": interval,
+                        "book_present": symbol in self.books,
+                        "eligible": False,
+                        "reason": "clock_unavailable" if not clock_valid else "book_absent",
+                    }
+                    for symbol, interval in self.plan.items()
+                },
+            )
+        if not clock_valid:
             return result
         for symbol, frame in self.books.items():
             elapsed = (mono - frame["received_mono"]) * 1000
             # The slower observation tier can remain visible for two seconds, but may not fill.
             threshold = 1000 if self.plan[symbol] == 100 else 2500
-            if frame["event_age_ms"] + frame["clock_uncertainty_ms"] + elapsed <= threshold:
+            age = frame["event_age_ms"] + frame["clock_uncertainty_ms"] + elapsed
+            if diagnostics is not None:
+                diagnostics["markets"][symbol].update(
+                    source=frame["source"],
+                    observed_at=frame["observed"],
+                    exchange_event_ms=frame["exchange_event_ms"],
+                    sequence=frame["book"].update_id,
+                    received_age_ms=elapsed,
+                    event_age_at_receipt_ms=frame["event_age_ms"],
+                    clock_uncertainty_ms=frame["clock_uncertainty_ms"],
+                    freshness_score_ms=age,
+                    freshness_limit_ms=threshold,
+                    eligible=age <= threshold,
+                    reason="fresh" if age <= threshold else "book_stale",
+                )
+            if age <= threshold:
                 result[symbol] = frame
         return result
 
