@@ -4,7 +4,11 @@ param(
     [ValidateSet('', 'default', 'pglz', 'lz4')]
     [string] $PaperProjectionCompression = '',
     [ValidateSet('', 'default', 'pglz', 'lz4')]
-    [string] $ExpectedPaperProjectionCompression = ''
+    [string] $ExpectedPaperProjectionCompression = '',
+    [ValidateSet(0, 400)]
+    [int] $TemporaryStorageGB = 0,
+    [ValidateSet(0, 100)]
+    [int] $ExpectedTemporaryStorageGB = 0
 )
 $ErrorActionPreference = 'Stop'
 $source = (Resolve-Path -LiteralPath (Split-Path -Parent $PSScriptRoot)).Path
@@ -85,6 +89,9 @@ try {
     if (([bool] $PaperProjectionCompression) -ne ([bool] $ExpectedPaperProjectionCompression)) {
         throw 'Compression changes require both the reviewed target and expected previous setting.'
     }
+    if (([bool] $TemporaryStorageGB) -ne ([bool] $ExpectedTemporaryStorageGB)) {
+        throw 'Storage expansion requires both the reviewed target and expected previous quota.'
+    }
     Write-Stage 'Validate the existing installation'
     . (Join-Path $PSScriptRoot 'PaperStartupIdentity.ps1')
     . (Join-Path $PSScriptRoot 'PaperUpdateShutdown.ps1')
@@ -155,6 +162,17 @@ try {
         $commandExit = Invoke-LoggedNative $python $projectionArguments
         if ($commandExit -ne 0) { throw 'Compression preview failed; the running app is unchanged.' }
     }
+    if ($TemporaryStorageGB) {
+        Write-Stage 'Preview the explicitly requested temporary storage expansion'
+        $storageArguments = @('-X', 'utf8', '-B',
+            (Join-Path $source 'scripts/configure_research_storage.py'),
+            '--settings', (Join-Path $runtime 'data/paper-database.json'),
+            '--directory', (Join-Path $runtime 'data'),
+            '--temporary-gb', $TemporaryStorageGB.ToString(),
+            '--expected-temporary-gb', $ExpectedTemporaryStorageGB.ToString())
+        $commandExit = Invoke-LoggedNative $python $storageArguments
+        if ($commandExit -ne 0) { throw 'Storage preview failed; the running app is unchanged.' }
+    }
     Write-Stage 'Back up installed source code'
     # Back up source only. Runtime data and experiment evidence never enter this copy.
     $backup = Join-Path $runtime ('data/update-backups/' + (Get-Date -Format 'yyyyMMdd-HHmmss-ffff'))
@@ -196,6 +214,11 @@ try {
         Write-Stage 'Apply the explicitly requested projection compression'
         $commandExit = Invoke-LoggedNative $python ($projectionArguments + @('--apply'))
         if ($commandExit -ne 0) { throw 'Compression was not confirmed; the application remains stopped.' }
+    }
+    if ($TemporaryStorageGB) {
+        Write-Stage 'Apply the explicitly requested temporary storage expansion'
+        $commandExit = Invoke-LoggedNative $python ($storageArguments + @('--apply'))
+        if ($commandExit -ne 0) { throw 'Storage expansion was not confirmed; the application remains stopped.' }
     }
     [IO.File]::WriteAllText((Join-Path $runtime 'data/installed-commit.txt'), $commit)
     Write-Host 'Installed-version marker written; restart health is not confirmed yet.'
