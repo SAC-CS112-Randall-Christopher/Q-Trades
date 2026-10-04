@@ -18,6 +18,13 @@ The capture repair's isolated proof and compatibility limits are recorded in
 from installing that repair. The operational CP18 cycle, CP23 usefulness/sustained
 observations, qualification and operating activation retain their own acceptance.
 
+The trained-v2 development connection now has a source implementation through
+the existing Lab loader, normal role packet and role-attempt history. Its explicit
+CPU float32/two-processor profile, operator procedure, procedural proof and actual
+execution limits are recorded in [TRAINED_V2_SERVING.md](reviews/TRAINED_V2_SERVING.md).
+No trained model has answered through this new backend yet. Source/fixture delivery
+does not enable operating dispatch, inherit training qualification or relax admission.
+
 ## Historical source-audit status before the six-PR release
 
 The governing assignment is the F1–F8 source audit repair in
