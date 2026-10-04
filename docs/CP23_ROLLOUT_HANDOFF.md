@@ -1,4 +1,13 @@
-# Current operational CP18 handoff under issue #28
+# Current continuation under issue #48
+
+Use [the October 4 baseline and delivery ledger](RESEARCH_INTELLIGENCE.md).
+The running source is `5d7bf356` after completed #41/#45/#47 rollouts. The
+existing CP18 role/review/paper/lesson owners remain authoritative; the current
+model/runtime/qualification and activation gaps remain open. Earlier handoff
+instructions to install delivered repairs are historical, not a new rollout
+request. Preserve this chronology and the separate open #40 documentation owner.
+
+# Historical operational CP18 handoff under issue #28
 
 Approved PRs #37/#38 are merged/installed at main `6bfd3cd`; activity authentication
 and actual normal-screen dates are accepted, with all 771,895 pre-update events and

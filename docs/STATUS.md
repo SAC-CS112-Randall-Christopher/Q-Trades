@@ -1,4 +1,14 @@
-# Current issue #28: stack installed; operational CP18 in progress
+# Current continuation: issue #48, October 4, 2026
+
+Main and the running installation are `5d7bf356` after #45. #41's teaching/Lab
+handoff and #47's 400/100-GB policy are installed. Read the dated
+[RI-CP0 baseline and checkpoint ledger](RESEARCH_INTELLIGENCE.md). Current 4B
+qualification, compatible candidate runtime and operating activation remain
+absent; input/cost diagnosis and operational visibility can progress separately.
+Do not reinstall completed rollouts, repeat CP24 or start new training.
+The earlier records below remain historical proof, with their original limits.
+
+# Historical issue #28 status before later approved rollouts
 
 Approved PRs #37/#38 are installed at main `6bfd3cd`. Normal activity reporting
 works; all 771,895 pre-update events and 9,154 journal lines, original accounts/

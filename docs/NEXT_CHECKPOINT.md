@@ -1,4 +1,14 @@
-# Current: operational CP18, then measured CP23 usefulness
+# Current: issue #48 selected-4B continuation
+
+Follow RI-CP0 through RI-CP7 in #48 and the
+[verified handoff ledger](RESEARCH_INTELLIGENCE.md). RI-CP0 reconciles completed
+#41/#45/#47 installation without repeating it. Next expose exact role-readiness
+and recovery states in the existing UI, then implement the two unblocked input/
+after-cost diagnosis routes. Actual qualified-model feedback remains separately
+blocked; no conversion, training, 14B run or operating activation is authorized.
+Keep new work in bounded draft PRs for the owner's audit and rollout decision.
+
+# Historical: operational CP18 before the later approved rollouts
 
 Approved PRs #37/#38 are installed at main `6bfd3cd`; normal activity reporting and
 preservation acceptance passed. Fresh engine-work cooldown still blocks qualification.
