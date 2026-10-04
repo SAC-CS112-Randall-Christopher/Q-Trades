@@ -83,6 +83,88 @@ def test_hysteresis_recovery_and_true_recurrence_remain_one_thread(notices):
     assert len(notices.snapshot(171)["operational"]) == 1
 
 
+def test_delayed_clear_observations_cannot_recover_a_newer_active_fault(notices):
+    notices.observe([condition(200)], 200)
+    notices.observe([condition(210)], 210)
+    notices.observe([condition(100, "clear")], 220)
+    notices.observe([condition(110, "clear")], 230)
+    row = notices.snapshot(231)["operational"][0]
+    assert row["state"] != "recovered" and row["recoveries"] == 0
+    assert row["last_source_at"] == 210
+
+
+def test_same_source_timestamp_cannot_reuse_another_candidate_confirmation(notices):
+    notices.observe([condition(100)], 100)
+    notices.observe([condition(110)], 110)
+    notices.observe([condition(110, "clear")], 120)
+    row = notices.snapshot(121)["operational"][0]
+    assert row["state"] != "recovered" and row["recoveries"] == 0
+    notices.observe([condition(120, "clear")], 130)
+    assert notices.snapshot(131)["operational"][0]["recoveries"] == 0
+    notices.observe([condition(130, "clear")], 140)
+    assert notices.snapshot(141)["operational"][0]["recoveries"] == 1
+
+
+def test_explicit_producer_restart_resets_confirmation_and_old_epoch_cannot_return(notices):
+    def from_epoch(at, state, epoch):
+        return {**condition(at, state), "source_epoch": epoch}
+
+    notices.observe([from_epoch(200, "active", "first")], 200)
+    notices.observe([from_epoch(210, "active", "first")], 210)
+    notices.observe([from_epoch(100, "clear", "restart")], 100)
+    row = notices.snapshot(101)["operational"][0]
+    assert row["last_confirmed_state"] == "active" and row["recoveries"] == 0
+    notices.observe([from_epoch(110, "clear", "restart")], 110)
+    assert notices.snapshot(111)["operational"][0]["recoveries"] == 1
+    reopened = ResearchNotices(notices.registry)
+    reopened.observe([from_epoch(90, "active", "first")], 120)
+    row = reopened.snapshot(121)["operational"][0]
+    assert row["state"] == "unknown" and row["last_source_epoch"] == "restart"
+    assert row["last_source_at"] == 110 and row["last_confirmed_state"] == "recovered"
+    assert "superseded" in row["source_error"]
+
+
+def test_clock_rollback_requires_new_valid_distinct_observations(notices):
+    notices.observe([condition(100)], 100)
+    notices.observe([condition(110)], 110)
+    notices.observe([condition(80, "clear")], 80)
+    row = notices.snapshot(111)["operational"][0]
+    assert row["state"] == "unknown" and row["last_source_at"] == 110
+    assert row["recoveries"] == 0 and "clock" in row["source_error"]
+    notices.observe([condition(120, "clear")], 120)
+    assert notices.snapshot(121)["operational"][0]["recoveries"] == 0
+    notices.observe([condition(130, "clear")], 130)
+    assert notices.snapshot(131)["operational"][0]["recoveries"] == 1
+
+
+def test_real_producer_stale_future_and_restart_checks_do_not_invent_recovery(notices, runtime):
+    def observe(at, source_at, present):
+        runtime.state["last_tick"] = at
+        runtime._input_eligibility = {
+            "observed_at": source_at,
+            "markets": {"BTCUSD": {"frame_present": present}, "ETHUSD": {"frame_present": True}},
+        }
+        rows = operational_conditions(runtime, at)
+        original = next(row for row in rows if row["key"] == "input:BTCUSD")
+        notices.observe([original], at)
+        return original
+
+    runtime.running = True
+    first = observe(100, 100, False)
+    assert first["source_epoch"] == runtime._notice_epoch
+    observe(104, 104, False)
+    assert notices.snapshot(105)["operational"][0]["state"] == "active"
+    stale = observe(120, 104, True)
+    assert stale["condition"] == "unknown"
+    future = observe(124, 130, True)
+    assert future["condition"] == "unknown"
+    assert notices.snapshot(125)["operational"][0]["recoveries"] == 0
+    observe(130, 130, True)
+    observe(134, 134, True)
+    assert notices.snapshot(135)["operational"][0]["recoveries"] == 1
+    assert not runtime.stream.records
+
+
 def test_acknowledge_snooze_and_unknown_do_not_hide_critical_conditions(notices):
     notices.observe([condition(100, severity="critical", key="paper_processing")], 100)
     notices.present("paper_processing", "acknowledge", 101)

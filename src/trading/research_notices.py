@@ -140,6 +140,8 @@ def operational_conditions(paper: Any, now: float) -> list[dict[str, Any]]:
                 },
             }
         )
+    for row in rows:
+        row["source_epoch"] = getattr(paper, "_notice_epoch", "legacy")
     return rows
 
 
@@ -152,19 +154,31 @@ class ResearchNotices:
                 "CREATE TABLE IF NOT EXISTS research_notices("
                 "key TEXT PRIMARY KEY,body TEXT NOT NULL)"
             )
+            registry.db.execute(
+                "CREATE TABLE IF NOT EXISTS research_notice_epochs("
+                "key TEXT NOT NULL,epoch TEXT NOT NULL,PRIMARY KEY(key,epoch))"
+            )
 
     def observe(self, conditions: list[dict[str, Any]], now: float) -> None:
         if not math.isfinite(now) or len(conditions) > 8:
             raise ValueError("Use a finite bounded operational observation")
-        with self.registry.transaction():
-            for condition in conditions:
-                self._observe(condition, now)
+        # Optional presentation persistence must not wait indefinitely on shared
+        # registry contention. The existing supervisor records failure and retries.
+        if not self.registry.lock.acquire(timeout=1):
+            raise OSError("Notice registry is busy; retry at the ordinary check")
+        try:
+            with self.registry.transaction():
+                for condition in conditions:
+                    self._observe(condition, now)
+        finally:
+            self.registry.lock.release()
         self.last_checked_at = now
 
     def _observe(self, condition: dict[str, Any], now: float) -> None:
         key = condition["key"]
         desired = condition["condition"]
         source_at = condition["source_at"]
+        epoch = condition.get("source_epoch", "legacy")
         if (
             key
             not in {
@@ -177,8 +191,12 @@ class ResearchNotices:
             }
             or desired not in {"active", "clear", "unknown"}
             or not isinstance(source_at, (int, float))
+            or isinstance(source_at, bool)
             or not math.isfinite(source_at)
             or source_at > now
+            or condition["severity"] not in {"warning", "critical"}
+            or not isinstance(epoch, str)
+            or not 1 <= len(epoch) <= 80
             or len(json.dumps(condition, allow_nan=False).encode()) > 8192
         ):
             raise ValueError("Invalid or oversized operational condition")
@@ -214,12 +232,50 @@ class ResearchNotices:
                 "last_determinate_state": "pending",
             }
         )
-        row["last_check_at"] = now
+        previous_epoch = row.get("last_source_epoch", "legacy")
+        if "last_source_epoch" not in row:
+            self.registry.db.execute(
+                "INSERT OR IGNORE INTO research_notice_epochs VALUES(?,?)", (key, previous_epoch)
+            )
+        changed_epoch = epoch != previous_epoch
+        if changed_epoch:
+            if self.registry.db.execute(
+                "SELECT 1 FROM research_notice_epochs WHERE key=? AND epoch=?", (key, epoch)
+            ).fetchone():
+                self._reject_source(row, condition, now, "A superseded producer epoch arrived")
+                return
+            self.registry.db.execute("INSERT INTO research_notice_epochs VALUES(?,?)", (key, epoch))
+            row.update(last_source_at=None, candidate=None, candidate_observations=0)
+            self.registry.event(
+                "notice:" + key,
+                "operational_source_epoch",
+                {
+                    "previous": previous_epoch,
+                    "epoch": epoch,
+                    "observed_at": source_at,
+                    "projection_at": now,
+                },
+            )
+        row["last_source_epoch"] = epoch
+        if not changed_epoch and now < row.get("last_check_at", now):
+            self._reject_source(row, condition, now, "Projection clock moved backwards")
+            return
+        if row["last_source_at"] is not None and source_at < row["last_source_at"]:
+            self._reject_source(row, condition, now, "Source timestamp moved backwards")
+            return
         repeated = row["last_source_at"] == source_at
+        if repeated and desired != row.get("last_source_condition", row.get("candidate")):
+            self._reject_source(
+                row, condition, now, "One source timestamp describes different conditions"
+            )
+            return
+        row["last_check_at"] = now
+        row["source_error"] = None
         if repeated:
             row["repeated_source_checks"] += 1
         else:
             row["last_source_at"] = source_at
+            row["last_source_condition"] = desired
             row["observations"] += 1
             if desired == "active":
                 row["active_observations"] += 1
@@ -232,7 +288,8 @@ class ResearchNotices:
             desired == "unknown"
             or desired == "active"
             and condition["severity"] == "critical"
-            or row["candidate_observations"] >= 2
+            or row["candidate"] == desired
+            and row["candidate_observations"] >= 2
             and now - row["candidate_since"] >= CONFIRM_SECONDS
         )
         new_state = "recovered" if desired == "clear" else desired
@@ -246,12 +303,15 @@ class ResearchNotices:
         row["current_condition"] = desired
         if change:
             previous = row["state"]
+            previous_confirmed = row["last_determinate_state"]
             row.update(state=new_state, changed_at=now, acknowledged_at=None, snoozed_until=0)
             if new_state != "unknown":
                 row.update(last_determinate_state=new_state, severity=condition["severity"])
             if new_state == "recovered":
                 row["recoveries"] += 1
-            elif new_state == "active":
+            elif new_state == "active" and (
+                previous_confirmed != "active" or condition["severity"] != prior_severity
+            ):
                 row["notifications"] += 1
             self.registry.event(
                 "notice:" + key,
@@ -268,6 +328,42 @@ class ResearchNotices:
             "INSERT INTO research_notices VALUES(?,?) ON CONFLICT(key) "
             "DO UPDATE SET body=excluded.body",
             (key, json.dumps(row, sort_keys=True, allow_nan=False)),
+        )
+
+    def _reject_source(
+        self, row: dict[str, Any], condition: dict[str, Any], now: float, reason: str
+    ) -> None:
+        previous = row["state"]
+        row.update(
+            state="unknown",
+            current_condition="unknown",
+            candidate=None,
+            candidate_observations=0,
+            source_error=reason,
+            last_check_at=max(now, row.get("last_check_at", now)),
+            last_rejected_source={
+                "epoch": condition.get("source_epoch", "legacy"),
+                "at": condition["source_at"],
+                "condition": condition["condition"],
+                "checked_at": now,
+            },
+        )
+        row["invalid_source_checks"] = row.get("invalid_source_checks", 0) + 1
+        if previous != "unknown":
+            self.registry.event(
+                "notice:" + row["key"],
+                "operational_transition",
+                {
+                    "previous": previous,
+                    "state": "unknown",
+                    "projection_at": now,
+                    "source": condition,
+                    "source_error": reason,
+                },
+            )
+        self.registry.db.execute(
+            "UPDATE research_notices SET body=? WHERE key=?",
+            (json.dumps(row, sort_keys=True, allow_nan=False), row["key"]),
         )
 
     def present(self, key: str, action: str, now: float, seconds: int = 0) -> dict[str, Any]:

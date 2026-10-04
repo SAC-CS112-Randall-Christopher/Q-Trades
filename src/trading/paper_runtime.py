@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import time
+import uuid
 from decimal import Decimal
 from typing import Any
 
@@ -34,6 +35,7 @@ class PaperRuntime:
         self.metadata_at = 0.0
         self.candles_at: dict[str, float] = {}
         self.ready_at = time.time()
+        self._notice_epoch = uuid.uuid4().hex
         self.error: str | None = None
         self.feed_errors: dict[str, str] = {}
         self.running = False
