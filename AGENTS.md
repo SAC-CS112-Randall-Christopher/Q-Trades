@@ -1,4 +1,32 @@
-# Current work order - issue #28, operational CP18 and CP23
+# Current direction — October 4, 2026, issue #48
+
+Read [CURRENT_RESEARCH_STATUS.md](docs/CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
+`5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
+400 GB temporary / 100 GB retained. Current audit work is source/isolated QA only.
+All earlier sections below are historical receipts; preserve their original evidence
+and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
+
+Source fixes, isolated tests, commits/push, issue updates and draft PRs are authorized.
+Keep drafts unmerged. Do not start/stop/recover installed tasks or services, call a
+model, consume holdouts, train/convert/download weights, activate roles, start capture
+campaigns or change operating accounts/data/configuration/storage. Preserve GIS,
+the sole writer, frozen parents/history, twenty slots and delayed outcomes. Keep
+inference outside financial locks and preserve the existing resource guard.
+The current issue #48 assignment takes precedence over historical dispatch guidance.
+
+# Temporary storage quota successor - October 3, 2026
+
+Chris explicitly requested increasing the existing temporary research tier from
+100 to 400 decimal GB total. Retained research remains 100 GB. This supersedes
+the historical 100 GB temporary ceiling only for that reviewed successor; new
+plans still default to 100 GB per tier. Preserve root/volume identity, existing
+segments/indexes, accounting, all reserves/retention and unrelated draft owners.
+Use the guarded opt-in updater transition, with original metadata retained and
+the financial writer stopped; do not edit a running frozen plan/marker by hand.
+Source verification and installed acceptance remain separate. Existing explicit
+merge/install/restart authorization rules continue to apply.
+
+# Historical current work order - issue #28, operational CP18 and CP23
 
 The next milestone is an actually qualified local researcher/reviewer completing
 real evidence -> hypothesis -> deterministic check -> required review -> ordinary
@@ -371,7 +399,7 @@ reference to demonstrate recovery. Preserve the simple CP0 updater and log path.
 Unmerged, tested code is not an installed application. Continue in bounded draft
 checkpoints, with an explicit post-implementation audit and honest verification.
 
-# Current work order: a simple manual updater, then CP1
+# Historical current work order: a simple manual updater, then CP1
 
 Chris's September 29 correction supersedes the earlier managed-installer design.
 Use `Update Q-Trades.cmd`: fetch main, build, back up code, stop the existing task,
@@ -392,6 +420,25 @@ Read `docs/PRODUCT_DIRECTION_2026-09-28.md` and `docs/reviews/2026-09-28-analysi
 This bundle changes guidance only. Runtime code is the reviewed baseline: findings in the report are NOT fixed by this document. Private source storage does not authorize public hosting, live trading, paid inference, merge or deployment. Work on one complete vertical checkpoint, beginning with reliable portfolio-valuation/risk-stop behavior.
 
 ---
+
+# October 3 PR 41 Training Lab integration
+
+Q-Trades owns original research evidence and operator teaching reviews. The
+existing separate Lab owns manifests/exposure history, preparation, training and
+evaluation. Use AI Lab's saved review/preflight/preparation/linked-result workflow;
+do not create another trainer, model registry, split database or financial writer.
+See `docs/LLM_TRAINING_PILOT.md` and its R1–R7 ledger. Explicit reviewer provenance
+and rights are required for new approvals; legacy records have no inferred human
+attestation. Preserve observed/instructional/synthetic/replay/prospective labels.
+
+Private preparation uses a verified local configuration and the existing Lab's
+fixed tokenizer/import command only. Keep all bundles, targets, original answers,
+model files and receipts outside Git. No arbitrary path/report upload, shell
+execution or URL-fetch surface belongs in the application. Preparation is not
+training, qualification or activation. Keep protected v3/operating targets sealed,
+named v1/v2 artifacts unchanged and CP24 historical results intact. Retirement
+loses evaluation freshness and retains original history. Installed acceptance
+requires separate merge/install/restart authority.
 
 # Trading Research Platform
 

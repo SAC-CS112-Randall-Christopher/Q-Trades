@@ -1,4 +1,12 @@
-# Current issue #28: stack installed; operational CP18 in progress
+# Current direction — October 4, 2026, issue #48
+
+Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
+`5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
+400 GB temporary / 100 GB retained. Current audit work is source/isolated QA only.
+All earlier sections below are historical receipts; preserve their original evidence
+and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
+
+# Historical current issue #28: stack installed; operational CP18 in progress
 
 Approved PRs #37-39 are installed at main `9d45f71`. Normal activity reporting
 works; all 780,193 pre-update events and 9,154 journal lines, original accounts/

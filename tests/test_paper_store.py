@@ -1,4 +1,5 @@
 import copy
+import os
 import uuid
 from decimal import Decimal as D
 from pathlib import Path
@@ -43,7 +44,7 @@ class RedactedDsn(str):
 
 @pytest.fixture
 def pg_store(request):
-    settings = Path("data/paper-database.json")
+    settings = Path(os.environ.get("QTRADES_TEST_DATABASE", "data/paper-database.json"))
     if not settings.is_file():
         pytest.skip("Dedicated local paper PostgreSQL is not configured")
     dsn = load_dsn(settings)

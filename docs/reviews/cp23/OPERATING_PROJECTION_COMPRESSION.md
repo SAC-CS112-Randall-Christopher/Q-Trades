@@ -1,3 +1,11 @@
+# Current direction — October 4, 2026, issue #48
+
+Read [CURRENT_RESEARCH_STATUS.md](../../CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
+`5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
+400 GB temporary / 100 GB retained. Current audit work is source/isolated QA only.
+All earlier sections below are historical receipts; preserve their original evidence
+and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
+
 # CP18 installed projection compression and continuing capacity evidence
 
 The activity reader works in the actual application. The qualified real-model
@@ -32,7 +40,7 @@ execution binding was unavailable; actual service/UI assertions and screenshot
 inspection passed, and the context closed afterward. Original model research
 remains disabled/unqualified with zero questions.
 
-## Current inference-off observation after PR #39
+## Historical current inference-off observation after PR #39
 
 A ten-minute observation samples the latest twenty work entries every three seconds,
 so it does not count every financial iteration. It retained 981 distinct entries:

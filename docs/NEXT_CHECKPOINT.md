@@ -1,4 +1,12 @@
-# Current: operational CP18, then measured CP23 usefulness
+# Current direction — October 4, 2026, issue #48
+
+Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
+`5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
+400 GB temporary / 100 GB retained. Current audit work is source/isolated QA only.
+All earlier sections below are historical receipts; preserve their original evidence
+and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
+
+# Historical current: operational CP18, then measured CP23 usefulness
 
 Approved PRs #37-39 are installed at main `9d45f71`; normal activity reporting,
 LZ4 future writes and preservation acceptance passed. The ten-minute inference-off
@@ -47,7 +55,7 @@ authorization. Leave all PRs draft/unmerged and operating accounts/history/G: in
 
 # Historical checkpoints
 
-# Current: complete the continuous autonomous paper lab
+# Historical current: complete the continuous autonomous paper lab
 
 Follow `CONTINUOUS_PAPER_LAB.md` and issue #1 comment 5915529073. The September 30
 assignment is implementation through a complete deterministic vertical loop,
@@ -77,7 +85,7 @@ No additional model or major feature is warranted before trustworthy account pro
 
 # Historical handoff
 
-# Next: untouched evidence and ordinary operator review
+# Historical next: untouched evidence and ordinary operator review
 
 CP10-CP16 bounded source workflows and finite software acceptance are complete.
 Finish delivery gates/authorized main update if still pending, then inspect current
@@ -89,7 +97,7 @@ role change. Provider transport/access and live execution remain unverified.
 
 # Historical handoff
 
-# Next: CP16 integrated acceptance and completion
+# Historical next: CP16 integrated acceptance and completion
 
 Implement prospective frozen review, repair measured retention/UI inefficiencies,
 run finite native recovery/load and final gates. Merge the authorized stack and
@@ -98,7 +106,7 @@ Software success need not establish an economic edge; CP7 authority remains.
 
 # Historical handoff
 
-# Next: CP15 independent exit, sizing and observation research
+# Historical next: CP15 independent exit, sizing and observation research
 
 Complete independent bounded shadow comparisons before combining anything.
 Then perform CP16 finite integration/recovery, full performance/UI audit, authorized
@@ -107,7 +115,7 @@ protected windows, risk limits and the unchanged CP7 28-day human policy.
 
 # Historical handoff
 
-# Next: CP15 independent exit, sizing and observation experiments
+# Historical next: CP15 independent exit, sizing and observation experiments
 
 Use supported CP11 paths for exit changes, conservative discrete size bands under
 existing risk ceilings, and point-in-time attention ranking with held/pending
@@ -117,7 +125,7 @@ performance/UI audit, authorized stack merge and native updater/relaunch afterwa
 
 # Historical handoff
 
-# Next: CP14 controlled incremental research
+# Historical next: CP14 controlled incremental research
 
 Freeze the whole update procedure and persist predictions before separately mature
 labels. Compare frozen/batch/growing memory under the same permitted information.
@@ -128,7 +136,7 @@ acceptance remain distinct. Resolve retained QA ownership at integrated cleanup.
 
 # Historical handoff
 
-# Next: CP13 local context and independent order-flow research
+# Historical next: CP13 local context and independent order-flow research
 
 CP12 shadow memory workflow is implemented and documented in CP12_AFTER_COST_MEMORY.md.
 Its full local database suite passed 443 tests, no skips (93.40s), with lint/types/build
@@ -145,7 +153,7 @@ cleanup. Original installed main cb699456 and six accounts/history stay intact.
 
 # Historical handoff
 
-# Next: CP12 after-cost memory estimator and entry-filter challenger
+# Historical next: CP12 after-cost memory estimator and entry-filter challenger
 
 Read CP11_EXECUTION_REPLAY.md and its retained review receipts. CP11 calls the
 existing engine in an isolated finite child, with exact baseline reconciliation,
@@ -189,7 +197,7 @@ the roadmap was refined. No provider spending or financial authority is added.
 
 # Historical operating handoff
 
-# Next operating checkpoint: prospective evidence after verified installation
+# Historical next operating checkpoint: prospective evidence after verified installation
 
 The requested reference UI is implemented. Read REFERENCE_UI.md and
 reviews/reference-ui/README.md for source, local and browser proof. Chris authorized
@@ -295,7 +303,7 @@ relaxing risk or introducing a second ledger.
 
 ## Historical pre-CP3 handoff
 
-# Next: CP3 concurrent paper accounts
+# Historical next: CP3 concurrent paper accounts
 
 CP2 adds whole-account windows, explicit cost scenarios, cash/exposure controls,
 after-operating ranking, and compounded paper selection through the normal UI.
@@ -312,7 +320,7 @@ funding, risk policy or model service was changed by this implementation.
 
 ## Historical pre-CP2 handoff
 
-# Next: CP2 economics; CP1 implementation audit and CP0 installation remain distinct
+# Historical next: CP2 economics; CP1 implementation audit and CP0 installation remain distinct
 
 CP1's risk fixes, account-scoped policy adoption, recovery API and normal UI are
 implemented in the CP1 branch. See [the behavior and boundaries](CP1_PAPER_RISK.md)
@@ -330,7 +338,7 @@ No merge, native update, account policy change or live trading was performed her
 
 ## Historical pre-CP1 work order
 
-# Next: finish the simple CP0 update, then CP1
+# Historical next: finish the simple CP0 update, then CP1
 
 The source import is draft PR #2. PR #3 has been simplified at Chris's request:
 **Update Q-Trades.cmd** is the only normal update entry point. The script uses
@@ -344,7 +352,7 @@ Keep CP1's existing branch/fixtures; its risk fixes are not included in CP0.
 
 ---
 
-# Current checkpoint
+# Historical current checkpoint
 
 The September 28 review prioritizes **reliable paper valuation and risk boundaries**. Follow checkpoint A in [the analysis](reviews/2026-09-28-analysis.md) and [the implementation directive](PRODUCT_DIRECTION_2026-09-28.md).
 
@@ -352,7 +360,7 @@ The older observation checklist follows for historical context. Its options expa
 
 ---
 
-# Next evidence checkpoint
+# Historical next evidence checkpoint
 
 The $100 Tier 3 paper loop is running under [this contract](LEARNING_EXPERIMENT.md).
 Do not reset the account or invent trades to demonstrate activity.

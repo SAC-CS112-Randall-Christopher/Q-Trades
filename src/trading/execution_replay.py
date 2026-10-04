@@ -11,6 +11,7 @@ from typing import Any, cast
 
 from trading.evidence_runtime import feature_reproduction
 from trading.execution_profiles import PROFILES
+from trading.execution_window import replay_preamble, replay_tick
 from trading.market import parse_book
 from trading.paper_economics import sample
 from trading.paper_engine import PaperEngine
@@ -59,6 +60,7 @@ def source_hashes() -> dict[str, str]:
             "autonomous_spec.py",
             "rule_components.py",
             "execution_replay.py",
+            "execution_window.py",
             "market.py",
             "paper_economics.py",
             "replay_lab.py",
@@ -238,7 +240,7 @@ def run_replay(records: list[dict[str, Any]], frozen_source: dict[str, str]) -> 
                 }
                 break
             engine = PaperEngine(ordered_state(packet), packet["at"])
-            engine.tick(hydrated_frames(packet), deepcopy(packet["study"]))
+            replay_tick(engine, packet, hydrated_frames(packet))
             receipt = {
                 "record_id": record["id"],
                 "input_sha256": record["sha256"],
@@ -282,6 +284,10 @@ def run_replay(records: list[dict[str, Any]], frozen_source: dict[str, str]) -> 
                     if key in packet["state_before"]:
                         state[key] = deepcopy(packet["state_before"][key])
                 engine = PaperEngine(state, at)
+                replay_preamble(engine, packet)
+                for name, account in state["accounts"].items():
+                    if name not in beginning:
+                        beginning[name] = sample(account, at)
                 before_positions = {
                     name: deepcopy(a["positions"]) for name, a in state["accounts"].items()
                 }

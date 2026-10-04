@@ -16,6 +16,7 @@ from typing import Any
 from trading.compact_memory import linked_events
 from trading.engine_diagnostics import EngineWorkDiagnostics
 from trading.evidence_runtime import EvidenceRecorder, compact_prefix, state_snapshot
+from trading.execution_window import tick_preamble
 from trading.futures_context import POLL_SECONDS, FuturesContext, FuturesPublicData
 from trading.live_quotes import quote_snapshot
 from trading.market import parse_book
@@ -30,6 +31,8 @@ from trading.venue import FeedError, PublicVenue
 
 logger = logging.getLogger(__name__)
 FEED_MODEL = "paper-tiered-feed-ioc-v2"
+# Scheduling lead only: the stream/REST eligibility predicates stay unchanged.
+FALLBACK_REFRESH_LEAD_MS = 500
 
 
 class TieredPaperRuntime(PaperRuntime):
@@ -44,9 +47,11 @@ class TieredPaperRuntime(PaperRuntime):
         self._studied: dict[str, int] = {}
         self._feature_times: dict[str, float] = {}
         self._feature_timing: dict[str, dict[str, Any]] = {}
+        self._input_eligibility: dict[str, Any] = {}
         self._fallback: dict[str, dict[str, Any]] = {}
         self._fallback_at: dict[str, float] = {}
         self._rest_retry_at = 0.0
+        self._rest_requests: dict[str, dict[str, float]] = {}
         self._bars_added = 0
         self._notice_queue: list[dict[str, Any]] = []
         self._last_sources: dict[str, str] = {}
@@ -236,6 +241,7 @@ class TieredPaperRuntime(PaperRuntime):
     async def _rest_book(self, symbol: str) -> None:
         try:
             sent, mono = time.time(), time.monotonic()
+            self._rest_requests[symbol] = {"request_sent_at": sent, "request_sent_mono": mono}
             raw = await self.venue.depth(symbol, 20)
             now, arrived = time.time(), time.monotonic()
             if arrived - mono > 1:
@@ -278,21 +284,32 @@ class TieredPaperRuntime(PaperRuntime):
         except (ValueError, KeyError, ArithmeticError) as exc:
             self.feed_errors[symbol] = str(exc)
         finally:
+            self._rest_requests.pop(symbol, None)
             # REST is capped: no attempt to imitate a 100ms stream with HTTP bursts.
             interval = 0.5 if self.stream.plan.get(symbol) == 100 else 5.0
             self._fallback_at[symbol] = time.monotonic() + interval
 
+    def _fallback_due(self) -> list[str]:
+        checks: dict[str, Any] = {}
+        fresh = self.stream.fresh_books(diagnostics=checks)
+        if time.time() < self._rest_retry_at:
+            return []
+        mono = time.monotonic()
+        due = []
+        for symbol in self.stream.plan:
+            if symbol in self._rest_requests or mono < self._fallback_at.get(symbol, 0):
+                continue
+            stream = checks.get("markets", {}).get(symbol, {})
+            remaining = stream.get("freshness_limit_ms", 0) - stream.get("freshness_score_ms", 0)
+            if symbol not in fresh or remaining <= FALLBACK_REFRESH_LEAD_MS:
+                due.append(symbol)
+        return due
+
     async def _fallback_loop(self) -> None:
         while True:
-            fresh = self.stream.fresh_books()
-            if time.time() >= self._rest_retry_at:
-                due = [
-                    symbol
-                    for symbol in self.stream.plan
-                    if symbol not in fresh and time.monotonic() >= self._fallback_at.get(symbol, 0)
-                ]
-                if due:
-                    await asyncio.gather(*(self._rest_book(symbol) for symbol in due))
+            due = self._fallback_due()
+            if due:
+                await asyncio.gather(*(self._rest_book(symbol) for symbol in due))
             await asyncio.sleep(0.05)
 
     def quotes(self) -> dict[str, Any]:
@@ -302,8 +319,43 @@ class TieredPaperRuntime(PaperRuntime):
 
     def current_frames(self) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
         now, mono = time.time(), time.monotonic()
-        books = self.stream.fresh_books()
+        stream_checks: dict[str, Any] = {}
+        books = self.stream.fresh_books(diagnostics=stream_checks)
+        checks = {
+            symbol: {
+                "subscribed": symbol in self.stream.plan,
+                "interval_ms": self.stream.plan.get(symbol),
+                "frame_present": False,
+                "reason": "no_fresh_book",
+                "stream": stream_checks.get("markets", {}).get(symbol),
+                "fallback": {"present": False, "eligible": False},
+                "rest_request": {
+                    "inflight": dict(self._rest_requests[symbol])
+                    if symbol in self._rest_requests
+                    else None,
+                    "next_allowed_mono": self._fallback_at.get(symbol),
+                    "global_retry_at": self._rest_retry_at,
+                    "retry_blocked": now < self._rest_retry_at,
+                },
+                "instrument_present": symbol in self.instruments,
+                "metadata_age_seconds": now - self.metadata_at,
+            }
+            for symbol in set(self.stream.plan) | set(self._fallback) | set(SYMBOLS) | self.held()
+        }
         for symbol, frame in self._fallback.items():
+            age = mono - frame["received_mono"]
+            checks[symbol]["fallback"] = {
+                "present": True,
+                "eligible": symbol in self.stream.plan and age <= 1,
+                "selected": symbol not in books and symbol in self.stream.plan and age <= 1,
+                "received_age_seconds": age,
+                "freshness_limit_seconds": 1,
+                "observed_at": frame["observed"],
+                "request_sent_at": frame.get("request_sent_at"),
+                "round_trip_ms": frame.get("round_trip_ms"),
+                "source": frame["source"],
+                "sequence": frame["book"].update_id,
+            }
             if (
                 symbol not in books
                 and symbol in self.stream.plan
@@ -313,9 +365,16 @@ class TieredPaperRuntime(PaperRuntime):
         frames = {}
         study = {}
         for symbol, observed in books.items():
+            check = checks[symbol]
+            check["selected_book_source"] = observed["source"]
             if observed["source"] == "binance.us-depth-websocket":
                 previous = self._previous_books.get(symbol)
+                check["sequence"] = {
+                    "current": observed["book"].update_id,
+                    "previous": previous[0] if previous else None,
+                }
                 if previous and observed["book"].update_id < previous[0]:
+                    check["reason"] = "sequence_regressed"
                     continue
                 digest = hashlib.sha256(
                     json.dumps(observed["raw"], sort_keys=True).encode()
@@ -324,11 +383,14 @@ class TieredPaperRuntime(PaperRuntime):
                 self.feed_errors.pop(symbol, None)
             instrument = self.instruments.get(symbol)
             if instrument is None:
+                check["reason"] = "instrument_absent"
                 continue
             try:
                 rules = filters(instrument)
             except (ValueError, KeyError, ArithmeticError):
+                check.update(reason="instrument_rules_invalid", instrument_rules_valid=False)
                 continue
+            check["instrument_rules_valid"] = True
             frame = {
                 **observed,
                 "rules": rules,
@@ -337,12 +399,24 @@ class TieredPaperRuntime(PaperRuntime):
                 "entry_allowed": now - self.metadata_at <= 900 and self.stream.plan[symbol] == 100,
             }
             frames[symbol] = frame
+            check.update(
+                frame_present=True, reason="eligible_frame", entry_allowed=frame["entry_allowed"]
+            )
             study[symbol] = {v: dict(f) for v, f in self.study.get(symbol, {}).items()}
             for feature in study[symbol].values():
                 if now * 1000 - feature.get("bar_open_ms", 0) - 59999 > 90000:
                     feature.update(eligible=False, reason="Closed candle is stale")
                 if symbol in self._candle_errors:
                     feature.update(eligible=False, reason=self._candle_errors[symbol])
+        self._input_eligibility = {
+            "observed_at": now,
+            "observed_mono": mono,
+            "stream_clock": {k: v for k, v in stream_checks.items() if k != "markets"},
+            "markets": checks,
+            "scope": (
+                "Original frame-selection decisions; no substituted book or financial authority"
+            ),
+        }
         return frames, study
 
     def summarize_books(self, frames: dict[str, dict[str, Any]], now: float) -> None:
@@ -534,6 +608,7 @@ class TieredPaperRuntime(PaperRuntime):
                             self.stream.trade_tape,
                             self.stream.snapshot(),
                             feature_timing=self._feature_timing,
+                            input_eligibility=self._input_eligibility,
                         )
                     except (ValueError, TypeError, KeyError, ArithmeticError):
                         self.evidence.dropped += 1
@@ -552,44 +627,40 @@ class TieredPaperRuntime(PaperRuntime):
                     study_key: str = study_key,
                     stage_ms: dict[str, float] = stage_ms,
                 ) -> None:
-                    if engine.state["model"] != FEED_MODEL:
-                        previous = engine.state["model"]
-                        for name, a in engine.state["accounts"].items():
-                            for symbol, order in list(a["pending"].items()):
-                                order.setdefault("model", previous)
-                                if order["side"] == "buy":
-                                    engine.cancel(
-                                        name, a, symbol, "Feed model upgraded; re-evaluate"
-                                    )
-                        engine.state["model"] = FEED_MODEL
-                        engine.emit(
-                            "feed_model_changed",
-                            "primary",
-                            {
-                                "previous": previous,
-                                "selected": FEED_MODEL,
-                                "note": "Risk, fees and one-second fill delay unchanged",
-                            },
-                        )
-                    if status_key != self._last_status_key:
-                        engine.emit(
-                            "feed_status", "system", {"errors": current_error, "sources": sources}
-                        )
-                    for notice in notices:
-                        if notice["kind"] == "futures_context":
-                            engine.record_futures_context(notice["body"])
-                        else:
-                            engine.emit(notice["kind"], "system", notice["body"])
-                    engine.universe_experiment(list(self.stream.plan))
-                    engine.state["study_bars"] += added
-                    engine.state["book_sequences"] = self._previous_books
+                    pre_tick = {
+                        "feed_model": FEED_MODEL,
+                        "status_changed": status_key != self._last_status_key,
+                        "errors": current_error,
+                        "sources": sources,
+                        "notices": notices,
+                        "universe_plan": list(self.stream.plan),
+                        "bars_added": added,
+                        "book_sequences": self._previous_books,
+                    }
+                    complete_window = bool(evidence_tick.get("packet", {}).get("execution_window"))
+                    if complete_window:
+                        try:
+                            evidence_tick["packet"]["state_before"] = state_snapshot(engine.state)
+                            evidence_tick["packet"]["pre_tick"] = state_snapshot(pre_tick)
+                            evidence_tick["event_offset"] = len(engine.events)
+                            evidence_tick["packet"]["event_offset"] = len(engine.events)
+                        except (ValueError, TypeError, KeyError, ArithmeticError):
+                            self.evidence.dropped += 1
+                            self.evidence.execution_window.fail(
+                                "Pre-tick inputs could not be captured"
+                            )
+                            evidence_tick.pop("packet", None)
+                    tick_preamble(engine, pre_tick)
                     if "packet" in evidence_tick:
                         state_capture_started = time.perf_counter()
                         try:
-                            evidence_tick["packet"]["state_before"] = state_snapshot(engine.state)
+                            if not complete_window:
+                                evidence_tick["packet"]["state_before"] = state_snapshot(
+                                    engine.state
+                                )
+                                evidence_tick["event_offset"] = len(engine.events)
+                                evidence_tick["packet"]["event_offset"] = len(engine.events)
                             engine.evidence_trace = []
-                            evidence_tick["event_offset"] = len(engine.events)
-                            evidence_tick["packet"]["event_offset"] = len(engine.events)
                         except (ValueError, TypeError, KeyError, ArithmeticError):
                             self.evidence.dropped += 1
                             evidence_tick.pop("packet", None)
@@ -609,18 +680,20 @@ class TieredPaperRuntime(PaperRuntime):
 
                 measured_commit = time.perf_counter()
                 stage_ms["prepare"] = (measured_commit - measured_start) * 1000
-                self.state, commit_receipt = self.store.transact_with_receipt(
-                    now, apply, capture_projection="packet" in evidence_tick
-                )
+                try:
+                    self.state, commit_receipt = self.store.transact_with_receipt(
+                        now, apply, capture_projection="packet" in evidence_tick
+                    )
+                except Exception:
+                    self.evidence.execution_window.fail("Financial transaction did not commit")
+                    raise
                 committed = time.perf_counter()
                 self._commit_ms.append((committed - measured_commit) * 1000)
                 stage_ms["transaction"] = (committed - measured_commit) * 1000
                 for name, duration in (self.store.last_transaction_diagnostics or {}).items():
                     stage_ms["transaction_" + name] = duration
                 try:
-                    linked = linked_events(
-                        evidence_tick.get("compact_events", []), commit_receipt
-                    )
+                    linked = linked_events(evidence_tick.get("compact_events", []), commit_receipt)
                     if study_key != self._last_study_key or linked:
                         self.evidence.compact(
                             {
@@ -689,11 +762,15 @@ class TieredPaperRuntime(PaperRuntime):
         except asyncio.CancelledError:
             raise
         except Exception:
+            self.evidence.execution_window.fail("Paper processing stopped; no input bridge")
             self.error = (
                 "Paper engine stopped after a storage or invariant error; inspect local logs"
             )
             logger.exception("Tiered paper engine stopped")
         finally:
+            self.evidence.execution_window.fail("Paper worker stopped during the finite request")
+            with suppress(OSError, ValueError):
+                await asyncio.to_thread(self.evidence.execution_window.persist)
             for task in tasks:
                 task.cancel()
             for task in tasks:

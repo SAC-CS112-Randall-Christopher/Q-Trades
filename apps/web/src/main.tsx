@@ -45,7 +45,12 @@ import {
 } from "./WorkspaceViews";
 import "./theme.css";
 
-const MarketStation = lazy(() => import("./MarketStation").then(module => ({ default: module.MarketStation })));
+const MarketStation = lazy(() =>
+  import("./MarketStation").then((module) => ({
+    default: module.MarketStation,
+  })),
+);
+const TrainingDataPanel = lazy(() => import("./TrainingDataPanel").then(m => ({default: m.TrainingDataPanel})));
 
 type Snapshot = {
   paper?: PaperSnapshot;
@@ -94,7 +99,8 @@ const navigation = [
     id: "orders",
     label: "Orders",
     icon: FileClock,
-    description: "Trade history, positions, pending orders and retained journal",
+    description:
+      "Trade history, positions, pending orders and retained journal",
   },
   {
     id: "analytics",
@@ -135,6 +141,7 @@ const aliases: Record<string, Page> = {
 };
 function currentPage(): Page {
   const hash = location.hash.slice(1);
+  if (hash === "training-data" || hash.startsWith("teaching:") || hash.startsWith("lab-result:") || hash.startsWith("lab-comparison:")) return "ai-lab";
   return (
     aliases[hash] ??
     (navigation.some((n) => n.id === hash) || hash === "markets"
@@ -175,6 +182,11 @@ function App() {
       else if (location.hash === "#role-research") setLabTab("roles");
       else if (location.hash === "#forward-learning") setLabTab("learning");
       else if (location.hash === "#experiment-lab") setLabTab("experiments");
+      else if (
+        location.hash === "#training-data" ||
+        location.hash.startsWith("#teaching:") || location.hash.startsWith("#lab-result:") || location.hash.startsWith("#lab-comparison:")
+      )
+        setLabTab("training");
       if (location.hash === "#live-readiness") setRiskTab("readiness");
       window.scrollTo({ top: 0, behavior: "instant" });
     };
@@ -255,7 +267,8 @@ function App() {
       "Compare isolated accounts. Keep each balance, strategy and loss limit separate.",
     "ai-lab": "Test an idea. Freeze the evidence. Learn from every outcome.",
     strategies: "Understand the rules, the signals and why a strategy acted.",
-    orders: "Recent trades across accounts, plus positions and the full journal.",
+    orders:
+      "Recent trades across accounts, plus positions and the full journal.",
     analytics: "Whole-account results, measured after modeled execution costs.",
     risk: "Review account limits, retained losses and the path to a live decision.",
     settings:
@@ -405,7 +418,12 @@ function App() {
         </div>
       </aside>
       <main id="main" tabIndex={-1}>
-        {paper?.evidence_kind === "synthetic_qa_continuous" && <p role="status" className="warning">Synthetic QA market data · disposable software verification · no market-profit evidence</p>}
+        {paper?.evidence_kind === "synthetic_qa_continuous" && (
+          <p role="status" className="warning">
+            Synthetic QA market data · disposable software verification · no
+            market-profit evidence
+          </p>
+        )}
         <header className="topbar">
           <button
             className="mobile-nav"
@@ -580,12 +598,16 @@ function App() {
                   ["learning", "Forward learning"],
                   ["history", "Historical matches"],
                   ["models", "Local model trials"],
+                  ["training", "Training data"],
                 ].map(([id, label]) => (
                   <button
                     key={id}
                     className={labTab === id ? "selected" : ""}
                     aria-pressed={labTab === id}
-                    onClick={() => setLabTab(id)}
+                    onClick={() => {
+                      setLabTab(id);
+                      if (id === "training") location.hash = "training-data";
+                    }}
                   >
                     {label}
                   </button>
@@ -593,6 +615,7 @@ function App() {
               </div>
               {labTab === "autonomous" && <AutonomousPanel />}
               {labTab === "roles" && <RoleResearchPanel />}
+              {labTab === "training" && <Suspense fallback={<p>Loading training review…</p>}><TrainingDataPanel /></Suspense>}
               {labTab === "experiments" && <ExperimentLab paper={paper} />}
               {labTab === "learning" && (
                 <LearningPanel
@@ -601,11 +624,18 @@ function App() {
                 />
               )}
               {labTab === "models" && <ModelTrialsPanel />}
-              {labTab === "history" && <><EvidencePanel status={paper?.research_evidence} /><ProspectivePanel /></>}
+              {labTab === "history" && (
+                <>
+                  <EvidencePanel status={paper?.research_evidence} />
+                  <ProspectivePanel />
+                </>
+              )}
             </>
           )}
           {(page === "markets" || page === "strategies") && (
-            <Suspense fallback={<p>Loading market chart…</p>}><MarketStation strategyOnly={page === "strategies"} /></Suspense>
+            <Suspense fallback={<p>Loading market chart…</p>}>
+              <MarketStation strategyOnly={page === "strategies"} />
+            </Suspense>
           )}
           {page === "orders" && (
             <OrdersView paper={paper} unavailable={unavailable} />

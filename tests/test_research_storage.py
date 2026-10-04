@@ -45,6 +45,64 @@ def plan_at(folder, **changes):
     )
 
 
+def test_finite_capture_defers_only_optional_retention_and_keeps_admission(tmp_path, monkeypatch):
+    plan = plan_at(tmp_path)
+    store = ResearchStorage(plan)
+    calls = []
+    monkeypatch.setattr(store, "housekeeping", lambda now, **kwargs: calls.append(kwargs))
+    try:
+        first = packet(1_800_000_001)
+        reference = store.append([first], first["at"], defer_retention=True)[0]
+        assert store.reopen(reference)["kind"] == first["kind"]
+        assert calls == []
+        store.append([packet(1_800_000_002)], 1_800_000_002)
+        assert calls == [{"capacity_triggered": False}]
+        calls.clear()
+        real_bytes = __import__("trading.research_storage", fromlist=["_bytes"])._bytes
+        monkeypatch.setattr(
+            "trading.research_storage._bytes",
+            lambda folder: (
+                plan.temporary_bytes - 2 * plan.scratch_bytes + 1
+                if folder == store.temporary
+                else real_bytes(folder)
+            ),
+        )
+        store.append([packet(1_800_000_003)], 1_800_000_003, defer_retention=True)
+        assert calls == [{"capacity_triggered": True}]
+        monkeypatch.setattr("trading.research_storage._bytes", real_bytes)
+        (store.temporary / "quota-fixture").write_bytes(b"x" * plan.temporary_bytes)
+        with pytest.raises(OSError, match="quota"):
+            store.append([packet(1_800_000_004)], 1_800_000_004, defer_retention=True)
+    finally:
+        store.close()
+
+
+def test_recorder_defers_retention_only_for_a_finite_request(tmp_path, monkeypatch):
+    from trading.execution_window import WindowRequest
+
+    config = tmp_path / "coordination"
+    save_plan(config, plan_at(tmp_path))
+    (config / "execution-window-request.json").write_text(
+        WindowRequest(
+            request_id="synthetic-writer-priority", not_before=1_800_000_000.0
+        ).model_dump_json()
+    )
+    calls = []
+    monkeypatch.setattr(ResearchStorage, "housekeeping", lambda self, *a, **k: calls.append(k))
+    recorder = EvidenceRecorder(config / "research-evidence.sqlite")
+    recorder.enqueue(packet(1_800_000_000))
+    asyncio.run(recorder.flush())
+    assert recorder.status["state"] == "recording" and calls == []
+    assert (config / "execution-window-status.json").exists()
+    recorder.execution_window.fail("Synthetic test finished its finite request")
+    recorder.enqueue(packet(1_800_000_001))
+    asyncio.run(recorder.flush())
+    assert calls  # The ordinary retention path resumes without a new authority.
+    recorder._compact.close()
+    recorder._storage.close()
+    recorder._maturity.close()
+
+
 def test_empty_capacity_retry_cannot_report_new_capture_and_recovers_with_real_space(tmp_path):
     config = tmp_path / "coordination"
     plan = plan_at(tmp_path)

@@ -1,4 +1,12 @@
-# Current operational CP18 handoff under issue #28
+# Current direction — October 4, 2026, issue #48
+
+Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
+`5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
+400 GB temporary / 100 GB retained. Current audit work is source/isolated QA only.
+All earlier sections below are historical receipts; preserve their original evidence
+and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
+
+# Historical current operational CP18 handoff under issue #28
 
 Approved PRs #37-39 are merged/installed at main `9d45f71`; activity authentication,
 normal-screen dates and the explicitly approved LZ4 future-write change are accepted,
@@ -95,7 +103,7 @@ Read [the integrated ledger](LLM_RESEARCH_CHECKPOINTS.md),
 in issue/PR receipts. Measurement source hashes are public; private runtime,
 failed attempts, database configuration and original provider packets stay ignored.
 
-## Current re-audit interaction repair handoff
+## Historical current re-audit interaction repair handoff
 
 Five original findings are independently closed. The three remaining F2/F6
 interactions now have combined software acceptance in their existing drafts:

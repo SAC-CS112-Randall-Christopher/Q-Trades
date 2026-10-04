@@ -59,7 +59,7 @@ class StoragePlan(BaseModel):
     version: Literal["research-tiers-v2"] = "research-tiers-v2"
     root: str = DEFAULT_ROOT
     volume_identity: str = Field(min_length=8, max_length=150)
-    temporary_bytes: int = Field(default=100 * GB, ge=256 * 1024, le=100 * GB)
+    temporary_bytes: int = Field(default=100 * GB, ge=256 * 1024, le=400 * GB)
     research_bytes: int = Field(default=100 * GB, ge=256 * 1024, le=100 * GB)
     free_reserve_bytes: int = Field(default=5 * 1024**3, ge=0, le=100 * GB)
     scratch_bytes: int = Field(default=128 * 1024**2, ge=128 * 1024, le=512 * 1024**2)
@@ -336,7 +336,9 @@ class ResearchStorage:
         os.replace(staged, destination)
         return destination
 
-    def append(self, packets: list[dict[str, Any]], now: float) -> list[str]:
+    def append(
+        self, packets: list[dict[str, Any]], now: float, *, defer_retention: bool = False
+    ) -> list[str]:
         if len(packets) > 8:
             raise ValueError("Research batch exceeds eight shared observations")
         refs = []
@@ -487,11 +489,12 @@ class ResearchStorage:
             # USB latency. A failed index acknowledgment recovers from exact rows.
             for segment in segments.values():
                 segment.commit()
-        self.housekeeping(
-            now,
-            capacity_triggered=_bytes(self.temporary)
-            > self.plan.temporary_bytes - 2 * self.plan.scratch_bytes,
-        )
+        pressure = _bytes(self.temporary) > self.plan.temporary_bytes - 2 * self.plan.scratch_bytes
+        # One finite original-window request can defer optional cold transfers.
+        # Every packet still passes admission and FULL durability; pressure keeps
+        # the existing maintenance authority and can refuse the window.
+        if pressure or not defer_retention:
+            self.housekeeping(now, capacity_triggered=pressure)
         return refs
 
     def protect(self, reference: str, until_at: float, reason: str) -> None:
