@@ -90,6 +90,9 @@ def example(at=100.0, role="researcher", facts="Synthetic first scenario oversta
             "rationale": "Procedural test fixture, not market evidence.",
             "rights_confirmed": True,
             "data_basis": "synthetic",
+            "reviewer_kind": "human",
+            "reviewer_authored_material": True,
+            "claim_scope": "interpretation",
             "family_ids": ["synthetic-family-" + str(at)],
             "categories": ["workflow"],
             "episode_start": at - 5,
@@ -151,7 +154,7 @@ def test_instructional_admission_does_not_require_or_fabricate_a_model_episode()
     assert accepted["candidate"]["attempt"] == 0
     assert accepted["review"]["data_basis"] == "instructional"
     assert "source_kind" not in Example.model_validate(example()).model_dump()["candidate"]
-    assert "reviewer_kind" not in Example.model_validate(example()).model_dump()["review"]
+    assert Example.model_validate(example()).review.reviewer_kind == "human"
 
 
 @pytest.mark.parametrize("change", ["future", "empirical", "false_authorship", "fake_attempt"])
@@ -316,7 +319,7 @@ def test_opaque_handle_renaming_does_not_hide_evidence_copy():
     rows[1]["target"]["evidence_ids"] = ["renamed"]
     rows[1]["review"]["evidence_available_at"] = {"renamed": 199.0}
     reseal(rows[1]["candidate"])
-    with pytest.raises(ValueError, match="Duplicate evidence"):
+    with pytest.raises(ValueError, match="cross_split_family"):
         prepared(rows)
 
 
@@ -328,7 +331,7 @@ def test_near_copy_across_splits_refused():
     rows = corpus()
     rows[0] = example(100.0, facts=text)
     rows[1] = example(200.0, "reviewer", text + " Extra irrelevant comment.")
-    with pytest.raises(ValueError, match="Near-copy"):
+    with pytest.raises(ValueError, match="cross_split_family"):
         prepared(rows)
 
 
@@ -418,7 +421,7 @@ def test_paired_score_retains_missing_timeouts_unsafe_approvals_and_rejects_retr
     }
     common = dict(corpus_sha256="1" * 64, split="validation", seeds=[1, 2])
     baseline = score(rows, [base], profile_sha256="2" * 64, **common)
-    assert baseline["roles"]["reviewer"]["matched"] == 1
+    assert baseline["roles"]["reviewer"]["mechanical_matches"] == 1
     assert baseline["roles"]["reviewer"]["requested"] == 2
     assert baseline["roles"]["reviewer"]["missing"] == 1
     unsafe = base | {

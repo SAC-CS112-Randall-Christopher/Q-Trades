@@ -542,13 +542,7 @@ class RoleWorker:
             for key in ("profile", "packet", "response"):
                 attempt[key] = json.loads(attempt[key]) if attempt[key] else None
             attempt.pop("packet", None)  # The task exposes its immutable evidence handles.
-        if task["result"] and task["result"].get("outcome"):
-            outcome = task["result"]["outcome"]["body"]
-            with self.registry.transaction():
-                self.registry.db.execute(
-                    "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,'role task disclosure')",
-                    ("role-view:" + task["id"], outcome["window_start"], outcome["available_at"]),
-                )
+        self._disclose_outcome(task["id"], task["result"])
         if len(json.dumps(task).encode()) > 131072:
             raise ValueError(
                 "Task detail exceeds its bounded response allowance; exact attempts retained"
@@ -559,10 +553,68 @@ class RoleWorker:
         """Private operator export; preserve the normal outcome-disclosure boundary."""
         from trading.llm_training import candidate_from_task
 
-        # view records disclosure before any retained outcome can leave the registry.
-        # get reopens the original hot/archived attempt; it does not rerun inference.
-        self.view(identity)
-        return candidate_from_task(self.get(identity), stage, attempt)
+        if stage not in {"idea", "review", "followup"} or not 1 <= attempt <= 100:
+            raise ValueError("Select a retained attempt")
+        with self.registry.lock, self.registry.transaction():
+            row = self.registry.db.execute(
+                "SELECT id,created,updated,stage,status,archive_reference,archive_sha256,"
+                "json_extract(context,'$.contract') AS contract,"
+                "json_extract(context,'$.question') AS question,"
+                "json_extract(context,'$.issued.sha256') AS bundle_sha256,"
+                "json_extract(result,'$.outcome') AS outcome "
+                "FROM role_tasks WHERE id=?",
+                (identity,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("Unknown role task")
+            if row["archive_reference"]:
+                saved = self.history.read(row)
+                context = json.loads(saved["context"])
+                selected = [
+                    a for a in saved["attempts"] if a["stage"] == stage and a["attempt"] == attempt
+                ]
+                result = json.loads(saved["result"]) if saved["result"] else None
+            else:
+                selected = [
+                    dict(a)
+                    for a in self.registry.db.execute(
+                        "SELECT stage,attempt,started,finished,"
+                        "CASE WHEN length(CAST(packet AS BLOB))<=131072 THEN packet END AS packet,"
+                        "CASE WHEN length(CAST(response AS BLOB))<=131072 "
+                        "THEN response END AS response,"
+                        "length(CAST(packet AS BLOB)) AS packet_bytes,"
+                        "length(CAST(response AS BLOB)) AS response_bytes "
+                        "FROM role_attempts WHERE task=? AND stage=? AND attempt=?",
+                        (identity, stage, attempt),
+                    )
+                ]
+                context = {
+                    "contract": row["contract"],
+                    "question": json.loads(row["question"]),
+                    "issued": {"sha256": row["bundle_sha256"]},
+                }
+                result = {"outcome": json.loads(row["outcome"])} if row["outcome"] else None
+            if len(selected) != 1:
+                raise ValueError("Selected retained attempt is unavailable")
+            a = selected[0]
+            if a["packet"] is None or (
+                a.get("packet_bytes", 0) > 131072 or a.get("response_bytes", 0) > 131072
+            ):
+                raise ValueError("Selected retained attempt exceeds its export allowance")
+            task = {"id": identity, "context": context, "attempts": selected}
+            export = candidate_from_task(task, stage, attempt)
+            # Shared authority handling, after exact selected-record verification.
+            self._disclose_outcome(identity, result)
+            return export
+
+    def _disclose_outcome(self, identity: str, result: dict[str, Any] | None) -> None:
+        if result and result.get("outcome"):
+            outcome = result["outcome"]["body"]
+            with nullcontext() if self.registry.db.in_transaction else self.registry.transaction():
+                self.registry.db.execute(
+                    "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,'role task disclosure')",
+                    ("role-view:" + identity, outcome["window_start"], outcome["available_at"]),
+                )
 
     def retry(self, identity: str) -> dict[str, Any]:
         """One explicit operational retry; never request a preferred verdict."""

@@ -1,8 +1,125 @@
 # Q-Trades LLM training pilot
 
-Owner: issue #28. Requested by Chris on October 2, 2026. This bounded source lane
-starts from main `9d45f71`; PR #40 owns operating receipts and is unchanged.
-The pilot does not replace or delay CP18's first real qualified research cycle.
+Owner: issue #28, existing draft PR #41 (`codex/llm-training-pilot`). October 3,
+2026 continuation integrates main `4c5cb452` and completes the required R1–R7
+operator workflow. CP24 and the prepared v3 study remain frozen. The pilot does
+not replace CP18 qualification or authorize training, installation or activation.
+
+## Current operator workflow
+
+Open **AI Lab → Training data**. Select a retained model attempt, numerical
+episode, or market observation. Numerical/market observations have no original
+LLM question or answer: enter a new question and author identity. Its authorship
+time remains separate from original observation and receipt availability.
+
+Inspect the original question, evidence, offered capabilities, timestamps,
+unknowns, raw retained record and unchanged answer where one exists. Edit the
+structured teaching target and intended lesson. A fresh-target button can replace
+an invalid draft without changing the original answer. Save a draft, pending
+reason or exclusion, or explicitly accept/correct after reviewing rights, facts,
+families and reviewer provenance. New approvals require reviewer type, identity
+and whether that reviewer authored the material. No human identity is inferred
+for legacy records. Model-assisted instructional/interpretation review cannot
+certify empirical trading performance.
+
+Select saved examples, declare chronological cutoffs and run **read-only
+preflight**. It reports problems by example together: unresolved provenance,
+rights/timing, unsupported targets, duplicates/conflicts and protected families.
+Different questions or capability contexts may share evidence; they still belong
+to one related family. Coverage counts examples and distinct families separately
+for useful proposals, waits, costs, negative/inconclusive results, refinement and
+follow-ups. Draft, pending and excluded records cannot enter a corpus.
+
+**Build reviewed corpus and prepare in Lab** freezes the reviewed selection,
+exports its existing conversational prompt/completion format, imports through
+the actual separate Lab, and runs the pinned Qwen3.5-4B tokenizer and effective
+label checks. Preparation-only is explicit: it supplies training material while
+independent validation/test remain unprovided. A full study requires all three
+reviewed chronological splits. Only intended train/validation targets reach
+preparation and the training preprocessing path; excluded final targets remain
+unparsed. This application has no training-start or model-activation operation.
+
+Open linked receipts from the same page, including after reload. Each new receipt
+binds source example IDs, exact saved review revisions, dataset, base/profile,
+study/run and local dispatch identities. Its links reopen those frozen reviews
+read-only even after later corrections. Repeated preparation of the same frozen
+selection reopens the original receipt. Interrupted attempts remain visible and
+require an explicit retry; missing archives are reported as unavailable, never
+as newly verified. No partial bundle can overwrite a completed one.
+
+An operator may also reopen a configured existing Lab evaluation. Its original
+training dataset/model/run must match; it cannot be attached to the new prepared
+dataset as though training occurred. The application displays measured semantic
+components, requested/admitted/completed/usable coverage, grouped contrasts,
+regressions, original mechanical flags, corrections and reviewer provenance.
+Unavailable dimensions stay unavailable. Authority violations remain separate
+from usefulness. None of these results establishes an individual example's
+causal contribution, operating qualification or trading value.
+
+## Configure the existing private Lab once
+
+Use the existing Q-Trades and Lab environments and verified local paths. These
+PowerShell placeholders refer to approved private storage, not a new disk tier:
+
+```powershell
+$qPython = '.venv/Scripts/python.exe'
+& $qPython scripts/configure_training_lab.py `
+  --lab <EXISTING_LAB_CHECKOUT> --private-root <APPROVED_PRIVATE_ARTIFACT_ROOT> `
+  --base <PINNED_QWEN35_4B_BASE_DIRECTORY> --recipe <EXISTING_APPROVED_RECIPE_JSON> `
+  --output <APPLICATION_DATA_DIRECTORY>/training-lab.json `
+  --protected-corpus <SEALED_EXISTING_LAB_CORPUS> `
+  --consumed-corpus <CONSUMED_EXISTING_LAB_CORPUS>
+```
+
+The command computes identities; normal reviewers do not copy hashes or answers
+between applications. To link an existing measured comparison, also supply
+`--comparison-run <RUN_JSON> --comparison-directory <PAIRED_RESULTS_DIRECTORY>
+--semantic-review <FROZEN_SEMANTIC_REPORT> --comparison-id <LOCAL_LINK_ID>`.
+Optional repeated `--review-history <ORIGINAL_REVIEW_OR_CORRECTION_JSON>` retains
+old assessments, flags and corrections. Configuration updates preserve existing
+retirements and comparison links. Source changes require explicit reconfiguration.
+
+The server invokes only the fixed existing Lab command:
+
+```powershell
+<LAB_VENV_PYTHON> -m llm_lab.cli application-handoff <PRIVATE_ROOT> <OWNED_JOB_DIRECTORY>
+```
+
+The approved interpreter and Lab source are verified. The handoff uses offline
+tokenizer access, no CUDA visibility, no weights, fixed arguments and a 180-second
+bound. API clients cannot provide commands, URLs, paths or arbitrary reports.
+An upload with a self-consistent hash is not proof of a Lab dispatch. Requests,
+outputs and manifests stay private. The review tables share the existing research
+registry; the Lab's original manifests/exposure history retain split authority.
+
+Cross-study protection uses source content, original families and overlapping
+windows (including different BTC/ETH tasks). It does not rely on filenames or
+new target hashes. Explicit retirement preserves history and permits training/
+regression reuse, never fresh evaluation. Sealed v3/operating material cannot be
+retired through this workflow. Legacy manifests missing per-case window/split
+keys conservatively protect all recorded families; their unknown relationships
+are disclosed rather than claimed independent.
+
+## Observed acceptance and limits
+
+See the [R1–R7 ledger](reviews/llm-training-pilot/R1_R7_LEDGER.md) and
+[current isolated verification](reviews/llm-training-pilot/2026-10-03-workflow.md).
+One actual retained Binance.US BTC/USDT local receipt was copied read-only to
+disposable application state with its original identity/time. The reviewed target
+teaches missing-evidence interpretation. The prompt includes user-owned receipt/
+identity diagnostics; raw exchange prices/depth remain private original provenance
+and are excluded from the training input. It makes no BTC/USD execution, fill or
+return claim. This is not the unfinished 2,700-second execution proof.
+
+Actual Lab preparation measured 920 input and 148 supervised tokens (1,068 total)
+with the pinned 4B tokenizer, thinking disabled, complete target labels, masked
+input/padding and no truncation. No weight training was performed. The preserved
+v2 comparison opens against its own original dataset and separate model review;
+it is a reused historical instructional result, not fresh inference. CP24 was
+neither rerun nor amended. Installed acceptance remains pending merge/install/
+restart authorization.
+
+## Earlier export-only slice (historical record)
 
 ## What the operator can do in this source revision
 
@@ -49,7 +166,7 @@ that the reviewer is correct. Verify source records; never backdate unknown fact
 
 The builder reuses the existing `reviewed-rule-role-v5` prompt, exact packet wire
 encoding and target validators. Stale contracts, unsupported actions/handles,
-missing approvals/rights/timing, duplicate same-role evidence, related families
+missing approvals/rights/timing, duplicate tasks or conflicting targets, related families
 crossing splits, boundary-spanning episodes and protected qualification copies are
 refused. Splits are chronological and never random per trade, row or seed. Choose
 cutoffs/embargo before model comparison. Do not change them to obtain a good score.

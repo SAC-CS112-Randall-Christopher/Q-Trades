@@ -92,10 +92,13 @@ def main() -> int:
                     "review": {
                         "approved": False,
                         "reviewer": "",
+                        "reviewer_kind": None,
+                        "reviewer_authored_material": None,
                         "reviewed_at": 0.0,
                         "rationale": "",
                         "rights_confirmed": False,
                         "data_basis": "observed",
+                        "claim_scope": "interpretation",
                         "family_ids": [],
                         "categories": [],
                         "episode_start": 0.0,

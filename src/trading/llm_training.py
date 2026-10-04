@@ -37,6 +37,20 @@ class InstructionalAuthorship(Checked):
     empirical_performance_claim: Literal[False]
 
 
+class ObservedSource(Checked):
+    kind: Literal["numerical_experiment", "market_observation"]
+    identity: str = Field(min_length=8, max_length=100)
+    source_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    observed_start: float = Field(ge=0)
+    observed_end: float = Field(ge=0)
+    available_at: float = Field(ge=0)
+    evidence_basis: Literal["observed_public_quotes", "synthetic_qa"]
+    supported_claims: list[Literal["interpretation"]] = Field(min_length=1, max_length=1)
+    original_question: None
+    original_model_answer: None
+    original_record: dict[str, Any] | None = Field(default=None, exclude_if=lambda v: v is None)
+
+
 class Candidate(Checked):
     format: Literal["qtrades-role-training-v1"]
     contract_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
@@ -44,10 +58,11 @@ class Candidate(Checked):
     stage: Literal["idea", "review", "followup"]
     task_id: str = Field(min_length=1, max_length=100)
     attempt: int = Field(ge=0, le=100)
-    source_kind: Literal["model_attempt", "instructional"] = Field(
+    source_kind: Literal["model_attempt", "instructional", "observed_episode"] = Field(
         default="model_attempt", exclude_if=lambda v: v == "model_attempt"
     )
     authorship: InstructionalAuthorship | None = Field(default=None, exclude_if=lambda v: v is None)
+    observed_source: ObservedSource | None = Field(default=None, exclude_if=lambda v: v is None)
     decision_at: float = Field(ge=0)
     finished_at: float = Field(ge=0)
     group_ids: list[str] = Field(min_length=1, max_length=32)
@@ -70,8 +85,28 @@ class Candidate(Checked):
                 raise ValueError(
                     "Instructional authorship must not imitate a completed model attempt"
                 )
+        elif self.source_kind == "observed_episode":
+            source = self.observed_source
+            if (
+                source is None
+                or self.authorship is None
+                or self.attempt != 0
+                or self.original_answer is not None
+                or not self.task_id.startswith("episode:")
+                or self.decision_at != self.authorship.authored_at
+                or self.finished_at != self.decision_at
+                or not source.observed_start <= source.observed_end <= source.available_at
+                or source.available_at > self.decision_at
+            ):
+                raise ValueError("Retain observation and authored-question times separately")
+            if source.original_record is not None and (
+                fingerprint(source.original_record) != source.source_sha256
+            ):
+                raise ValueError("Original retained observation changed")
         elif self.attempt < 1 or self.authorship is not None:
             raise ValueError("Model examples require their retained completed attempt")
+        if self.source_kind != "observed_episode" and self.observed_source is not None:
+            raise ValueError("Only an observed episode carries observed-source metadata")
         if self.contract_sha256 != contract_hash():
             raise ValueError("Stale role contract; do not silently relabel its examples")
         if (self.stage == "review") != (self.role == "reviewer"):
@@ -103,15 +138,15 @@ class Approval(Checked):
     data_basis: Literal[
         "instructional", "synthetic", "observed", "historical_replay", "prospective"
     ]
-    reviewer_kind: Literal["human", "delegated_semantic"] = Field(
-        default="human", exclude_if=lambda v: v == "human"
-    )
+    reviewer_kind: Literal["human", "delegated_semantic"]
+    reviewer_authored_material: bool
     family_ids: list[str] = Field(min_length=1, max_length=32)
     categories: list[str] = Field(min_length=1, max_length=12)
     episode_start: float = Field(ge=0)
     episode_end: float = Field(ge=0)
     target_available_at: float = Field(ge=0)
     evidence_available_at: dict[str, float]
+    claim_scope: Literal["interpretation", "price_path", "original_execution", "counterfactual"]
 
 
 class Example(Checked):
@@ -122,9 +157,26 @@ class Example(Checked):
     @model_validator(mode="after")
     def supported(self) -> Self:
         c, r = self.candidate, self.review
-        if (c.source_kind == "instructional") != (r.data_basis == "instructional"):
+        if c.source_kind == "instructional" and r.data_basis != "instructional":
             raise ValueError("Keep authored instruction separate from empirical/model episodes")
-        if r.reviewer_kind == "delegated_semantic" and c.source_kind != "instructional":
+        if c.source_kind == "model_attempt" and r.data_basis == "instructional":
+            raise ValueError("Do not relabel an original model attempt authored instruction")
+        if c.source_kind == "observed_episode":
+            source = c.observed_source
+            assert source is not None
+            basis = "synthetic" if source.evidence_basis == "synthetic_qa" else "observed"
+            if r.data_basis != basis or r.claim_scope not in source.supported_claims:
+                raise ValueError(
+                    "This retained episode supports interpretation, not execution claims"
+                )
+            if (r.episode_start, r.episode_end) != (source.observed_start, source.observed_end):
+                raise ValueError("Keep the original observed interval")
+            if any(t < source.available_at for t in r.evidence_available_at.values()):
+                raise ValueError("Do not backdate observed receipt availability")
+        if r.reviewer_kind == "delegated_semantic" and not (
+            c.source_kind == "instructional"
+            or (c.source_kind == "observed_episode" and r.claim_scope == "interpretation")
+        ):
             raise ValueError("Delegated instructional review cannot approve empirical episodes")
         if r.reviewed_at < c.finished_at:
             raise ValueError("Review must follow the retained attempt")
@@ -236,6 +288,84 @@ def candidate_from_task(task: dict[str, Any], stage: str, attempt: int) -> dict[
     return result
 
 
+def candidate_from_episode(
+    record: dict[str, Any], *, question: str, role: str, author: str, authored_at: float
+) -> dict[str, Any]:
+    """Teach interpretation of an original result, without inventing historical intent."""
+    if record["status"] not in {"completed", "failed", "rejected", "cancelled"}:
+        raise ValueError("Episode is not a retained terminal observation")
+    finished = record.get("finished")
+    if finished is None:
+        raise ValueError("Original receipt availability is unknown")
+    plan = record["plan"]
+    original = {
+        k: record.get(k)
+        for k in (
+            "request_id",
+            "plan",
+            "plan_sha256",
+            "code_sha256",
+            "created",
+            "finished",
+            "status",
+            "snapshot_sha256",
+            "result",
+            "result_sha256",
+            "reason",
+        )
+    }
+    source_sha = fingerprint(original)
+    packet = {
+        "question": question,
+        "capabilities": {},
+        "evidence": {"e0": original},
+        "scope": "Retained numerical episode; interpretation only. No original model answer. "
+        "Computed results are not original fills or verified executable returns.",
+    }
+    body = {
+        "format": FORMAT,
+        "contract_sha256": contract_hash(),
+        "role": role,
+        "stage": "review" if role == "reviewer" else "idea",
+        "task_id": "episode:" + record["request_id"],
+        "attempt": 0,
+        "source_kind": "observed_episode",
+        "decision_at": authored_at,
+        "finished_at": authored_at,
+        "original_answer": None,
+        "authorship": {
+            "author": author,
+            "authored_at": authored_at,
+            "rights_basis": "Authored question only; source-data rights remain unresolved "
+            "until explicit review of the original provider and retained result.",
+            "original_draft_sha256": fingerprint({"question": question, "role": role}),
+            "empirical_performance_claim": False,
+        },
+        "observed_source": {
+            "kind": "numerical_experiment",
+            "identity": record["request_id"],
+            "source_sha256": source_sha,
+            "observed_start": plan["test_start"],
+            "observed_end": plan["test_end"],
+            "available_at": float(finished),
+            "evidence_basis": plan["evidence_kind"],
+            "supported_claims": ["interpretation"],
+            "original_question": None,
+            "original_model_answer": None,
+            "original_record": original,
+        },
+        "group_ids": [
+            "episode:" + record["request_id"],
+            "source:" + source_sha,
+            "market-window:" + fingerprint([plan["test_start"], plan["test_end"]]),
+        ],
+        "packet": packet,
+        "packet_sha256": fingerprint(packet),
+    }
+    body["candidate_sha256"] = fingerprint(body)
+    return Candidate.model_validate(body).model_dump()
+
+
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
     """Bound reads before allocation; reject malformed/nonfinite input without dropping rows."""
     if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_INPUT_BYTES:
@@ -274,6 +404,87 @@ def _grams(text: str) -> set[str]:
     return {" ".join(words[i : i + 5]) for i in range(max(1, len(words) - 4))}
 
 
+def candidate_from_market(
+    record: dict[str, Any], *, question: str, role: str, author: str, authored_at: float
+) -> dict[str, Any]:
+    """The retained raw public response has a receipt time, not an executable fill."""
+    from datetime import datetime
+
+    available = datetime.fromisoformat(record["observed_at"]).timestamp()
+    if available > authored_at or record["kind"] != "depth":
+        raise ValueError("Select an original received depth observation")
+    original = {
+        k: record[k] for k in ("id", "kind", "symbol", "observed_at", "payload", "config_hash")
+    }
+    source_sha = fingerprint(original)
+    evidence = {k: v for k, v in original.items() if k != "payload"}
+    evidence["raw_response_sha256"] = fingerprint(record["payload"])
+    evidence["exchange_event_time"] = None
+    evidence["engine_eligibility"] = None
+    evidence["training_projection"] = (
+        "Original local receipt/identity metadata only; raw prices/depth excluded"
+    )
+    packet = {
+        "question": question,
+        "capabilities": {},
+        "evidence": {"e0": evidence},
+        "scope": "Original Binance.US public depth response. observed_at is local receipt "
+        "time; exchange event time/clock uncertainty and engine eligibility are unknown. "
+        "No original LLM question, fill, execution or return claim.",
+    }
+    body = candidate_from_instruction(
+        identity="market-" + source_sha[:20],
+        role=role,
+        packet=packet,
+        authored_at=authored_at,
+        author=author,
+        rights_basis="Authored question; source usage rights require explicit review.",
+        draft_sha256=fingerprint({"question": question, "role": role}),
+        family_ids=["observation:" + source_sha, f"market-minute:{int(available // 60)}"],
+    )
+    body.update(
+        source_kind="observed_episode",
+        task_id="episode:market-" + source_sha[:20],
+        observed_source={
+            "kind": "market_observation",
+            "identity": "market-" + source_sha[:20],
+            "source_sha256": source_sha,
+            "observed_start": available,
+            "observed_end": available,
+            "available_at": available,
+            "evidence_basis": "observed_public_quotes",
+            "supported_claims": ["interpretation"],
+            "original_question": None,
+            "original_model_answer": None,
+            "original_record": original,
+        },
+    )
+    body["candidate_sha256"] = fingerprint(
+        {k: v for k, v in body.items() if k != "candidate_sha256"}
+    )
+    Candidate.model_validate(body)
+    return {"candidate": body, "review": None, "target": None}
+
+
+def exposure_metadata(example: Example) -> dict[str, Any]:
+    """Metadata only: the Lab owns historical use; no evaluation answer is needed."""
+    c, r = example.candidate, example.review
+    evidence_key = fingerprint(_content(c.packet))
+    return {
+        "id": c.candidate_sha256,
+        "source_kind": c.source_kind,
+        "data_basis": r.data_basis,
+        "evidence_key": evidence_key,
+        "task_key": fingerprint(
+            [c.role, " ".join(c.packet["question"].split()), c.packet["capabilities"], evidence_key]
+        ),
+        "families": sorted(set(c.group_ids + ["family:" + f for f in r.family_ids])),
+        "window": [r.episode_start, r.episode_end] if c.source_kind != "instructional" else None,
+        "categories": r.categories,
+        "role": c.role,
+    }
+
+
 def prepare(
     rows: list[dict[str, Any]],
     *,
@@ -281,6 +492,7 @@ def prepare(
     validation_end: float,
     embargo_seconds: float,
     protected_packets: list[dict[str, Any]],
+    preparation_only: bool = False,
 ) -> dict[str, Any]:
     """Freeze a reviewed corpus; refuse cross-family leakage rather than random-split rows."""
     if not all(math.isfinite(v) for v in (train_end, validation_end, embargo_seconds)):
@@ -289,6 +501,21 @@ def prepare(
         raise ValueError("Require ordered cutoffs and a nonnegative embargo")
     if not 1 <= len(rows) <= MAX_ROWS or not protected_packets:
         raise ValueError("Require bounded reviewed examples and protected evaluation packets")
+    from trading.llm_training_preflight import preflight
+
+    report = preflight(
+        rows,
+        train_end=train_end,
+        validation_end=validation_end,
+        embargo_seconds=embargo_seconds,
+        protected_packets=protected_packets,
+        preparation_only=preparation_only,
+    )
+    if not report["eligible"]:
+        raise ValueError(
+            "Corpus preflight failed: "
+            + "; ".join(f"{p['id']}: {p['code']}: {p['reason']}" for p in report["problems"])[:6000]
+        )
     protected = [_content(p) for p in protected_packets]
     protected_grams = [_grams(p) for p in protected]
     files: dict[str, list[dict[str, Any]]] = {s: [] for s in SPLITS}
@@ -297,7 +524,8 @@ def prepare(
     seen: set[str] = set()
     content_splits: dict[str, str] = {}
     prior_grams: list[tuple[str, set[str]]] = []
-    role_contents: set[tuple[str, str]] = set()
+    task_targets: dict[str, str] = {}
+    metadata: dict[str, dict[str, Any]] = {}
     examples = [Example.model_validate(row) for row in rows]
     examples.sort(key=lambda e: (e.candidate.decision_at, e.candidate.candidate_sha256))
     for example in examples:
@@ -322,8 +550,14 @@ def prepare(
             raise ValueError("Protected qualification evidence cannot enter the pilot corpus")
         if text in content_splits and content_splits[text] != split:
             raise ValueError("Duplicate evidence crosses evaluation splits")
-        if (c.role, text) in role_contents:
-            raise ValueError("Repeated role/evidence example would overweight the same experience")
+        meta = exposure_metadata(example) | {"split": split}
+        task_key = meta["task_key"]
+        if task_key in task_targets:
+            if task_targets[task_key] != fingerprint(example.target):
+                raise ValueError("Conflicting targets for the same task and evidence")
+            raise ValueError(
+                "Duplicate task; shared evidence with different questions is permitted"
+            )
         if any(
             previous_split != split
             and min(len(g), len(grams)) >= 8
@@ -332,7 +566,8 @@ def prepare(
         ):
             raise ValueError("Near-copy evidence crosses evaluation splits")
         content_splits[text] = split
-        role_contents.add((c.role, text))
+        task_targets[task_key] = fingerprint(example.target)
+        metadata[identity] = meta
         prior_grams.append((split, grams))
         for group in c.group_ids + ["family:" + f for f in r.family_ids]:
             if group in groups and groups[group] != split:
@@ -350,13 +585,17 @@ def prepare(
             }
         )
         provenance[split].append(example.model_dump())
-    if any(not files[s] for s in SPLITS):
+    if not preparation_only and any(not files[s] for s in SPLITS):
         raise ValueError("All three chronological splits require reviewed examples")
+    if preparation_only and (not files["train"] or files["validation"] or files["test"]):
+        raise ValueError("Preparation-only export must contain training material only")
     return {
         "files": files,
         "provenance": provenance,
         "manifest": {
             "format": FORMAT,
+            "purpose": "training_preparation" if preparation_only else "training_and_evaluation",
+            "exposure_metadata": metadata,
             "contract_sha256": contract_hash(),
             "train_end": train_end,
             "validation_end": validation_end,

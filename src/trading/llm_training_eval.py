@@ -128,7 +128,7 @@ def score(
                     "false_rejection",
                 )
             },
-            "matched": sum(
+            "mechanical_matches": sum(
                 r["contract_valid"]
                 and r["action_match"]
                 and r["issues_match"]
@@ -169,7 +169,7 @@ def compare(baseline: dict[str, Any], candidate: dict[str, Any]) -> dict[str, An
         "delta": {
             role: {
                 metric: candidate["roles"][role][metric] - baseline["roles"][role][metric]
-                for metric in ("matched", "critical", "false_rejection", "missing")
+                for metric in ("mechanical_matches", "critical", "false_rejection", "missing")
             }
             for role in ("researcher", "reviewer")
         },

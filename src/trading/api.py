@@ -60,6 +60,13 @@ from trading.stock_research import StockQuestion, StockResearch
 from trading.storage import MonitorStore
 from trading.tiered_runtime import TieredPaperRuntime as PaperRuntime
 from trading.tool_journal import ToolJournal
+from trading.training_workflow import (
+    DatasetSelection,
+    Retirement,
+    ReviewSave,
+    SourceSelection,
+    TrainingWorkflow,
+)
 from trading.venue import PublicVenue
 
 
@@ -467,6 +474,25 @@ def create_app(
         return lab
 
     @app.middleware("http")
+    async def bounded_training_input(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        if request.method == "POST" and request.url.path.startswith("/api/lab/training/"):
+            chunks, size = [], 0
+            async for chunk in request.stream():
+                size += len(chunk)
+                if size > 262144:
+                    return JSONResponse(
+                        {"detail": "Training request exceeds 256 KiB; nothing was saved"},
+                        status_code=413,
+                        headers={"Cache-Control": "no-store"},
+                    )
+                chunks.append(chunk)
+            # Starlette's cached request supplies these bounded bytes to the JSON validator.
+            request._body = b"".join(chunks)
+        return await call_next(request)
+
+    @app.middleware("http")
     async def scoped_actor_route(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
@@ -623,7 +649,8 @@ def create_app(
 
     @app.get("/api/lab/roles/tasks/{identity}/training-candidate")
     def role_training_candidate(
-        request: Request, identity: str,
+        request: Request,
+        identity: str,
         stage: str = Query(pattern="^(idea|review|followup)$"),
         attempt: int = Query(ge=1, le=100),
     ) -> JSONResponse:
@@ -632,14 +659,102 @@ def create_app(
             raise HTTPException(503, "Local role registry unavailable")
         try:
             result = lab.roles.training_candidate(identity, stage, attempt)
-            return JSONResponse(result, headers={
-                "Cache-Control": "no-store",
-                "Content-Disposition": 'attachment; filename="qtrades-training-candidate.json"',
-                "X-Content-Type-Options": "nosniff",
-            })
+            return JSONResponse(
+                result,
+                headers={
+                    "Cache-Control": "no-store",
+                    "Content-Disposition": 'attachment; filename="qtrades-training-candidate.json"',
+                    "X-Content-Type-Options": "nosniff",
+                },
+            )
         except (ValueError, OSError, LookupError) as exc:
-            raise HTTPException(409, "Selected original attempt cannot be exported; "
-                                "it remains retained. Reopen its details and retry.") from exc
+            raise HTTPException(
+                409,
+                "Selected original attempt cannot be exported; "
+                "it remains retained. Reopen its details and retry.",
+            ) from exc
+
+    def training(request: Request) -> TrainingWorkflow:
+        lab = lab_operator(request)
+        return TrainingWorkflow(lab.registry, lab.roles, request.app.state.monitor.store)
+
+    def teaching_error(exc: Exception) -> HTTPException:
+        return HTTPException(409, str(exc)[:1000])
+
+    @app.get("/api/lab/training")
+    def teaching_sources(request: Request) -> JSONResponse:
+        return JSONResponse(training(request).sources(), headers={"Cache-Control": "no-store"})
+
+    @app.post("/api/lab/training/candidates")
+    def teaching_select(request: Request, source: SourceSelection) -> dict[str, Any]:
+        try:
+            return training(request).select(source)
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
+
+    @app.get("/api/lab/training/examples/{identity}")
+    def teaching_detail(
+        request: Request, identity: str, revision: int | None = Query(None, ge=1)
+    ) -> JSONResponse:
+        try:
+            return JSONResponse(
+                training(request).detail(identity, revision), headers={"Cache-Control": "no-store"}
+            )
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
+
+    @app.post("/api/lab/training/examples/{identity}/review")
+    def teaching_save(request: Request, identity: str, body: ReviewSave) -> dict[str, Any]:
+        try:
+            return training(request).save(identity, body)
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
+
+    @app.post("/api/lab/training/preflight")
+    def teaching_preflight(request: Request, body: DatasetSelection) -> dict[str, Any]:
+        try:
+            return training(request).preflight(body)
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
+
+    @app.post("/api/lab/training/prepare")
+    def teaching_prepare(request: Request, body: DatasetSelection) -> dict[str, Any]:
+        try:
+            return training(request).build(body)
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
+
+    @app.get("/api/lab/training/results/{identity}")
+    def teaching_result(request: Request, identity: str) -> JSONResponse:
+        try:
+            return JSONResponse(
+                training(request).result(identity), headers={"Cache-Control": "no-store"}
+            )
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
+
+    @app.post("/api/lab/training/results/{identity}/retry")
+    def teaching_retry(request: Request, identity: str) -> dict[str, Any]:
+        try:
+            return training(request).retry(identity)
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
+
+    @app.post("/api/lab/training/retire-evaluation")
+    def teaching_retire(request: Request, body: Retirement) -> dict[str, Any]:
+        try:
+            return training(request).retire(body)
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
+
+    @app.get("/api/lab/training/historical/{identity}")
+    def teaching_comparison(request: Request, identity: str) -> JSONResponse:
+        try:
+            return JSONResponse(
+                training(request).comparison(identity), headers={"Cache-Control": "no-store"}
+            )
+        except (ValueError, OSError, LookupError) as exc:
+            raise teaching_error(exc) from exc
 
     @app.post("/api/lab/roles/tasks/{identity}/retry")
     def role_retry(request: Request, identity: str) -> dict[str, Any]:

@@ -1544,3 +1544,20 @@ h1 {
 .readiness-table caption { text-align: left; padding: .75rem 0; }
 .readiness-table th, .readiness-table td { padding: .75rem; border-bottom: 1px solid #d7dfd9; }
 .readiness-table th { font-weight: 600; }
+/* Training review keeps original evidence readable on desktop and narrow screens. */
+.training-panel { max-width: 1100px; }
+.training-panel label { display: block; margin: .7rem 0; }
+.training-panel textarea, .training-panel input:not([type=checkbox]), .training-panel select {
+  width: 100%; max-width: 100%; box-sizing: border-box;
+}
+.training-panel textarea { min-height: 5rem; }
+.training-panel button { padding: .65rem .85rem; margin: .35rem .5rem .35rem 0; border: 1px solid #607582; border-radius: 6px; color: inherit; background: #142335; cursor: pointer; }
+.training-panel button:disabled { opacity: .5; cursor: default; }
+.training-panel fieldset { margin: 1rem 0; min-width: 0; }
+.training-panel li { margin: .8rem 0; overflow-wrap: anywhere; }
+.training-panel dd { margin: .3rem 0 1rem; overflow-wrap: anywhere; }
+.training-original { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 28rem; overflow: auto; }
+.training-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .8rem; }
+.training-comparison-table { max-width: 100%; overflow-x: auto; }
+.training-comparison-table table { border-collapse: collapse; min-width: 520px; width: 100%; text-align: left; }
+.training-comparison-table th, .training-comparison-table td { padding: .65rem; border-bottom: 1px solid #c9d2c7; }
