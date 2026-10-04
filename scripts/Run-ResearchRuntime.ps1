@@ -13,6 +13,7 @@ $tradingLocked = $false
 $tradingServer = $null
 $tradingExit = 0
 $tradingState = [ordered]@{}
+. (Join-Path $PSScriptRoot 'ResearchRuntimeOwnership.ps1')
 $tradingElastic = $RuntimeProfile -eq 'CpuElastic'
 $tradingThreads = if ($tradingElastic) { 6 } else { 2 }
 $tradingPriority = if ($tradingElastic) { 'Idle' } else { 'BelowNormal' }
@@ -54,6 +55,7 @@ try {
         -WorkingDirectory $tradingRoot -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $tradingData "research-runtime-$tradingStamp.out.log") `
         -RedirectStandardError (Join-Path $tradingData "research-runtime-$tradingStamp.err.log")
+    $null = $tradingServer.Handle
     $tradingServer.PriorityClass = $tradingPriority
     # Elastic research may use any processor, at lower priority than interactive/paper work.
     $tradingProcessorCount = [Environment]::ProcessorCount
@@ -97,24 +99,24 @@ try {
         $tradingWorkers = Get-CimInstance Win32_Process -Filter "ParentProcessId=$($tradingServer.Id)" |
             Where-Object { $_.ExecutablePath -eq $tradingWorkerExecutable -or ($_.ExecutablePath -eq $tradingExecutable -and $_.CommandLine -match '\brunner\b') }
         foreach ($tradingWorker in $tradingWorkers) {
-            $tradingWorkerProcess = Get-Process -Id $tradingWorker.ProcessId -ErrorAction SilentlyContinue
-            if ($null -ne $tradingWorkerProcess) {
-                try {
+            $tradingWorkerProcess = $null
+            try {
+                $tradingWorkerStart = ([DateTime]$tradingWorker.CreationDate).ToUniversalTime()
+                if ($tradingWorkerStart -lt $tradingServer.StartTime.ToUniversalTime()) { throw 'Child predates server.' }
+                $tradingWorkerProcess = Get-ResearchProcessHandle $tradingWorker $tradingWorkerStart $tradingServer.Id @($tradingWorkerExecutable, $tradingExecutable)
+                if ($null -ne $tradingWorkerProcess) {
                     $tradingWorkerProcess.PriorityClass = $tradingPriority
                     $tradingWorkerProcess.ProcessorAffinity = [IntPtr]$tradingAffinity
-                } catch {
-                    # Normal model unload can race this read-only process discovery.
-                    if (Get-Process -Id $tradingWorker.ProcessId -ErrorAction SilentlyContinue) { throw }
-                    continue
+                    if ($tradingBudgetedWorker -ne $tradingWorkerProcess.Id -or $tradingState.worker_started_at -ne $tradingWorkerStart.ToString('o')) {
+                        $tradingBudgetedWorker = $tradingWorkerProcess.Id
+                        $tradingState.last_budgeted_worker_pid = $tradingBudgetedWorker
+                        $tradingState.worker_started_at = $tradingWorkerStart.ToString('o')
+                        $tradingState.worker_executable = $tradingWorker.ExecutablePath
+                        Save-RuntimeState
+                    }
                 }
-                if ($tradingBudgetedWorker -ne $tradingWorkerProcess.Id) {
-                    $tradingBudgetedWorker = $tradingWorkerProcess.Id
-                    $tradingState.last_budgeted_worker_pid = $tradingBudgetedWorker
-                    $tradingState.worker_started_at = $tradingWorkerProcess.StartTime.ToUniversalTime().ToString('o')
-                    $tradingState.worker_executable = $tradingWorker.ExecutablePath
-                    Save-RuntimeState
-                }
-            }
+            } catch { if (-not $tradingWorkerProcess -or -not $tradingWorkerProcess.HasExited) { throw } }
+            finally { if ($tradingWorkerProcess) { $tradingWorkerProcess.Dispose() } }
         }
         if (([DateTime]::UtcNow - $tradingLastHeartbeat).TotalSeconds -ge 10) {
             Save-RuntimeState
@@ -134,13 +136,30 @@ try {
     }
     Write-Error $_ -ErrorAction Continue
 } finally {
+    try {
     if ($tradingServer -and -not $tradingServer.HasExited) {
-        $tradingChildren = Get-CimInstance Win32_Process -Filter "ParentProcessId=$($tradingServer.Id)" |
-            Where-Object { $_.ExecutablePath -eq $tradingWorkerExecutable -or ($_.ExecutablePath -eq $tradingExecutable -and $_.CommandLine -match '\brunner\b') }
-        foreach ($tradingChild in $tradingChildren) { Stop-Process -Id $tradingChild.ProcessId -ErrorAction SilentlyContinue }
-        Stop-Process -Id $tradingServer.Id -ErrorAction SilentlyContinue
+        $tradingChildren = Get-CimInstance Win32_Process -Filter "ParentProcessId=$($tradingServer.Id)"
+        foreach ($tradingChild in $tradingChildren) {
+            if ($tradingChild.ExecutablePath -ne $tradingWorkerExecutable -and
+                -not ($tradingChild.ExecutablePath -eq $tradingExecutable -and $tradingChild.CommandLine -match '\brunner\b')) {
+                Write-Error 'Unknown research child preserved for diagnosis.' -ErrorAction Continue
+                continue
+            }
+            $tradingChildHandle = $null
+            try {
+                $tradingChildStart = ([DateTime]$tradingChild.CreationDate).ToUniversalTime()
+                if ($tradingChildStart -lt $tradingServer.StartTime.ToUniversalTime()) { throw 'Child predates server.' }
+                $tradingChildHandle = Get-ResearchProcessHandle $tradingChild $tradingChildStart $tradingServer.Id @($tradingWorkerExecutable, $tradingExecutable)
+                Stop-ResearchProcessHandle $tradingChildHandle
+            } catch { Write-Error ('Research child preserved: ' + $_.Exception.Message) -ErrorAction Continue }
+            finally { if ($tradingChildHandle) { $tradingChildHandle.Dispose() } }
+        }
+        Stop-ResearchProcessHandle $tradingServer
     }
+    } finally {
+    if ($tradingServer) { $tradingServer.Dispose() }
     if ($tradingLocked) { $tradingMutex.ReleaseMutex() }
     $tradingMutex.Dispose()
+    }
 }
 exit $tradingExit
