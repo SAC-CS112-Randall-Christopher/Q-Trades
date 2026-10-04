@@ -1,0 +1,169 @@
+{
+  "stage": "Authorized PR39 merge/install/compression and actual inference-off observation",
+  "issue": 28,
+  "pr": 39,
+  "installed_commit": "9d45f71c686e2e6c6c8c487c86861a1da35794a8",
+  "merged_main_checks": {
+    "run_id": 37030436512,
+    "conclusion": "success",
+    "passed": 378,
+    "conditional_postgres_skips": 162,
+    "seconds": 252.71,
+    "frontend_modules": 1926
+  },
+  "updater": {
+    "result": "success",
+    "seconds": 75.2,
+    "health_attempts": 3,
+    "metadata_change": "default to lz4",
+    "writer_stopped_for_apply": true,
+    "exact_current_projection_preserved_during_apply": true,
+    "stored_compression_after_ordinary_writes": "lz4"
+  },
+  "preservation": {
+    "event_prefix_rows": 780193,
+    "journal_prefix_rows": 9154,
+    "all_prefixes_identical": true,
+    "original_contracts": 6,
+    "account_ids_retained": 8,
+    "parent_and_trial_contracts_identical": true,
+    "config_and_G_identity_identical": true,
+    "capacity": 20,
+    "scheduled_task_action_and_principal_preserved": true,
+    "unrelated_files_preserved": 5,
+    "source_and_dashboard_files_matched": 186,
+    "balanced": true
+  },
+  "normal_ui": {
+    "actual_service": true,
+    "isolated_chrome_context": true,
+    "activity_warning_absent": true,
+    "actual_dates_distinct_from_query_time": true,
+    "original_roles_disabled": true,
+    "qualified": false,
+    "retained_questions": 0,
+    "screenshots_inspected": true
+  },
+  "capacity": {
+    "duration_seconds": 600,
+    "read_only": true,
+    "sampling": "Latest twenty work samples observed every three seconds, not all work",
+    "polls": 185,
+    "healthy_polls": 185,
+    "admitted_polls": 0,
+    "only_blocker": "engine_work_cooldown",
+    "query_errors": 0,
+    "raw_capture_errors": 0,
+    "sampled_work_entries": 981,
+    "slow_over_100ms": 366,
+    "severe_at_least_1000ms": 0,
+    "whole_work_ms": {
+      "p50": 89.674,
+      "p95": 173.079,
+      "max": 513.945
+    },
+    "stages_ms": {
+      "before_state_capture": {
+        "p50": 10.175,
+        "p95": 23.989,
+        "max": 107.463
+      },
+      "compact_capture": {
+        "p50": 0.025,
+        "p95": 0.104,
+        "max": 0.468
+      },
+      "financial_tick": {
+        "p50": 0.892,
+        "p95": 2.159,
+        "max": 11.152
+      },
+      "full_capture": {
+        "p50": 11.982,
+        "p95": 25.329,
+        "max": 29.216
+      },
+      "prepare": {
+        "p50": 2.636,
+        "p95": 6.217,
+        "max": 37.89
+      },
+      "recent": {
+        "p50": 13.335,
+        "p95": 24.429,
+        "max": 110.19
+      },
+      "reconcile": {
+        "p50": 53.34,
+        "p95": 136.081,
+        "max": 157.464
+      },
+      "storage_usage": {
+        "p50": 64.707,
+        "p95": 84.653,
+        "max": 88.656
+      },
+      "transaction": {
+        "p50": 83.649,
+        "p95": 151.884,
+        "max": 513.421
+      },
+      "transaction_database_commit": {
+        "p50": 3.425,
+        "p95": 19.254,
+        "max": 103.578
+      },
+      "transaction_financial_calculation": {
+        "p50": 1.035,
+        "p95": 11.063,
+        "max": 109.605
+      },
+      "transaction_invariant_check": {
+        "p50": 0.024,
+        "p95": 0.061,
+        "max": 0.688
+      },
+      "transaction_journal_append": {
+        "p50": 1.801,
+        "p95": 5.939,
+        "max": 46.525
+      },
+      "transaction_projection_encode": {
+        "p50": 8.963,
+        "p95": 21.744,
+        "max": 94.769
+      },
+      "transaction_projection_update": {
+        "p50": 21.812,
+        "p95": 47.032,
+        "max": 142.833
+      },
+      "transaction_projection_verification": {
+        "p50": 0.015,
+        "p95": 0.025,
+        "max": 0.095
+      },
+      "transaction_read_decode": {
+        "p50": 39.933,
+        "p95": 75.56,
+        "max": 335.5
+      },
+      "transaction_writer_lock_wait": {
+        "p50": 0.004,
+        "p95": 0.005,
+        "max": 102.087
+      }
+    }
+  },
+  "limits": {
+    "controlled_speed_comparison": false,
+    "model_requests": 0,
+    "current_role_qualification_complete": false,
+    "owned_real_paper_cycle_started": false,
+    "real_mature_feedback_complete": false,
+    "CP23_usefulness_complete": false,
+    "original_operating_research_activation": false,
+    "models_downloaded": false,
+    "paid_calls": false
+  }
+}

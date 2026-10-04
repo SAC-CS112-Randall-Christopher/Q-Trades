@@ -1,0 +1,96 @@
+{
+  "issue": 28,
+  "installed_commit": "9d45f71c686e2e6c6c8c487c86861a1da35794a8",
+  "stage": "Private disposable diagnostics; no selected product change",
+  "operating_read_only": true,
+  "qa_postgresql_version": "17.2",
+  "samples_per_arm": 40,
+  "selection_seed": 92811,
+  "model_requests": 0,
+  "cache_selected": false,
+  "patch_selected": false,
+  "probes": {
+    "encoded_reuse": {
+      "scope": "40 randomized samples per disposable retained-size LZ4 arm; no installed cache",
+      "timing_ms": {
+        "ordinary_lz4": {
+          "p50": 56.781,
+          "p95": 94.617,
+          "max": 97.167
+        },
+        "encoded_lz4": {
+          "p50": 48.988,
+          "p95": 75.975,
+          "max": 85.037
+        }
+      },
+      "complete_values_retained": true,
+      "synthetic_journal_balanced": true,
+      "qa_schemas_removed": true
+    },
+    "jsonb_patch": {
+      "scope": "40 fixed randomized no-op samples per LZ4 arm and paired mutations; no installed change",
+      "timing_ms": {
+        "ordinary_lz4": {
+          "p50": 57.093,
+          "p95": 72.371,
+          "max": 77.327
+        },
+        "patch_lz4": {
+          "p50": 66.048,
+          "p95": 98.342,
+          "max": 104.355
+        }
+      },
+      "complete_values_retained": true,
+      "synthetic_journal_balanced": true,
+      "qa_schemas_removed": true
+    },
+    "cold_detached_copy": {
+      "scope": "40 randomized no-op LZ4 samples per arm; no fault-safety or installed proof",
+      "timing_ms": {
+        "ordinary_lz4": {
+          "p50": 30.183,
+          "p95": 50.348,
+          "max": 56.789
+        },
+        "cold_lz4": {
+          "p50": 32.661,
+          "p95": 54.867,
+          "max": 56.899
+        }
+      },
+      "complete_values_retained": true,
+      "synthetic_journal_balanced": true,
+      "qa_schemas_removed": true
+    }
+  },
+  "finite_float_equivalence_cases": 10000,
+  "failed_probe_retained": {
+    "probe": "Initial JSONB patch wrapper",
+    "cause": "Fixture assumed a deliberately deleted field remained present",
+    "corrected_deletion_case_passed": true,
+    "financial_data_modified": false
+  },
+  "host_snapshot": {
+    "total_physical_gib": 95.691,
+    "available_physical_gib": 59.424,
+    "memory_load_percent": 37,
+    "cpu_sample_seconds": 5,
+    "cpu_percent_samples": [
+      26.98,
+      37.37,
+      17.93,
+      14.38,
+      13.63
+    ]
+  },
+  "limits": [
+    "Probes have different retained-size workloads/host conditions; only within-probe controls are comparable",
+    "Successful-commit probes do not establish a cache safe under faults",
+    "No installed capacity benefit established",
+    "No current qualification or actual model result",
+    "No genuine matured paper cycle or usefulness/economic result",
+    "No guard or financial-engine change"
+  ]
+}
