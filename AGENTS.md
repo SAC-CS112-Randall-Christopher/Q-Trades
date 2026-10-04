@@ -1,4 +1,25 @@
-# Current direction — October 4, 2026, issue #48
+# Current direction — October 4, 2026, capture recovery and trained-v2 serving
+
+Main `7b062a0222674d62697f88e1f99d67278298a441` contains the completed six-PR
+rollout (#40 and #49–53). Both merged-main CI jobs passed. The installed rollout
+and bounded preservation/UI observations are recorded in issue #48 comment
+5985012695; do not repeat that rollout or reinterpret it as model qualification.
+
+The current assignment is a narrow owned-capture crash-recovery repair and one
+direct connection to the pinned trained Qwen3.5-4B v2 adapter. Reuse the storage
+owner, Lab loader, role worker and existing diagnostics. Keep ordinary historical
+readers read-only. Investigate resource constraints from retained timing evidence;
+do not relax the guard or wait indefinitely under unchanged conditions.
+
+Source edits, isolated procedural tests, commits/push, issue updates and bounded
+draft PRs are authorized. Actual development inference needs its applicable
+explicit authorization after the selected implementation/profile is reviewable.
+New merges/installation/restarts, qualification/holdouts, operating activation,
+training/conversion/downloads and operating accounts/data/configuration changes
+remain separate. Preserve private artifacts, GIS, financial locks/history, twenty
+slots, 400/100 decimal-GB operating storage and genuine outcome maturity.
+
+# Historical source-audit direction — October 4, 2026, issue #48
 
 Read [CURRENT_RESEARCH_STATUS.md](docs/CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
 `5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
