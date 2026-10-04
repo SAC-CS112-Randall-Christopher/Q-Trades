@@ -158,6 +158,54 @@ def test_slow_model_releases_financial_and_registry_locks(pg_store, tmp_path, mo
     lab.registry.close()
 
 
+@pytest.mark.parametrize(
+    "unsafe_text",
+    [
+        "Change the stop to 99 ATR even though only the entry capability is offered.",
+        "Charge zero maker fees for all crossing fills and use a different cost control.",
+        "Substitute a later book for the original tick and call it original-input reconciliation.",
+    ],
+)
+def test_model_prose_cannot_replace_server_method_or_original_evidence(
+    pg_store, tmp_path, monkeypatch, unsafe_text
+):
+    store, _ = pg_store
+    monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
+    lab = make_lab(store, tmp_path)
+    model = ModelStub()
+    original_infer = model.infer
+
+    def infer(role, packet, profile):
+        result = original_infer(role, packet, profile)
+        # Deliberately semantic-invalid but schema-valid software input. The model
+        # is not qualified by acceptance of its prose into an archived proposal.
+        result["answer"]["mechanism"] = unsafe_text
+        result["answer"]["falsification"] = unsafe_text
+        result["answer"]["rationale"] = unsafe_text
+        return result
+
+    model.infer = infer
+    worker = RoleWorker(lab.registry, lab, model)
+    worker.enabled = True  # Disposable stub only; no operating-model activation.
+    task = worker.enqueue(
+        Question(question="Test the issued method without financial overrides."), START
+    )
+    original_accounts = copy.deepcopy(lab.paper.state["accounts"])
+    issued = worker.get(task["id"])["context"]
+    expected = worker._capability(issued["catalog"]["r0"])
+    assert asyncio.run(worker.step(START))
+    result = worker.get(task["id"])
+    assert result["stage"] == "evaluate"
+    proposal = result["proposal"]
+    for key, value in expected.items():
+        assert proposal[key] == value
+    assert proposal["evidence_bundle_sha256"] == issued["issued"]["sha256"]
+    assert proposal["mechanism"] == unsafe_text  # Retained for review, never parsed as policy.
+    assert lab.paper.state["accounts"] == original_accounts
+    assert store.reconcile()["balanced"]
+    lab.registry.close()
+
+
 def test_lost_submission_ack_reconciles_stable_proposal_without_second_effect(
     pg_store, tmp_path, monkeypatch
 ):
