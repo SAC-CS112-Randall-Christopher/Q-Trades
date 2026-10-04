@@ -109,3 +109,56 @@ def test_malformed_policy_reports_invalid_without_silent_activation(tmp_path):
     assert result["stages"]["policy"]["state"] == "invalid"
     assert result["enabled"] is False and result["qualified"] is False
     assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize(
+    ("qualified", "runtime", "enabled", "guarded", "ready"),
+    [
+        (True, "unavailable", False, False, False),
+        (False, "verified", True, False, False),
+        (True, "mismatch", True, False, False),
+        (True, "verified", False, False, False),
+        (True, "verified", True, True, False),
+        (True, "verified", True, False, True),
+    ],
+)
+def test_qualification_runtime_activation_and_admission_have_independent_meanings(
+    tmp_path, monkeypatch, qualified, runtime, enabled, guarded, ready
+):
+    profile = declared()
+    profile["enabled"] = enabled
+    (tmp_path / "role-policy.json").write_text(json.dumps(profile))
+    transport = LocalRoles(tmp_path)
+
+    def qualification(role, profile):
+        if not qualified:
+            raise ValueError("Current receipt is invalid")
+
+    def observe(profile):
+        if runtime == "unavailable":
+            raise httpx.ConnectError("Stopped dedicated listener")
+        if runtime == "mismatch":
+            raise ValueError("Profile drift")
+        return {"fixture": "No actual model call"}
+
+    monkeypatch.setattr(transport, "qualification", qualification)
+    monkeypatch.setattr(transport, "observe", observe)
+    registry = ExperimentRegistry(tmp_path / "registry.sqlite")
+    try:
+        paper = SimpleNamespace(
+            running=True, error=None, state={"last_tick": time.time()},
+            constrained=lambda: guarded,
+        )
+        result = RoleWorker(registry, SimpleNamespace(paper=paper), transport).readiness()
+        assert result["qualification_valid"] is qualified
+        assert result["runtime_available"] is (runtime == "verified")
+        assert result["ready"] is ready
+        if qualified:
+            assert "Complete current" not in result["stages"]["qualification"]["next_action"]
+        if runtime == "verified":
+            assert "Verify the owned" not in result["stages"]["runtime"]["next_action"]
+        if enabled:
+            assert "requires its separate" not in result["stages"]["activation"]["next_action"]
+        assert registry.db.execute("SELECT count(*) FROM role_attempts").fetchone()[0] == 0
+    finally:
+        registry.close()
