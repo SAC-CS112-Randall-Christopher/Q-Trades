@@ -79,8 +79,8 @@ are five different prerequisites; none is supplied by a Lab alias.
 | Selected 4B artifact/profile | Private Lab manifests; `LocalRoles` transport | v2 not compatible with existing Ollama path; no approved successor profile | Keep it inactive; any runtime/conversion successor requires explicit validation/authorization |
 | Actual role readiness | `local_role_model.py`, `role_worker.py` | No current policy/qualification, stopped dedicated listener, operating resource refusal | Make each stage and its recovery action visible through the existing role UI |
 | Real paper feedback | Existing role worker, reviewer, controller and lessons | Requires compatible qualified profile and separate activation/campaign permission | Preserve genuine horizon; do not invent a model answer or mature event |
-| Input/cost diagnosis | Existing evidence, scoped tools and ledger | Compact retained-input and matched after-cost explanations | Implement RI-CP2 without inference or financial mutation |
-| Operational visibility | Existing activity and UI | Actionable resource/input state and recovery | Implement the unblocked RI-CP4 operational slice |
+| Input/cost diagnosis | Existing evidence, scoped tools and ledger | Bounded original-input and cost routes delivered | Source/QA proof below; installed acceptance remains separate |
+| Operational visibility | Existing activity, registry and UI | Deterministic conditions, source-linked categories and recovery delivered | Source/QA proof below; actual-model findings remain blocked |
 | Reviewed teaching | Installed #41; private Lab | Contextual finding linkage, not another corpus owner | Reuse accepted review/preflight/preparation/reopen |
 
 ## Checkpoint status
@@ -91,7 +91,7 @@ are five different prerequisites; none is supplied by a Lab alias.
 | RI-CP1 | Existing v5 role/tool/paper/lesson path; independent readiness and recovery now visible | 53 focused native tests/no skips, strict types/lint/build and six disposable compiled-UI checks; actual-model/qualified-feedback proof remains blocked |
 | RI-CP2 | Two bounded routes reuse original input storage, accounting reader and saved tool journal | 153 native tests/no skips; fourteen compiled-UI checks; retained-history read verified; source delivery, uninstalled |
 | RI-CP3 | Existing task/controller/lesson selection | Event identity/selection integration and real generations pending |
-| RI-CP4 | Existing dashboard/activity/AI Lab | Actionable categories/recovery integration pending; operational slice unblocked |
+| RI-CP4 | Deterministic operational threads and original task/finding metadata in dashboard/AI Lab | 52 native tests/no skips and eighteen compiled-UI checks; operational source slice delivered, uninstalled; genuine research finding depends on RI-CP1 |
 | RI-CP5 | Installed #41 review → private Lab preparation → receipt | Finding-context shortcut pending; sealed exposure records remain authoritative |
 | RI-CP6 | Both subscribed USD markets; existing scoped tools | Full role/evidence/lesson linkage and market-specific qualification pending |
 | RI-CP7 | Existing integrated QA/rollout owners | New integrated acceptance, actual usefulness and rollout decision pending |
@@ -200,3 +200,73 @@ not a tail-latency or continuous-service measurement. Earlier 24-record selectio
 exceeded eight MiB and failed before payload reads; the declared count was
 reduced to six. No capture campaign, model request, operating database write,
 financial change or installed update occurred.
+
+## RI-CP4: operational attention and original research links
+
+Dashboard and AI Lab now show three categories: operational attention, research
+development and completed findings. The operational detector reads existing
+in-memory paper health, whole-work admission, raw/retained recording and original
+BTC/USD and ETH/USD eligibility. It performs no model/venue request or financial
+query. Missing data, stopped producers, stale checks and detector-persistence
+errors remain unknown/unavailable; cessation of polling never means recovery.
+Retained capacity/disk pressure is distinct from raw-capture failure.
+
+One projection per condition and immutable transition/presentation receipts live
+in the existing bounded registry. The existing supervisor checks at most once
+per ten seconds, outside financial locks, including when optional research is
+refused. Warnings/recovery require distinct observations and confirmation;
+critical conditions appear immediately. Long numerical work can delay this same
+supervisor: stale-state presentation is explicit, not a claim of continuous
+monitoring. Acknowledgment and snooze persist presentation only and cannot hide
+mandatory conditions, clear a fault, activate research or restart services.
+
+Read-only categories expose only bounded original task/finding identifiers,
+status, scope and times. Viewing the notice list does not expose answers,
+outcomes or teaching targets and does not create disclosures or research jobs.
+Opening a linked investigation or lesson uses its existing detail/disclosure
+path. Original-condition receipts, diagnosis links, selected market, task/lesson
+deep links, reload and Back work through normal navigation. A last retained
+recording reference is explicitly marked as possibly preceding the fault.
+
+The final native selection passed **52 tests, zero skips** on disposable
+PostgreSQL. Ruff, strict Windows-targeted types (95 files), dashboard type check
+and production build passed. **Eighteen** compiled-browser checks at 1440/390
+pixels passed with zero JavaScript errors, including original-source links,
+acknowledgment/snooze, recovery, stopped/offline handling and persistence failure.
+All three category examples were explicitly synthetic, with three model-stub
+responses and accelerated synthetic maturity; **zero actual model calls**.
+Owned browser/server workers were stopped. The first fixture-seed failure,
+35-second fixture-start timeout, intermediate sixteen-check result and corrected
+final run remain separately retained. These are software proofs, not real
+research usefulness, installed acceptance or market-performance evidence.
+
+Declared noise fixtures preserved one ongoing thread through repetition and
+flapping. Thirty distinct fault checks plus one hundred repeated-source checks
+produced one notification, twenty-nine coalesced observations and one hundred
+unchanged-source checks. A separate hundred-check/six-condition burst produced
+six threads/notifications and coalesced 594 of 600 fault observations. Its
+registry persistence median/p95/max was **140/279/506 ms**, and metadata reads
+were **0.24/0.46/0.66 ms**. This burst ran beside browser and integrity work;
+it is not the paced installed detector, an independent fault-rate estimate or
+proof of acceptable installed overhead. Installed whole-work impact, RAM/VRAM
+and actionable/false-alert rates remain unmeasured. Registry retention still
+stops at its existing ceiling without pruning original evidence.
+
+## Current handoff boundary
+
+Draft source delivery does not complete the genuine selected-4B loop. The final
+read-only inventory reconfirmed unchanged installed `5d7bf35`, all 129 protected
+hashes, v1/v2/corrective/CP24 identities, accepted configuration/storage ownership
+and 400/100 decimal-GB quotas. The dedicated listener remains stopped; policy
+and current qualification files remain absent. No model worker, training,
+capture campaign, activation, financial mutation, installation or restart ran.
+
+The exact recovery is an explicitly chosen compatible Qwen3.5-4B profile and its
+approved dedicated runtime, usable unchanged admission, independent development
+and current qualification, then separately authorized operating activation.
+Private v2 cannot be silently substituted into the installed GGUF transport.
+RI-CP3's actual generations, RI-CP5's eligible real finding, RI-CP6's complete
+BTC/ETH loop and RI-CP7's model usefulness remain open; fixtures and metadata
+navigation cannot close them. Existing #41 preparation and sealed Lab/operating
+material stay intact. The source drafts are available for audit without a new
+rollout or weakening these boundaries.

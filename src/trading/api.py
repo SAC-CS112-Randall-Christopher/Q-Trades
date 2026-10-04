@@ -41,6 +41,7 @@ from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
 from trading.research_campaigns import ResearchCampaignSpec
 from trading.research_evidence import evidence_page, evidence_record
+from trading.research_notices import operational_conditions
 from trading.research_quality import quality_report
 from trading.research_storage import (
     StoragePlan,
@@ -73,6 +74,13 @@ from trading.venue import PublicVenue
 class Control(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     action: Literal["pause", "resume"]
+
+
+class NoticePresentation(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    key: str = Field(max_length=64)
+    action: Literal["acknowledge", "snooze", "clear_presentation"]
+    seconds: Literal[0, 300, 900] = 0
 
 
 class RiskControl(BaseModel):
@@ -242,6 +250,7 @@ def create_app(
                     app.state.lab_error = "Research storage unavailable; paper management continues"
                 app.state.lab = lab
                 if lab:
+                    lab.notice_source = lambda: operational_conditions(app.state.paper, time.time())
 
                     def research_universe() -> dict[str, Any]:
                         paper = app.state.paper
@@ -417,6 +426,37 @@ def create_app(
     @app.get("/api/research/storage")
     def research_storage_status() -> dict[str, Any]:
         return storage_snapshot(database.parent)
+
+    @app.get("/api/research/notices")
+    def research_notices(request: Request) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research notice registry unavailable")
+        result = lab.notices.snapshot(time.time())
+        result["detector_error"] = lab.notice_error
+        return dict(result)
+
+    @app.get("/api/research/notices/{key}")
+    def research_notice_detail(request: Request, key: str) -> dict[str, Any]:
+        lab = request.app.state.lab
+        if lab is None:
+            raise HTTPException(503, "Research notice registry unavailable")
+        if len(key) > 64:
+            raise HTTPException(400, "Notice key exceeds its bound")
+        try:
+            return dict(lab.notices.detail(key))
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/research/notices/presentation")
+    def notice_presentation(request: Request, command: NoticePresentation) -> dict[str, Any]:
+        lab = lab_operator(request)
+        try:
+            return dict(
+                lab.notices.present(command.key, command.action, time.time(), command.seconds)
+            )
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
 
     @app.get("/api/research/storage/target")
     def research_storage_target(
