@@ -1,3 +1,11 @@
+# Current direction — October 4, 2026, issue #48
+
+Read [CURRENT_RESEARCH_STATUS.md](../../CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
+`5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
+400 GB temporary / 100 GB retained. Current audit work is source/isolated QA only.
+All earlier sections below are historical receipts; preserve their original evidence
+and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
+
 # Operational CP18 reader repair and capacity diagnosis
 
 This bounded repair follows the approved installation of main `4c3e78a` and stays
@@ -86,7 +94,7 @@ new stage timings. Source/QA timing is not installed measurement. Guard threshol
 cooldown, disk/capture requirements and financial/evidence records are preserved.
 Do not raise a limit, disable capture or change placement to manufacture admission.
 
-## Current model and remaining acceptance
+## Historical current model and remaining acceptance
 
 Current development/qualification uses the approved dedicated sequential CPU
 runtime and existing Qwen3.5 4B weights only. Every attempted dispatch checks actual

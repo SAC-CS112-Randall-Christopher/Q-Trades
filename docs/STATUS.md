@@ -1,4 +1,12 @@
-# Current continuation: issue #48, October 4, 2026
+# Current direction — October 4, 2026, issue #48
+
+Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
+`5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
+400 GB temporary / 100 GB retained. Current audit work is source/isolated QA only.
+All earlier sections below are historical receipts; preserve their original evidence
+and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
+
+# Prior continuation: issue #48, October 4, 2026
 
 Main and the running installation are `5d7bf356` after #45. #41's teaching/Lab
 handoff and #47's 400/100-GB policy are installed. Read the dated
@@ -8,16 +16,20 @@ absent; input/cost diagnosis and operational visibility can progress separately.
 Do not reinstall completed rollouts, repeat CP24 or start new training.
 The earlier records below remain historical proof, with their original limits.
 
-# Historical issue #28 status before later approved rollouts
 
-Approved PRs #37/#38 are installed at main `6bfd3cd`. Normal activity reporting
-works; all 771,895 pre-update events and 9,154 journal lines, original accounts/
+# Historical current issue #28: stack installed; operational CP18 in progress
+
+Approved PRs #37-39 are installed at main `9d45f71`. Normal activity reporting
+works; all 780,193 pre-update events and 9,154 journal lines, original accounts/
 contracts, existing trials, configuration, G: and twenty-slot capacity are preserved.
-The new five-minute inference-off observation still reports engine-work cooldown:
-166 of 353 sampled work entries exceed 100 ms. Whole-work median/p95 are
-97.431/162.603 ms; financial calculation remains about one millisecond.
+The approved existing updater completed the LZ4 future-write metadata change and
+restart in 75.2 seconds. All 186 checked source/dashboard files and task identity
+match. The new ten-minute inference-off observation still reports engine-work
+cooldown: 366 of 981 sampled work entries exceed 100 ms. Whole-work median/p95 are
+89.674/173.079 ms; all 185 full-health polls pass, but none admit research. Disk/
+raw-capture health pass; financial calculation remains about one millisecond.
 Qualification and the real mature feedback cycle are still incomplete. Read
-[the current capacity evidence and opt-in candidate](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
+[the completed rollout and current capacity evidence](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
 No model request, operating activation or new paper question occurred in this rollout.
 
 ## Historical first stack rollout and pre-repair diagnosis
