@@ -1,4 +1,12 @@
-# Current continuation under issue #48
+# Current direction — October 4, 2026, issue #48
+
+Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
+`5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
+400 GB temporary / 100 GB retained. Current audit work is source/isolated QA only.
+All earlier sections below are historical receipts; preserve their original evidence
+and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
+
+# Prior continuation under issue #48
 
 Use [the October 4 baseline and delivery ledger](RESEARCH_INTELLIGENCE.md).
 The running source is `5d7bf356` after completed #41/#45/#47 rollouts. The
@@ -7,24 +15,29 @@ model/runtime/qualification and activation gaps remain open. Earlier handoff
 instructions to install delivered repairs are historical, not a new rollout
 request. Preserve this chronology and the separate open #40 documentation owner.
 
-# Historical operational CP18 handoff under issue #28
 
-Approved PRs #37/#38 are merged/installed at main `6bfd3cd`; activity authentication
-and actual normal-screen dates are accepted, with all 771,895 pre-update events and
-9,154 journal lines preserved. The full native source suite passed 706 with no
-skips; final-main hosted Windows passed 372 with 153 conditional PostgreSQL skips.
-All 184 checked installed source/dashboard files match main. Original contracts,
+# Historical current operational CP18 handoff under issue #28
+
+Approved PRs #37-39 are merged/installed at main `9d45f71`; activity authentication,
+normal-screen dates and the explicitly approved LZ4 future-write change are accepted,
+with all 780,193 pre-update events and 9,154 journal lines preserved. The PR #39
+full native source suite passed 721 with no skips; final-main hosted Windows passed
+378 with 162 conditional PostgreSQL skips in 252.71 seconds.
+All 186 checked installed source/dashboard files match main. Original contracts,
 accounts, trials, configuration, G:, twenty slots, task identity and unrelated work
 are preserved; model research remains disabled/unqualified with zero questions.
-See [the exact approved rollout](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/28#issuecomment-5954763031).
+See [the current rollout receipt](reviews/cp23/projection-compression-installed-checks.json).
 
-Fresh engine-work cooldown remains the actual capacity condition. Read
-[the current measurements and explicit opt-in compression candidate](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
-The candidate preserves the normal financial transaction, exact JSONB values and
-whole-work guard, and introduces no projection cache. Its default updater path has
-no compression operation. A new explicit merge/install/compression decision is
-required; PR #38's approval and rollout are already fulfilled. Current qualified-
-model feedback and sustained/usefulness acceptance remain outstanding.
+Fresh ten-minute observation reports engine-work cooldown on every one of 185
+full-health polls, despite healthy disk/raw capture. Of 981 sampled work entries,
+366 exceed 100 ms; whole-work median/p95 are 89.674/173.079 ms. Read
+[the completed rollout and current measurements](reviews/cp23/OPERATING_PROJECTION_COMPRESSION.md).
+The existing updater completed in 75.2 seconds and preserved the exact current
+JSONB value during its metadata transaction. PR #39's explicit approval is fulfilled;
+new repair merges/installations and original operating activation retain their own
+authorization boundaries. Continue measured capacity repair before actual role
+qualification. Current qualified-model feedback and sustained/usefulness acceptance
+remain outstanding; no model request or owned paper question was dispatched.
 
 ## Historical first stack rollout and reader diagnosis
 
@@ -100,7 +113,7 @@ Read [the integrated ledger](LLM_RESEARCH_CHECKPOINTS.md),
 in issue/PR receipts. Measurement source hashes are public; private runtime,
 failed attempts, database configuration and original provider packets stay ignored.
 
-## Current re-audit interaction repair handoff
+## Historical current re-audit interaction repair handoff
 
 Five original findings are independently closed. The three remaining F2/F6
 interactions now have combined software acceptance in their existing drafts:
