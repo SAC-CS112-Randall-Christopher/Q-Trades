@@ -90,6 +90,18 @@ Set-Item -LiteralPath ('Function:\'+$python) -Value {
             if($Scenario -eq 'compression_preview_failure'){$global:LASTEXITCODE=1}
             '{"mode":"preview"}'
         }
+    }elseif($args -contains (Join-Path $Source 'scripts/configure_research_storage.py')){
+        if($args -contains '--apply'){
+            $global:operations.Add('storage_apply')
+            if($global:running){throw 'Storage changed before owned service stopped'}
+            if($Scenario -eq 'storage_apply_failure'){$global:LASTEXITCODE=1}
+            '{"mode":"applied"}'
+        }else{
+            $global:operations.Add('storage_preview')
+            if(-not $global:running){throw 'Preview must happen before service stop'}
+            if($Scenario -eq 'storage_preview_failure'){$global:LASTEXITCODE=1}
+            '{"mode":"preview"}'
+        }
     }elseif($args -contains 'pip'){
         $global:operations.Add('pip')
         'native-dependency-output'
@@ -106,6 +118,10 @@ if($Scenario.StartsWith('compression_')){
     if($Scenario -ne 'compression_missing_expected'){
         $updateOptions.ExpectedPaperProjectionCompression='default'
     }
+}
+if($Scenario.StartsWith('storage_')){
+    $updateOptions.TemporaryStorageGB=400
+    if($Scenario -ne 'storage_missing_expected'){$updateOptions.ExpectedTemporaryStorageGB=100}
 }
 & (Join-Path $Source 'scripts/Update-QTrades.ps1') @updateOptions
 $code=$LASTEXITCODE
@@ -136,6 +152,10 @@ $code=$LASTEXITCODE
         "compression_preview_failure",
         "compression_apply_failure",
         "compression_missing_expected",
+        "storage_success",
+        "storage_preview_failure",
+        "storage_apply_failure",
+        "storage_missing_expected",
     ],
 )
 def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenario):
@@ -156,6 +176,7 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
         "AGENTS.md",
         "scripts/qtrades_health.py",
         "scripts/configure_paper_projection.py",
+        "scripts/configure_research_storage.py",
     ):
         p = source / relative
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -246,7 +267,7 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     outcome = json.loads(report.read_text(encoding="utf-8-sig"))
     ops = outcome["operations"]
     assert all((runtime / p).read_bytes() == b for p, b in protected.items())
-    success = scenario in {"success", "known_previous", "compression_success"}
+    success = scenario in {"success", "known_previous", "compression_success", "storage_success"}
     if scenario == "log_failure":
         assert logs.read_text() == "do not overwrite this existing file"
         assert not ops, outcome
@@ -292,6 +313,21 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
         assert not outcome["enabled"] and not outcome["running"]
     elif not scenario.startswith("compression_"):
         assert "compression_preview" not in ops and "compression_apply" not in ops
+    if scenario == "storage_success":
+        assert ops.index("storage_preview") < ops.index("disable") < ops.index("stop")
+        assert (
+            ops.index("stop")
+            < ops.index("storage_apply")
+            < ops.index("start")
+            < ops.index("health")
+        )
+    elif scenario in {"storage_preview_failure", "storage_missing_expected"}:
+        assert "disable" not in ops and "stop" not in ops and "storage_apply" not in ops
+    elif scenario == "storage_apply_failure":
+        assert "storage_apply" in ops and "start" not in ops and "health" not in ops
+        assert not outcome["enabled"] and not outcome["running"]
+    else:
+        assert "storage_preview" not in ops and "storage_apply" not in ops
     if success:
         assert outcome["exit_code"] == 0, result.stdout + result.stderr
         assert (runtime / "src/trading/api.py").read_text() == "new fixture"
@@ -305,7 +341,12 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     else:
         assert outcome["exit_code"] != 0, outcome
         assert "updated and running:" not in result.stdout
-        if scenario not in {"dependency_failure", "health_failure", "compression_apply_failure"}:
+        if scenario not in {
+            "dependency_failure",
+            "health_failure",
+            "compression_apply_failure",
+            "storage_apply_failure",
+        }:
             assert (runtime / "src/trading/api.py").read_text() == "old fixture"
             assert "pip" not in ops and "start" not in ops
         if scenario in {"dirty", "diverged", "wrong_remote", "foreign_task", "missing_main"}:
