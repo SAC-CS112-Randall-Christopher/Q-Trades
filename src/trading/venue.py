@@ -4,8 +4,10 @@ import asyncio
 import json
 import math
 import time
+import uuid
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from threading import RLock
 from typing import Any, cast
 
 import httpx
@@ -41,6 +43,10 @@ class PublicVenue:
         self._token_at = time.monotonic()
         self._budget_lock = asyncio.Lock()
         self._cooldown_until = 0.0
+        self._request_epoch = str(uuid.uuid4())
+        self._request_started = time.time()
+        self._requests: dict[str, dict[str, int]] = {}
+        self._request_lock = RLock()
         self.client = httpx.AsyncClient(
             timeout=timeout,
             transport=transport,
@@ -51,6 +57,54 @@ class PublicVenue:
 
     async def close(self) -> None:
         await self.client.aclose()
+
+    def request_counts(self) -> dict[str, Any]:
+        """Restart-scoped observations, never a reconstruction of old receipts."""
+        with self._request_lock:
+            rows = {key: dict(row) for key, row in self._requests.items()}
+            observed = time.time()
+        return {
+            "epoch": self._request_epoch,
+            "started_at": self._request_started,
+            "observed_at": observed,
+            "scope": "This PublicVenue instance; at most 64 endpoint/market keys plus overflow",
+            "basis": "Sent means local transport dispatch; remote receipt remains unknown",
+            "rows": rows,
+            "observation_boundary": "Atomic copy between counter transitions for this producer",
+        }
+
+    def _request_row(self, path: str, params: dict[str, str | int]) -> dict[str, int]:
+        symbol = str(params.get("symbol", "all"))
+        if not symbol.isascii() or not symbol.isalnum() or len(symbol) > 20:
+            symbol = "other"
+        key = f"{path}:{symbol}"
+        with self._request_lock:
+            if key not in self._requests and len(self._requests) >= 64:
+                key = "overflow"
+            return self._requests.setdefault(
+                key,
+                dict.fromkeys(
+                    (
+                        "requested",
+                        "sent",
+                        "responses",
+                        "completed",
+                        "http_error",
+                        "rate_limited",
+                        "transport_error",
+                        "invalid_payload",
+                        "cancelled_before_send",
+                        "cancelled_after_send_unknown",
+                    ),
+                    0,
+                ),
+            )
+
+    def _add_request_counts(self, row: dict[str, int], *fields: str) -> None:
+        # No network await, parsing, disk IO or financial work holds this lock.
+        with self._request_lock:
+            for field in fields:
+                row[field] += 1
 
     async def _pace(self, weight: int) -> None:
         while True:
@@ -80,10 +134,17 @@ class PublicVenue:
         if path == "/api/v3/depth":
             limit = int(params.get("limit", 100))
             weight = 5 if limit <= 100 else (25 if limit <= 500 else 50)
-        await self._pace(weight)
+        counts = self._request_row(path, params)
+        self._add_request_counts(counts, "requested")
+        sent = False
         try:
+            await self._pace(weight)
+            sent = True
+            self._add_request_counts(counts, "sent")
             async with self.client.stream("GET", BASE_URL + path, params=params) as response:
+                self._add_request_counts(counts, "responses")
                 if response.status_code in (418, 429):
+                    self._add_request_counts(counts, "rate_limited", "http_error")
                     fallback = 300.0 if response.status_code == 418 else 60.0
                     cooldown = retry_delay(response.headers.get("Retry-After"), fallback)
                     self._cooldown_until = time.monotonic() + cooldown
@@ -92,21 +153,32 @@ class PublicVenue:
                         cooldown,
                     )
                 if response.status_code != 200:
+                    self._add_request_counts(counts, "http_error")
                     raise FeedError(f"Public endpoint returned HTTP {response.status_code}")
                 body = bytearray()
                 async for chunk in response.aiter_bytes():
                     body.extend(chunk)
                     cap = 2_000_000 if path == "/api/v3/exchangeInfo" else 512_000
                     if len(body) > cap:
+                        self._add_request_counts(counts, "invalid_payload")
                         raise FeedError("Public response exceeded the capture size limit")
                 payload = json.loads(body)
                 list_response = path in ("/api/v3/klines", "/api/v3/ticker/24hr")
                 if not isinstance(payload, list if list_response else dict):
+                    self._add_request_counts(counts, "invalid_payload")
                     raise FeedError("Unexpected public response format")
+                self._add_request_counts(counts, "completed")
                 return payload
+        except asyncio.CancelledError:
+            self._add_request_counts(
+                counts, "cancelled_after_send_unknown" if sent else "cancelled_before_send"
+            )
+            raise
         except httpx.HTTPError as exc:
+            self._add_request_counts(counts, "transport_error")
             raise FeedError("Public feed connection failed; observations may be stale") from exc
         except (ValueError, UnicodeError) as exc:
+            self._add_request_counts(counts, "invalid_payload")
             raise FeedError("Public feed returned invalid JSON") from exc
 
     async def instruments(self, symbols: list[str]) -> dict[str, Any]:

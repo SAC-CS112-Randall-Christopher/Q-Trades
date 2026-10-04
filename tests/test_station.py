@@ -375,7 +375,15 @@ def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path):
         assert bad.json()["status"] == "failed"
         assert client.get("/api/research/tools").json()["total"] == 3
         runtime.running = False
-        assert client.post("/api/research/tools/run", json=args, headers=headers).status_code == 503
+        assert (
+            client.post(
+                "/api/research/tools/run", json={**args, "tool": "market_evidence"}, headers=headers
+            ).status_code
+            == 503
+        )
+        app.state.last_tool_at = 0
+        saved_read = client.post("/api/research/tools/run", json=args, headers=headers)
+        assert saved_read.status_code == 200 and saved_read.json()["status"] == "completed"
     assert runtime.state == before
 
 

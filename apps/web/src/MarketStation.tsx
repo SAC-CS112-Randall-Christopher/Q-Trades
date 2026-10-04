@@ -3,6 +3,9 @@ import { Activity, ChevronRight, Search, Wrench } from "lucide-react";
 import { StrategyLab, type Experiments } from "./StrategyLab";
 import "./station.css";
 import { MarketChart, type Candle, type Indicators } from "./MarketChart";
+import { useEvidenceRead } from "./useEvidenceRead";
+
+const historicalTools = new Set(["input_diagnosis", "cost_diagnosis", "strategy_evidence", "outcome_review"]);
 
 type Quote = { symbol: string; bid: string | null; ask: string | null; state: string; source: string; valid_for_ms: number; received_age_ms: number | null };
 type Trade = { id: number; price: string; quantity: string; exchange_ms: number };
@@ -14,11 +17,19 @@ type Run = { id: number; tool: string; symbol: string; account?: string; status:
 type ToolState = { tools: Tool[]; runs: Run[]; total: number; error: string | null; next_cursor?: string | null };
 type ToolAccounts = { accounts: { account: string; label: string; archived: boolean }[]; next_before?: string | null };
 type EvidencePage = { facts?: Record<string, unknown>; events?: { id: number; at: number; body: Record<string, unknown> }[]; total?: number; offset?: number; next_cursor?: string | null };
+type Diagnosis = { diagnosis: string; status: string; summary: string; facts: string[]; hypotheses: string[]; unresolved: string[]; next_question: string; population: Record<string, unknown>; problem_counts?: Record<string, number>; current_request_counts?: Record<string, unknown>; rows?: { at: number; source_available_at: number | null; reference: string; problems: string[]; could_evaluate: boolean; decision_meaning: string; recorded_decision: { reason?: string } | null }[]; measured?: { gross_before_recorded_fees_usd: string; recorded_fees_usd: string; net_closed_pnl_usd: string; gross_basis: string; net_basis: string; account_totals_basis?: string; accounting_at?: number | null; closed_trade_cohort?: { account: string; symbol: string; interval: { start: number; end: number }; basis: string }; whole_account: { cash?: string; net_pnl?: string | null }; open_holdings: Record<string, unknown>; original_cost_groups: { version: string | null; execution_profile: string | null; holding_horizon: string | null; trades: number; gross_before_recorded_fees_usd: string; fees: string; net_pnl: string }[]; matched_trial_comparison?: object | null } };
 
 const number = (v: string | number | null | undefined, digits = 2) => v == null ? "—" : Number(v).toLocaleString("en-US", { maximumFractionDigits: digits, minimumFractionDigits: digits });
 const price = (v: string | null | undefined) => number(v, Math.min(8, Math.max(2, v?.replace(/0+$/, "").split(".")[1]?.length ?? 0)));
 const time = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 const compact = (v?: string) => v == null ? "—" : new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(Number(v));
+
+function savedScope() {
+  const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+  const symbol = params.get("symbol") ?? localStorage.getItem("qtrades-tool-symbol") ?? "BTCUSD";
+  const account = params.get("account") ?? localStorage.getItem("qtrades-tool-account") ?? "primary";
+  return { symbol: /^[A-Z0-9]{3,24}$/.test(symbol) ? symbol : "UNAVAILABLE", account: /^[a-zA-Z0-9_.-]{1,100}$/.test(account) ? account : "unavailable-requested-account" };
+}
 
 function usePoll<T>(url: string, interval: number, enabled = true) {
   const [data, setData] = useState<T | null>(null);
@@ -46,24 +57,47 @@ function usePoll<T>(url: string, interval: number, enabled = true) {
   return { data, error, at };
 }
 
+function DiagnosisResult({ value }: { value: Diagnosis }) {
+  return <section aria-label="Recorded strategy diagnosis"><h3>{value.diagnosis === "input_coverage" ? "Could we evaluate?" : "What did the recorded cohort establish?"}</h3><p>{value.summary}</p>
+    <h4>Measured facts</h4><ul>{value.facts.map(f => <li key={f}>{f}</li>)}</ul>
+    {value.measured && <p>Gross before recorded fees ${number(value.measured.gross_before_recorded_fees_usd)} · fees ${number(value.measured.recorded_fees_usd)} · closed net ${number(value.measured.net_closed_pnl_usd)}.<br />{value.measured.gross_basis}. {value.measured.net_basis}.<br />Whole-account cash ${number(value.measured.whole_account.cash)}; net ${number(value.measured.whole_account.net_pnl)}; {Object.keys(value.measured.open_holdings).length} open holdings. Unknown marks remain unknown.</p>}
+    {value.measured && <p>Whole-account basis: {value.measured.account_totals_basis ?? "Original basis unavailable"}. Accounting time: {value.measured.accounting_at == null ? "unknown" : new Date(value.measured.accounting_at * 1000).toLocaleString()}.<br />Selected closed-event cohort: {value.measured.closed_trade_cohort ? `${value.measured.closed_trade_cohort.account} · ${value.measured.closed_trade_cohort.symbol} · ${new Date(value.measured.closed_trade_cohort.interval.start * 1000).toLocaleString()} to ${new Date(value.measured.closed_trade_cohort.interval.end * 1000).toLocaleString()}. ${value.measured.closed_trade_cohort.basis}` : "Original interval unavailable"}.</p>}
+    {!!value.measured?.original_cost_groups?.length && <div className="table-scroll"><table className="market-table"><thead><tr><th>Original version / policy</th><th>Closed trades</th><th>Gross / fees / net</th></tr></thead><tbody>{value.measured.original_cost_groups.map((g, i) => <tr key={i}><td>{g.version ?? "Unknown version"}<br />Execution {g.execution_profile ?? "unknown"}; horizon {g.holding_horizon ?? "unknown"}</td><td>{g.trades}</td><td>${number(g.gross_before_recorded_fees_usd)} / ${number(g.fees)} / ${number(g.net_pnl)}</td></tr>)}</tbody></table></div>}
+    {value.measured && <p>{value.measured.matched_trial_comparison ? "An original matched trial result is retained in the captured detail." : "No original mature matched trial result is available; this is a closed-event accounting cohort."}</p>}
+    {value.rows && <div className="table-scroll"><table className="market-table"><thead><tr><th>Original tick</th><th>Input support</th><th>Why act or wait?</th><th>Evidence</th></tr></thead><tbody>{value.rows.map(row => <tr key={row.reference}><td>{new Date(row.at * 1000).toLocaleString()}<br />Available {row.source_available_at == null ? "unknown" : new Date(row.source_available_at * 1000).toLocaleString()}</td><td>{row.could_evaluate ? "Supported sampled inputs" : row.problems.join(", ")}</td><td>{row.recorded_decision?.reason ?? row.decision_meaning}</td><td><a href={`/api/research/storage/evidence?reference=${encodeURIComponent(row.reference)}`} target="_blank" rel="noreferrer">Original evidence</a></td></tr>)}</tbody></table></div>}
+    <h4>Testable hypotheses</h4>{value.hypotheses.length ? <ul>{value.hypotheses.map(h => <li key={h}>{h}</li>)}</ul> : <p>No causal explanation is established by this observation.</p>}
+    <h4>Unresolved</h4><ul>{value.unresolved.map(u => <li key={u}>{u}</li>)}</ul><h4>Smallest next question</h4><p>{value.next_question}</p>
+    <details><summary>Included, excluded and unknown populations</summary><pre>{JSON.stringify({ population: value.population, problems: value.problem_counts }, null, 2)}</pre></details>
+    {value.current_request_counts && <details><summary>Current runtime request counts</summary><p>These restart-scoped observations do not supply missing historical totals. Scheduling checks are not sends; dispatch is not proof of remote receipt.</p><pre>{JSON.stringify(value.current_request_counts, null, 2)}</pre></details>}
+  </section>;
+}
+
 const ToolResult = memo(function ToolResult({ run }: { run: Run }) {
   const [page, setPage] = useState<EvidencePage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  useEffect(() => { setPage(null); setError(null); }, [run.id]);
+  const { begin, cancel } = useEvidenceRead();
+  const selected = useRef(run.id);
+  selected.current = run.id;
+  useEffect(() => { cancel(); setPage(null); setError(null); setLoading(false); }, [run.id, cancel]);
   const detail = async (cursor?: string | null) => {
+    const id = run.id;
+    const request = begin(7000);
+    const active = () => request.isCurrent() && selected.current === id;
     setLoading(true); setError(null);
     try {
-      const response = await fetch(`/api/research/tools/runs/${run.id}/detail${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, { cache: "no-store", signal: AbortSignal.timeout(7000) });
+      const response = await fetch(`/api/research/tools/runs/${id}/detail${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`, { cache: "no-store", signal: request.signal });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail ?? "Captured detail is unavailable");
-      setPage(result as EvidencePage);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Captured detail is unavailable; retry."); }
-    finally { setLoading(false); }
+      if (active()) setPage(result as EvidencePage);
+    } catch (cause) { if (active()) setError(cause instanceof Error ? cause.message : "Captured detail is unavailable; retry."); }
+    finally { if (active()) setLoading(false); }
   };
   const result = run.result?.result;
+  if (result && (run.tool === "input_diagnosis" || run.tool === "cost_diagnosis")) return <div className="tool-result"><p>{run.symbol} · {run.account} · captured {time(run.started * 1000)} · {run.status}</p><DiagnosisResult value={result as Diagnosis} /><button type="button" disabled={loading} onClick={() => void detail()}>Open captured detail</button>{error && <p role="alert">{error}</p>}{page && <details open><summary>Exact captured diagnosis</summary><pre>{JSON.stringify(page.facts, null, 2)}</pre></details>}<details><summary>Receipt / diagnostics</summary><pre>{JSON.stringify(run, null, 2)}</pre></details></div>;
   let summary = run.status === "running" ? "Reading evidence…" : "Evidence saved. Open the receipt to inspect it.";
   if (run.error) summary = run.error;
+  else if ((run.tool === "input_diagnosis" || run.tool === "cost_diagnosis") && result) summary = String(result.summary ?? result.status);
   else if (run.tool === "cost_hurdle" && result) summary = `The bid would need to rise ${number(String(result.required_bid_move_percent), 3)}% to cover modeled round-trip costs at the top of this book. This is a cost threshold, not a forecast.`;
   else if (run.tool === "strategy_evidence" && result) {
     const decision = result.last_decision as { reason?: string } | null;
@@ -86,8 +120,8 @@ const ToolResult = memo(function ToolResult({ run }: { run: Run }) {
 export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean }) {
   const section = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
-  const [symbol, setSymbol] = useState("BTCUSD");
-  const [account, setAccount] = useState(() => localStorage.getItem("qtrades-tool-account") ?? "primary");
+  const [symbol, setSymbol] = useState(() => savedScope().symbol);
+  const [account, setAccount] = useState(() => savedScope().account);
   const [accountPage, setAccountPage] = useState("");
   const [historyCursor, setHistoryCursor] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -97,6 +131,17 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
   const [latest, setLatest] = useState<Run | null>(null);
   const [busy, setBusy] = useState(false);
   const [toolError, setToolError] = useState<string | null>(null);
+  const [diagnosisMinutes, setDiagnosisMinutes] = useState(5);
+  const receiptRead = useEvidenceRead();
+  const selectedReceipt = useRef<number | null>(null);
+  const rememberReceipt = (id: number, replace = false) => {
+    localStorage.setItem("qtrades-tool-receipt", String(id));
+    const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    params.set("receipt", String(id));
+    const target = `#${strategyOnly ? "strategies" : "markets"}?${params}`;
+    if (replace) history.replaceState(null, "", target);
+    else history.pushState(null, "", target);
+  };
   const livePoll = usePoll<Live>(`/api/station/live?symbol=${symbol}`, strategyOnly ? 10000 : 1000, visible);
   const detailPoll = usePoll<Detail>(`/api/station/detail?symbol=${symbol}&account=${encodeURIComponent(account)}`, 10000, visible);
   const accountsPoll = usePoll<ToolAccounts>(`/api/research/tools/accounts?before=${encodeURIComponent(accountPage)}`, 10000, visible);
@@ -111,6 +156,22 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
   const rows = scanner?.rows.filter(r => r.symbol.includes(search.toUpperCase()) && (!qualifiedOnly || r.eligible)) ?? [];
   const change = scanner?.rows.find(r => r.symbol === symbol)?.change_percent;
 
+  const chooseScope = (market: string, owner: string) => {
+    receiptRead.cancel(); setBusy(false);
+    if (busy) setToolError("The earlier read may have finished; check saved runs before retrying.");
+    localStorage.setItem("qtrades-tool-symbol", market); localStorage.setItem("qtrades-tool-account", owner);
+    const params = new URLSearchParams({ symbol: market, account: owner });
+    if (selectedReceipt.current != null) params.set("receipt", String(selectedReceipt.current));
+    location.hash = `${strategyOnly ? "strategies" : "markets"}?${params}`;
+    setSymbol(market); setAccount(owner);
+  };
+  useEffect(() => {
+    if (!location.hash.includes("?")) history.replaceState(null, "", `#${strategyOnly ? "strategies" : "markets"}?${new URLSearchParams(savedScope())}`);
+    const restore = () => { const scope = savedScope(); setSymbol(scope.symbol); setAccount(scope.account); };
+    window.addEventListener("hashchange", restore);
+    return () => window.removeEventListener("hashchange", restore);
+  }, [strategyOnly]);
+
   useEffect(() => {
     const observer = new IntersectionObserver(entries => setVisible(entries[0].isIntersecting), { rootMargin: "200px" });
     if (section.current) observer.observe(section.current);
@@ -123,30 +184,47 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
   }, [visible]);
 
   const runTool = async (tool: string) => {
+    const request = receiptRead.begin(7000);
     setBusy(true); setToolError(null);
     try {
-      const response = await fetch("/api/research/tools/run", { method: "POST", headers: { "Content-Type": "application/json", "X-Local-Operator": "1" }, body: JSON.stringify({ tool, symbol, account, request_id: crypto.randomUUID() }), signal: AbortSignal.timeout(7000) });
+      const diagnostic = tool === "input_diagnosis" || tool === "cost_diagnosis";
+      const response = await fetch("/api/research/tools/run", { method: "POST", headers: { "Content-Type": "application/json", "X-Local-Operator": "1" }, body: JSON.stringify({ tool, symbol, account, request_id: crypto.randomUUID(), ...(diagnostic ? { start: Date.now() / 1000 - diagnosisMinutes * 60 } : {}) }), signal: request.signal });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail ?? "Tool could not run");
-      setLatest(result as Run); localStorage.setItem("qtrades-tool-receipt", String(result.id));
-    } catch (cause) { setToolError(cause instanceof DOMException ? "Tool request was not confirmed; check saved runs before retrying." : cause instanceof Error ? cause.message : "Tool request was not confirmed; check saved runs before retrying."); }
-    finally { setBusy(false); }
+      if (request.isCurrent()) { selectedReceipt.current = result.id; setLatest(result as Run); rememberReceipt(result.id); }
+    } catch (cause) { if (request.isCurrent()) setToolError(cause instanceof DOMException ? "Tool request was not confirmed; check saved runs before retrying." : cause instanceof Error ? cause.message : "Tool request was not confirmed; check saved runs before retrying."); }
+    finally { if (request.isCurrent()) setBusy(false); }
   };
-  const openRun = async (id: number) => {
+  const openRun = async (id: number, navigate = true) => {
+    const request = receiptRead.begin(3000);
+    selectedReceipt.current = id;
+    setLatest(null); setToolError(null); setBusy(false);
+    if (navigate) rememberReceipt(id);
     try {
-      const response = await fetch(`/api/research/tools/runs/${id}`, { cache: "no-store", signal: AbortSignal.timeout(3000) });
+      const response = await fetch(`/api/research/tools/runs/${id}`, { cache: "no-store", signal: request.signal });
       if (!response.ok) throw new Error("Saved receipt unavailable");
-      setLatest(await response.json() as Run); setToolError(null); localStorage.setItem("qtrades-tool-receipt", String(id));
-    } catch { setToolError("Saved receipt unavailable. The journal has not been reset."); }
+      const result = await response.json() as Run;
+      if (result.id !== id) throw new Error("Saved receipt identity differs");
+      if (request.isCurrent() && selectedReceipt.current === id) { setLatest(result); setToolError(null); }
+    } catch { if (request.isCurrent()) setToolError("Saved receipt unavailable. The journal has not been reset."); }
   };
 
   useEffect(() => {
+    const restore = () => {
+      const id = new URLSearchParams(location.hash.split("?")[1] ?? "").get("receipt");
+      if (id && /^\d+$/.test(id)) { if (selectedReceipt.current !== Number(id)) void openRun(Number(id), false); }
+      else { receiptRead.cancel(); selectedReceipt.current = null; setLatest(null); setToolError(null); setBusy(false); }
+    };
+    const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
     const saved = localStorage.getItem("qtrades-tool-receipt");
-    if (saved && /^\d+$/.test(saved)) void openRun(Number(saved));
+    if (!params.has("receipt") && saved && /^\d+$/.test(saved)) rememberReceipt(Number(saved), true);
+    restore();
+    window.addEventListener("hashchange", restore); window.addEventListener("popstate", restore);
+    return () => { window.removeEventListener("hashchange", restore); window.removeEventListener("popstate", restore); };
   }, []);
 
   return <section ref={section} id="live-quotes" className="market-station" aria-labelledby="station-title">
-    <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">{strategyOnly ? "Strategy evidence" : "Market command station"}</h2></div>{strategyOnly ? <label>Market <select value={symbol} onChange={e => setSymbol(e.target.value)}>{[...new Set(["BTCUSD", "ETHUSD", ...(scanner?.selected ?? [])])].map(s => <option key={s}>{s}</option>)}</select></label> : <span className="station-local"><Activity size={14} /> Local workspace</span>}</header>
+    <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">{strategyOnly ? "Strategy evidence" : "Market command station"}</h2></div>{strategyOnly ? <label>Market <select aria-label="Market" value={symbol} onChange={e => chooseScope(e.target.value, account)}>{[...new Set([symbol, "BTCUSD", "ETHUSD", ...(scanner?.selected ?? [])])].map(s => <option key={s}>{s}</option>)}</select></label> : <span className="station-local"><Activity size={14} /> Local workspace</span>}</header>
     {!strategyOnly && <>
     <div className="station-workspace">
       <aside className="station-watchlist" aria-label="Market scanner">
@@ -154,7 +232,7 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
         <label className="station-search"><Search size={14} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Find a market" aria-label="Find a market" /></label>
         <label className="station-filter"><input type="checkbox" checked={qualifiedOnly} onChange={e => setQualifiedOnly(e.target.checked)} /> Passed liquidity screen</label>
         <div className="watchlist-labels"><span>Market</span><span>24h</span><span>USD vol.</span></div>
-        <div className="watchlist-rows">{rows.map(row => <button type="button" key={row.symbol} onClick={() => setSymbol(row.symbol)} className={row.symbol === symbol ? "selected" : ""} aria-pressed={row.symbol === symbol} title={row.reason}><strong>{row.symbol.replace(/USD$/, "")}</strong><span className={Number(row.change_percent) >= 0 ? "station-positive" : "station-negative"}>{row.change_percent == null ? "—" : `${number(row.change_percent)}%`}</span><span>{compact(row.quote_volume)}</span></button>)}</div>
+        <div className="watchlist-rows">{rows.map(row => <button type="button" key={row.symbol} onClick={() => chooseScope(row.symbol, account)} className={row.symbol === symbol ? "selected" : ""} aria-pressed={row.symbol === symbol} title={row.reason}><strong>{row.symbol.replace(/USD$/, "")}</strong><span className={Number(row.change_percent) >= 0 ? "station-positive" : "station-negative"}>{row.change_percent == null ? "—" : `${number(row.change_percent)}%`}</span><span>{compact(row.quote_volume)}</span></button>)}</div>
         {!rows.length && <p className="station-empty">{scanner ? "No matching markets." : "Loading the market screen…"}</p>}
         {!!scanner?.omitted && <p className="station-small">{scanner.omitted} markets outside this view.</p>}
         <p className="station-small">{scanner?.constrained ? "Extra streams are temporarily reduced. Priority markets stay active." : "Liquid candidates receive closer observation."}</p>
@@ -182,7 +260,7 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
     {strategyOnly && (detail?.experiments ? <StrategyLab data={detail.experiments} symbol={symbol} unavailable={!!detailPoll.error || live?.running !== true || !!live?.error} /> : <p className="station-empty">{detailPoll.error ?? "Waiting for recorded strategy evidence…"}</p>)}
     <section className="station-tools" aria-label="Research tools">
       <div className="station-pane-title"><h3><Wrench size={15} /> Research tools</h3><span>Read-only · saved results</span></div>
-      <label>Evidence account <select aria-label="Evidence account" value={account} onChange={e => { setAccount(e.target.value); localStorage.setItem("qtrades-tool-account", e.target.value); }}>
+      <label>Evidence account <select aria-label="Evidence account" value={account} onChange={e => chooseScope(symbol, e.target.value)}>
         {!accountsPoll.data?.accounts.some(a => a.account === account) && <option value={account}>{account} · identity awaiting lookup</option>}
         {accountsPoll.data?.accounts.map(a => <option key={a.account} value={a.account}>{a.label || a.account}{a.archived ? " · retired" : ""} · {a.account}</option>)}
       </select></label>
@@ -190,7 +268,8 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
       {accountPage && <button type="button" onClick={() => setAccountPage("")}>First account page</button>}
       {accountsPoll.error && <p role="alert">{accountsPoll.error}</p>}
       <p>New tools use {account}. Saved receipts keep their original account and capture date.</p>
-      <div className="station-tool-buttons">{toolsPoll.data?.tools.map(tool => <button key={tool.id} type="button" disabled={busy || !detail} title={tool.purpose} onClick={() => void runTool(tool.id)}>{busy ? "Working…" : tool.name}</button>)}</div>
+      <label>Diagnosis interval <select aria-label="Diagnosis interval" value={diagnosisMinutes} onChange={e => setDiagnosisMinutes(Number(e.target.value))}>{[5, 15, 30].map(minutes => <option key={minutes} value={minutes}>Last {minutes} minutes</option>)}</select></label>
+      <div className="station-tool-buttons">{toolsPoll.data?.tools.map(tool => <button key={tool.id} type="button" disabled={busy || (!historicalTools.has(tool.id) && (!detail || live?.running !== true || !!live?.error))} title={tool.purpose} onClick={() => void runTool(tool.id)}>{busy ? "Working…" : tool.name}</button>)}</div>
       {(toolError || toolsPoll.error || toolsPoll.data?.error) && <p className="station-inline-note" role="alert">{toolError || toolsPoll.error || toolsPoll.data?.error}</p>}
       {latest && <ToolResult run={latest} />}
       <div className="station-agents"><span><strong>Local research roles</strong> · {rolesPoll.error ? "Status unavailable" : rolesPoll.data ? `Qualification ${rolesPoll.data.readiness.qualification_valid ? "verified" : "unverified"} · runtime ${rolesPoll.data.readiness.runtime_available ? "available" : "unavailable"} · policy ${rolesPoll.data.enabled ? "enabled" : "disabled"}` : "Loading actual status…"}</span><a href="#role-research">View AI Lab <ChevronRight size={13} /></a></div>

@@ -561,6 +561,22 @@ class PaperStore:
             "next_before": rows[19]["id"] if len(rows) > 20 else None,
         }
 
+    def research_cost_groups(
+        self, snapshot: dict[str, Any], symbol: str, *, start: float
+    ) -> dict[str, Any]:
+        """Bounded identical-cohort costs; absent historical policies stay unknown."""
+        rows = self.connection.execute(
+            "SELECT body->>'version' AS version,body->>'execution_profile' AS execution_profile,"
+            "body->>'holding_horizon' AS holding_horizon,count(*) AS trades,"
+            "coalesce(sum((body->>'pnl')::numeric),0)::text AS net_pnl,"
+            "coalesce(sum((body->>'fees')::numeric),0)::text AS fees "
+            "FROM paper_events WHERE account=%s AND body->>'symbol'=%s "
+            "AND kind='trade_closed' AND id<=%s AND at>=%s AND at<=%s "
+            "GROUP BY 1,2,3 ORDER BY 1,2,3 LIMIT 17",
+            (snapshot["account"], symbol, snapshot["maximum_event_id"], start, snapshot["cutoff"]),
+        ).fetchall()
+        return {"groups": rows[:16], "more_groups": len(rows) > 16, "maximum_groups": 16}
+
     def research_outcomes(
         self, snapshot: dict[str, Any], symbol: str, *, start: float = 0
     ) -> dict[str, Any]:
