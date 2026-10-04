@@ -10,9 +10,12 @@ $tradingOwnedArguments = @($tradingExpectedArguments, ($tradingExpectedArguments
 $tradingOwnedArguments += @(($tradingExpectedArguments + ' -Profile CpuTwoProcessors'), ($tradingExpectedArguments + ' -Profile CpuElastic'))
 $tradingHostExecutable = Join-Path $tradingRoot '.venv\Scripts\pythonw.exe'
 $tradingHostScript = Join-Path $PSScriptRoot 'service_host.py'
+$tradingCurrentHostScript = Join-Path $PSScriptRoot 'service_host_v2.py'
 $tradingOwnedHostArguments = @(
     ('"' + $tradingHostScript + '" --kind models --runtime-profile CpuTwoProcessors'),
-    ('"' + $tradingHostScript + '" --kind models --runtime-profile CpuElastic')
+    ('"' + $tradingHostScript + '" --kind models --runtime-profile CpuElastic'),
+    ('"' + $tradingCurrentHostScript + '" --kind models --runtime-profile CpuTwoProcessors'),
+    ('"' + $tradingCurrentHostScript + '" --kind models --runtime-profile CpuElastic')
 )
 $tradingOwnedAction = $tradingTask.Actions.Count -eq 1 -and $tradingTask.Actions[0].WorkingDirectory -eq $tradingRoot -and (
     ($tradingTask.Actions[0].Execute -eq 'powershell.exe' -and $tradingTask.Actions[0].Arguments -in $tradingOwnedArguments) -or
