@@ -16,6 +16,8 @@ enter non-creating `mode=rw` recovery. A SQLite write reservation refuses an
 external competing writer too. SQLite performs rollback, then query-only integrity
 and checksum checks precede one transactional index reconciliation. Original
 availability is copied from the segment, never replaced by startup time.
+Pending-outcome protection is reconstructed from the committed packet after a
+lost index acknowledgment, and an already extended pin is never shortened.
 At most eight eligible segments are reconciled per startup; committed orphan
 progress survives a pending retry. No journal is manually deleted or reset.
 
@@ -46,7 +48,8 @@ These are procedural software tests, not operating capture or model evidence.
 
 The native full suite passed **989 tests, one existing conditional skip** in
 429.72 seconds. After the final canonical-name guard and unattended recorder
-acceptance were added, all **12 recovery cases**, Ruff and strict Windows-targeted
+acceptance and lost-index protection checks were added, all **13 recovery cases**,
+the final **102-case broader selection (one conditional skip)**, Ruff and strict Windows-targeted
 mypy passed. The earlier full result and final focused result are distinct proof
 stages; the dependent integration will include these final cases too.
 
