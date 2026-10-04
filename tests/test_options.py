@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import json
+import os
 import time
 import uuid
 from datetime import UTC, datetime
@@ -274,7 +275,7 @@ def test_free_http_203_preserves_decimals_provenance_and_rejects_other_routes():
 
 @pytest.fixture
 def options_store():
-    settings = Path("data/paper-database.json")
+    settings = Path(os.environ.get("QTRADES_TEST_DATABASE", "data/paper-database.json"))
     if not settings.is_file():
         pytest.skip("Dedicated local PostgreSQL unavailable")
     dsn = load_dsn(settings)

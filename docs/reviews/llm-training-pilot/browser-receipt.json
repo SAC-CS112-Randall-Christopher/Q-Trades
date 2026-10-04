@@ -1,0 +1,28 @@
+{
+  "scope": "Synthetic UI packet adapter and actual application routes; separate PostgreSQL role-worker integration",
+  "external_requests": 0,
+  "checks": [
+    {
+      "mode": "desktop",
+      "normal_navigation": true,
+      "selected_original": true,
+      "unreviewed_download": true,
+      "pending_disabled": true,
+      "failure_retry": true,
+      "reopened_selection": true,
+      "console_errors": []
+    },
+    {
+      "mode": "mobile",
+      "normal_navigation": true,
+      "selected_original": true,
+      "unreviewed_download": true,
+      "pending_disabled": true,
+      "failure_retry": true,
+      "reopened_selection": true,
+      "console_errors": []
+    }
+  ],
+  "actual_model_training": false,
+  "operating_data": false
+}

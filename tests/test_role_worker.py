@@ -117,6 +117,13 @@ def test_worker_ordinary_inbox_outcome_and_supported_followup(pg_store, tmp_path
     assert result["result"]["followup"]["action"] == "no_change"
     assert model.calls == ["researcher", "reviewer", "researcher"]
     assert len(result["attempts"]) == 3 and store.reconcile()["balanced"]
+    # Training export uses the actual retained input/answer, not a regenerated packet.
+    before_export = copy.deepcopy(store.read())
+    candidate = worker.training_candidate(task["id"], "followup", 1)
+    assert candidate["review"] is None and candidate["target"] is None
+    assert candidate["candidate"]["original_answer"]["action"] == "no_change"
+    assert candidate["candidate"]["packet"]["evidence"]["e1"]
+    assert store.read() == before_export and len(model.calls) == 3
     assert (
         lab.registry.db.execute(
             "SELECT count(*) FROM evidence_windows WHERE origin='role outcome disclosure'"

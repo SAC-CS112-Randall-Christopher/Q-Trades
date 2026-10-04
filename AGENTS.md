@@ -400,6 +400,25 @@ This bundle changes guidance only. Runtime code is the reviewed baseline: findin
 
 ---
 
+# October 3 PR 41 Training Lab integration
+
+Q-Trades owns original research evidence and operator teaching reviews. The
+existing separate Lab owns manifests/exposure history, preparation, training and
+evaluation. Use AI Lab's saved review/preflight/preparation/linked-result workflow;
+do not create another trainer, model registry, split database or financial writer.
+See `docs/LLM_TRAINING_PILOT.md` and its R1–R7 ledger. Explicit reviewer provenance
+and rights are required for new approvals; legacy records have no inferred human
+attestation. Preserve observed/instructional/synthetic/replay/prospective labels.
+
+Private preparation uses a verified local configuration and the existing Lab's
+fixed tokenizer/import command only. Keep all bundles, targets, original answers,
+model files and receipts outside Git. No arbitrary path/report upload, shell
+execution or URL-fetch surface belongs in the application. Preparation is not
+training, qualification or activation. Keep protected v3/operating targets sealed,
+named v1/v2 artifacts unchanged and CP24 historical results intact. Retirement
+loses evaluation freshness and retains original history. Installed acceptance
+requires separate merge/install/restart authority.
+
 # Trading Research Platform
 
 Read `docs/FOUNDATION.md`, `docs/STATUS.md`, and affected code before substantial changes.
