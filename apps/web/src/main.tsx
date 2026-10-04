@@ -140,7 +140,7 @@ const aliases: Record<string, Page> = {
   options: "settings",
 };
 function currentPage(): Page {
-  const hash = location.hash.slice(1);
+  const hash = location.hash.slice(1).split("?")[0];
   if (hash === "training-data" || hash.startsWith("teaching:") || hash.startsWith("lab-result:") || hash.startsWith("lab-comparison:")) return "ai-lab";
   return (
     aliases[hash] ??

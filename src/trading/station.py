@@ -14,6 +14,14 @@ from trading.tiered_runtime import TieredPaperRuntime
 
 VERSION = "scoped-research-tools-v3"
 TOOLS = {
+    "input_diagnosis": {
+        "name": "Diagnose retained input coverage",
+        "purpose": "Explain original input gaps and recorded decisions in a bounded interval.",
+    },
+    "cost_diagnosis": {
+        "name": "Diagnose gross and after-cost results",
+        "purpose": "Compare the same recorded cohort before fees and after its original costs.",
+    },
     "market_evidence": {
         "name": "Inspect market evidence",
         "purpose": "Check quote freshness, visible liquidity, candles and observed trades.",

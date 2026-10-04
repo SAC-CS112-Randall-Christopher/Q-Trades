@@ -65,6 +65,8 @@ jobs:
             tests/test_llm_training.py tests/test_training_workflow.py `
             tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
             tests/test_role_readiness.py `
+            tests/test_strategy_diagnosis.py `
+            tests/test_request_counts.py `
             tests/test_question_recovery.py tests/test_research_lessons.py tests/test_role_supervisor.py `
             tests/test_rule_component.py tests/test_role_packet_preflight.py `
             tests/test_stock_research.py tests/test_research_actors.py `

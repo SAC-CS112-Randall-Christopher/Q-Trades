@@ -11,7 +11,9 @@ from psycopg.conninfo import make_conninfo
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.paper_runtime import PaperRuntime
 from trading.paper_store import PaperStore
-from trading.station import execute_tool
+from trading.research_storage import load_plan
+from trading.station import execute_tool, validate_symbol
+from trading.strategy_diagnosis import cost_diagnosis, input_coverage, interval_start
 from trading.tiered_runtime import TieredPaperRuntime
 
 
@@ -38,6 +40,10 @@ def run(
 ) -> dict[str, Any]:
     began = time.perf_counter()
     cutoff = time.time()
+    validate_symbol(symbol, runtime)
+    diagnostic = tool in {"input_diagnosis", "cost_diagnosis"}
+    if diagnostic:
+        start = interval_start(start, cutoff)
     outcomes = None
     # All IO executes in the API worker pool, using a separate authenticated connection.
     # Disposable read-only unit stubs explicitly expose no permanent journal.
@@ -46,8 +52,14 @@ def run(
             snapshot = view.research_account(account)
             cutoff = snapshot["cutoff"]
             saved = snapshot["state"]
-            if tool == "outcome_review":
+            if tool in {"outcome_review", "cost_diagnosis"}:
+                if diagnostic:
+                    view.connection.execute("SET LOCAL statement_timeout=1500")
                 outcomes = view.research_outcomes(snapshot, symbol, start=start)
+                if tool == "cost_diagnosis":
+                    outcomes["original_cost_groups"] = view.research_cost_groups(
+                        snapshot, symbol, start=start
+                    )
     else:
         saved = copy.deepcopy(runtime.state["accounts"].get(account))
         snapshot = {
@@ -60,8 +72,32 @@ def run(
         }
     if saved is None:
         raise ValueError("Selected account is unavailable; no primary fallback")
-    result = execute_tool(runtime, tool, symbol, account, saved, outcomes)
+    if tool == "input_diagnosis":
+        result = {
+            "tool": tool,
+            "version": "strategy-diagnosis-v1",
+            "observed_at": cutoff,
+            "result": input_coverage(
+                load_plan(runtime.capture_path.parent), symbol, account, start, cutoff
+            ),
+        }
+    elif tool == "cost_diagnosis":
+        if outcomes is None:
+            raise ValueError("Durable accounting reader unavailable; no rolling-trade substitute")
+        result = {
+            "tool": tool,
+            "version": "strategy-diagnosis-v1",
+            "observed_at": cutoff,
+            "result": cost_diagnosis(outcomes),
+        }
+    else:
+        result = execute_tool(runtime, tool, symbol, account, saved, outcomes)
     retrieved = time.time()
+    if diagnostic:
+        result["result"]["current_request_counts"] = runtime.public_request_counts()
+        result["result"]["unresolved"].append(
+            "Current request counters cannot reconstruct transport totals at older recorded ticks"
+        )
     snapshot = {key: value for key, value in snapshot.items() if key != "state"}
     spec = saved.get("rule_spec", {})
     decision = saved["last_decision"].get(symbol)
@@ -77,8 +113,17 @@ def run(
             if (quote and quote.get("received_age_ms") is not None)
             else None
         )
-    elif tool == "outcome_review" and outcomes:
+    elif tool in {"outcome_review", "cost_diagnosis"} and outcomes:
         available = max((event["at"] for event in outcomes["events"]), default=None)
+    elif tool == "input_diagnosis":
+        available = max(
+            (
+                r["source_available_at"]
+                for r in result["result"]["rows"]
+                if r["source_available_at"]
+            ),
+            default=None,
+        )
     result["envelope"] = {
         "schema": "scoped-tool-envelope-v1",
         "request_id": request_id,
@@ -89,6 +134,7 @@ def run(
         "family": spec.get("family"),
         "security": symbol,
         "timeframe": "1m",
+        "venue": "binance.us",
         "horizon": spec.get("holding_horizon"),
         "maximum_hold_seconds": spec.get("exit_seconds"),
         "interval": {"start": start, "end": cutoff},

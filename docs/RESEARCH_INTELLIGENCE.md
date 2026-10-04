@@ -89,7 +89,7 @@ are five different prerequisites; none is supplied by a Lab alias.
 |---|---|---|
 | RI-CP0 | Continuation ledger, reconciled handoffs and exact model inventory | Complete read-only baseline; new source remains draft/uninstalled |
 | RI-CP1 | Existing v5 role/tool/paper/lesson path; independent readiness and recovery now visible | 53 focused native tests/no skips, strict types/lint/build and six disposable compiled-UI checks; actual-model/qualified-feedback proof remains blocked |
-| RI-CP2 | Existing market/strategy/economics tools | Two bounded diagnosis routes need implementation/verification |
+| RI-CP2 | Two bounded routes reuse original input storage, accounting reader and saved tool journal | 153 native tests/no skips; fourteen compiled-UI checks; retained-history read verified; source delivery, uninstalled |
 | RI-CP3 | Existing task/controller/lesson selection | Event identity/selection integration and real generations pending |
 | RI-CP4 | Existing dashboard/activity/AI Lab | Actionable categories/recovery integration pending; operational slice unblocked |
 | RI-CP5 | Installed #41 review → private Lab preparation → receipt | Finding-context shortcut pending; sealed exposure records remain authoritative |
@@ -144,3 +144,59 @@ The owner/recovery condition is an explicitly validated compatible 4B profile,
 admitted dedicated CPU runtime, current role qualification, and separately
 authorized operating campaign. Independently unblocked RI-CP2 and operational
 RI-CP4 work continues without changing those prerequisites.
+
+## RI-CP2: original-input and cost diagnosis
+
+Strategies → Research tools now offers **Diagnose retained input coverage** and
+**Diagnose gross and after-cost results**, with a selected permanent account,
+USD market and 5/15/30-minute interval. The former inspects at most six original
+packets / eight MiB of logical payloads in a two-second checked query budget.
+It shows actual source availability, original eligibility/freshness and candle
+warmup/gaps, feature timing, new-versus-prior decision, original scope, known
+spread/depth and exact evidence links. Missing or future evidence is never
+replaced with a current quote. Sparse retention is not continuous tick coverage;
+physical cold-segment IO remains unmeasured, and filesystem calls cannot be
+preempted by this elapsed-budget check.
+
+The cost route uses the existing read-only PostgreSQL accounting owner under
+its original revision/cutoff. Gross is net plus original recorded fees, with
+spread/slippage already embedded in fills. Negative/no-trade outcomes, cash,
+open holdings and unknown valuation remain visible. Original event versions and
+cost/horizon metadata are grouped separately (sixteen shown groups, omitted
+groups explicit). Missing legacy policy fields remain unknown. An original
+mature matched trial is linked only when present; a closed-event cohort is not
+an independent strategy experiment or a causal exit/sizing conclusion.
+
+Both routes retain facts, testable hypotheses, unresolved causes and one next
+question in the existing immutable tool receipt. Detail/reload and original
+evidence links reopen that result. Market/account URLs preserve scope through
+reload and Back/Forward. Viewing these pages cannot run inference, schedule an
+experiment or fetch a new venue observation.
+
+The existing public transport and fallback scheduling owner now exposes bounded,
+restart-scoped counters: checks/wait reasons, requested work, local dispatch,
+responses, completed payloads, HTTP/rate/transport/payload failures and unknown
+cancellation. Fresh-book acceptance remains a separate existing validation.
+Counts do not alter pacing, freshness, retries or the whole-work guard. Old total
+sends/failures and remote receipt of timed-out requests remain unknown; these
+new uninstalled counters cannot retrospectively repair #45's comparison.
+
+The final integrated native selection passed **153 tests, zero skips** on
+disposable PostgreSQL; Ruff, strict Windows-targeted types (94 files), dashboard
+type check/build and **fourteen** compiled-browser checks at 1440/390 pixels
+passed with no JavaScript errors. Checks cover ordinary navigation, original
+links, missing ETH without BTC substitution, selected-scope reload/Back/Forward,
+accounting policies/comparison unknowns and captured-detail failure/recovery.
+New tests are included in the hosted selection. The earlier fixture failure
+(incorrect depth shape), first read-bound refusal and first browser accessibility
+failure remain private, with corrected checks separately recorded.
+
+A bounded **read-only native retained-history probe**, not installed UI
+acceptance, inspected six original BTC/USD packets in **211 ms** (6.14 MB logical
+payloads; 19.7 KB compact result). All six had supported sampled inputs. The
+same five-minute accounting cohort returned **zero closed trades** in **55 ms**;
+this is a retained no-trade result, not an after-cost advantage. One sample is
+not a tail-latency or continuous-service measurement. Earlier 24-record selection
+exceeded eight MiB and failed before payload reads; the declared count was
+reduced to six. No capture campaign, model request, operating database write,
+financial change or installed update occurred.
