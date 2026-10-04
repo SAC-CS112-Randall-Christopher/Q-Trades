@@ -22,3 +22,13 @@ test-file invocation and Ruff failures are retained; they are not passing runs.
 Focused final result: **51 passed in 37.58 seconds**, no skips. Ruff passes.
 Integration and hosted results are reported separately on issue #48 with the
 tested Git heads. All drafts remain unmerged and uninstalled.
+
+Combined verification at `c2db1bf1819c89c24f3fa7caa40420483c95e400`
+passes the entire native suite: 979 passed / one Windows-symlink permission
+skip in 472.26 seconds. Hosted integration run 37229221096 completed
+643 selected tests / 173 conditional skips in 458.98 seconds, then reached
+the existing eight-minute job limit before the dashboard build. That
+cancelled outcome is retained. The 46 independent mocked/disposable runtime
+ownership cases now run in a separate hosted job with the same eight-minute
+limit; every previous selection remains. This is CI scheduling, not an
+operating worker, model profile, resource-guard change or installed proof.
