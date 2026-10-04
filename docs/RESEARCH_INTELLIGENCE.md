@@ -88,7 +88,7 @@ are five different prerequisites; none is supplied by a Lab alias.
 | Checkpoint | Existing implementation / gap | Current proof and limitation |
 |---|---|---|
 | RI-CP0 | Continuation ledger, reconciled handoffs and exact model inventory | Complete read-only baseline; new source remains draft/uninstalled |
-| RI-CP1 | Existing v5 role/tool/paper/lesson path; actionable readiness is next | Actual-model/qualified-feedback proof blocked by the named prerequisites above |
+| RI-CP1 | Existing v5 role/tool/paper/lesson path; independent readiness and recovery now visible | 53 focused native tests/no skips, strict types/lint/build and six disposable compiled-UI checks; actual-model/qualified-feedback proof remains blocked |
 | RI-CP2 | Existing market/strategy/economics tools | Two bounded diagnosis routes need implementation/verification |
 | RI-CP3 | Existing task/controller/lesson selection | Event identity/selection integration and real generations pending |
 | RI-CP4 | Existing dashboard/activity/AI Lab | Actionable categories/recovery integration pending; operational slice unblocked |
@@ -109,3 +109,38 @@ this source continuation.
 Detailed receipts and artifact paths remain private. Public documents contain
 only redacted summaries and source/model identities. The 14B result remains the
 completed historical CP24 comparison; it is not the next experiment.
+
+## RI-CP1 bounded readiness handoff
+
+AI Lab → Local model research now separates declared policy, verified dedicated
+runtime identity, independent researcher/reviewer qualification and activation.
+A stopped/mismatched runtime retains the profile and each qualification result
+instead of collapsing them into a single transport error. The role worker adds
+the current in-memory paper prerequisite: unavailable, unhealthy, stale,
+unverified guard, refused, or available. An available prerequisite is not a
+completed/admitted model request. Actual dispatch still runs the same admission,
+identity, qualification and resource checks; no guard or financial contract changed.
+
+Each stage has an explicit next action. Ordinary navigation, direct link,
+reload and failed-read/retry recovery passed at 1440 and 390 pixels against the
+compiled dashboard and actual API in disposable state (six checks, no JavaScript
+errors). The browser plugin's execution capability was unavailable after two
+discovery checks; the existing local Playwright acceptance path was used, with
+owned browser/server cleanup. This is source/UI software proof, not installed
+acceptance or actual model behavior.
+
+The selected readiness/transport/packet/orchestration/history/recovery native
+selection passed **53 tests, zero skips** on disposable PostgreSQL. Ruff and
+strict Windows-targeted mypy passed (93 source files), and dashboard type check
+and production build passed. The earlier no-database selection's 18 passes / four
+skips, initial three lint errors and one type error remain recorded privately;
+they were corrected before the final checks. One existing Starlette dependency
+deprecation warning remains. New readiness tests are in the hosted selection.
+
+Actual model requests/admitted/completed: **0/0/0**. No current qualification,
+operating activation or genuine mature feedback was produced. RI-CP1's source
+readiness handoff is delivered; its full real-model acceptance remains open.
+The owner/recovery condition is an explicitly validated compatible 4B profile,
+admitted dedicated CPU runtime, current role qualification, and separately
+authorized operating campaign. Independently unblocked RI-CP2 and operational
+RI-CP4 work continues without changing those prerequisites.

@@ -145,15 +145,53 @@ class LocalRoles:
         return profile
 
     def readiness(self) -> dict[str, Any]:
+        """Report independent prerequisites without loading or activating a model."""
+        stages: dict[str, Any] = {
+            "policy": {
+                "state": "absent",
+                "next_action": (
+                    "Declare and verify the exact approved model/profile before qualification"
+                ),
+            },
+            "runtime": {
+                "state": "unverified",
+                "next_action": "Verify the owned dedicated CPU listener and model identity",
+            },
+            "qualification": {
+                "state": "unverified",
+                "next_action": (
+                    "Complete current independent development and both role qualifications"
+                ),
+            },
+            "activation": {
+                "state": "disabled",
+                "next_action": "Operating activation requires its separate explicit authorization",
+            },
+        }
+        result: dict[str, Any] = {
+            "qualified": False, "qualification_valid": False, "runtime_available": False,
+            "ready": False, "enabled": False, "stages": stages,
+        }
         try:
             profile = self.policy()
             if "model" not in profile:
-                return {
-                    "qualified": False,
-                    "enabled": False,
-                    "reason": "No declared model policy or current contract qualification",
-                }
-            observed = self.observe(profile)
+                result["reason"] = "No declared model policy or current contract qualification"
+                return result
+            stages["policy"]["state"] = "verified"
+            stages["policy"]["next_action"] = (
+                "Preserve this declared profile; dispatch verifies it again"
+            )
+            stages["activation"]["state"] = "enabled" if profile["enabled"] else "disabled"
+            if profile["enabled"]:
+                stages["activation"]["next_action"] = (
+                    "Policy is enabled; dispatch still requires every other prerequisite"
+                )
+            result.update(
+                enabled=profile["enabled"],
+                model=profile["model"],
+                digest=profile["model_digest"],
+                profile={k: v for k, v in profile.items() if k != "qualification_sha256"},
+            )
             ready: dict[str, Any] = {}
             for role in ("researcher", "reviewer"):
                 try:
@@ -161,17 +199,42 @@ class LocalRoles:
                     ready[role] = {"qualified": True}
                 except (ValueError, OSError, KeyError) as exc:
                     ready[role] = {"qualified": False, "reason": str(exc)[:300]}
-            return {
-                "qualified": all(r["qualified"] for r in ready.values()),
-                "enabled": profile["enabled"],
-                "model": profile["model"],
-                "digest": profile["model_digest"],
-                "profile": {k: v for k, v in profile.items() if k != "qualification_sha256"},
-                "observed": observed,
-                "roles": ready,
-            }
+            result["roles"] = ready
+            qualified = all(r["qualified"] for r in ready.values())
+            stages["qualification"]["state"] = "qualified" if qualified else "unqualified"
+            result["qualification_valid"] = qualified
+            if qualified:
+                stages["qualification"]["next_action"] = (
+                    "Retain current verified role receipts; dispatch rechecks their exact identity"
+                )
+            # A stopped listener must not hide missing or independently valid receipts.
+            try:
+                result["observed"] = self.observe(profile)
+                stages["runtime"]["state"] = "verified"
+                stages["runtime"]["next_action"] = (
+                    "Runtime identity is verified; dispatch rechecks availability and placement"
+                )
+                result["runtime_available"] = True
+                result["qualified"] = qualified
+                result["ready"] = qualified and profile["enabled"]
+            except httpx.HTTPError as exc:
+                stages["runtime"]["state"] = "unavailable"
+                stages["runtime"]["next_action"] = (
+                    "Recover the exact owned dedicated runtime after applicable start authorization"
+                )
+                result["reason"] = str(exc)[:300]
+            except (ValueError, OSError, KeyError) as exc:
+                stages["runtime"]["state"] = "mismatch"
+                stages["runtime"]["next_action"] = (
+                    "Reconcile runtime/profile identity; existing receipts do not "
+                    "qualify a changed profile"
+                )
+                result["reason"] = str(exc)[:300]
+            return result
         except (httpx.HTTPError, ValueError, OSError, KeyError) as exc:
-            return {"qualified": False, "reason": str(exc)[:300]}
+            stages["policy"]["state"] = "invalid"
+            result["reason"] = str(exc)[:300]
+            return result
 
     @staticmethod
     def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, int]:

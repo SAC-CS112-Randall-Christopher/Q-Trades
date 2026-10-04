@@ -476,6 +476,38 @@ class RoleWorker:
             result["execution"]["actor"] = last_profile.get("actor", "Local worker")
         return result
 
+    def readiness(self) -> dict[str, Any]:
+        result: dict[str, Any] = (
+            self.transport.readiness()
+            if self.transport
+            else {"qualified": False, "reason": "No qualified local role profile configured"}
+        )
+        paper = self.controller.paper if self.controller else None
+        state = "unavailable"
+        if paper is not None and paper.running:
+            if paper.error:
+                state = "unhealthy"
+            elif not 0 <= time.time() - paper.state.get("last_tick", 0) <= 10:
+                state = "stale"
+            else:
+                guard = getattr(paper, "constrained", None)
+                state = ("refused" if guard() else "available") if callable(guard) else "unverified"
+        result["operating_admission"] = {
+            "state": state,
+            "checked_at": time.time(),
+            "next_action": (
+                "Dispatch still rechecks the unchanged guard, qualified profile and activation"
+                if state == "available"
+                else (
+                    "Resolve protected paper health/resource coverage in its existing owner; "
+                    "do not bypass admission"
+                )
+            ),
+            "meaning": "Current prerequisite observation, not a model call or quality score",
+        }
+        result["ready"] = bool(result.get("ready") and state == "available")
+        return result
+
     def page(self, before: float = 0, before_id: str = "", search: str = "") -> dict[str, Any]:
         if not math.isfinite(before) or len(search) > 100:
             raise ValueError("Use a finite history cursor and at most 100 search characters")
@@ -523,9 +555,7 @@ class RoleWorker:
                 "hot_limit": HOT_TASKS,
             },
             "supervision": supervision,
-            "readiness": self.transport.readiness()
-            if self.transport
-            else {"qualified": False, "reason": "No qualified local role profile configured"},
+            "readiness": self.readiness(),
         }
 
     def view(self, identity: str) -> dict[str, Any]:
