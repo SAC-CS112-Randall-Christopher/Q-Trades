@@ -17,6 +17,8 @@ type RoleState = {
     model?: string;
     digest?: string;
     profile?: unknown;
+    stages?: Record<string, { state: string; next_action: string }>;
+    operating_admission?: { state: string; checked_at: number; next_action: string; meaning: string };
     roles?: Record<string, { qualified: boolean; reason?: string }>;
   };
   tasks: { id: string; question?: string; created: number; updated: number; stage: string; status: string; reason: string | null }[];
@@ -139,6 +141,8 @@ export function RoleResearchPanel() {
     <p role="status">{state ? `Research policy ${state.enabled ? "enabled" : "disabled"} · current role contract ${state.readiness.qualified ? "qualified" : "unqualified"}` : "Loading actual role status…"}</p>
     {state?.readiness.model && <p>Model {state.readiness.model}</p>}
     {state?.readiness.reason && <p>{state.readiness.reason}</p>}
+    {state?.readiness.stages && <div aria-label="Research readiness and recovery"><h3>Readiness and next actions</h3><ul>{Object.entries(state.readiness.stages).map(([name, stage]) => <li key={name}><strong>{name}: {stage.state}</strong> · {stage.next_action}</li>)}</ul></div>}
+    {state?.readiness.operating_admission && <p>Operating admission: <strong>{state.readiness.operating_admission.state}</strong> · checked {stamp(state.readiness.operating_admission.checked_at)}.<br />{state.readiness.operating_admission.next_action}<br />{state.readiness.operating_admission.meaning}</p>}
     {state?.readiness.roles && <ul>{Object.entries(state.readiness.roles).map(([role, value]) => <li key={role}>{role}: {value.qualified ? "Qualified for this contract" : value.reason}</li>)}</ul>}
     {state?.readiness.profile != null && <details><summary>Exact current model profile and digest</summary><pre>{JSON.stringify(state.readiness.profile, null, 2)}</pre></details>}
     <p>{state?.reason}</p>
