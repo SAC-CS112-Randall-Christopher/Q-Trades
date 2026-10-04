@@ -6,6 +6,16 @@ Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The
 All earlier sections below are historical receipts; preserve their original evidence
 and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
 
+# Prior continuation under issue #48
+
+Use [the October 4 baseline and delivery ledger](RESEARCH_INTELLIGENCE.md).
+The running source is `5d7bf356` after completed #41/#45/#47 rollouts. The
+existing CP18 role/review/paper/lesson owners remain authoritative; the current
+model/runtime/qualification and activation gaps remain open. Earlier handoff
+instructions to install delivered repairs are historical, not a new rollout
+request. Preserve this chronology and the separate open #40 documentation owner.
+
+
 # Historical current operational CP18 handoff under issue #28
 
 Approved PRs #37-39 are merged/installed at main `9d45f71`; activity authentication,

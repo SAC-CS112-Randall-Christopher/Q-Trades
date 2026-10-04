@@ -14,6 +14,28 @@ the sole writer, frozen parents/history, twenty slots and delayed outcomes. Keep
 inference outside financial locks and preserve the existing resource guard.
 The current issue #48 assignment takes precedence over historical dispatch guidance.
 
+# Prior issue #48 baseline assignment - October 4, 2026
+
+Continue RI-CP0 through RI-CP7 in order through bounded draft PRs. Read
+`docs/RESEARCH_INTELLIGENCE.md` and refresh issue #48 before changing contracts.
+PRs #41, #45 and #47 are already merged/installed; preserve their receipts and
+do not repeat their rollout or CP24. The open #40 documentation owner remains
+separate; later dated continuation notices preserve its historical evidence.
+The selected direction is Qwen3.5-4B. The private v2 Transformers/LoRA candidate
+is not an installed Ollama model or qualified operating profile. No conversion,
+new training, larger-model experiment or automatic substitution is authorized.
+
+Reuse role workers, scoped tools, registry, activity, teaching review and Lab
+preparation. Keep actual model calls/qualification, real mature paper feedback,
+source/QA, installed acceptance and trading value separate. A model/permission
+block does not block independent read-only diagnosis or operational visibility.
+Preserve the entire operating guard, financial authority/history, twenty slots,
+400/100 decimal-GB storage policy, GIS ownership and sealed/private artifacts.
+Source/isolated QA, commits, push, issue updates and draft PRs are authorized.
+New merge/install/restart, activation, training, capture or financial changes
+retain their separate explicit authorization. Detailed evidence stays private.
+
+
 # Temporary storage quota successor - October 3, 2026
 
 Chris explicitly requested increasing the existing temporary research tier from

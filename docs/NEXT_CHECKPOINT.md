@@ -6,6 +6,17 @@ Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The
 All earlier sections below are historical receipts; preserve their original evidence
 and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
 
+# Prior: issue #48 selected-4B continuation
+
+Follow RI-CP0 through RI-CP7 in #48 and the
+[verified handoff ledger](RESEARCH_INTELLIGENCE.md). RI-CP0 reconciles completed
+#41/#45/#47 installation without repeating it. Next expose exact role-readiness
+and recovery states in the existing UI, then implement the two unblocked input/
+after-cost diagnosis routes. Actual qualified-model feedback remains separately
+blocked; no conversion, training, 14B run or operating activation is authorized.
+Keep new work in bounded draft PRs for the owner's audit and rollout decision.
+
+
 # Historical current: operational CP18, then measured CP23 usefulness
 
 Approved PRs #37-39 are installed at main `9d45f71`; normal activity reporting,

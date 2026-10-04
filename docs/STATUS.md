@@ -6,6 +6,17 @@ Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The
 All earlier sections below are historical receipts; preserve their original evidence
 and PR #40 owner. Do not repeat #41/#45/#47, CP24 or the completed compression rollout.
 
+# Prior continuation: issue #48, October 4, 2026
+
+Main and the running installation are `5d7bf356` after #45. #41's teaching/Lab
+handoff and #47's 400/100-GB policy are installed. Read the dated
+[RI-CP0 baseline and checkpoint ledger](RESEARCH_INTELLIGENCE.md). Current 4B
+qualification, compatible candidate runtime and operating activation remain
+absent; input/cost diagnosis and operational visibility can progress separately.
+Do not reinstall completed rollouts, repeat CP24 or start new training.
+The earlier records below remain historical proof, with their original limits.
+
+
 # Historical current issue #28: stack installed; operational CP18 in progress
 
 Approved PRs #37-39 are installed at main `9d45f71`. Normal activity reporting
