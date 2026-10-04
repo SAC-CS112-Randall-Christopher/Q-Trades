@@ -1,3 +1,15 @@
+# Temporary storage quota successor - October 3, 2026
+
+Chris explicitly requested increasing the existing temporary research tier from
+100 to 400 decimal GB total. Retained research remains 100 GB. This supersedes
+the historical 100 GB temporary ceiling only for that reviewed successor; new
+plans still default to 100 GB per tier. Preserve root/volume identity, existing
+segments/indexes, accounting, all reserves/retention and unrelated draft owners.
+Use the guarded opt-in updater transition, with original metadata retained and
+the financial writer stopped; do not edit a running frozen plan/marker by hand.
+Source verification and installed acceptance remain separate. Existing explicit
+merge/install/restart authorization rules continue to apply.
+
 # Current work order - issue #28, operational CP18 and CP23
 
 The next milestone is an actually qualified local researcher/reviewer completing

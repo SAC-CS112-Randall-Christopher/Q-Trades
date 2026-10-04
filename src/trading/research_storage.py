@@ -59,7 +59,7 @@ class StoragePlan(BaseModel):
     version: Literal["research-tiers-v2"] = "research-tiers-v2"
     root: str = DEFAULT_ROOT
     volume_identity: str = Field(min_length=8, max_length=150)
-    temporary_bytes: int = Field(default=100 * GB, ge=256 * 1024, le=100 * GB)
+    temporary_bytes: int = Field(default=100 * GB, ge=256 * 1024, le=400 * GB)
     research_bytes: int = Field(default=100 * GB, ge=256 * 1024, le=100 * GB)
     free_reserve_bytes: int = Field(default=5 * 1024**3, ge=0, le=100 * GB)
     scratch_bytes: int = Field(default=128 * 1024**2, ge=128 * 1024, le=512 * 1024**2)
