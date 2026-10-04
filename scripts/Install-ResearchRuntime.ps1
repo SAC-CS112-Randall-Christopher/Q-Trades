@@ -26,6 +26,9 @@ $tradingOwnedHostArguments = @(
     ('"' + $tradingCurrentHostScript + '" --kind models --runtime-profile CpuElastic')
 )
 $tradingExisting = Get-ScheduledTask -TaskName $tradingTaskName -ErrorAction SilentlyContinue
+. (Join-Path $PSScriptRoot 'ResearchRuntimeOwnership.ps1')
+$tradingMaintenance = Enter-ResearchMaintenance (Join-Path $tradingRoot 'data')
+try {
 $tradingOwnedAction = $tradingExisting -and $tradingExisting.Actions.Count -eq 1 -and $tradingExisting.Actions[0].WorkingDirectory -eq $tradingRoot -and (
     ($tradingExisting.Actions[0].Execute -eq 'powershell.exe' -and $tradingExisting.Actions[0].Arguments -in $tradingOwnedArguments) -or
     ($tradingExisting.Actions[0].Execute -eq $tradingHostExecutable -and $tradingExisting.Actions[0].Arguments -in $tradingOwnedHostArguments)
@@ -49,8 +52,14 @@ if ($tradingExistingUsesCurrentHost -and -not (Test-Path -LiteralPath $tradingCu
 if (-not $tradingExisting -or $tradingExisting.Actions[0].Arguments -ne $tradingHostArguments) {
     if (($tradingExisting -and $tradingExisting.State -eq 'Running') -or (Get-NetTCPConnection -LocalPort 11435 -State Listen -ErrorAction SilentlyContinue)) { throw 'Finish research jobs and use Stop-ResearchRuntime.ps1 before changing the runtime profile.' }
     $tradingAction = New-ScheduledTaskAction -Execute $tradingHostExecutable -Argument $tradingHostArguments -WorkingDirectory $tradingRoot
-    $tradingTrigger = New-ScheduledTaskTrigger -AtLogOn -User $tradingIdentity
-    $tradingPrincipal = New-ScheduledTaskPrincipal -UserId $tradingIdentity -LogonType Interactive -RunLevel Limited
+    $tradingTrigger = if ($tradingExisting) { $tradingExisting.Triggers } else {
+        New-ScheduledTaskTrigger -AtLogOn -User $tradingIdentity
+    }
+    $tradingPrincipal = if ($tradingExisting) { $tradingExisting.Principal } else {
+        New-ScheduledTaskPrincipal -UserId $tradingIdentity -LogonType Interactive -RunLevel Limited
+    }
+    if ($tradingExisting -and (-not $tradingPrincipal -or $tradingPrincipal.RunLevel -ne 'Limited' -or
+        $tradingPrincipal.LogonType -ne 'Interactive')) { throw 'Existing principal needs explicit review; preserving the task.' }
     $tradingSettings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable `
         -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew `
         -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
@@ -60,3 +69,6 @@ if (-not $tradingExisting -or $tradingExisting.Actions[0].Arguments -ne $trading
 }
 Start-ScheduledTask -TaskName $tradingTaskName
 Get-ScheduledTask -TaskName $tradingTaskName | Select-Object TaskName, State
+} finally {
+    foreach ($tradingHandle in $tradingMaintenance) { $tradingHandle.Dispose() }
+}
