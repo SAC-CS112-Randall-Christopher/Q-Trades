@@ -899,6 +899,124 @@ class RoleWorker:
             )
         return result
 
+    async def development_answer(self, identity: str, transport: Any) -> Idea | Review:
+        """Answer one normal frozen packet, without advancing its operating stage."""
+        if self.enabled or (self.activation and self.activation()):
+            raise ValueError("Development answers require operating research disabled")
+        task = self.get(identity)
+        if task["stage"] not in {"idea", "review", "followup"} or (
+            task["status"] not in {"queued", "waiting"}
+            or task.get("owner")
+            or task.get("archive_reference")
+        ):
+            raise ValueError("Development requires an idle retained role question")
+        role, packet = self._packet(task)
+        # Development is retained by ordinary history/cost accounting, but cannot
+        # become _answer's qualified operating answer for this task/stage.
+        stage = "development_" + task["stage"]
+        with self.registry.lock:
+            previous = self.registry.db.execute(
+                "SELECT * FROM role_attempts WHERE task=? AND stage=? "
+                "ORDER BY attempt DESC LIMIT 1",
+                (identity, stage),
+            ).fetchone()
+        if previous:
+            if fingerprint(json.loads(previous["packet"])) != fingerprint(packet):
+                raise ValueError(
+                    "Completed development answer belongs to a different frozen packet"
+                )
+            if not previous["response"]:
+                raise ValueError("Previous development completion unknown; no invisible retry")
+            response = json.loads(previous["response"])
+            if not response.get("complete"):
+                raise ValueError("Retained development response is incomplete")
+            return validate(role, response["answer"], packet)
+        profile = await asyncio.to_thread(transport.development_admit, role)
+        if profile.get("development_only") is not True:
+            raise ValueError("Development needs its explicitly frozen separate profile")
+        started = time.time()
+        with self.registry.transaction():
+            current = self.registry.db.execute(
+                "SELECT * FROM role_tasks WHERE id=?", (identity,)
+            ).fetchone()
+            if (
+                not current
+                or current["stage"] != task["stage"]
+                or current["owner"]
+                or (
+                    current["status"] not in {"queued", "waiting"}
+                    or current["archive_reference"]
+                    or fingerprint(json.loads(current["context"])) != fingerprint(task["context"])
+                )
+            ):
+                raise ValueError("Role question changed before development admission")
+            used = self.registry.db.execute(
+                "SELECT coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
+                "FROM role_attempt_allowances WHERE started>=? AND actor IS NULL",
+                (started - 3600,),
+            ).fetchone()
+            if used[0] + profile["timeout_seconds"] > profile["hourly_wall_seconds"] or (
+                used[1] + profile["token_allowance"] > profile["hourly_tokens"]
+            ):
+                raise InputWait("Existing role allowance constrains this development attempt")
+            self.registry.db.execute(
+                "INSERT INTO role_attempts(task,stage,attempt,started,status,profile,packet,"
+                "wall_reserved,tokens_reserved) VALUES(?,?,1,?,'running',?,?,?,?)",
+                (
+                    identity,
+                    stage,
+                    started,
+                    json.dumps(profile),
+                    json.dumps(packet),
+                    profile["timeout_seconds"],
+                    profile["token_allowance"],
+                ),
+            )
+        try:
+            work = asyncio.create_task(asyncio.to_thread(transport.infer, role, packet, profile))
+            cancelled = None
+            try:
+                response = await asyncio.shield(work)
+            except asyncio.CancelledError as interrupted:
+                cancelled = interrupted
+                if hasattr(transport, "cancel"):
+                    transport.cancel()
+                # Retain a response that won the race with cancellation, or wait
+                # for owned termination before releasing this attempt's costs.
+                response = await work
+            body = json.dumps(response, sort_keys=True, allow_nan=False)
+            if len(body.encode()) > 32768:
+                raise ValueError("Development final output exceeds the retained answer bound")
+            with self.registry.transaction():
+                saved = self.registry.db.execute(
+                    "UPDATE role_attempts SET response=?,finished=?,status='answered',"
+                    "wall_reserved=max(wall_reserved,?-started) "
+                    "WHERE task=? AND stage=? AND attempt=1",
+                    (body, time.time(), time.time(), identity, stage),
+                )
+                if saved.rowcount != 1:
+                    raise ValueError("Development answer has no retained attempt; repair required")
+            if not response.get("complete"):
+                raise ValueError("Original development response is incomplete")
+            if cancelled:
+                raise cancelled
+            return validate(role, response["answer"], packet)
+        except BaseException as exc:
+            with self.registry.transaction():
+                self.registry.db.execute(
+                    "UPDATE role_attempts SET finished=?,status='failed',reason=?,"
+                    "wall_reserved=max(wall_reserved,?-started) "
+                    "WHERE task=? AND stage=? AND attempt=1",
+                    (
+                        time.time(),
+                        type(exc).__name__ + ": " + str(exc)[:400],
+                        time.time(),
+                        identity,
+                        stage,
+                    ),
+                )
+            raise
+
     async def _answer(self, task: dict[str, Any]) -> Idea | Review:
         role, packet = self._packet(task)
         with self.registry.lock:
