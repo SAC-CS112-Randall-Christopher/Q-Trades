@@ -47,7 +47,13 @@ function Evaluation({ value }: { value: ObjectValue }) {
     ["evidence_grounded", "Evidence support"],
     ["native_contract_valid", "Native output contract"],
     ["authority_respected", "Financial authority respected"],
+    ["capability_dependency", "Supported capability/dependency choice"],
+    ["comparison_quality", "Comparison/falsification quality"],
   ];
+  const known = new Set([...components.map(([key]) => key), "completed"]);
+  for (const key of new Set(arms.flatMap(([, s]) => Object.keys(s.components || {})))) {
+    if (!known.has(key)) components.push([key, key.replaceAll("_", " ")]);
+  }
   return (
     <>
       <p>
@@ -101,8 +107,7 @@ function Evaluation({ value }: { value: ObjectValue }) {
                 <th>{label}</th>
                 {arms.map(([arm, s]) => (
                   <td key={arm}>
-                    {s.components?.[key] ?? "Unavailable"}/
-                    {s.components_assessed?.[key] ?? "Unavailable"}
+                    {s.components?.[key] === undefined ? "Unavailable in retained rubric" : `${s.components[key]}/${s.components_assessed?.[key] ?? "denominator unavailable"}`}
                   </td>
                 ))}
               </tr>
