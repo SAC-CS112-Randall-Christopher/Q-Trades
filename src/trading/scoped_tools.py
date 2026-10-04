@@ -12,7 +12,7 @@ from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.paper_runtime import PaperRuntime
 from trading.paper_store import PaperStore
 from trading.research_storage import load_plan
-from trading.station import execute_tool, validate_symbol
+from trading.station import HISTORICAL_TOOLS, execute_tool, validate_symbol
 from trading.strategy_diagnosis import cost_diagnosis, input_coverage, interval_start
 from trading.tiered_runtime import TieredPaperRuntime
 
@@ -40,7 +40,7 @@ def run(
 ) -> dict[str, Any]:
     began = time.perf_counter()
     cutoff = time.time()
-    validate_symbol(symbol, runtime)
+    validate_symbol(symbol, runtime, retained=tool in HISTORICAL_TOOLS)
     diagnostic = tool in {"input_diagnosis", "cost_diagnosis"}
     if diagnostic:
         start = interval_start(start, cutoff)

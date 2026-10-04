@@ -13,6 +13,7 @@ from trading.paper_strategy import VARIANTS
 from trading.tiered_runtime import TieredPaperRuntime
 
 VERSION = "scoped-research-tools-v3"
+HISTORICAL_TOOLS = {"input_diagnosis", "cost_diagnosis", "strategy_evidence", "outcome_review"}
 TOOLS = {
     "input_diagnosis": {
         "name": "Diagnose retained input coverage",
@@ -41,7 +42,11 @@ TOOLS = {
 }
 
 
-def validate_symbol(symbol: str, runtime: TieredPaperRuntime) -> None:
+def validate_symbol(symbol: str, runtime: TieredPaperRuntime, *, retained: bool = False) -> None:
+    if retained:
+        if not re.fullmatch(r"[A-Z0-9]{1,21}USD", symbol):
+            raise ValueError("Retained research requires a supported USD market identity")
+        return  # Exact account/evidence membership is checked by the scoped reader.
     if not re.fullmatch(r"[A-Z0-9]{3,24}", symbol) or symbol not in runtime.instruments:
         raise ValueError("Select a known USD market from the scanner")
 
@@ -365,7 +370,7 @@ def execute_tool(
 ) -> dict[str, Any]:
     if tool not in TOOLS:
         raise ValueError("Tool is not registered")
-    validate_symbol(symbol, runtime)
+    validate_symbol(symbol, runtime, retained=tool in HISTORICAL_TOOLS)
     result: dict[str, Any]
     if tool == "market_evidence":
         result = market_evidence(runtime, symbol, account, saved)

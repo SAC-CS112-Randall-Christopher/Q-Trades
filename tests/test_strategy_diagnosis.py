@@ -256,6 +256,8 @@ def test_different_original_versions_do_not_become_one_matched_experiment(pg_sto
         (0, "0", "0", "no_closed_trades"),
         (1, "-4", "2", "negative_before_fees"),
         (1, "2", "1", "positive_after_recorded_fees"),
+        (1, "0", "0", "breakeven_after_recorded_fees"),
+        (1, "0", "2", "cost_dominated"),
     ],
 )
 def test_negative_positive_and_no_trade_results_are_retained(trades, pnl, fees, expected):
@@ -318,3 +320,177 @@ def test_wrong_account_and_absent_accounting_never_use_primary(runtime):
         run(runtime, "cost_diagnosis", "BTCUSD", "absent", "no-fallback")
     with pytest.raises(ValueError, match="Durable accounting"):
         run(runtime, "cost_diagnosis", "BTCUSD", "primary", "no-accounting")
+
+
+@pytest.mark.parametrize("catalog", ["empty", "other_market"])
+def test_retained_input_diagnosis_does_not_require_current_catalog(runtime, tmp_path, catalog):
+    at = time.time() - 30
+    plan = plan_at(tmp_path)
+    save_plan(tmp_path, plan)
+    archive = ResearchStorage(plan)
+    reference = archive.append([packet(at)], at + 0.1)[0]
+    archive.close()
+    if catalog == "empty":
+        runtime.instruments.clear()
+    else:
+        runtime.instruments.pop("BTCUSD")
+    runtime.history.clear()
+    before = copy.deepcopy(runtime.state)
+    result = run(runtime, "input_diagnosis", "BTCUSD", "primary", "retained-original-01")
+    assert result["result"]["rows"][0]["reference"] == reference
+    assert result["envelope"]["security"] == "BTCUSD"
+    assert runtime.state == before and not runtime.stream.records
+
+
+@pytest.mark.parametrize("fault", ["stopped", "error", "stale"])
+def test_retained_diagnosis_api_survives_live_worker_fault_and_reopens(runtime, tmp_path, fault):
+    at = time.time() - 30
+    plan = plan_at(tmp_path)
+    save_plan(tmp_path, plan)
+    archive = ResearchStorage(plan)
+    reference = archive.append([packet(at)], at + 0.1)[0]
+    archive.close()
+    runtime.running = fault != "stopped"
+    runtime.error = "Synthetic live worker error" if fault == "error" else None
+    runtime.state["last_tick"] = time.time() - (20 if fault == "stale" else 0)
+    app = create_app(Settings(), tmp_path / "monitor.sqlite", background=False)
+    with TestClient(app) as client:
+        app.state.paper = runtime
+        body = {
+            "tool": "input_diagnosis",
+            "symbol": "BTCUSD",
+            "account": "primary",
+            "request_id": "retained-during-fault-01",
+        }
+        saved = client.post("/api/research/tools/run", json=body, headers={"X-Local-Operator": "1"})
+        assert saved.status_code == 200, saved.text
+        result = saved.json()
+        assert result["status"] == "completed"
+        assert result["result"]["result"]["rows"][0]["reference"] == reference
+        assert client.get(f"/api/research/tools/runs/{result['id']}").json() == result
+        assert client.get(f"/api/research/tools/runs/{result['id']}/detail").status_code == 200
+        app.state.last_tool_at = 0
+        body.update(tool="market_evidence", request_id="live-read-remains-guarded")
+        assert (
+            client.post(
+                "/api/research/tools/run", json=body, headers={"X-Local-Operator": "1"}
+            ).status_code
+            == 503
+        )
+
+
+def test_compact_cost_diagnosis_retains_whole_account_basis_and_valuation_time(pg_store):
+    store, _ = pg_store
+    snapshot = store.research_account("primary", START + 301)
+    outcomes = store.research_outcomes(snapshot, "BTCUSD", start=START)
+    result = cost_diagnosis(outcomes)["measured"]
+    assert result["account_totals_basis"] == outcomes["account_totals_basis"]
+    assert result["accounting_at"] == outcomes["accounting_at"]
+    assert result["closed_trade_cohort"] == {
+        "account": "primary",
+        "symbol": "BTCUSD",
+        "interval": outcomes["interval"],
+        "basis": "Selected interval/market closed events; not a whole-account period return",
+    }
+
+
+def test_retained_cost_api_without_live_catalog_keeps_native_accounting_and_guards(
+    pg_store, runtime, tmp_path, monkeypatch
+):
+    store, _ = pg_store
+    runtime.store = store
+    runtime.state = store.read()
+    runtime.running = False
+    runtime.error = "Synthetic stopped live reader"
+    runtime.instruments.clear()
+    runtime.history.clear()
+    monkeypatch.setattr("trading.scoped_tools.time.time", lambda: START + 301)
+    app = create_app(Settings(), tmp_path / "monitor.sqlite", background=False)
+    with TestClient(app) as client:
+        app.state.paper = runtime
+        body = {
+            "tool": "cost_diagnosis",
+            "symbol": "BTCUSD",
+            "account": "primary",
+            "start": START,
+            "request_id": "native-retained-cost-01",
+        }
+        assert client.post("/api/research/tools/run", json=body).status_code == 403
+        result = client.post(
+            "/api/research/tools/run", json=body, headers={"X-Local-Operator": "1"}
+        )
+        assert result.status_code == 200, result.text
+        saved = result.json()
+        assert saved["status"] == "completed", saved
+        measured = saved["result"]["result"]["measured"]
+        original = store.research_outcomes(
+            store.research_account("primary", START + 301), "BTCUSD", start=START
+        )
+        assert measured["accounting_at"] == original["accounting_at"]
+        assert measured["account_totals_basis"] == original["account_totals_basis"]
+        assert measured["closed_trade_cohort"]["symbol"] == "BTCUSD"
+        assert client.get(f"/api/research/tools/runs/{saved['id']}").json() == saved
+        assert client.get(f"/api/research/tools/runs/{saved['id']}/detail").status_code == 200
+        app.state.last_tool_at = 0
+        runtime.disk_free = 0
+        body["request_id"] = "native-retained-disk-refusal"
+        assert (
+            client.post(
+                "/api/research/tools/run", json=body, headers={"X-Local-Operator": "1"}
+            ).status_code
+            == 503
+        )
+        assert store.reconcile()["balanced"]
+
+
+def test_unexpected_counter_read_failure_has_terminal_redacted_receipt(
+    runtime, tmp_path, monkeypatch
+):
+    at = time.time() - 30
+    plan = plan_at(tmp_path)
+    save_plan(tmp_path, plan)
+    archive = ResearchStorage(plan)
+    archive.append([packet(at)], at + 0.1)
+    archive.close()
+    runtime.state["last_tick"] = time.time()
+
+    def fail():
+        raise RuntimeError("Synthetic sensitive driver text must not escape")
+
+    monkeypatch.setattr(runtime, "public_request_counts", fail)
+    app = create_app(Settings(), tmp_path / "monitor.sqlite", background=False)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        app.state.paper = runtime
+        result = client.post(
+            "/api/research/tools/run",
+            headers={"X-Local-Operator": "1"},
+            json={
+                "tool": "input_diagnosis",
+                "symbol": "BTCUSD",
+                "request_id": "unexpected-counter-read-01",
+            },
+        )
+        assert result.status_code == 200, result.text
+        receipt = result.json()
+        assert receipt["status"] == "failed" and "RuntimeError" in receipt["error"]
+        assert "sensitive" not in result.text
+        assert client.get(f"/api/research/tools/runs/{receipt['id']}").json() == receipt
+
+
+@pytest.mark.parametrize(
+    "pnl,fees,trades",
+    [
+        (None, "0", 1),
+        ("NaN", "0", 1),
+        ("Infinity", "0", 1),
+        ("bad", "0", 1),
+        ("0", "-1", 1),
+        ("0", None, 1),
+        ("0", "0", -1),
+        ("0", "0", None),
+        ("1", "0", 0),
+    ],
+)
+def test_unknown_or_invalid_cost_cohort_never_gets_a_positive_status(pnl, fees, trades):
+    with pytest.raises(ValueError, match="accounting totals"):
+        cost_diagnosis({"market_totals": {"trades": trades, "net_pnl": pnl, "fees": fees}})
