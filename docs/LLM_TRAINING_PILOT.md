@@ -1,7 +1,7 @@
 # Q-Trades LLM training pilot
 
 Owner: issue #28, existing draft PR #41 (`codex/llm-training-pilot`). October 3,
-2026 continuation integrates main `4c5cb452` and completes the required R1–R7
+2026 continuation integrates main `5cf37d3` and implements the required R1–R7
 operator workflow. CP24 and the prepared v3 study remain frozen. The pilot does
 not replace CP18 qualification or authorize training, installation or activation.
 
@@ -44,7 +44,14 @@ binds source example IDs, exact saved review revisions, dataset, base/profile,
 study/run and local dispatch identities. Its links reopen those frozen reviews
 read-only even after later corrections. Repeated preparation of the same frozen
 selection reopens the original receipt. Interrupted attempts remain visible and
-require an explicit retry; missing archives are reported as unavailable, never
+require an explicit retry. The initial handoff and attempt are committed together.
+Retry claims the next attempt atomically in the existing registry, marks it
+preparing before dispatch, and rechecks the frozen review fingerprint. Concurrent
+callers cannot dispatch the same retry. The registry/financial lock is not held
+while the Lab runs. Legacy interrupted creation with no attempt uses the stored
+creation time for the same bounded wait and records its recovery explicitly.
+Late completion updates only its owned attempt; newer claims/results and full
+history remain intact. Missing archives are reported as unavailable, never
 as newly verified. No partial bundle can overwrite a completed one.
 
 An operator may also reopen a configured existing Lab evaluation. Its original

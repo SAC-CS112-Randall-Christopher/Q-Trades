@@ -2,6 +2,9 @@
 
 import copy
 import json
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, wait
 
 import pytest
 from fastapi.testclient import TestClient
@@ -380,6 +383,163 @@ def test_unavailable_lab_blocks_build_without_partial_acceptance(tmp_path):
     assert refused["stage"] == "refused"
     assert "lab_unavailable" in {p["code"] for p in refused["preflight"]["problems"]}
     assert not workflow.sources()["handoffs"]
+
+
+def failed_handoff(tmp_path, monkeypatch):
+    workflow = local(tmp_path)
+    detail = observed(workflow)
+    workflow.save(detail["id"], review(detail))
+    selection = DatasetSelection(ids=[detail["id"]], train_end=2e9, validation_end=2.1e9)
+
+    def dispatch(request, bundle=None, job_id=None):
+        if request["operation"] == "exposure":
+            return {"problems": [], "limitations": []}, "exposure"
+        raise ValueError("Synthetic initial failed preparation")
+
+    monkeypatch.setattr(workflow.bridge, "configuration", lambda: {"model_sha256": "b" * 64})
+    monkeypatch.setattr(workflow.bridge, "dispatch", dispatch)
+    return workflow, workflow.build(selection)
+
+
+def test_independent_concurrent_retries_claim_one_attempt_before_dispatch(tmp_path, monkeypatch):
+    workflow, failed = failed_handoff(tmp_path, monkeypatch)
+    other = TrainingWorkflow(ExperimentRegistry(workflow.registry.path), None, workflow.market)
+    barrier = threading.Barrier(2)
+    entered, release = threading.Event(), threading.Event()
+    calls = []
+
+    def dispatch(request, bundle=None, job_id=None):
+        if request["operation"] == "exposure":
+            return {"problems": [], "limitations": []}, "exposure"
+        calls.append(job_id)
+        entered.set()
+        assert release.wait(5), "Synthetic bridge was not released"
+        return {"study_id": failed["id"]}, job_id
+
+    for owner in (workflow, other):
+        claim = owner._claim_retry
+
+        def overlap(state, claim=claim):
+            barrier.wait(timeout=5)
+            return claim(state)
+
+        monkeypatch.setattr(owner, "_claim_retry", overlap)
+        monkeypatch.setattr(owner.bridge, "dispatch", dispatch)
+        monkeypatch.setattr(owner.bridge, "configuration", lambda: {"model_sha256": "b" * 64})
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futures = [pool.submit(owner.retry, failed["id"]) for owner in (workflow, other)]
+        try:
+            assert entered.wait(5)
+            done, active = wait(futures, timeout=1)
+            assert len(done) == len(active) == 1
+            with pytest.raises(ValueError, match="bounded request window"):
+                next(iter(done)).result()
+            in_flight = other.result(failed["id"])
+            assert in_flight["stage"] == "preparing"
+            assert in_flight["attempts"][0] == failed["attempts"][0]
+            assert len(in_flight["attempts"]) == 2 and len(calls) == 1
+        finally:
+            release.set()
+        completed = next(iter(active)).result()
+    assert completed["stage"] == "prepared"
+    assert completed["attempts"][1]["job"] == calls[0]
+    assert other.result(failed["id"])["attempts"] == completed["attempts"]
+
+
+def test_initial_claim_and_attempt_commit_together_before_interrupted_dispatch(
+    tmp_path, monkeypatch
+):
+    workflow = local(tmp_path)
+    detail = observed(workflow)
+    workflow.save(detail["id"], review(detail))
+    selection = DatasetSelection(ids=[detail["id"]], train_end=2e9, validation_end=2.1e9)
+    monkeypatch.setattr(workflow.bridge, "configuration", lambda: {"model_sha256": "b" * 64})
+    monkeypatch.setattr(
+        workflow.bridge, "dispatch", lambda *args: ({"problems": [], "limitations": []}, "exposure")
+    )
+
+    def stop(state, bundle, cfg):
+        reopened = workflow.result(state["id"])
+        assert reopened["stage"] == "preparing"
+        assert reopened["attempts"] == state["attempts"] and len(state["attempts"]) == 1
+        raise InterruptedError("Synthetic interruption before dispatch")
+
+    monkeypatch.setattr(workflow, "_prepare", stop)
+    with pytest.raises(InterruptedError):
+        workflow.build(selection)
+    handoff = workflow.sources()["handoffs"][0]
+    with pytest.raises(ValueError, match="bounded request window"):
+        workflow.retry(handoff["id"])
+
+
+def test_legacy_empty_attempt_interruption_is_bounded_and_recovers(tmp_path, monkeypatch):
+    workflow, failed = failed_handoff(tmp_path, monkeypatch)
+    legacy = dict(failed, stage="preparing", attempts=[])
+    with workflow.registry.transaction():
+        workflow.registry.db.execute(
+            "UPDATE training_handoffs SET body=?,created=? WHERE id=?",
+            (json.dumps(legacy), time.time(), failed["id"]),
+        )
+    with pytest.raises(ValueError, match="bounded request window"):
+        workflow.retry(failed["id"])
+    assert workflow.result(failed["id"])["attempts"] == []
+    with workflow.registry.transaction():
+        workflow.registry.db.execute(
+            "UPDATE training_handoffs SET created=? WHERE id=?", (time.time() - 191, failed["id"])
+        )
+
+    def dispatch(request, bundle=None, job_id=None):
+        if request["operation"] == "exposure":
+            return {"problems": [], "limitations": []}, "exposure"
+        return {"study_id": failed["id"]}, job_id
+
+    monkeypatch.setattr(workflow.bridge, "dispatch", dispatch)
+    repaired = workflow.retry(failed["id"])
+    assert repaired["stage"] == "prepared" and len(repaired["attempts"]) == 1
+    assert "Legacy handoff" in repaired["recovery"]["reason"]
+
+
+@pytest.mark.parametrize("newer_finished", [False, True])
+@pytest.mark.parametrize("late_failure", [False, True])
+def test_late_completion_preserves_newer_claim_and_entire_history(
+    tmp_path, monkeypatch, late_failure, newer_finished
+):
+    workflow, failed = failed_handoff(tmp_path, monkeypatch)
+    old = workflow._claim_retry(failed)
+    older_job = old["attempts"][-1]["job"]
+    old["attempts"][-1]["at"] = time.time() - 191
+    with workflow.registry.transaction():
+        workflow.registry.db.execute(
+            "UPDATE training_handoffs SET body=? WHERE id=?", (json.dumps(old), old["id"])
+        )
+    newer = workflow._claim_retry(old)
+    latest_job = newer["attempts"][-1]["job"]
+    receipt = {"study_id": failed["id"], "run_id": latest_job}
+    if newer_finished:
+        workflow._finish(failed["id"], latest_job, receipt=receipt)
+    if late_failure:
+        final = workflow._finish(failed["id"], older_job, reason="Synthetic late failure")
+    else:
+        final = workflow._finish(failed["id"], older_job, receipt={"run_id": older_job})
+    if newer_finished:
+        assert final["stage"] == "prepared" and final["receipt"] == receipt
+        assert final["job_id"] == latest_job
+    else:
+        assert final["stage"] == "preparing" and "receipt" not in final
+    assert len(final["attempts"]) == 3
+    assert final["attempts"][0] == failed["attempts"][0]
+    assert final["attempts"][1]["job"] == older_job
+    assert final["attempts"][1]["superseded"] and final["attempts"][1]["interrupted_at"]
+    assert final["attempts"][2]["job"] == latest_job
+
+
+def test_claim_rechecks_review_fingerprint_before_dispatch(tmp_path, monkeypatch):
+    workflow, failed = failed_handoff(tmp_path, monkeypatch)
+    identity = failed["source_examples"][0]
+    workflow.save(identity, review(workflow.detail(identity), "pending"))
+    with pytest.raises(ValueError, match="Reviewed selection changed"):
+        workflow._claim_retry(failed)
+    assert workflow.result(failed["id"])["attempts"] == failed["attempts"]
 
 
 def test_bearer_access_and_oversized_review_cannot_write(tmp_path):

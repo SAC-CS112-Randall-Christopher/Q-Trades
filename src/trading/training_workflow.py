@@ -457,29 +457,33 @@ class TrainingWorkflow:
         bundle["manifest"]["source_reviews"] = source_reviews
         cfg = self.bridge.configuration()
         identity = uuid.uuid4().hex
+        now = time.time()
         state = {
             "id": identity,
             "stage": "preparing",
             "selection": selection.model_dump(),
             "selection_sha256": key,
-            "attempts": [],
+            "attempts": [{"job": uuid.uuid4().hex, "stage": "requested", "at": now}],
             "source_examples": selection.ids,
             "source_reviews": source_reviews,
             "preflight": check,
         }
         with self.registry.transaction():
+            if self.registry.db.execute(
+                "SELECT 1 FROM training_handoffs WHERE selection_sha256=?", (key,)
+            ).fetchone():
+                raise ValueError("Preparation was claimed by another request; reopen its handoff")
             self.registry.db.execute(
                 "INSERT INTO training_handoffs VALUES (?,?,?,?)",
-                (identity, key, time.time(), packet_json(state)),
+                (identity, key, now, packet_json(state)),
             )
         return self._prepare(state, bundle, cfg)
 
     def _prepare(
         self, state: dict[str, Any], bundle: dict[str, Any], cfg: dict[str, Any]
     ) -> dict[str, Any]:
-        job_id = uuid.uuid4().hex
-        state["attempts"].append({"job": job_id, "stage": "requested", "at": time.time()})
-        self._store(state)
+        # Ownership is committed before dispatch. Never hold the registry lock during Lab work.
+        job_id = state["attempts"][-1]["job"]
         expected = {
             "study_id": state["id"],
             "run_id": job_id,
@@ -493,27 +497,111 @@ class TrainingWorkflow:
             receipt, _ = self.bridge.dispatch(
                 {"operation": "prepare", "expected": expected}, bundle, job_id
             )
-            state.update(stage="prepared", receipt=receipt, job_id=job_id)
-            state["attempts"][-1]["stage"] = "prepared"
         except (ValueError, OSError, KeyError) as exc:
-            state.update(stage="failed", reason=str(exc))
-            state["attempts"][-1].update(stage="failed", reason=str(exc))
-        self._store(state)
+            return self._finish(state["id"], job_id, reason=str(exc))
+        return self._finish(state["id"], job_id, receipt=receipt)
+
+    def _finish(
+        self,
+        identity: str,
+        job_id: str,
+        *,
+        receipt: dict[str, Any] | None = None,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        with self.registry.transaction():
+            state = self._saved(identity)
+            attempt = next((a for a in state["attempts"] if a["job"] == job_id), None)
+            if attempt is None:
+                raise ValueError("Preparation completion has no retained ownership claim")
+            if attempt["stage"] not in {"requested", "interrupted"}:
+                raise ValueError("Preparation attempt already completed; reopen its saved result")
+            outcome = "prepared" if receipt is not None else "failed"
+            attempt.update(stage=outcome, finished=time.time())
+            if receipt is not None:
+                attempt["receipt_sha256"] = fingerprint(receipt)
+            else:
+                attempt["reason"] = reason
+            if state["attempts"][-1]["job"] == job_id:
+                state["stage"] = outcome
+                if receipt is not None:
+                    state.update(receipt=receipt, job_id=job_id)
+                    state.pop("reason", None)
+                else:
+                    state["reason"] = reason
+            else:
+                # Keep the late outcome linked without replacing a newer attempt's result.
+                attempt["superseded"] = True
+            self.registry.db.execute(
+                "UPDATE training_handoffs SET body=? WHERE id=?", (packet_json(state), identity)
+            )
         return state
 
-    def _store(self, state: dict[str, Any]) -> None:
+    def _saved(self, identity: str) -> dict[str, Any]:
+        row = self.registry.db.execute(
+            "SELECT body FROM training_handoffs WHERE id=?", (identity,)
+        ).fetchone()
+        if not row:
+            raise ValueError("Saved preparation is unavailable")
+        state: dict[str, Any] = json.loads(row[0])
+        return state
+
+    def _check_retry(self, state: dict[str, Any], created: float) -> None:
+        if state["stage"] not in {"failed", "preparing"}:
+            raise ValueError("Preparation changed; reopen its saved result")
+        if state["stage"] == "preparing":
+            since = state["attempts"][-1]["at"] if state["attempts"] else created
+            if time.time() - since <= 190:
+                raise ValueError("Preparation remains within its bounded request window")
+
+    def _claim_retry(self, expected: dict[str, Any]) -> dict[str, Any]:
         with self.registry.transaction():
+            state = self._saved(expected["id"])
+            created = self.registry.db.execute(
+                "SELECT created FROM training_handoffs WHERE id=?", (state["id"],)
+            ).fetchone()[0]
+            self._check_retry(state, created)
+            if state["attempts"] != expected["attempts"] or state["stage"] != expected["stage"]:
+                raise ValueError("Preparation changed; reopen its saved result")
+            selection = DatasetSelection.model_validate(state["selection"])
+            rows, problems = self.rows(selection)
+            if (
+                problems
+                or fingerprint({"selection": selection.model_dump(), "rows": rows})
+                != state["selection_sha256"]
+            ):
+                raise ValueError(
+                    "Reviewed selection changed; retain this handoff and build a new one"
+                )
+            now = time.time()
+            if state["attempts"] and state["attempts"][-1]["stage"] == "requested":
+                state["attempts"][-1].update(
+                    stage="interrupted",
+                    interrupted_at=now,
+                    reason="Request window expired; prior dispatched outcome remains unknown",
+                )
+            if not state["attempts"]:
+                state["recovery"] = {
+                    "at": now,
+                    "reason": "Legacy handoff creation interrupted before any attempt was recorded",
+                }
+            state["attempts"].append({"job": uuid.uuid4().hex, "stage": "requested", "at": now})
+            state["stage"] = "preparing"
             self.registry.db.execute(
                 "UPDATE training_handoffs SET body=? WHERE id=?", (packet_json(state), state["id"])
             )
+        return state
 
     def retry(self, identity: str) -> dict[str, Any]:
         state = self.result(identity)
         if state["stage"] not in {"failed", "preparing"}:
             return state
         # A live concurrent request is not retryable; only a bounded expired preparation is.
-        if state["stage"] == "preparing" and time.time() - state["attempts"][-1]["at"] <= 190:
-            raise ValueError("Preparation remains within its bounded request window")
+        with self.registry.lock:
+            created = self.registry.db.execute(
+                "SELECT created FROM training_handoffs WHERE id=?", (identity,)
+            ).fetchone()[0]
+        self._check_retry(state, created)
         selection = DatasetSelection.model_validate(state["selection"])
         rows, problems = self.rows(selection)
         if (
@@ -530,16 +618,13 @@ class TrainingWorkflow:
         )
         if "source_reviews" in state:
             bundle["manifest"]["source_reviews"] = state["source_reviews"]
-        return self._prepare(state, bundle, self.bridge.configuration())
+        cfg = self.bridge.configuration()
+        state = self._claim_retry(state)
+        return self._prepare(state, bundle, cfg)
 
     def result(self, identity: str) -> dict[str, Any]:
         with self.registry.lock:
-            row = self.registry.db.execute(
-                "SELECT body FROM training_handoffs WHERE id=?", (identity,)
-            ).fetchone()
-        if not row:
-            raise ValueError("Saved preparation is unavailable")
-        state: dict[str, Any] = json.loads(row[0])
+            state = self._saved(identity)
         if state["stage"] == "prepared":
             try:
                 receipt = self.bridge.reopen(state["job_id"])
