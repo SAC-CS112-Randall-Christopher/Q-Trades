@@ -1,5 +1,25 @@
 # Current research status — October 4, 2026, issue #48
 
+The six-PR release (#40 and #49–53) is merged and installed at
+`7b062a0222674d62697f88e1f99d67278298a441`. Both merged-main CI jobs passed.
+The authoritative rollout, preservation, UI and capture-incident receipt is
+[issue #48 comment 5985012695](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/48#issuecomment-5985012695).
+That completed release should not be repeated. Its exact historical receipts
+remain below; older draft/uninstalled headings do not describe current dispatch.
+
+The next source work is owner-only capture recovery and the trained-v2 serving
+connection, followed by separately authorized actual development inference.
+The installed model runtime remains stopped and research unqualified/disabled;
+the retained operating samples still refuse inference through engine-work cooldown.
+No new model training, conversion, dashboard expansion or guard relaxation is needed.
+
+The capture repair's isolated proof and compatibility limits are recorded in
+[CAPTURE_RECOVERY.md](reviews/CAPTURE_RECOVERY.md). Source/test delivery is distinct
+from installing that repair. The operational CP18 cycle, CP23 usefulness/sustained
+observations, qualification and operating activation retain their own acceptance.
+
+## Historical source-audit status before the six-PR release
+
 The governing assignment is the F1–F8 source audit repair in
 [issue #48](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/48).
 The refreshed GitHub main and recorded installed baseline are

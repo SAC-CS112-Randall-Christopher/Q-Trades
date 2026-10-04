@@ -9,12 +9,15 @@ import os
 import shutil
 import sqlite3
 import time
-from contextlib import ExitStack, closing
+from collections.abc import Iterator
+from contextlib import ExitStack, closing, contextmanager
 from pathlib import Path
+from threading import RLock
 from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from trading.ownership import CollectorLock
 from trading.research_evidence import MAX_PACKET, canonical, digest
 
 GB = 1_000_000_000
@@ -117,6 +120,69 @@ class ResearchStorage:
     def __init__(self, plan: StoragePlan):
         self.plan = plan
         self.root = Path(plan.root)
+        self._write_lock = RLock()
+        self._write_depth = 0
+        self.recovery = {"segments_checked": 0, "rollbacks": 0}
+        try:
+            with self._exclusive():
+                self._initialize()
+        except BaseException:
+            if hasattr(self, "db"):
+                self.db.close()
+            raise
+
+    @contextmanager
+    def _exclusive(self) -> Iterator[None]:
+        """All application segment writers share this short, crash-released lock."""
+        with self._write_lock:
+            if self._write_depth:
+                yield
+                return
+            self._check_volume()
+            for path in (self.root, *self.root.parents):
+                self._not_redirected(path)
+            if (
+                self.root.exists()
+                and not (self.root / "owned.json").exists()
+                and (
+                    hasattr(self, "db")
+                    or any(p.name != ".capture-owner.lock" for p in self.root.iterdir())
+                )
+            ):
+                raise ValueError("Existing target is not a declared Q-Trades storage root")
+            self.root.mkdir(parents=True, exist_ok=True)
+            lock_path = self.root / ".capture-owner.lock"
+            self._not_redirected(lock_path)
+            owner = CollectorLock(lock_path)
+            try:
+                owner.acquire()
+            except RuntimeError as exc:
+                raise OSError(
+                    "Capture recovery busy: another storage writer owns this root"
+                ) from exc
+            try:
+                marker = self.root / "owned.json"
+                self._not_redirected(marker)
+                if marker.exists() and json.loads(marker.read_text()) != {
+                    "plan_sha256": digest(self.plan.model_dump()),
+                    "version": self.plan.version,
+                }:
+                    raise ValueError("Owned storage marker differs; no replacement inferred")
+                self._write_depth = 1
+                yield
+            finally:
+                self._write_depth = 0
+                owner.release()
+
+    @staticmethod
+    def _not_redirected(path: Path) -> None:
+        if path.is_symlink() or (
+            path.exists() and os.name == "nt" and path.stat().st_file_attributes & 0x400
+        ):
+            raise OSError("Capture recovery foreign: redirected owned path")
+
+    def _initialize(self) -> None:
+        plan = self.plan
         self._check_volume()
         # Refuse redirected subtree components and an unowned preexisting directory.
         for p in (self.root, *self.root.parents):
@@ -129,7 +195,7 @@ class ResearchStorage:
                 raise ValueError("Research root cannot traverse a redirected/reparse directory")
         if (
             self.root.exists()
-            and any(self.root.iterdir())
+            and any(p.name != ".capture-owner.lock" for p in self.root.iterdir())
             and not (self.root / "owned.json").exists()
         ):
             raise ValueError("Existing target is not a declared Q-Trades storage root")
@@ -147,6 +213,8 @@ class ResearchStorage:
         self.temporary, self.research = self.root / "temporary", self.root / "research"
         self.temporary.mkdir(exist_ok=True)
         self.research.mkdir(exist_ok=True)
+        for suffix in ("", "-wal", "-shm", "-journal"):
+            self._not_redirected(self.research / ("storage-index.sqlite" + suffix))
         self.db = sqlite3.connect(
             self.research / "storage-index.sqlite", timeout=0.1, check_same_thread=False
         )
@@ -205,14 +273,24 @@ class ResearchStorage:
             )
         # A segment commit may precede a lost index acknowledgment. Reconcile only
         # active/orphan segments, never reinterpret their original availability.
+        for row in self.db.execute("SELECT id FROM storage_segments WHERE state='active'"):
+            if not self._path(row[0]).is_file():
+                raise OSError("Capture recovery missing: an active segment is absent")
         for path in self.temporary.glob("segment-*.sqlite"):
-            number = int(path.stem.split("-")[1])
+            suffix = path.stem.removeprefix("segment-")
+            if not suffix.isdecimal() or len(suffix) != 12 or int(suffix) <= 0:
+                raise ValueError("Capture recovery foreign: unexpected segment name")
+            number = int(suffix)
+            if path != self._path(number):
+                raise ValueError("Capture recovery foreign: noncanonical segment name")
             saved = self.db.execute(
                 "SELECT state FROM storage_segments WHERE id=?", (number,)
             ).fetchone()
             if saved is not None and saved[0] != "active":
                 continue
-            with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as source:
+            if self.recovery["segments_checked"] >= 8:
+                raise OSError("Capture recovery pending: eight segments reconciled; retry startup")
+            with self._recovery_source(path, number, indexed=saved is not None) as source:
                 with self.db:
                     self.db.execute(
                         (
@@ -226,9 +304,17 @@ class ResearchStorage:
                     for record, sha, body in source.execute(
                         "SELECT id,sha,body FROM records ORDER BY id"
                     ):
+                        if not isinstance(body, str) or len(body.encode()) > MAX_PACKET:
+                            raise ValueError("Capture recovery corrupt: record exceeds its bound")
                         value = json.loads(body)
                         if digest(value) != sha:
                             raise ValueError("Interrupted capture checksum differs")
+                        if not isinstance(value, dict) or (
+                            type(value.get("at")) not in (int, float)
+                            or not math.isfinite(value["at"])
+                            or not isinstance(value.get("kind"), str)
+                        ):
+                            raise ValueError("Capture recovery corrupt: record metadata differs")
                         self.db.execute(
                             "INSERT OR IGNORE INTO storage_records"
                             "(sha,segment,record,at,kind,available,bytes) VALUES(?,?,?,?,?,?,?)",
@@ -263,12 +349,90 @@ class ResearchStorage:
                         ),
                         (count, size, first, last, number),
                     )
+                self.recovery["segments_checked"] += 1
         with self.db:
             self.db.execute(
                 "UPDATE storage_state SET rows=(SELECT count(*) FROM storage_"
                 "records),last_capture=(SELECT max(at) FROM storage_records) "
                 "WHERE id=1"
             )
+
+    def _segment_marker(self, number: int) -> Path:
+        return self._path(number).with_suffix(".owner.json")
+
+    def _segment_identity(self, number: int) -> dict[str, Any]:
+        return {
+            "format": "capture-segment-owner-v1",
+            "segment": number,
+            "root_sha256": digest(
+                str(self.root.resolve()).casefold() if os.name == "nt" else str(self.root.resolve())
+            ),
+            "storage_version": self.plan.version,
+            "volume_identity": self.plan.volume_identity,
+        }
+
+    def _declare_segment(self, number: int) -> None:
+        marker = self._segment_marker(number)
+        self._not_redirected(marker)
+        expected = self._segment_identity(number)
+        if marker.exists():
+            if json.loads(marker.read_text()) != expected:
+                raise ValueError("Capture recovery foreign: segment ownership differs")
+            return
+        # This durable intent precedes creation/writes, including a lost index commit.
+        with marker.open("x", encoding="utf-8") as out:
+            out.write(canonical(expected))
+            out.flush()
+            os.fsync(out.fileno())
+
+    @contextmanager
+    def _recovery_source(
+        self, path: Path, number: int, *, indexed: bool
+    ) -> Iterator[sqlite3.Connection]:
+        for candidate in (
+            path,
+            path.with_name(path.name + "-journal"),
+            self._segment_marker(number),
+        ):
+            self._not_redirected(candidate)
+        marker = self._segment_marker(number)
+        owned = marker.exists()
+        if owned and json.loads(marker.read_text()) != self._segment_identity(number):
+            raise ValueError("Capture recovery foreign: segment ownership differs")
+        if not (owned or indexed):
+            raise ValueError("Capture recovery foreign: orphan has no durable owner intent")
+        for suffix in ("-wal", "-shm"):
+            if path.with_name(path.name + suffix).exists():
+                raise ValueError("Capture recovery foreign: segment has unexpected WAL files")
+        if path.stat().st_size > 2 * max(self.plan.segment_bytes, MAX_PACKET) + 131072:
+            raise ValueError("Capture recovery corrupt: segment exceeds its bounded size")
+        source = sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=0.1)
+        try:
+            try:
+                source.execute("SELECT id FROM records LIMIT 1").fetchone()
+            except sqlite3.OperationalError as exc:
+                if exc.sqlite_errorcode != sqlite3.SQLITE_READONLY_ROLLBACK:
+                    raise
+                self.recovery["rollbacks"] += 1
+            source.close()
+            # Non-creating and restricted to the verified owner's startup. The
+            # reservation also refuses a competing SQLite writer outside our lock.
+            # SQLite performs any rollback; no journal/record is manually edited.
+            source = sqlite3.connect(path.as_uri() + "?mode=rw", uri=True, timeout=0.1)
+            source.execute("BEGIN IMMEDIATE")
+            source.execute("PRAGMA query_only=ON")
+            if source.execute("PRAGMA quick_check(1)").fetchone()[0] != "ok":
+                raise ValueError("Capture recovery corrupt: segment integrity check failed")
+            yield source
+        except sqlite3.Error as exc:
+            state = (
+                "busy"
+                if exc.sqlite_errorcode in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED)
+                else "corrupt"
+            )
+            raise OSError(f"Capture recovery {state}: segment could not be reconciled") from exc
+        finally:
+            source.close()
 
     def _check_volume(self) -> dict[str, Any]:
         for path in (self.root, self.root / "temporary", self.root / "research"):
@@ -304,6 +468,10 @@ class ResearchStorage:
         return self.temporary / f"segment-{number:012d}.sqlite"
 
     def continue_legacy(self, path: Path) -> None:
+        with self._exclusive():
+            self._continue_legacy(path)
+
+    def _continue_legacy(self, path: Path) -> None:
         if not path.exists():
             return
         with closing(sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True)) as source:
@@ -317,6 +485,10 @@ class ResearchStorage:
                 )
 
     def continue_compact(self, path: Path) -> Path:
+        with self._exclusive():
+            return self._continue_compact(path)
+
+    def _continue_compact(self, path: Path) -> Path:
         destination = self.research / "memory-episodes.sqlite"
         if destination.exists() or not path.exists():
             return destination
@@ -337,6 +509,12 @@ class ResearchStorage:
         return destination
 
     def append(
+        self, packets: list[dict[str, Any]], now: float, *, defer_retention: bool = False
+    ) -> list[str]:
+        with self._exclusive():
+            return self._append(packets, now, defer_retention=defer_retention)
+
+    def _append(
         self, packets: list[dict[str, Any]], now: float, *, defer_retention: bool = False
     ) -> list[str]:
         if len(packets) > 8:
@@ -383,6 +561,8 @@ class ResearchStorage:
                 # no copied live WAL. Its commit is verified again before retirement.
                 segment = segments.get(number)
                 if segment is None:
+                    self._not_redirected(self._path(number))
+                    self._declare_segment(number)
                     segment = opened.enter_context(
                         closing(sqlite3.connect(self._path(number), timeout=0.1))
                     )
@@ -498,6 +678,10 @@ class ResearchStorage:
         return refs
 
     def protect(self, reference: str, until_at: float, reason: str) -> None:
+        with self._exclusive():
+            self._protect(reference, until_at, reason)
+
+    def _protect(self, reference: str, until_at: float, reason: str) -> None:
         number, _, _ = self.parse_reference(reference)
         self.reopen(reference)  # Never accept an unresolvable dependency.
         with self.db:
@@ -563,6 +747,10 @@ class ResearchStorage:
             return hashlib.file_digest(source, "sha256").hexdigest()
 
     def housekeeping(self, now: float, *, capacity_triggered: bool = False) -> dict[str, Any]:
+        with self._exclusive():
+            return self._housekeeping(now, capacity_triggered=capacity_triggered)
+
+    def _housekeeping(self, now: float, *, capacity_triggered: bool = False) -> dict[str, Any]:
         self._check_volume()
         try:
             # This index transaction is also the cross-process housekeeping lease.
@@ -673,10 +861,19 @@ class ResearchStorage:
                 if self.file_sha(target) != row["retained_sha"]:
                     raise ValueError("Destination differs; last source preserved")
                 path = self._path(row["id"])
+                marker = self._segment_marker(row["id"])
+                self._not_redirected(path)
+                self._not_redirected(marker)
+                if marker.exists() and json.loads(marker.read_text()) != self._segment_identity(
+                    row["id"]
+                ):
+                    raise ValueError("Capture recovery foreign: segment ownership differs")
                 if path.exists():
                     size = path.stat().st_size
                     path.unlink()
                     reclaimed += size
+                if marker.exists():
+                    marker.unlink()
                 self.db.execute(
                     "UPDATE storage_segments SET reclaimed_at=? WHERE id=?", (now, row["id"])
                 )
@@ -730,6 +927,7 @@ class ResearchStorage:
         ).fetchone()[0]
         return {
             "version": self.plan.version,
+            "recovery": self.recovery,
             "state": "recording",
             "plan": self.plan.model_dump(),
             "temporary_path": str(self.temporary),
