@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import sqlite3
 import subprocess
 import sys
 import sysconfig
@@ -17,6 +18,7 @@ from trading.memory_dataset import corpus_snapshot
 from trading.numerical_resources import child_rss, constrain_child
 from trading.research_campaigns import ResearchCampaigns
 from trading.research_data import quote_snapshot
+from trading.research_notices import CHECK_SECONDS, ResearchNotices
 from trading.research_storage import compact_path
 
 WALL_SECONDS = 25
@@ -33,6 +35,10 @@ class ExperimentLab:
         self.child: subprocess.Popen[bytes] | None = None
         self.autonomous: Any = None
         self.roles: Any = None
+        self.notices = ResearchNotices(self.registry)
+        self.notice_source: Callable[[], list[dict[str, Any]]] | None = None
+        self.notice_error: str | None = None
+        self._next_notice_check = 0.0
         self.campaigns = ResearchCampaigns(self.registry, self.enqueue, code_fingerprint)
         from trading.prospective_review import ProspectiveReview
 
@@ -217,6 +223,17 @@ class ExperimentLab:
         self.running = True
         try:
             while True:
+                if self.notice_source is not None and time.monotonic() >= self._next_notice_check:
+                    self._next_notice_check = time.monotonic() + CHECK_SECONDS
+                    try:
+                        conditions = self.notice_source()
+                        await asyncio.to_thread(self.notices.observe, conditions, time.time())
+                        self.notice_error = None
+                    except (sqlite3.Error, OSError, ValueError):
+                        self.notice_error = (
+                            "Operational notice persistence unavailable; "
+                            "retained states are unconfirmed. Paper authority is unchanged."
+                        )
                 if self.autonomous is not None:
                     await asyncio.to_thread(self.autonomous.step)
                 if self.can_research():

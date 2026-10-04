@@ -40,10 +40,12 @@ type SavedRequest = { body: Question; phase: "unknown" | "rejected"; message?: s
 const stamp = (seconds: number) => new Date(seconds * 1000).toLocaleString();
 const stages: Record<string, string> = { idea: "Model investigation", evaluate: "Compute method check", archive_evaluation: "Save exact inputs", review: "Independent review", submit: "Ordinary paper admission", outcome: "Await comparison outcome", followup: "Supported follow-up", data_wait: "Await required data", complete: "Research complete" };
 
+const linkedTask = () => new URLSearchParams(location.hash.split("?")[1] ?? "").get("task");
+
 export function RoleResearchPanel() {
   const [state, setState] = useState<RoleState | null>(null);
   const [task, setTask] = useState<Task | null>(null);
-  const [selected, setSelected] = useState(() => localStorage.getItem("qtrades-role-task") ?? "");
+  const [selected, setSelected] = useState(() => linkedTask() ?? localStorage.getItem("qtrades-role-task") ?? "");
   const [before, setBefore] = useState(0);
   const [beforeId, setBeforeId] = useState("");
   const [search, setSearch] = useState("");
@@ -89,7 +91,14 @@ export function RoleResearchPanel() {
     setSelected(id);
     localStorage.setItem("qtrades-role-task", id);
     setRefresh(r => r + 1);
+    const params = new URLSearchParams({ task: id });
+    location.hash = `role-research?${params}`;
   };
+  useEffect(() => {
+    const restore = () => { const id = linkedTask(); if (id !== null) { setTask(null); setSelected(id); } };
+    window.addEventListener("hashchange", restore);
+    return () => window.removeEventListener("hashchange", restore);
+  }, []);
   const remember = (saved: SavedRequest) => {
     localStorage.setItem("qtrades-role-question-retry", JSON.stringify(saved)); setRetry(saved);
   };

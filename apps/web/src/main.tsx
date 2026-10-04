@@ -32,6 +32,7 @@ import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
 import { RoleResearchPanel } from "./RoleResearchPanel";
 import { ResearchActivity } from "./ResearchActivity";
+import { ResearchAttention } from "./ResearchAttention";
 import { AutonomousPanel } from "./AutonomousPanel";
 import { EvidencePanel } from "./EvidencePanel";
 import { ReadinessPanel } from "./ReadinessPanel";
@@ -175,19 +176,21 @@ function App() {
   const searchInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const update = () => {
+      const hash = location.hash.split("?")[0];
       setPage(currentPage());
       setMenuOpen(false);
       setSearchOpen(false);
-      if (location.hash === "#model-lab") setLabTab("models");
-      else if (location.hash === "#role-research") setLabTab("roles");
-      else if (location.hash === "#forward-learning") setLabTab("learning");
-      else if (location.hash === "#experiment-lab") setLabTab("experiments");
+      if (hash === "#model-lab") setLabTab("models");
+      else if (hash === "#role-research") setLabTab("roles");
+      else if (hash === "#forward-learning") setLabTab("learning");
+      else if (hash === "#experiment-lab") setLabTab("experiments");
+      else if (hash === "#research") setLabTab("autonomous");
       else if (
         location.hash === "#training-data" ||
         location.hash.startsWith("#teaching:") || location.hash.startsWith("#lab-result:") || location.hash.startsWith("#lab-comparison:")
       )
         setLabTab("training");
-      if (location.hash === "#live-readiness") setRiskTab("readiness");
+      if (hash === "#live-readiness") setRiskTab("readiness");
       window.scrollTo({ top: 0, behavior: "instant" });
     };
     update();
@@ -568,6 +571,7 @@ function App() {
           {page === "dashboard" && (
             <>
               <DashboardView paper={paper} unavailable={unavailable} />
+              <ResearchAttention />
             </>
           )}
           {page === "accounts" && (
@@ -590,6 +594,7 @@ function App() {
           {page === "ai-lab" && (
             <>
               <ResearchActivity />
+              <ResearchAttention />
               <div className="workspace-tabs" aria-label="AI Lab views">
                 {[
                   ["autonomous", "Continuous paper lab"],

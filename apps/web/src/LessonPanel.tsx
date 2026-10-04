@@ -26,6 +26,11 @@ export function LessonPanel({ openTask }: {openTask: (id: string) => void}) {
       setDetail(await r.json()); setError(null);
     } catch(e) { setError(String(e)); }
   };
+  useEffect(() => {
+    const restore = () => { const id = new URLSearchParams(location.hash.split("?")[1] ?? "").get("lesson"); if (id) void inspect(id); };
+    restore(); window.addEventListener("hashchange", restore);
+    return () => window.removeEventListener("hashchange", restore);
+  }, []);
   return <section aria-label="Supported research lessons"><h3>Supported lessons and next research</h3>
     <p>These notes cite recorded comparisons. Opening a note records outcome disclosure; access does not add statistical support.</p>
     <label>Find mechanism or source <input maxLength={200} value={text} onChange={e => {setText(e.target.value); setBefore(0);}} /></label>
