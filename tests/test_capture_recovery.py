@@ -225,3 +225,34 @@ def test_noncanonical_numeric_segment_name_is_foreign(tmp_path):
     with pytest.raises(ValueError, match="noncanonical"):
         ResearchStorage(plan)
     assert foreign.read_bytes() == before
+
+
+def test_lost_index_reconciliation_restores_original_pending_outcome_protection(tmp_path):
+    plan = plan_at(tmp_path)
+    value = packet(1_800_000_000, protected_until=1_800_086_400)
+    with closing(ResearchStorage(plan)) as owner:
+        reference = owner.append([value], value["at"], defer_retention=True)[0]
+        path = owner._path(1)
+    forget_index(plan)
+    with sqlite3.connect(path.parent.parent / "research/storage-index.sqlite") as db:
+        db.execute("DELETE FROM storage_pins")
+    interrupt_segment(path)
+    with closing(ResearchStorage(plan)) as owner:
+        assert owner.reopen(reference) == value
+        assert tuple(
+            owner.db.execute("SELECT reference,until_at FROM storage_pins").fetchone()
+        ) == (
+            reference,
+            value["protected_until"],
+        )
+        assert (
+            owner.db.execute("SELECT pin_until FROM storage_segments").fetchone()[0]
+            == value["protected_until"]
+        )
+        # A later explicitly extended pin is never shortened by another startup.
+        owner.protect(reference, value["protected_until"] + 1000, "Procedural extended dependency")
+    with closing(ResearchStorage(plan)) as owner:
+        assert (
+            owner.db.execute("SELECT until_at FROM storage_pins").fetchone()[0]
+            == value["protected_until"] + 1000
+        )

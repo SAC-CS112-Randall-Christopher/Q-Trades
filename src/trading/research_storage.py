@@ -338,6 +338,9 @@ class ResearchStorage:
                                 len(body.encode()),
                             ),
                         )
+                        self._pin_packet(
+                            value, f"capture-v2:{number}:{record}:{sha}", number, time.time()
+                        )
                         count += 1
                         size += len(body.encode())
                         first = value["at"] if first is None else first
@@ -466,6 +469,19 @@ class ResearchStorage:
 
     def _path(self, number: int) -> Path:
         return self.temporary / f"segment-{number:012d}.sqlite"
+
+    def _pin_packet(self, packet: dict[str, Any], reference: str, number: int, now: float) -> None:
+        until = packet.get("protected_until", 0)
+        if isinstance(until, (int, float)) and math.isfinite(until) and until > now:
+            self.db.execute(
+                "INSERT INTO storage_pins VALUES(?,?,?,?) ON CONFLICT(reference) "
+                "DO UPDATE SET until_at=max(until_at,excluded.until_at)",
+                (reference, number, until, "Declared pending research dependencies"),
+            )
+            self.db.execute(
+                "UPDATE storage_segments SET pin_until=max(pin_until,?) WHERE id=?",
+                (until, number),
+            )
 
     def continue_legacy(self, path: Path) -> None:
         with self._exclusive():
@@ -628,16 +644,7 @@ class ResearchStorage:
                         size,
                     ),
                 )
-                until = packet.get("protected_until", 0)
-                if isinstance(until, (int, float)) and math.isfinite(until) and until > now:
-                    self.db.execute(
-                        "INSERT OR IGNORE INTO storage_pins VALUES(?,?,?,?)",
-                        (refs[-1], number, until, "Declared pending research dependencies"),
-                    )
-                    self.db.execute(
-                        "UPDATE storage_segments SET pin_until=max(pin_until,?) WHERE id=?",
-                        (until, number),
-                    )
+                self._pin_packet(packet, refs[-1], number, now)
                 if packet.get("kind") == "summary":
                     for symbol, market in packet.get("markets", {}).items():
                         midpoint = market.get("mid")
