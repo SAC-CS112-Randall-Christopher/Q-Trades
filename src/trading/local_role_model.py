@@ -168,14 +168,24 @@ class LocalRoles:
                 "next_action": "Operating activation requires its separate explicit authorization",
             },
         }
-        result: dict[str, Any] = {"qualified": False, "enabled": False, "stages": stages}
+        result: dict[str, Any] = {
+            "qualified": False, "qualification_valid": False, "runtime_available": False,
+            "ready": False, "enabled": False, "stages": stages,
+        }
         try:
             profile = self.policy()
             if "model" not in profile:
                 result["reason"] = "No declared model policy or current contract qualification"
                 return result
             stages["policy"]["state"] = "verified"
+            stages["policy"]["next_action"] = (
+                "Preserve this declared profile; dispatch verifies it again"
+            )
             stages["activation"]["state"] = "enabled" if profile["enabled"] else "disabled"
+            if profile["enabled"]:
+                stages["activation"]["next_action"] = (
+                    "Policy is enabled; dispatch still requires every other prerequisite"
+                )
             result.update(
                 enabled=profile["enabled"],
                 model=profile["model"],
@@ -192,16 +202,33 @@ class LocalRoles:
             result["roles"] = ready
             qualified = all(r["qualified"] for r in ready.values())
             stages["qualification"]["state"] = "qualified" if qualified else "unqualified"
+            result["qualification_valid"] = qualified
+            if qualified:
+                stages["qualification"]["next_action"] = (
+                    "Retain current verified role receipts; dispatch rechecks their exact identity"
+                )
             # A stopped listener must not hide missing or independently valid receipts.
             try:
                 result["observed"] = self.observe(profile)
                 stages["runtime"]["state"] = "verified"
+                stages["runtime"]["next_action"] = (
+                    "Runtime identity is verified; dispatch rechecks availability and placement"
+                )
+                result["runtime_available"] = True
                 result["qualified"] = qualified
+                result["ready"] = qualified and profile["enabled"]
             except httpx.HTTPError as exc:
                 stages["runtime"]["state"] = "unavailable"
+                stages["runtime"]["next_action"] = (
+                    "Recover the exact owned dedicated runtime after applicable start authorization"
+                )
                 result["reason"] = str(exc)[:300]
             except (ValueError, OSError, KeyError) as exc:
                 stages["runtime"]["state"] = "mismatch"
+                stages["runtime"]["next_action"] = (
+                    "Reconcile runtime/profile identity; existing receipts do not "
+                    "qualify a changed profile"
+                )
                 result["reason"] = str(exc)[:300]
             return result
         except (httpx.HTTPError, ValueError, OSError, KeyError) as exc:

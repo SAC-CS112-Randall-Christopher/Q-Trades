@@ -7,10 +7,12 @@ import logging
 import os
 import shutil
 import time
+import uuid
 from collections import deque
 from contextlib import suppress
 from decimal import Decimal
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from trading.compact_memory import linked_events
@@ -53,7 +55,9 @@ class TieredPaperRuntime(PaperRuntime):
         self._rest_retry_at = 0.0
         self._rest_requests: dict[str, dict[str, float]] = {}
         self._fallback_counts: dict[str, dict[str, int]] = {}
+        self._fallback_count_lock = RLock()
         self._fallback_count_started = time.time()
+        self._fallback_count_epoch = uuid.uuid4().hex
         self._bars_added = 0
         self._notice_queue: list[dict[str, Any]] = []
         self._last_sources: dict[str, str] = {}
@@ -242,7 +246,7 @@ class TieredPaperRuntime(PaperRuntime):
 
     async def _rest_book(self, symbol: str) -> None:
         counts = self._fallback_count_row(symbol)
-        counts["requested"] += 1
+        self._add_fallback_counts(counts, "requested")
         try:
             sent, mono = time.time(), time.monotonic()
             self._rest_requests[symbol] = {"request_sent_at": sent, "request_sent_mono": mono}
@@ -282,16 +286,16 @@ class TieredPaperRuntime(PaperRuntime):
             )
             self.feed_errors.pop(symbol, None)
             self.stream.changed.set()
-            counts["accepted"] += 1
+            self._add_fallback_counts(counts, "accepted")
         except asyncio.CancelledError:
-            counts["cancelled_unknown"] += 1
+            self._add_fallback_counts(counts, "cancelled_unknown")
             raise
         except FeedError as exc:
-            counts["failed"] += 1
+            self._add_fallback_counts(counts, "failed")
             self.feed_errors[symbol] = exc.reason
             self._rest_retry_at = time.time() + max(5, exc.retry_after)
         except (ValueError, KeyError, ArithmeticError) as exc:
-            counts["rejected"] += 1
+            self._add_fallback_counts(counts, "rejected")
             self.feed_errors[symbol] = str(exc)
         finally:
             self._rest_requests.pop(symbol, None)
@@ -300,37 +304,48 @@ class TieredPaperRuntime(PaperRuntime):
             self._fallback_at[symbol] = time.monotonic() + interval
 
     def _fallback_count_row(self, symbol: str) -> dict[str, int]:
-        if symbol not in self._fallback_counts and len(self._fallback_counts) >= 64:
-            symbol = "overflow"
-        return self._fallback_counts.setdefault(
-            symbol,
-            dict.fromkeys(
-                (
-                    "checks",
-                    "due",
-                    "retry_wait",
-                    "inflight_wait",
-                    "spacing_wait",
-                    "healthy_stream",
-                    "requested",
-                    "accepted",
-                    "failed",
-                    "rejected",
-                    "cancelled_unknown",
+        with self._fallback_count_lock:
+            if symbol not in self._fallback_counts and len(self._fallback_counts) >= 64:
+                symbol = "overflow"
+            return self._fallback_counts.setdefault(
+                symbol,
+                dict.fromkeys(
+                    (
+                        "checks",
+                        "due",
+                        "retry_wait",
+                        "inflight_wait",
+                        "spacing_wait",
+                        "healthy_stream",
+                        "requested",
+                        "accepted",
+                        "failed",
+                        "rejected",
+                        "cancelled_unknown",
+                    ),
+                    0,
                 ),
-                0,
-            ),
-        )
+            )
+
+    def _add_fallback_counts(self, row: dict[str, int], *fields: str) -> None:
+        with self._fallback_count_lock:
+            for field in fields:
+                row[field] += 1
 
     def public_request_counts(self) -> dict[str, Any]:
+        # Independent per-producer observations, each with its own capture time.
+        transport = self.venue.request_counts() if isinstance(self.venue, PublicVenue) else None
+        with self._fallback_count_lock:
+            rows = {key: dict(row) for key, row in self._fallback_counts.items()}
+            observed = time.time()
         return {
-            "transport": (
-                self.venue.request_counts() if isinstance(self.venue, PublicVenue) else None
-            ),
+            "transport": transport,
             "fallback": {
                 "started_at": self._fallback_count_started,
-                "observed_at": time.time(),
-                "rows": {key: dict(row) for key, row in self._fallback_counts.items()},
+                "epoch": self._fallback_count_epoch,
+                "observed_at": observed,
+                "rows": rows,
+                "observation_boundary": "Atomic copy between transitions for this producer",
                 "basis": "Scheduling-loop checks are not transport sends; accepted means "
                 "original fallback eligibility checks passed; at most 64 keys plus overflow.",
             },
@@ -345,23 +360,22 @@ class TieredPaperRuntime(PaperRuntime):
         due = []
         for symbol in self.stream.plan:
             counts = self._fallback_count_row(symbol)
-            counts["checks"] += 1
             if retry:
-                counts["retry_wait"] += 1
+                self._add_fallback_counts(counts, "checks", "retry_wait")
                 continue
             if symbol in self._rest_requests:
-                counts["inflight_wait"] += 1
+                self._add_fallback_counts(counts, "checks", "inflight_wait")
                 continue
             if mono < self._fallback_at.get(symbol, 0):
-                counts["spacing_wait"] += 1
+                self._add_fallback_counts(counts, "checks", "spacing_wait")
                 continue
             stream = checks.get("markets", {}).get(symbol, {})
             remaining = stream.get("freshness_limit_ms", 0) - stream.get("freshness_score_ms", 0)
             if symbol not in fresh or remaining <= FALLBACK_REFRESH_LEAD_MS:
                 due.append(symbol)
-                counts["due"] += 1
+                self._add_fallback_counts(counts, "checks", "due")
             else:
-                counts["healthy_stream"] += 1
+                self._add_fallback_counts(counts, "checks", "healthy_stream")
         return due
 
     async def _fallback_loop(self) -> None:

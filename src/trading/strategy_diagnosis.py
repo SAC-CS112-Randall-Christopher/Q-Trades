@@ -201,18 +201,31 @@ def input_coverage(
 
 def cost_diagnosis(outcomes: dict[str, Any]) -> dict[str, Any]:
     totals = outcomes["market_totals"]
-    net, fees = Decimal(totals["net_pnl"]), Decimal(totals["fees"])
-    if not net.is_finite() or not fees.is_finite() or fees < 0:
+    try:
+        net, fees = Decimal(totals["net_pnl"]), Decimal(totals["fees"])
+        trades = totals["trades"]
+    except (TypeError, KeyError, ArithmeticError) as exc:
+        raise ValueError("Original accounting totals are unavailable or invalid") from exc
+    if (
+        not net.is_finite()
+        or not fees.is_finite()
+        or fees < 0
+        or type(trades) is not int
+        or trades < 0
+        or trades == 0
+        and (net != 0 or fees != 0)
+    ):
         raise ValueError("Original accounting totals are invalid")
     gross = net + fees
-    trades = int(totals["trades"])
     status = (
         "no_closed_trades"
         if trades == 0
         else "cost_dominated"
-        if gross > 0 and net <= 0
+        if gross >= 0 and net < 0 or gross > 0 and net == 0
         else "negative_before_fees"
-        if gross <= 0 and net < 0
+        if gross < 0
+        else "breakeven_after_recorded_fees"
+        if net == 0
         else "positive_after_recorded_fees"
     )
     account_totals = outcomes["account_totals"]
@@ -246,6 +259,18 @@ def cost_diagnosis(outcomes: dict[str, Any]) -> dict[str, Any]:
             "net_basis": "Original net P/L already includes fees; no second subtraction",
             "gross_basis": "Net plus recorded fees; spread/slippage already embedded in fills",
             "whole_account": account_totals,
+            "account_totals_basis": outcomes.get(
+                "account_totals_basis", "Original whole-account basis is unavailable"
+            ),
+            "accounting_at": outcomes.get("accounting_at"),
+            "closed_trade_cohort": {
+                "account": outcomes.get("account"),
+                "symbol": outcomes.get("symbol"),
+                "interval": outcomes.get("interval"),
+                "basis": (
+                    "Selected interval/market closed events; not a whole-account period return"
+                ),
+            },
             "open_holdings": holdings,
             "pending_orders": outcomes["pending_orders"],
             "original_cost_groups": rows,

@@ -56,7 +56,7 @@ from trading.role_worker import Question, RoleWorker
 from trading.runtime import Monitor
 from trading.scoped_tools import disclose, outcome_page, reader
 from trading.scoped_tools import run as scoped_tool
-from trading.station import TOOLS, market_detail, market_live
+from trading.station import HISTORICAL_TOOLS, TOOLS, market_detail, market_live
 from trading.stock_research import StockQuestion, StockResearch
 from trading.storage import MonitorStore
 from trading.tiered_runtime import TieredPaperRuntime as PaperRuntime
@@ -1408,10 +1408,10 @@ def create_app(
         journal: ToolJournal | None = request.app.state.tool_journal
         if (
             paper is None
-            or not paper.running
-            or paper.error
             or not journal
-            or time.time() - paper.state["last_tick"] > 10
+            or command.tool not in HISTORICAL_TOOLS and (
+                not paper.running or paper.error or time.time() - paper.state["last_tick"] > 10
+            )
         ):
             raise HTTPException(503, "Paper worker or tool receipt storage is unavailable")
         if paper.disk_free < 5 * 1024**3:
@@ -1452,6 +1452,10 @@ def create_app(
                 )
             except (ValueError, KeyError, ArithmeticError) as exc:
                 error = str(exc)
+            except Exception as exc:
+                # A failed optional read has a terminal receipt, including unexpected
+                # snapshot/driver failures. Never expose driver text or credentials.
+                error = f"Evidence read failed ({type(exc).__name__}); retry this bounded read"
             await asyncio.to_thread(journal.finish, run_id, result, error)
             saved = await asyncio.to_thread(journal.get, run_id)
             assert saved is not None

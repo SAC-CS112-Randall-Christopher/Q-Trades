@@ -2,6 +2,8 @@
 
 import asyncio
 import time
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 
 import httpx
 import pytest
@@ -133,6 +135,67 @@ def test_schedule_waits_are_not_sends_and_metrics_reads_do_not_schedule(tmp_path
     assert not runtime._fallback  # Metrics cannot create a book.
 
 
+@pytest.mark.parametrize("producer", ["transport", "fallback"])
+def test_concurrent_bounded_dimensions_and_coupled_updates(producer, tmp_path):
+    venue = PublicVenue()
+    runtime = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "raw.sqlite")
+
+    def produce(index):
+        if producer == "transport":
+            row = venue._request_row("/api/v3/depth", {"symbol": f"FIXTURE{index}USD"})
+            venue._add_request_counts(row, "http_error", "rate_limited")
+        else:
+            row = runtime._fallback_count_row(f"FIXTURE{index}USD")
+            runtime._add_fallback_counts(row, "checks", "due")
+
+    try:
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(produce, range(100)))
+        snapshot = (
+            venue.request_counts()
+            if producer == "transport"
+            else runtime.public_request_counts()["fallback"]
+        )
+        rows = snapshot["rows"]
+        first, second = (
+            ("http_error", "rate_limited") if producer == "transport" else ("checks", "due")
+        )
+        assert len(rows) == 65 and sum(row[first] for row in rows.values()) == 100
+        assert all(row[first] == row[second] for row in rows.values())
+        assert rows["overflow"][first] == 36
+        other = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "other.sqlite")
+        assert (
+            other.public_request_counts()["fallback"]["epoch"]
+            != runtime.public_request_counts()["fallback"]["epoch"]
+        )
+    finally:
+        asyncio.run(venue.close())
+
+
+def test_fallback_read_remains_available_during_io_and_cancelled_attempt_is_unknown(tmp_path):
+    runtime = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "raw.sqlite")
+
+    async def scenario():
+        entered = asyncio.Event()
+
+        async def wait(*_):
+            entered.set()
+            await asyncio.Event().wait()
+
+        runtime.venue.depth = wait
+        request = asyncio.create_task(runtime._rest_book("BTCUSD"))
+        await entered.wait()
+        row = runtime.public_request_counts()["fallback"]["rows"]["BTCUSD"]
+        assert row["requested"] == 1 and row["accepted"] == 0
+        request.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await request
+        row = runtime.public_request_counts()["fallback"]["rows"]["BTCUSD"]
+        assert row["cancelled_unknown"] == 1 and row["accepted"] == row["failed"] == 0
+
+    asyncio.run(scenario())
+
+
 def test_original_fallback_acceptance_and_failures_stay_distinct(tmp_path):
     runtime = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "raw.sqlite")
 
@@ -155,3 +218,69 @@ def test_original_fallback_acceptance_and_failures_stay_distinct(tmp_path):
         assert counts["accepted"] == 1  # A later rejected book does not become accepted.
 
     asyncio.run(scenario())
+
+
+class InsertingDuringSnapshot(dict):
+    """Let a real producer try insertion while the reader iterates its actual items."""
+
+    def __init__(self, rows, entered, completed):
+        super().__init__(rows)
+        self.entered, self.completed = entered, completed
+
+    def items(self):
+        iterator = iter(super().items())
+        first = next(iterator)
+        yield first
+        self.entered.set()
+        self.completed.wait(0.5)  # A protected producer waits until this snapshot releases.
+        yield from iterator
+
+
+@pytest.mark.parametrize("producer", ["transport", "fallback"])
+def test_real_counter_snapshot_is_safe_during_new_market_insertion(tmp_path, producer):
+    entered, completed = Event(), Event()
+    venue = PublicVenue(transport=httpx.MockTransport(lambda _: httpx.Response(200, json={})))
+    runtime = TieredPaperRuntime(ReadOnlyStub(), FallbackVenue(), tmp_path / "raw.sqlite")
+    if producer == "transport":
+        venue._request_row("/api/v3/depth", {"symbol": "BTCUSD"})
+        venue._requests = InsertingDuringSnapshot(venue._requests, entered, completed)
+        snapshot_read = venue.request_counts
+
+        def write():
+            asyncio.run(venue.depth("ETHUSD", 20))
+    else:
+        runtime._fallback_count_row("BTCUSD")
+        runtime._fallback_counts = InsertingDuringSnapshot(
+            runtime._fallback_counts, entered, completed
+        )
+        snapshot_read = runtime.public_request_counts
+
+        async def valid(*_):
+            return snapshot(levels=20)
+
+        runtime.venue.depth = valid
+
+        def write():
+            asyncio.run(runtime._rest_book("ETHUSD"))
+
+    def produce():
+        assert entered.wait(3)
+        try:
+            write()
+        finally:
+            completed.set()
+
+    try:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(produce)
+            result = snapshot_read()
+            future.result(timeout=3)
+        rows = result["rows"] if producer == "transport" else result["fallback"]["rows"]
+        assert set(rows) == {"/api/v3/depth:BTCUSD" if producer == "transport" else "BTCUSD"}
+        rows_after = snapshot_read()
+        rows_after = (
+            rows_after["rows"] if producer == "transport" else rows_after["fallback"]["rows"]
+        )
+        assert len(rows_after) == 2
+    finally:
+        asyncio.run(venue.close())
