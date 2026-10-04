@@ -505,6 +505,7 @@ class RoleWorker:
             ),
             "meaning": "Current prerequisite observation, not a model call or quality score",
         }
+        result["ready"] = bool(result.get("ready") and state == "available")
         return result
 
     def page(self, before: float = 0, before_id: str = "", search: str = "") -> dict[str, Any]:
