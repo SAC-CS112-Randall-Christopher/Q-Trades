@@ -25,7 +25,8 @@ def generate(request: dict[str, Any]) -> dict[str, Any]:
     Recipe = importlib.import_module("llm_lab.config").Recipe
     sha_file = importlib.import_module("llm_lab.io").sha_file
     token_ids = importlib.import_module("llm_lab.masking").token_ids
-    PeftModel = importlib.import_module("peft").PeftModel
+    peft = importlib.import_module("peft")
+    load_tensors = importlib.import_module("safetensors.torch").load_file
     transformers = importlib.import_module("transformers")
 
     started = time.perf_counter()
@@ -93,7 +94,7 @@ def generate(request: dict[str, Any]) -> dict[str, Any]:
     if psutil.virtual_memory().available < PROFILE["minimum_available_bytes"]:
         raise ValueError("Available memory reserve constrains development inference")
     loaded_at = time.perf_counter()
-    model = PeftModel.from_pretrained(
+    model = peft.PeftModel.from_pretrained(
         lab_model.load_base(base, recipe),
         adapter,
         is_trainable=False,
@@ -116,6 +117,28 @@ def generate(request: dict[str, Any]) -> dict[str, Any]:
         )
     ):
         raise ValueError("Actual active frozen adapter/CPU precision differs")
+
+    # PEFT can warn about missing adapter keys and still return an active model.
+    # Compare the canonical loaded state with the frozen checkpoint before any
+    # generation, using the same embedding selection as Lab save_pretrained.
+    saved = load_tensors(str(adapter / "adapter_model.safetensors"), device="cpu")
+    loaded = peft.get_peft_model_state_dict(
+        model, adapter_name="default", save_embedding_layers="auto"
+    )
+    if (
+        not saved
+        or saved.keys() != loaded.keys()
+        or any(
+            not torch.equal(
+                loaded[key].detach().to(device="cpu", dtype=torch.float32),
+                saved[key].to(device="cpu", dtype=torch.float32),
+            )
+            for key in saved
+        )
+    ):
+        raise ValueError("Loaded adapter tensors differ from the trained checkpoint")
+    adapter_tensor_count = len(saved)
+    del saved, loaded
 
     StoppingCriteria = transformers.StoppingCriteria
 
@@ -167,6 +190,8 @@ def generate(request: dict[str, Any]) -> dict[str, Any]:
             "device": "cpu",
             "precision": "float32",
             "adapter_active": status.active_adapters,
+            "adapter_weights_verified": True,
+            "adapter_tensor_count": adapter_tensor_count,
             "trainable_params": 0,
         },
         "template_sha256": template_sha,

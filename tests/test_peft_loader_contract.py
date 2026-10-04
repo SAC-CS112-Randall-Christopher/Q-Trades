@@ -16,7 +16,8 @@ from trading.peft_role_runner import generate
 
 
 @pytest.mark.parametrize(
-    "fault", [None, "inactive", "gpu", "precision", "context", "template", "packages"]
+    "fault",
+    [None, "inactive", "gpu", "precision", "context", "template", "packages", "missing", "weights"],
 )
 def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
     declared, monkeypatch, fault
@@ -79,6 +80,24 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
     if fault == "packages":
         environment["peft"] = "changed"
     load_base = Mock(return_value="procedural base")
+
+    class Tensor:
+        def __init__(self, value):
+            self.value = value
+
+        def detach(self):
+            return self
+
+        def to(self, *, device, dtype):
+            assert (device, dtype) == ("cpu", "f32")
+            return self
+
+    state = Mock(
+        return_value={}
+        if fault == "missing"
+        else {"lora_A.weight": Tensor(2 if fault == "weights" else 1)}
+    )
+    saved_tensors = Mock(return_value={"lora_A.weight": Tensor(1)})
     torch = NS(
         float32="f32",
         set_num_threads=Mock(),
@@ -87,6 +106,7 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
         ones_like=lambda value: "mask",
         manual_seed=Mock(),
         inference_mode=nullcontext,
+        equal=lambda left, right: left.value == right.value,
     )
     modules = {
         "torch": torch,
@@ -104,7 +124,8 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
         "llm_lab.config": NS(Recipe=NS(model_validate=lambda value: NS(**value))),
         "llm_lab.io": NS(sha_file=lambda path: hashlib.sha256(path.read_bytes()).hexdigest()),
         "llm_lab.masking": NS(token_ids=lambda value: value),
-        "peft": NS(PeftModel=NS(from_pretrained=loader)),
+        "peft": NS(PeftModel=NS(from_pretrained=loader), get_peft_model_state_dict=state),
+        "safetensors.torch": NS(load_file=saved_tensors),
         "transformers": NS(StoppingCriteria=object, StoppingCriteriaList=list),
     }
     alias["base_revision"] = "fixture"
@@ -129,6 +150,10 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
     response = generate(request)
     assert response["raw_answer"] == '{"action":"no_change"}' and response["complete"]
     assert response["identity"]["adapter_sha256"] == digest(files)
+    assert response["placement"]["adapter_weights_verified"] is True
+    assert response["placement"]["adapter_tensor_count"] == 1
+    state.assert_called_once_with(frozen, adapter_name="default", save_embedding_layers="auto")
+    saved_tensors.assert_called_once_with(str(adapter), device="cpu")
     recipe = load_base.call_args.args[1]
     assert (recipe.device, recipe.precision, recipe.quantization) == ("cpu", "float32", "none")
     assert loader.call_args.kwargs == {"is_trainable": False, "local_files_only": True}

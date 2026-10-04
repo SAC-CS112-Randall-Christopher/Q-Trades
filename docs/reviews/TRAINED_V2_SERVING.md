@@ -43,7 +43,8 @@ separately declared development environment with operating roles disabled.
 records the attempt in the existing role history and allowance ledger. The
 transport uses the Lab's configured interpreter/source and offline/local-only
 loading. It verifies base bytes/revision, complete text loading through the Lab,
-adapter membership/hashes, active unmerged adapter, frozen CPU parameters,
+adapter membership/hashes, active unmerged adapter, exact canonical loaded adapter
+tensors against the frozen checkpoint, frozen CPU parameters,
 package versions and the training tokenizer template.
 
 The original model text, parsed answer, stop reason, identity, placement, token
@@ -90,7 +91,9 @@ Declare `development-serving.json` with exactly these fields:
 
 The alias and run must agree with the frozen selected base/adapter. No arbitrary
 model path, GPU profile, new runtime command or inferred qualification is accepted.
-After creating the normal question, use the application interpreter to run
+Set `PYTHONPATH` to the reviewed Q-Trades checkout's absolute `src` directory so
+the application interpreter imports this source rather than the installed release.
+After creating the normal question, use that interpreter to run
 `scripts/answer_development_role.py --registry <owned-registry> --task <question-id>
 --authorized-development-inference`. The flag records operator intent; it does
 not substitute for the user's applicable authorization or bypass the full guard.
@@ -99,19 +102,28 @@ question detail retains the original answer. Do not turn on operating roles.
 
 ## Observed source/procedural verification
 
-The targeted new selection passes **22 cases**: normal questions through the
+The targeted new selection passes **24 cases**: normal questions through the
 actual transport/registry using an explicitly procedural child response; exact
 original response and cost retention; disabled operating dispatch; incomplete,
 invalid and unknown responses; late completion versus cancellation; live owned
 child termination; timeout/pressure/guard interruption; source/alias drift; and
-procedural loader checks for wrong package/template/adapter/device/precision/context.
+procedural loader checks for wrong package/template/adapter/device/precision/context,
+missing adapter tensors and mismatched tensor values before generation.
 All model objects/responses in these tests are fixtures. No trained weights or
 real model libraries were imported for them. Native ownership tests use ordinary
 disposable Python children, not a model service.
 
-Ruff and strict Windows-targeted mypy pass. The combined native suite includes
-the capture repair; full-suite and exact-head hosted receipts are reported in
-the owning drafts/issue rather than inferred from these focused counts.
+After the final tensor-identity check, the new cases and existing role worker,
+supervisor, history, packet, readiness and local-role regressions passed together:
+**77 cases** in 77.12 seconds, using isolated password-authenticated native
+PostgreSQL, with the existing Starlette warning.
+
+Ruff and strict Windows-targeted mypy pass. The combined native suite at
+`894879270736a310e75df1bbc421d126351c6f20` passed **1,014 cases, one skip** in
+439.49 seconds, with the existing Starlette warning. That full run includes the
+final capture repair and precedes the final adapter-tensor equality check. The
+later focused selection and exact-head hosted receipts are reported separately
+in the owning draft/issue; the earlier full run is not a claim about that new head.
 
 ## Capacity evidence and remaining milestone
 

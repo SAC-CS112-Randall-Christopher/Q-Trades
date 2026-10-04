@@ -186,7 +186,7 @@ class PeftDevelopmentRoles:
                     "Actual model/adapter/loader identity differs from the frozen request"
                 )
             place = response.get("placement", {})
-            if any(
+            if place.get("adapter_weights_verified") is not True or any(
                 place.get(k) != v
                 for k, v in {
                     "device": "cpu",
