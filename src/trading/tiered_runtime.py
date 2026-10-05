@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import logging
+import math
 import os
 import shutil
 import time
@@ -141,6 +142,19 @@ class TieredPaperRuntime(PaperRuntime):
                 round(age, 3) if age is not None else None}
 
     def _accept_financial_audit(self, result: dict[str, Any]) -> None:
+        reconciliation = result.get("reconciliation")
+        if (
+            not isinstance(reconciliation, dict)
+            or not isinstance(reconciliation.get("balanced"), bool)
+            or type(reconciliation.get("revision")) is not int
+            or reconciliation["revision"] < 0
+            or any(
+                type(result.get(key)) not in (float, int)
+                or not math.isfinite(result[key])
+                for key in ("observed_at", "observed_mono")
+            )
+        ):
+            raise OSError("Incomplete financial audit receipt")
         self.receipts = {**result["reconciliation"], "checked_at": result["observed_at"]}
         self._readback_audit_mono = result["observed_mono"]
         self._readback_error = None

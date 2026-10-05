@@ -16,6 +16,7 @@ SAMPLE_SECONDS = 15.0
 DRAIN_SECONDS = 4.0
 TERMINATE_SECONDS = 1.0
 MAX_RECEIPT_BYTES = 2 * 1024**2
+FRAME_BYTES = 256  # Header + frame remain below POSIX's minimum atomic pipe write size.
 
 
 class ReadbackPipe(Protocol):
@@ -29,14 +30,40 @@ class ReadbackPipe(Protocol):
     def close(self) -> None: ...
 
 
+class ReadbackChannels:
+    """Two simplex pipes: small writes are atomic, unlike a duplex POSIX socketpair."""
+
+    def __init__(self, incoming: ReadbackPipe, outgoing: ReadbackPipe):
+        self.incoming, self.outgoing = incoming, outgoing
+
+    def send(self, value: Any) -> None:
+        self.outgoing.send(value)
+
+    def recv(self) -> Any:
+        return self.incoming.recv()
+
+    def send_bytes(self, value: bytes) -> None:
+        self.outgoing.send_bytes(value)
+
+    def recv_bytes(self, maxlength: int) -> bytes:
+        return self.incoming.recv_bytes(maxlength)
+
+    def poll(self, timeout: float = 0) -> bool:
+        return self.incoming.poll(timeout)
+
+    def close(self) -> None:
+        self.incoming.close()
+        self.outgoing.close()
+
+
 def _send(pipe: ReadbackPipe, kind: bytes, value: Any) -> None:
     content = json.dumps(value).encode()
     if len(content) > MAX_RECEIPT_BYTES:
         kind, content = b"E", b'"Financial refresh exceeded its receipt budget"'
     # Small atomic pipe messages keep poll/receive bounded even if the child
     # stops between packets. Never receive a partial multi-megabyte frame.
-    for offset in range(0, len(content), 1024):
-        chunk = content[offset : offset + 1024]
+    for offset in range(0, len(content), FRAME_BYTES):
+        chunk = content[offset : offset + FRAME_BYTES]
         final = offset + len(chunk) == len(content)
         pipe.send_bytes(kind + bytes([final]) + chunk)
 
@@ -89,7 +116,10 @@ class ReadbackWorker:
 
     def _start(self) -> None:
         context = multiprocessing.get_context("spawn")
-        parent, child = context.Pipe()
+        parent_in, child_out = context.Pipe(duplex=False)
+        child_in, parent_out = context.Pipe(duplex=False)
+        parent = ReadbackChannels(parent_in, parent_out)
+        child = ReadbackChannels(child_in, child_out)
         process = context.Process(target=readback_child, args=(child, self._dsn), daemon=True)
         try:
             process.start()
@@ -112,7 +142,13 @@ class ReadbackWorker:
         message_kind: bytes | None = None
         while time.monotonic() < deadline:
             if self._pipe.poll():
-                packet = self._pipe.recv_bytes(1026)
+                packet = self._pipe.recv_bytes(FRAME_BYTES + 2)
+                if (
+                    len(packet) < 2
+                    or packet[:1] not in (b"A", b"S", b"E")
+                    or packet[1] not in (0, 1)
+                ):
+                    raise OSError("Invalid financial readback receipt")
                 kind, final = packet[:1], packet[1]
                 if (
                     message_kind not in (None, kind)
@@ -123,11 +159,18 @@ class ReadbackWorker:
                 content.extend(packet[2:])
                 if not final:
                     continue
-                value = json.loads(content)
+                try:
+                    value = json.loads(content)
+                except (ValueError, UnicodeError) as exc:
+                    raise OSError("Invalid financial readback receipt") from exc
                 content, message_kind = bytearray(), None
                 if kind == b"A":
+                    if not isinstance(value, dict):
+                        raise OSError("Invalid financial audit receipt")
                     publish_audit(value)
                 elif kind == b"S":
+                    if not isinstance(value, dict):
+                        raise OSError("Invalid financial sample receipt")
                     return dict(value)
                 else:
                     raise OSError("Durable financial monitoring query unavailable")
@@ -147,21 +190,26 @@ class ReadbackWorker:
         with suppress(OSError):
             pipe.send(("stop", None))
         deadline = started + DRAIN_SECONDS
+        cancelled = False
         # Repeated cancellation does not extend the fixed drain deadline.
         while process.is_alive() and time.monotonic() < deadline:
             with suppress(OSError, EOFError):
                 if pipe.poll():
-                    pipe.recv_bytes(1026)
-            with suppress(asyncio.CancelledError):
+                    pipe.recv_bytes(FRAME_BYTES + 2)
+            try:
                 await asyncio.sleep(0.01)
+            except asyncio.CancelledError:
+                cancelled = True
         status = "drained"
         if process.is_alive():
             status = "terminated_owned_reader"
             process.terminate()  # Only this original child handle; never a backend lookup.
             deadline = time.monotonic() + TERMINATE_SECONDS
             while process.is_alive() and time.monotonic() < deadline:
-                with suppress(asyncio.CancelledError):
+                try:
                     await asyncio.sleep(0.01)
+                except asyncio.CancelledError:
+                    cancelled = True
         if process.is_alive():
             # Retain ownership and report failure; never silently abandon/restart.
             self.last_shutdown = {
@@ -179,4 +227,8 @@ class ReadbackWorker:
             "exitcode": exitcode,
             "elapsed_seconds": round(time.monotonic() - started, 3),
         }
+        # A cancel arriving during ordinary recovery must still stop its caller.
+        # Defer it until cleanup finishes, rather than swallowing the request.
+        if cancelled:
+            raise asyncio.CancelledError
         return self.last_shutdown

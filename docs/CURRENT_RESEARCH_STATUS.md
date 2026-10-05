@@ -3,7 +3,7 @@
 Merged/installed #60 is `fca588586`. The new, unmerged source successor repairs
 completed-audit propagation, truthful monitoring freshness and bounded owned-reader
 shutdown. The [ordered repair/acceptance ledger](reviews/FINANCIAL_MONITORING_REPAIRS.md)
-records 109 native affected-owner passes, actual cancellation/drain faults,
+records 121 native affected-owner passes, actual cancellation/drain faults,
 compiled Accounts browser transitions and a separate bounded installed read-only
 observation. Preserve the failed/partial receipts and #62's original rollout limits.
 This source delivery has not changed installed services, financial history,

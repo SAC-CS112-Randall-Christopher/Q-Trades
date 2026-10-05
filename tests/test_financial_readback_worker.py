@@ -46,6 +46,49 @@ def blocked_client_child(pipe, dsn):
     readback_child(pipe, dsn)
 
 
+def malformed_receipt_child(pipe, dsn):
+    pipe.recv()
+    pipe.send_bytes(b"A")
+    pipe.close()
+
+
+def incomplete_audit_child(pipe, dsn):
+    pipe.recv()
+    worker_module._send(pipe, b"A", {"reconciliation": {"balanced": True, "revision": 1}})
+    pipe.close()
+
+
+@pytest.mark.parametrize("child", [malformed_receipt_child, incomplete_audit_child])
+def test_incomplete_transport_receipt_remains_unknown_and_nonfatal(
+    pg_store, monkeypatch, tmp_path, child
+):
+    import trading.tiered_runtime as runtime_module
+
+    store, _ = pg_store
+    runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
+    reader = ReadbackWorker(FinancialReadback(store))
+    monkeypatch.setattr(worker_module, "readback_child", child)
+    monkeypatch.setattr(runtime_module, "ReadbackWorker", lambda _: reader)
+
+    async def scenario():
+        task = asyncio.create_task(runtime._financial_readback_loop())
+        try:
+            async with asyncio.timeout(5):
+                while runtime._readback_error is None:
+                    await asyncio.sleep(0.01)
+            assert not task.done() and runtime.error is None
+            assert runtime._financial_failure is None and runtime.receipts == {}
+            assert runtime.journal_status()["status"] == "unavailable"
+            assert runtime._readback_audit_mono is None
+        finally:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
+            assert reader._process is None
+
+    asyncio.run(scenario())
+
+
 async def wait_for_backend(store, name, *, active=False):
     async with asyncio.timeout(8):
         while True:

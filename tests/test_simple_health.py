@@ -1,13 +1,14 @@
 import importlib.util
 import time
 from pathlib import Path
-from types import SimpleNamespace
+from types import MethodType, SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 
 from trading.api import create_app
 from trading.config import Settings
+from trading.tiered_runtime import TieredPaperRuntime
 
 
 def health_module():
@@ -40,16 +41,33 @@ def test_missing_or_wrong_health_does_not_claim_updated(field):
     assert not helper.healthy(value, commit)
 
 
-def test_small_health_freezes_commit_at_start_and_uses_account_receipts(tmp_path):
+@pytest.mark.parametrize("monitoring", ["balanced", "expired", "unavailable", "pending"])
+def test_small_health_freezes_commit_at_start_and_uses_current_audit(tmp_path, monitoring):
     commit = "a" * 40
     (tmp_path / "installed-commit.txt").write_text(commit)
     app = create_app(Settings(), tmp_path / "monitor.sqlite3", background=False)
     with TestClient(app) as client:
         app.state.paper = SimpleNamespace(
-            running=True, state={"last_tick": time.time()}, receipts={"balanced": True}, error=None
+            running=True,
+            state={"last_tick": time.time()},
+            receipts={"balanced": True, "revision": 7, "checked_at": time.time()},
+            error=None,
+            _readback_audit_mono=(
+                None
+                if monitoring == "pending"
+                else time.monotonic() - (121 if monitoring == "expired" else 0)
+            ),
+            _readback_error="Synthetic monitoring outage" if monitoring == "unavailable" else None,
+        )
+        app.state.paper.journal_status = MethodType(
+            TieredPaperRuntime.journal_status, app.state.paper
         )
         response = client.get("/api/health").json()
-        assert health_module().healthy(response, commit)
+        assert health_module().healthy(response, commit) == (monitoring == "balanced")
+        assert response["journal_last_balanced"] is True
+        assert response["journal_monitoring"]["status"] == monitoring
+        if monitoring != "balanced":
+            assert response["journal_balanced"] is None
         (tmp_path / "installed-commit.txt").write_text("b" * 40)
         assert client.get("/api/health").json()["code_commit"] == commit
         app.state.paper.receipts["balanced"] = False

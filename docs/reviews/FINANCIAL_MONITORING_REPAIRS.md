@@ -35,7 +35,10 @@ three C60 findings while preserving #60's sound cooldown/topology changes and
    from another thread or terminating a looked-up database backend. Escalation is
    exposed in `last_shutdown` and logged. Termination failure is explicit, retains
    ownership and stops continuation. Receipts have a two-MiB ceiling and small
-   atomic IPC frames. Reconnection discards the old child's IPC entirely.
+   atomic IPC frames on two simplex pipes. Malformed/incomplete audit receipts
+   remain unknown. Cancellation arriving during ordinary recovery is deferred
+   only until bounded cleanup finishes, then propagated to stop the caller.
+   Reconnection discards the old child's IPC entirely.
 4. [x] **Bounded installed attribution observation; retain uncertainty.**
    One 20.001-second read-only window, 92 database-wait samples and 19 status
    requests retained 37 distinct in-window work samples: seven over 100 ms and
@@ -68,8 +71,8 @@ three C60 findings while preserving #60's sound cooldown/topology changes and
 - Actual-owner initial counterexamples: five failed / one passed. They reproduce
   history/storage masking, ancillary suppression of a due audit and expiry's
   stored/computed availability disagreement. Original receipts remain private.
-- Final native Windows/disposable PostgreSQL affected-owner selection: **109
-  passed**, no skips, one existing TestClient deprecation warning, 128.98 seconds.
+- Final native Windows/disposable PostgreSQL affected-owner selection: **121
+  passed**, no skips, one existing TestClient deprecation warning, 181.12 seconds.
   It includes the financial reader, read-only rejection, consistent snapshots
   across a writer commit, real connection failure/restoration before and after a
   good audit, critical supervision, API/notice states, streaming, projections,
@@ -77,6 +80,20 @@ three C60 findings while preserving #60's sound cooldown/topology changes and
   timeout / 108 passes: its six-second wait omitted the actual five-second refresh
   plus three-second connection budget. The fixture now permits ten seconds;
   operating deadlines, freshness and guards are unchanged.
+- Initial hosted head `d7725d6`: native **634 passed / 1 failed / 210 skipped**;
+  full PostgreSQL **972 passed / 1 failed / 82 skipped**. Both failures were the
+  same health fixture, which supplied only a historical balanced flag. The
+  corrected fixture uses the real current-status producer and verifies the
+  existing health predicate rejects pending/expired/unavailable audits. The
+  health gate itself was not relaxed. Ownership and compiled-browser jobs
+  passed on that initial head; they do not make the failed jobs green.
+- Two later native retries were interrupted and retained. A stack-captured
+  malformed-receipt regression identified cancellation being swallowed during
+  ordinary error cleanup after the child had exited. Cleanup now propagates
+  cancellation after completing its bounded resource closure. Both malformed
+  and incomplete-receipt cases pass in isolation and in the final 121-test run.
+  The disposable QA cluster also required WAL recovery after an observed prior
+  interruption; its log remains private. No operating cluster was restarted.
 - Native driver cases cancel an actual disposable `pg_sleep(30)` session and
   drain after one/two cancellation requests, preserving writer/history and
   subsequent writer usability. A client-side block has **no test release**; fixed
