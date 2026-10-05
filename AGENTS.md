@@ -1,4 +1,31 @@
-# Current direction — October 5, 2026 UTC, measured paper/model coexistence
+# Current direction — October 5, 2026 UTC, coexistence rollout completed
+
+PR #60 is merged and installed through the existing updater at
+`fca588586f9b72e9506caef6384ee8e65edea738` after explicit human approval.
+Its source tree exactly matches tested `ac59d065`; all three merged-main CI jobs
+passed. The fresh native full run passed 1,040 tests with one Windows symlink
+skip. Installed files, original events/journal, eight accounts' identity/funding
+and protected files were verified. Do not repeat that completed rollout.
+Read `docs/reviews/PAPER_MODEL_COEXISTENCE_ROLLOUT.md` for exact evidence.
+
+The installed monitoring reader and recording are healthy. The 1,204.969-second
+observation admitted no inference: new slow work and two severe stalls keep the
+unchanged guard closed. More memory is not an established remedy. Two measured
+projection/copy alternatives were slower and were not implemented. Actual
+coexecution, protected active-position behavior, qualification and CP18/23 remain
+unproved. The existing single CPU float32/two-physical-core/600-second actual
+development attempt remains authorized, unused and subject to the complete guard;
+do not ask again for that same attempt or invent/retry an answer.
+
+Continue measured source/isolated QA work, preserving SQL financial authority,
+history/parents, twenty slots, G: policy, capture and outcome boundaries. New
+runtime tolerance or placement choices need concrete matched evidence and the
+applicable explicit operating decision; do not relax the guard to report a model
+run. Preserve draft #57's separate historical receipt. New product merges,
+installation/restarts, operating configuration/activation, training, holdouts,
+exports/downloads, GIS and paid services retain their separate boundaries.
+
+# Historical direction — October 5, 2026 UTC, measured paper/model coexistence
 
 Chris requested implementation and testing of the optimizations needed to run
 trained-v2 research alongside paper processing. Main/installation is `fa3accde`;

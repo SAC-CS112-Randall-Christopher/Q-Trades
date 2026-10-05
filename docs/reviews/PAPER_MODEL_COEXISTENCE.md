@@ -1,5 +1,12 @@
 # Paper/model coexistence optimization — October 5, 2026 UTC
 
+**Subsequent installed receipt:** PR #60 is merged/installed at `fca588586`.
+The fresh native full suite and all three merged-main jobs passed. The installed
+reader is healthy, but actual inference remains refused. See
+[PAPER_MODEL_COEXISTENCE_ROLLOUT.md](PAPER_MODEL_COEXISTENCE_ROLLOUT.md).
+The source-only, disk-failure and interrupted verification sections below retain
+their original historical observations; they do not describe the current release.
+
 Continuation of #28/#48 from main/installed `fa3accde7667404a7751f75a8d1b1cc6978a7808`.
 Chris requested implementation and testing to let the trained model run alongside
 paper processing. Previous #54–56 rollout is complete; #57 remains a separate
