@@ -285,3 +285,50 @@ pending publication. Existing development results,
 original profile/allowance/guard and ordinary training-eligibility policy remain
 unchanged. No actual trained model/provider call, operating rollout, merge,
 activation, migration, schedule cutover or financial-policy change occurred.
+## Executed collector preparation and native job budget repair — October 5
+
+A fresh private executable collector now reuses the historical probe's consistent
+read-only prefix/archive logic and the existing current-monitor audit. It does not
+construct operating registries, replace the financial auditor, read model weights
+or run an updater. Before collection does not authorize shutdown. Fixture mode
+refuses a foreign endpoint/schema before connecting. Metadata absence, immutable
+records, disabled optional settings, twenty-slot policy, native observations and
+unresolved coverage stay explicit; nonzero/archived role-payload coverage refuses
+rather than silently dropping originals.
+
+Root executed a fresh before/after collection against its recorded disposable
+PostgreSQL 17.2, SQLite, files and a synthetic health HTTP boundary. Original
+prefix/configuration/evidence and four synthetic lesson/teaching records survived;
+one generated account retired into a matching archive/event and one had a verified
+genesis. Direct QA native process/TCP correlation was observed. Three actual bounded
+HTTP observations (stale, unavailable, imbalanced) each refused current-audit and
+projection gates despite a retained balanced flag. Exactly three acceptance gates
+remain false: installed task/database ownership, observed native restart and required
+coverage. Full installed acceptance is **false**. UI/recovery, storage-volume,
+external schedule and applicable candidate/Docker links require their actual owners.
+The synthetic health boundary is not an engine audit or financial-accuracy proof.
+
+The first collector attempt retained an actual native identity failure caused by
+the Windows virtual-environment launcher/base executable distinction. The corrected
+owner binds the actual base executable, exact command/root and process birth;
+fresh receipts passed. Scope validation adds 18 offline refusal checks with zero
+financial-entry calls; the strengthened comparator adds 56 procedural checks.
+Earlier 26/28 receipts remain preserved. Independent bounded-read review corrected
+SQLite closure, traversal/native-capture bounds, frozen retirement fields and a
+pre-connect fixture endpoint/schema guard. Root stopped both owned fixtures and
+its QA database; listener closure was verified. No operating collection occurred.
+
+Hosted run 37383945461 at source head `d2c2987` passed five gates. The native
+selection itself finished **632 passed / 164 skipped / one warning**, in 430.90
+seconds, but the complete eight-minute job was cancelled immediately afterward.
+That run is not green. The complete PostgreSQL selection separately passed
+**1,081 tests / 89 skips / one warning**, in 370.97 seconds. These remain separate
+from local zero-skip selections and earlier completed heads.
+
+The narrow CI repair moves only `tests/test_simple_update.py` into the existing
+lighter Windows runtime-ownership job. All 75 explicit selectors, all six job
+identities/runners and every current timeout are preserved. Parsed-YAML semantic
+comparison and actual Windows PowerShell 5.1 parsing validate the partition;
+independent review is clear. New combined-head hosted acceptance is pending at
+commit time; the issue ledger records its eventual result. No
+provider, model, financial, resource-guard or operating process policy changed.
