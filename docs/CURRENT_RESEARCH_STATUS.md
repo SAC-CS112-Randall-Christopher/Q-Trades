@@ -11,6 +11,43 @@ accounts, rules, resource thresholds or model authority. The single approved
 trained-v2 attempt remains unused; concurrent model operation and the earlier
 severe stalls' cause are unproven. Keep #61's memory/reviewer work separately owned.
 
+
+# Existing memory/reviewer owner status — October 5, 2026, issues #58 and #59
+
+The persistent knowledge/RAG/MCP/app-owned reviewer source merged in PR #61
+at `dcf7ccbb1` on October 5. Its compact owner/verification/limitation
+ledger is [PERSISTENT_RESEARCH.md](PERSISTENT_RESEARCH.md). Source verification
+does not complete the issues' actual external/local-model or installed finish line.
+New reviewer configuration and spending default disabled.
+
+The original inspected baseline was `fa3accde`. The October 5 anchored-review
+follow-up refreshed main and bounded installed read-only health at
+`fca588586f9b72e9506caef6384ee8e65edea738`. PRs #54–56 and #60 are merged.
+The read-only observations report running paper, fresh processing, a balanced
+journal and no paper error. This branch has not been
+installed, activated or used to call a model. The existing ChatGPT Learning Review,
+Windows tasks/services, financial records, model profiles and G: policy are unchanged.
+
+Draft #57 retains the authorized RAM rollout's historical receipt. Merged #60 owns
+further measured paper/model coexistence work; this branch preserves that
+owner or relax its guard. The old trained-v2 development authorization stays with
+its existing question/profile owner. RAG changes the model input contract and
+requires separately compatible qualification before actual local inference.
+
+PR #61's three anchored-review repairs preserve historical-revision permissions,
+scope unfinished-request finalization to its actual dispatch claim, and use bounded
+restart-safe eligible selection rather than repeatedly stopping at the newest task.
+Fifteen actual-owner regression cases pass on repair implementation `907eb9a`.
+The initial counterexamples, cursor-bound failure and incomplete wrong-port QA run
+remain retained; current integrated/hosted results are in the owning PR/issue ledger.
+This remains source/software proof with the actual model and installed finish line open.
+
+App-local MCP execution is the selected source path. External tunnel/interactive
+account support remains unqualified. No task/product entitlement is inferred from
+ChatGPT access. Actual reviewer access, rights, budgets, schedule cutover and
+installed acceptance require their explicit decisions. Earlier headings below are
+historical receipts, including former draft states; do not repeat a completed rollout.
+
 # Historical research status — October 4, 2026, issue #48
 
 The six-PR release (#40 and #49–53) is merged and installed at

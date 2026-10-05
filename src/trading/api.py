@@ -16,6 +16,8 @@ from urllib.parse import urlsplit
 import httpx
 import psycopg
 from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -28,6 +30,7 @@ from trading.config import Settings
 from trading.evidence_runtime import feature_reproduction
 from trading.experiment_lab import ExperimentLab
 from trading.experiment_registry import ExperimentPlan
+from trading.knowledge_acquisition import URLImport, acquire
 from trading.local_role_model import LocalRoles
 from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
@@ -41,9 +44,24 @@ from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
 from trading.research_campaigns import ResearchCampaignSpec
 from trading.research_evidence import evidence_page, evidence_record
+from trading.research_knowledge import (
+    DocumentImport,
+    KnowledgeDisposition,
+    KnowledgeQuery,
+    ResearchKnowledge,
+    SourceImport,
+)
+from trading.research_mcp import PROTOCOLS, LocalMCPClient, ResearchMCP
 from trading.research_notices import operational_conditions
 from trading.research_quality import quality_report
+from trading.research_reviews import (
+    ResearchReviews,
+    ReviewDecision,
+    ReviewerPolicy,
+    ReviewReconcile,
+)
 from trading.research_storage import (
+    ResearchStorage,
     StoragePlan,
     compact_path,
     load_plan,
@@ -52,6 +70,7 @@ from trading.research_storage import (
     storage_snapshot,
     volume,
 )
+from trading.reviewer_provider import ResponsesReviewer
 from trading.role_worker import Question, RoleWorker
 from trading.runtime import Monitor
 from trading.scoped_tools import disclose, outcome_page, reader
@@ -180,6 +199,8 @@ def create_app(
             role_task = None
             replay_lab = None
             replay_task = None
+            review_task = None
+            knowledge_storage = None
             try:
                 app.state.tool_busy = False
                 app.state.last_tool_at = 0.0
@@ -249,6 +270,11 @@ def create_app(
                 except (sqlite3.Error, OSError):
                     app.state.lab_error = "Research storage unavailable; paper management continues"
                 app.state.lab = lab
+                app.state.knowledge = None
+                app.state.manual_review_task = None
+                app.state.reviews = None
+                app.state.research_mcp = None
+                app.state.knowledge_error = "Configure the existing owned research storage first"
                 if lab:
                     lab.notice_source = lambda: operational_conditions(app.state.paper, time.time())
 
@@ -281,6 +307,26 @@ def create_app(
                     local_roles = LocalRoles(database.parent)
                     lab.roles = RoleWorker(lab.registry, lab.autonomous, local_roles)
                     lab.roles.activation = lambda: bool(local_roles.policy().get("enabled", False))
+                    plan = load_plan(database.parent)
+                    if plan is not None:
+                        try:
+                            knowledge_storage = ResearchStorage(plan)
+                            knowledge = ResearchKnowledge(knowledge_storage)
+                            reviews = ResearchReviews(lab.roles, knowledge)
+                            research_actors = ResearchActors(lab.roles)
+                            reviews.transport = ResponsesReviewer(
+                                database.parent, research_actors, app
+                            )
+                            lab.roles.knowledge = knowledge
+                            lab.roles.reviews = reviews
+                            app.state.knowledge, app.state.reviews = knowledge, reviews
+                            app.state.research_mcp = ResearchMCP(research_actors, reviews)
+                            app.state.knowledge_error = None
+                            review_task = asyncio.create_task(reviews.run()) if background else None
+                        except (OSError, ValueError, sqlite3.Error):
+                            app.state.knowledge_error = (
+                                "Knowledge storage unavailable; inspect owned volume/quota/index"
+                            )
                     role_task = asyncio.create_task(lab.roles.run()) if background else None
                 lab_task = asyncio.create_task(lab.run()) if background and lab else None
                 app.state.replay = None
@@ -302,6 +348,17 @@ def create_app(
                     )
                 yield
             finally:
+                if review_task:
+                    review_task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await review_task
+                if knowledge_storage:
+                    manual_review = app.state.manual_review_task
+                    if manual_review and not manual_review.done():
+                        manual_review.cancel()
+                        with suppress(asyncio.CancelledError):
+                            await manual_review
+                    knowledge_storage.close()
                 if role_task:
                     role_task.cancel()
                     with suppress(asyncio.CancelledError):
@@ -517,7 +574,12 @@ def create_app(
     async def bounded_training_input(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if request.method == "POST" and request.url.path.startswith("/api/lab/training/"):
+        if request.method == "POST" and (
+            request.url.path.startswith("/api/lab/training/")
+            or request.url.path.startswith("/api/research/knowledge/")
+            or request.url.path.startswith("/api/research/reviews/")
+            or request.url.path == "/api/research/mcp"
+        ):
             chunks, size = [], 0
             async for chunk in request.stream():
                 size += len(chunk)
@@ -542,6 +604,7 @@ def create_app(
             request.url.path.startswith("/api/research/actors/tasks/")
             or request.url.path.startswith("/api/research/actors/claims/")
             or request.url.path == "/api/research/actors/answers"
+            or request.url.path == "/api/research/mcp"
         ):
             return JSONResponse(
                 status_code=403,
@@ -562,6 +625,327 @@ def create_app(
         if not authorization.startswith("Bearer "):
             raise HTTPException(403, "Scoped research bearer credential required")
         return authorization[7:]
+
+    def knowledge_owner(request: Request) -> ResearchKnowledge:
+        owner = request.app.state.knowledge
+        if owner is None:
+            raise HTTPException(503, request.app.state.knowledge_error)
+        return owner  # type: ignore[no-any-return]
+
+    @app.exception_handler(RequestValidationError)
+    async def private_validation(request: Request, exc: RequestValidationError) -> Response:
+        if request.url.path.startswith(("/api/research/knowledge", "/api/research/reviews")):
+            return JSONResponse(
+                {"detail": "Research input is invalid; check the declared fields"}, status_code=422
+            )
+        return await request_validation_exception_handler(request, exc)
+
+    @app.exception_handler(sqlite3.Error)
+    @app.exception_handler(OSError)
+    async def optional_storage_failure(request: Request, exc: Exception) -> Response:
+        if request.url.path.startswith(
+            ("/api/research/knowledge", "/api/research/reviews", "/api/research/mcp")
+        ):
+            return JSONResponse(
+                {
+                    "detail": "Research storage/dependency unavailable; "
+                    "inspect owned volume, quota or index and retry"
+                },
+                status_code=503,
+            )
+        raise exc
+
+    def review_owner(request: Request) -> ResearchReviews:
+        owner = request.app.state.reviews
+        if owner is None:
+            raise HTTPException(503, request.app.state.knowledge_error)
+        return owner  # type: ignore[no-any-return]
+
+    @app.get("/api/research/knowledge")
+    def knowledge_list(
+        request: Request, before: str = Query(default="", max_length=64)
+    ) -> dict[str, Any]:
+        return knowledge_owner(request).list(before)
+
+    @app.post("/api/research/knowledge/import")
+    def knowledge_import(request: Request, source: SourceImport) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return knowledge_owner(request).ingest(source)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/knowledge/search")
+    def knowledge_search(request: Request, query: KnowledgeQuery) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return knowledge_owner(request).retrieve(query)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/knowledge/document")
+    def knowledge_document(request: Request, document: DocumentImport) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return knowledge_owner(request).ingest_document(document)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/knowledge/acquire")
+    def knowledge_acquire(request: Request, command: URLImport) -> dict[str, object]:
+        lab_operator(request)
+        try:
+            return acquire(knowledge_owner(request), command)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/research/knowledge/sources/{source}/{revision}")
+    def knowledge_source(request: Request, source: str, revision: int) -> dict[str, Any]:
+        try:
+            return knowledge_owner(request).read(
+                source, revision, cutoff=time.time(), operator=True
+            )
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/research/knowledge/sources/{source}/disposition")
+    def knowledge_disposition(
+        request: Request, source: str, decision: KnowledgeDisposition
+    ) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return knowledge_owner(request).disposition(source, decision)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/research/knowledge/sources/{source}/{revision}/document")
+    def knowledge_original_document(request: Request, source: str, revision: int) -> Response:
+        try:
+            raw = knowledge_owner(request).document(source, revision)
+            return Response(
+                raw,
+                media_type="application/pdf",
+                headers={
+                    "Content-Disposition": 'attachment; filename="knowledge-source.pdf"',
+                    "X-Content-Type-Options": "nosniff",
+                    "Content-Security-Policy": "sandbox",
+                },
+            )
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/research/knowledge/receipts/{identity}")
+    def knowledge_receipt(request: Request, identity: str) -> dict[str, Any]:
+        try:
+            return knowledge_owner(request).receipt(identity)
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/research/knowledge/reindex")
+    def knowledge_reindex(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        return knowledge_owner(request).reindex()
+
+    @app.post("/api/research/knowledge/backup")
+    def knowledge_backup(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        return knowledge_owner(request).backup()
+
+    class KnowledgeRestore(BaseModel):
+        model_config = ConfigDict(extra="forbid", strict=True)
+        backup: str = Field(pattern=r"^knowledge-backup-\d{10,24}\.sqlite$")
+        sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+    @app.post("/api/research/knowledge/restore")
+    def knowledge_restore(request: Request, command: KnowledgeRestore) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return knowledge_owner(request).restore(command.backup, command.sha256)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/research/knowledge/restored/{library}/{source}/{revision}")
+    def knowledge_restored(
+        request: Request, library: str, source: str, revision: int
+    ) -> dict[str, Any]:
+        owner = knowledge_owner(request)
+        try:
+            if (
+                not re.fullmatch(r"knowledge-restore-\d{10,24}\.sqlite", library)
+                or not (owner.storage.research / library).is_file()
+            ):
+                raise ValueError("Owned restored snapshot unavailable")
+            return ResearchKnowledge(owner.storage, name=library).read(
+                source, revision, cutoff=time.time(), operator=True
+            )
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    @app.get("/api/research/reviews")
+    def review_status(request: Request, before: str | None = None) -> dict[str, Any]:
+        try:
+            return review_owner(request).snapshot(before)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/reviews/connection-test")
+    async def review_connection_test(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        owner = review_owner(request)
+        with owner.registry.lock:
+            row = owner.registry.db.execute(
+                "SELECT id,task FROM scheduled_reviews ORDER BY created DESC LIMIT 1"
+            ).fetchone()
+        if row is None:
+            raise HTTPException(409, "Await a retained review packet to test scoped discovery/read")
+        actors = request.app.state.research_mcp.actors
+        grant = actors.grant(
+            ActorGrant(
+                actor="operator-scoped-connection-test",
+                tasks=[row["task"]],
+                lifetime_seconds=60,
+                requests=4,
+                output_bytes=131072,
+                processing_location="App-local connection test; no external provider request",
+            )
+        )
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=request.app),
+                base_url="http://localhost",
+                timeout=8,
+                trust_env=False,
+                follow_redirects=False,
+            ) as local:
+                client = LocalMCPClient(local, grant["token"])
+                await client.initialize()
+                discovered = await client.rpc("tools/list", {})
+                await client.call("review_get_packet", {"review": row["id"]})
+            return {
+                "status": "passed",
+                "tools": [t["name"] for t in discovered["tools"]],
+                "scope": "App-local authenticated discovery and permitted frozen-packet read",
+                "provider": "External model/tunnel/account access remains unqualified",
+                "credential": "Temporary claim revoked; no API credential used or returned",
+            }
+        except (ValueError, httpx.HTTPError):
+            raise HTTPException(
+                409, "Scoped connection refused; inspect current source permissions"
+            ) from None
+        finally:
+            actors.revoke(grant["id"])
+
+    @app.get("/api/research/reviews/results/{identity}")
+    def review_result(request: Request, identity: str) -> dict[str, Any]:
+        try:
+            owner = review_owner(request)
+            return owner.get(identity) | {"delivered_knowledge": owner.delivered_passages(identity)}
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
+    class ReviewerConfiguration(BaseModel):
+        model_config = ConfigDict(extra="forbid", strict=True)
+        expected_revision: int = Field(ge=0)
+        policy: ReviewerPolicy
+
+    @app.post("/api/research/reviews/configure")
+    def review_configure(request: Request, config: ReviewerConfiguration) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return review_owner(request).configure(config.policy, config.expected_revision)
+        except (ValueError, OSError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/reviews/pause")
+    def review_pause(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        return review_owner(request).pause()
+
+    @app.post("/api/research/reviews/run")
+    async def review_run(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        owner = review_owner(request)
+        pending = request.app.state.manual_review_task
+        if pending is None or pending.done():
+            request.app.state.manual_review_task = asyncio.create_task(owner.once())
+        return review_owner(request).snapshot()
+
+    @app.post("/api/research/reviews/results/{identity}/decision")
+    def review_decision(
+        request: Request, identity: str, decision: ReviewDecision
+    ) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return review_owner(request).decide(identity, decision)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/reviews/results/{identity}/reconcile")
+    def review_reconcile(
+        request: Request, identity: str, command: ReviewReconcile
+    ) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return review_owner(request).reconcile(identity, command)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/reviews/credential")
+    async def review_credential(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        # No Pydantic validation echo containing a secret; no renderer persistence.
+        try:
+            body = await request.json()
+            if (
+                not isinstance(body, dict)
+                or set(body) != {"credential"}
+                or not isinstance(body["credential"], str)
+            ):
+                raise ValueError("Invalid credential request")
+            review_owner(request).transport.credential.save(body["credential"])
+        except (ValueError, OSError):
+            raise HTTPException(
+                409, "Protected credential was not saved; repair local setup"
+            ) from None
+        return {"saved": True, "protection": "Current Windows user; no secret returned"}
+
+    @app.post("/api/research/reviews/disconnect")
+    def review_disconnect(request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        owner = review_owner(request)
+        owner.pause()
+        owner.transport.credential.revoke()
+        return owner.snapshot()
+
+    @app.post("/api/research/mcp")
+    async def research_mcp(request: Request) -> Response:
+        origin = request.headers.get("origin")
+        if origin and origin != "http://" + request.headers.get("host", ""):
+            raise HTTPException(403, "MCP origin is outside the local trust boundary")
+        if request.headers.get("mcp-protocol-version", "2025-03-26") not in PROTOCOLS:
+            raise HTTPException(400, "Unsupported MCP protocol version")
+        if not all(
+            t in request.headers.get("accept", "")
+            for t in ("application/json", "text/event-stream")
+        ):
+            raise HTTPException(406, "MCP client must accept JSON and event stream")
+        adapter = request.app.state.research_mcp
+        if adapter is None:
+            raise HTTPException(503, "Research MCP unavailable; local paper operation continues")
+        try:
+            body = await request.json()
+            if not isinstance(body, dict):
+                raise ValueError("One JSON-RPC object required")
+            result = await asyncio.to_thread(adapter.rpc, actor_token(request), body)
+            return JSONResponse(result) if result is not None else Response(status_code=202)
+        except ValueError:
+            raise HTTPException(
+                403, "Research MCP request outside permitted scope or allowance"
+            ) from None
+
+    @app.get("/api/research/mcp")
+    def research_mcp_stream() -> Response:
+        return Response(status_code=405)  # Stateless JSON; no SSE/unsolicited notifications.
 
     @app.get("/api/research/actors/grants")
     def actor_grants(request: Request) -> dict[str, Any]:
@@ -1409,9 +1793,8 @@ def create_app(
         if (
             paper is None
             or not journal
-            or command.tool not in HISTORICAL_TOOLS and (
-                not paper.running or paper.error or time.time() - paper.state["last_tick"] > 10
-            )
+            or command.tool not in HISTORICAL_TOOLS
+            and (not paper.running or paper.error or time.time() - paper.state["last_tick"] > 10)
         ):
             raise HTTPException(503, "Paper worker or tool receipt storage is unavailable")
         if paper.disk_free < 5 * 1024**3:

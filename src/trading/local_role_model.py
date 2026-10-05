@@ -169,8 +169,12 @@ class LocalRoles:
             },
         }
         result: dict[str, Any] = {
-            "qualified": False, "qualification_valid": False, "runtime_available": False,
-            "ready": False, "enabled": False, "stages": stages,
+            "qualified": False,
+            "qualification_valid": False,
+            "runtime_available": False,
+            "ready": False,
+            "enabled": False,
+            "stages": stages,
         }
         try:
             profile = self.policy()
@@ -239,6 +243,10 @@ class LocalRoles:
     @staticmethod
     def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, int]:
         """Size the actual system/schema and serialized packet, without runtime access."""
+        if packet.get("retrieval_contract") and (
+            profile.get("rag_contract") != packet["retrieval_contract"]
+        ):
+            raise ValueError("RAG packet requires its declared, separately qualified model profile")
         measured = {
             "system_schema_bytes": len(prompt(role).encode()),
             "packet_bytes": len(packet_json(packet).encode()),
