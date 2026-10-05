@@ -63,17 +63,22 @@ class PeftDevelopmentRoles:
         LocalRoles(self.directory).paper_guard()  # The entire existing operating guard.
         return profile
 
-    def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+    @staticmethod
+    def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> None:
+        """Refuse incompatible inputs before reserving an actual development attempt."""
         if packet.get("retrieval_contract") and (
             profile.get("rag_contract") != packet["retrieval_contract"]
         ):
             raise ValueError("RAG development packet requires its separately reviewed profile")
+        if len(packet_json(packet).encode()) + len(prompt(role).encode()) > 32768:
+            raise ValueError("Role packet exceeds the development transport allowance")
+
+    def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+        self.preflight(role, packet, profile)
         cfg, selected, current = self.declaration()
         if current != profile or role not in {"researcher", "reviewer"}:
             raise ValueError("Frozen development profile changed before dispatch")
         serialized = packet_json(packet)
-        if len(serialized.encode()) + len(prompt(role).encode()) > 32768:
-            raise ValueError("Role packet exceeds the development transport allowance")
         guard = LocalRoles(self.directory)
         guard.paper_guard()
         if self._cancelled.is_set():

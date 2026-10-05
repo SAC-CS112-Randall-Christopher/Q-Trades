@@ -19,6 +19,7 @@ from trading.autonomous_spec import LabProposal, MemoryFilter, RuleSpec
 from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
+from trading.local_role_model import LocalRoles
 from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
 
 if TYPE_CHECKING:
@@ -36,6 +37,8 @@ from trading.role_evidence import (
 from trading.role_history import HOT_TASKS, HistoryUnavailable, RoleHistory
 from trading.rule_components import reviewed_feature
 from trading.scoped_tools import reader
+
+RETRIEVAL_CONTRACT = "source-rag-v1"
 
 
 class Question(BaseModel):
@@ -498,6 +501,22 @@ class RoleWorker:
             if self.transport
             else {"qualified": False, "reason": "No qualified local role profile configured"}
         )
+        if self.knowledge is not None:
+            # New investigations use this library even when retrieval has no match.
+            # Keep valid declared-profile receipts independent of current packet compatibility.
+            stage = {
+                "state": "compatible",
+                "next_action": (
+                    "Declared source-rag-v1 matches the current retrieval contract; "
+                    "dispatch still verifies the exact packet and qualification"
+                ),
+            }
+            try:
+                LocalRoles.check_retrieval_contract(RETRIEVAL_CONTRACT, result.get("profile") or {})
+            except ValueError as exc:
+                stage = {"state": "incompatible", "next_action": str(exc)}
+                result["ready"] = False
+            result.setdefault("stages", {})["retrieval"] = stage
         paper = self.controller.paper if self.controller else None
         state = "unavailable"
         if paper is not None and paper.running:
@@ -782,7 +801,7 @@ class RoleWorker:
             if self.knowledge is None:
                 raise ValueError("RAG source owner unavailable; retained packet is not regenerated")
             self.knowledge.check_passages(knowledge["passages"], external=False)
-            packet["retrieval_contract"] = "source-rag-v1"
+            packet["retrieval_contract"] = RETRIEVAL_CONTRACT
             packet["knowledge"] = knowledge
             for passage in knowledge["passages"]:
                 packet["evidence"][passage["citation"]] = passage
@@ -963,6 +982,9 @@ class RoleWorker:
         profile = await asyncio.to_thread(transport.development_admit, role)
         if profile.get("development_only") is not True:
             raise ValueError("Development needs its explicitly frozen separate profile")
+        preflight = getattr(transport, "preflight", None)
+        if callable(preflight):
+            preflight(role, packet, profile)
         started = time.time()
         with self.registry.transaction():
             current = self.registry.db.execute(
