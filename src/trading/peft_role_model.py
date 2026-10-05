@@ -64,6 +64,10 @@ class PeftDevelopmentRoles:
         return profile
 
     def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+        if packet.get("retrieval_contract") and (
+            profile.get("rag_contract") != packet["retrieval_contract"]
+        ):
+            raise ValueError("RAG development packet requires its separately reviewed profile")
         cfg, selected, current = self.declaration()
         if current != profile or role not in {"researcher", "reviewer"}:
             raise ValueError("Frozen development profile changed before dispatch")

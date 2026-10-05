@@ -163,7 +163,7 @@ class ResearchActors:
             ),
         }
 
-    def _charge(self, actor: dict[str, Any], size: int) -> None:
+    def _charge(self, actor: dict[str, Any], size: int, *, request: bool = True) -> None:
         # Callers mutating a claim already own the registry transaction. Read-only
         # deliveries use a standalone transaction; the lock prevents another
         # thread's transaction from being mistaken for our own.
@@ -171,10 +171,10 @@ class ResearchActors:
             with nullcontext() if self.registry.db.in_transaction else self.registry.transaction():
                 changed = self.registry.db.execute(
                     "UPDATE research_actors SET output_used=output_used+?,"
-                    "requests_used=requests_used+1 "
+                    "requests_used=requests_used+? "
                     "WHERE id=? AND revoked=0 AND expires>? AND output_used+?<=output_limit "
-                    "AND requests_used<request_limit",
-                    (size, actor["id"], time.time(), size),
+                    "AND requests_used+?<=request_limit",
+                    (size, int(request), actor["id"], time.time(), size, int(request)),
                 ).rowcount
                 if not changed:
                     raise ValueError(

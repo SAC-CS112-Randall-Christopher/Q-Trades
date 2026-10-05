@@ -52,6 +52,7 @@ const MarketStation = lazy(() =>
   })),
 );
 const TrainingDataPanel = lazy(() => import("./TrainingDataPanel").then(m => ({default: m.TrainingDataPanel})));
+const KnowledgeWorkspace = lazy(() => import("./KnowledgeWorkspace").then(m => ({default: m.KnowledgeWorkspace})));
 
 type Snapshot = {
   paper?: PaperSnapshot;
@@ -132,6 +133,9 @@ const aliases: Record<string, Page> = {
   "forward-learning": "ai-lab",
   "model-lab": "ai-lab",
   "role-research": "ai-lab",
+  knowledge: "ai-lab",
+  "research-reviews": "ai-lab",
+  "reviewer-connection": "ai-lab",
   "strategy-lab": "strategies",
   "live-quotes": "markets",
   "live-readiness": "risk",
@@ -182,6 +186,7 @@ function App() {
       setSearchOpen(false);
       if (hash === "#model-lab") setLabTab("models");
       else if (hash === "#role-research") setLabTab("roles");
+      else if (["#knowledge", "#research-reviews", "#reviewer-connection"].includes(hash)) setLabTab("knowledge");
       else if (hash === "#forward-learning") setLabTab("learning");
       else if (hash === "#experiment-lab") setLabTab("experiments");
       else if (hash === "#research") setLabTab("autonomous");
@@ -604,6 +609,7 @@ function App() {
                   ["history", "Historical matches"],
                   ["models", "Local model trials"],
                   ["training", "Training data"],
+                  ["knowledge", "Knowledge & reviews"],
                 ].map(([id, label]) => (
                   <button
                     key={id}
@@ -612,6 +618,7 @@ function App() {
                     onClick={() => {
                       setLabTab(id);
                       if (id === "training") location.hash = "training-data";
+                      if (id === "knowledge") location.hash = "knowledge";
                     }}
                   >
                     {label}
@@ -620,6 +627,7 @@ function App() {
               </div>
               {labTab === "autonomous" && <AutonomousPanel />}
               {labTab === "roles" && <RoleResearchPanel />}
+              {labTab === "knowledge" && <Suspense fallback={<p>Opening persistent knowledge…</p>}><KnowledgeWorkspace /></Suspense>}
               {labTab === "training" && <Suspense fallback={<p>Loading training review…</p>}><TrainingDataPanel /></Suspense>}
               {labTab === "experiments" && <ExperimentLab paper={paper} />}
               {labTab === "learning" && (

@@ -8,7 +8,7 @@ import sqlite3
 import time
 from collections.abc import Callable
 from contextlib import nullcontext
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import psycopg
 from pydantic import BaseModel, ConfigDict, Field
@@ -19,6 +19,10 @@ from trading.autonomous_spec import LabProposal, MemoryFilter, RuleSpec
 from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
+from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
+
+if TYPE_CHECKING:
+    from trading.research_reviews import ResearchReviews
 from trading.research_lessons import ResearchLessons
 from trading.research_storage import ResearchStorage, load_plan
 from trading.role_evidence import (
@@ -49,6 +53,8 @@ class RoleWorker:
     ):
         self.registry, self.controller, self.transport = registry, controller, transport
         self.lessons = ResearchLessons(registry)
+        self.knowledge: ResearchKnowledge | None = None
+        self.reviews: ResearchReviews | None = None
         self.owner = secrets.token_hex(16)
         self.enabled = False  # Only separately authorized, qualified policy enables inference.
         self.activation: Callable[[], bool] | None = None
@@ -357,6 +363,16 @@ class RoleWorker:
                 }
             )[:32]
         )
+        if self.knowledge is not None:
+            context["knowledge"] = self.knowledge.retrieve(
+                KnowledgeQuery(
+                    text=question.question[:300],
+                    cutoff=time.time(),
+                    symbol="BTCUSD",
+                    horizon=question.horizon,
+                ),
+                task=identity,
+            )
         encoded = json.dumps(context, sort_keys=True, allow_nan=False)
         if len(encoded.encode()) > 65536:
             raise ValueError("Role evidence context exceeds 64 KiB")
@@ -760,6 +776,19 @@ class RoleWorker:
         return c
 
     def _packet(self, task: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+        role, packet = self._base_packet(task)
+        knowledge = task["context"].get("knowledge")
+        if knowledge is not None:
+            if self.knowledge is None:
+                raise ValueError("RAG source owner unavailable; retained packet is not regenerated")
+            self.knowledge.check_passages(knowledge["passages"], external=False)
+            packet["retrieval_contract"] = "source-rag-v1"
+            packet["knowledge"] = knowledge
+            for passage in knowledge["passages"]:
+                packet["evidence"][passage["citation"]] = passage
+        return role, packet
+
+    def _base_packet(self, task: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         context = task["context"]
         if task["stage"] == "review":
             return "reviewer", {

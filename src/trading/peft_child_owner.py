@@ -33,7 +33,7 @@ def available_memory() -> int:
 
 
 class ChildOwner:
-    def __init__(self, child: subprocess.Popen[bytes]):
+    def __init__(self, child: subprocess.Popen[bytes], *, memory_limit: int | None = None):
         self.handle: Any = None
         if os.name != "nt":
             return  # Portable procedural tests; actual profile requires Windows.
@@ -75,6 +75,9 @@ class ChildOwner:
         handle = kernel.CreateJobObjectW(None, None)
         limits = Extended()
         limits.basic.flags = 0x2000  # JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
+        if memory_limit is not None:
+            limits.basic.flags |= 0x100  # JOB_OBJECT_LIMIT_PROCESS_MEMORY
+            limits.process_memory = memory_limit
         if (
             not handle
             or not kernel.SetInformationJobObject(
