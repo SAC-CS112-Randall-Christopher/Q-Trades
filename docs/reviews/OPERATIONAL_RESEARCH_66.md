@@ -285,6 +285,7 @@ pending publication. Existing development results,
 original profile/allowance/guard and ordinary training-eligibility policy remain
 unchanged. No actual trained model/provider call, operating rollout, merge,
 activation, migration, schedule cutover or financial-policy change occurred.
+
 ## Executed collector preparation and native job budget repair — October 5
 
 A fresh private executable collector now reuses the historical probe's consistent
@@ -312,16 +313,22 @@ The first collector attempt retained an actual native identity failure caused by
 the Windows virtual-environment launcher/base executable distinction. The corrected
 owner binds the actual base executable, exact command/root and process birth;
 fresh receipts passed. Scope validation adds 18 offline refusal checks with zero
-financial-entry calls; the strengthened comparator adds 56 procedural checks.
+financial-entry calls; a final ambient-selector refusal follow-up passes 20 offline
+scope checks without repeating the database run. The strengthened comparator adds
+56 procedural checks. The executed collector and subsequent guard hashes remain
+separately recorded in the private execution note.
 Earlier 26/28 receipts remain preserved. Independent bounded-read review corrected
 SQLite closure, traversal/native-capture bounds, frozen retirement fields and a
 pre-connect fixture endpoint/schema guard. Root stopped both owned fixtures and
 its QA database; listener closure was verified. No operating collection occurred.
 
-Hosted run 37383945461 at source head `d2c2987` passed five gates. The native
-selection itself finished **632 passed / 164 skipped / one warning**, in 430.90
-seconds, but the complete eight-minute job was cancelled immediately afterward.
-That run is not green. The complete PostgreSQL selection separately passed
+Hosted manual run 37383945461 at source head `d2c2987` passed five gates. The native
+job hit its complete eight-minute limit and interrupted pytest before the final
+tests. Its **632 passed / 164 skipped / one warning** at 430.90 seconds are partial
+counts, followed by an explicit KeyboardInterrupt, not a completed selection.
+An initial summary-only reading mistakenly called these complete; this ledger
+corrects that reading. That run is not green. The complete PostgreSQL selection
+separately passed
 **1,081 tests / 89 skips / one warning**, in 370.97 seconds. These remain separate
 from local zero-skip selections and earlier completed heads.
 
@@ -332,3 +339,20 @@ comparison and actual Windows PowerShell 5.1 parsing validate the partition;
 independent review is clear. New combined-head hosted acceptance is pending at
 commit time; the issue ledger records its eventual result. No
 provider, model, financial, resource-guard or operating process policy changed.
+
+A separate automatic pull-request run 37383955992 at the same `d2c2987` source
+completed all six gates successfully: native 655 passed / 220 skipped in 330.89
+seconds, complete PostgreSQL 1,081 passed / 89 skipped in 360.25 seconds, ownership
+46 passed, persistent research 75 passed, dashboard/build and browser monitoring
+passed. That full success qualifies its own run; the cancelled manual run remains
+partial. Neither replaces the required new combined-head partition verification.
+
+The new partition run 37385440526 at `5755ed5` completed all six jobs successfully.
+Full logs show the complete native selection **628 passed / 220 skipped / one
+warning**, in 265.53 seconds; runtime ownership/updater **73 passed / zero skips**,
+in 82.03 seconds; persistent research **75 passed / one warning**, in 92.78 seconds;
+and PostgreSQL **1,081 passed / 89 skipped / one warning**, in 367.18 seconds.
+Dashboard build/type-check and actual-owner synthetic monitoring browser recovery
+passed. Native/runtime counts now partition the same selectors; overlapping jobs
+and local selections are not summed. This documentation correction does not change
+product or CI code. Its final-head run will be recorded on the draft and issue.
