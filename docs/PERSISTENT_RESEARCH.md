@@ -103,6 +103,23 @@ training and operating promotion remain their existing separate gates.
 
 Use **Connections & schedule** to select one execution owner, actual verified API
 model/reasoning/project/prices, bounded scope and rolling request/token/cost limits.
+**Run due review** shares the background scheduler's durable occurrence and claim.
+An overlapping click cannot classify another invocation's active request as
+interrupted. Only the invocation that wins that request's dispatch transition
+may finalize its unfinished outcome; a genuine timeout/cancellation keeps the
+request uncertain and its spend reserved for reconciliation.
+
+The existing scheduler examines at most sixteen completed tasks per pass. It
+skips unchanged or nondisclosable candidates using per-task checks, retaining a
+single durable cursor in the registry so older eligible work remains reachable
+after restart. The `(updated, id)` cursor seeks through an index, including tied
+timestamps, rather than scanning the preceding archive. An exhausted window
+shows a bounded continuation reason. Existing in-flight/uncertain work, provider
+backoff and spending limits stop acquisition before rebuilding candidate packets.
+At most one request is dispatched for the daily occurrence; advancing the cursor
+does not create a new spending allowance. Relevant changed evidence remains
+eligible on a later available occurrence.
+
 The provider credential is stored under the current Windows user's DPAPI identity,
 with directory-bound entropy. It is cleared from the password field before the
 request, never kept in browser storage, and not part of model/tool packets. A
@@ -147,7 +164,7 @@ Private detailed receipts and synthetic corpus stay outside Git. They are in thi
 worktree's ignored `data/persistent-research-receipts` directory. No operating
 records, credential, model path or protected evaluation inputs are published.
 
-- Focused native reference/review/background selection: **59 passed**, one existing
+- Initial implementation's native reference/review/background selection: **59 passed**, one existing
   Starlette/httpx deprecation warning. Windows DPAPI, bounded PDF child, source-safe
   backup/restore, permission/time scope, correction continuation, lost acknowledgment,
   denied-budget acquisition, provider fault fixtures and two background occurrences
@@ -199,6 +216,54 @@ records, credential, model path or protected evaluation inputs are published.
 - The read-only installed before/final snapshots remain `fa3accd`, running paper,
   fresh processing and balanced journal. They are bounded observations and do not
   prove sustained uptime or authorize this branch's installation.
+
+### October 5 anchored-review repairs
+
+The [three comments on PR 61 at 74424b1](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/pull/61#discussion_r4183470790)
+are repaired in the existing owners. Cached passages now require the exact
+referenced revision's original eligibility **and** current revocation policy.
+A sanitized/shareable successor cannot grant external access to a local-only
+older passage. Direct reads, prior contexts, cached receipts, MCP packet/result
+reads and the Responses pre-dispatch check share that rule. Local source history
+and independently permitted teaching remain intact. Frozen packets are preserved
+even when subsequent disclosure is refused.
+
+Request finalization is scoped to the exact dispatch claim. Eligibility selection
+continues past an unchanged or blocked newest result within the bounded cursor
+contract described above. The source is reconciled with merged PR 60/main
+`fca5885`, preserving its financial readback, CPU placement, guard and separate
+development-attempt ownership. CI retains both native jobs and the authenticated
+portable PostgreSQL job, and installs the source package for owned research child
+interpreters. Job time limits are unchanged.
+
+The actual-owner regressions in [test_review_repairs.py](../tests/test_review_repairs.py)
+have **15 native passes** on frozen repair implementation `907eb9a`. They cover
+original/current revision rights and positive controls, retained legacy MCP
+packets, the real API's manual run overlapping `reviews.run()`, dispatch-CAS
+contention, genuine fifteen-second timeout/cancellation/restart, two occurrences
+reaching different results, changed-evidence re-review, forty blocked candidates
+with restart/tied timestamps, and global spending/provider gates. The real local
+MCP/Responses refusal test observes zero provider HTTP calls. A 10,000-row fixture
+requires a deep cursor to return sixteen rows within 4,000 SQLite VM steps; the
+prefix-scanning query failed that bound before the indexed-seek repair. These are
+software fixtures, not external-provider/model or installed acceptance.
+
+The initial counterexample selection is retained as **5 failed / 2 passed**; the
+separate deep-cursor bound has its retained pre-fix failure. A broader local
+integration attempt is retained as incomplete with two PostgreSQL setup errors:
+the owned cluster was launched on its default port while fixtures targeted 58959.
+Only that owned cluster and waiting QA commands were stopped; the corrected
+launch explicitly pins and verifies the QA address/port before running fixtures.
+The final integrated and hosted gates are recorded with exact revisions in the
+PR and issue 59 ledger; the earlier 4870590 full run is historical, not proof of
+these subsequent changes.
+
+Bounded installed health before and after the QA correction reports `fca5885`,
+running paper, fresh processing, balanced journal and no paper error. These
+read-only receipts refresh the older `fa3accd` observation; this source work
+did not install/restart the operating application or change its credentials,
+schedules, accounts/history, model or storage policy. Real external review,
+qualified local-model correction use and installed recovery acceptance remain open.
 
 The frozen 40-query retrieval contract has identity
 `2b7660b87dcdf6418a806e7be0843af09a4819c1b58d7f22b9c19d9f9c91d5f5`.
