@@ -149,6 +149,21 @@ remains separate from these monitoring repairs.
   Ruff and strict Windows-targeted mypy pass (**108 source files**).
   Final repair review and exact-head gates
   remain separately reported in PR #63; pre-repair green jobs do not cover it.
+- Independent review of the repaired `dcd7e6d` delta confirms the finding resolved,
+  with no further material issue. Its in-memory SQLite comparison uses actual
+  notice-owner transaction/event methods: the old batch persists nothing, the
+  corrected batch commits all seven keys, and unsupported keys still fail without
+  losing earlier committed rows. Review scope does not include native/browser
+  suites, hosted gates or installed inspection.
+  On this head, PostgreSQL **1,054 passed / 84 skipped**, memory/reviewer **74
+  passed**, ownership **46 passed** and the compiled browser gate all succeeded.
+  Windows tests **640 passed / 213 skipped** in **369.45 seconds** and the dashboard
+  TypeScript/build (**1,932 modules**) succeeded, but the combined native job
+  exceeded its eight-minute complete-job budget during final cleanup and is
+  **cancelled**, not green. Retain that failed acceptance receipt. The unchanged
+  dashboard install/build now runs in its own eight-minute Windows job; every
+  native test and the original native time limit remain. Final acceptance requires
+  all **six** separate gates on the final exact head, as recorded in PR #63.
 - Native driver cases cancel an actual disposable `pg_sleep(30)` session and
   drain after one/two cancellation requests, preserving writer/history and
   subsequent writer usability. A client-side block has **no test release**; fixed

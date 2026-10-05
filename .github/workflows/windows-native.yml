@@ -76,6 +76,19 @@ jobs:
             tests/test_rule_component.py tests/test_role_packet_preflight.py `
             tests/test_stock_research.py tests/test_research_actors.py `
             tests/test_research_acceptance.py
+
+  windows-dashboard:
+    # Keep the independent dashboard build out of the native suite's complete
+    # eight-minute lifecycle, including its checkout/install and final cleanup.
+    runs-on: windows-2025
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
       - name: Install pinned dashboard dependencies
         working-directory: apps/web
         run: npm ci --ignore-scripts --no-audit --no-fund
