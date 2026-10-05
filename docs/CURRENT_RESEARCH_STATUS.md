@@ -1,18 +1,29 @@
-# Current source follow-up — October 5, 2026, C60 monitoring repairs
+# Current source follow-up — October 5, 2026, R63-1 monitoring recovery
 
-Merged/installed #60 is `fca588586`. The new, unmerged source successor repairs
-completed-audit propagation, truthful monitoring freshness and bounded owned-reader
-shutdown. The [ordered repair/acceptance ledger](reviews/FINANCIAL_MONITORING_REPAIRS.md)
-records 121 native affected-owner passes, actual cancellation/drain faults,
-compiled Accounts browser transitions and a separate bounded installed read-only
-observation. Preserve the failed/partial receipts and #62's original rollout limits.
-The independent review's full-batch notice validation failure is repaired and
-retained with its actual-owner regression; final review and exact-head gates are
-reported in draft PR #63. Earlier heads' green jobs do not qualify a later repair.
-This source delivery has not changed installed services, financial history,
-accounts, rules, resource thresholds or model authority. The single approved
-trained-v2 attempt remains unused; concurrent model operation and the earlier
-severe stalls' cause are unproven. Keep #61's memory/reviewer work separately owned.
+Draft PR #63 continues the C60 repairs. Its follow-up R63-1 correction is
+`5c8eca9ab128dfbc242f8ea87d2c3aaac89b2443`: a newer completed audit preserves
+known history/storage refresh failures until each failing operation succeeds.
+The defect reproduced with actual native reader/runtime owners and the compiled
+Accounts workflow against published `932c2b7`. Corrected native affected-owner
+verification passed 125 cases; the final strengthened outage fixture separately
+passed both cases. The compiled ordinary UI/API run passed 23 owner checkpoints
+and seven presentation states, using offline Playwright 1.63.0 / Chromium 151.
+Independent review found no remaining material findings. The
+[ordered repair/acceptance ledger](reviews/FINANCIAL_MONITORING_REPAIRS.md)
+retains original failures, environment differences and overlapping selections.
+All six unchanged hosted gates, including CI's Playwright 1.62.1 browser path,
+must qualify the final published head; exact-head results are reported in
+[draft PR #63](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/pull/63).
+Earlier green gates do not qualify a later correction.
+
+A bounded read-only health GET at 19:09 UTC still reports installed
+`fca588586f9b72e9506caef6384ee8e65edea738`, running paper, fresh processing,
+balanced journal and no reported paper error. This source delivery has not
+changed installed services, financial history, accounts, rules, resource limits
+or model authority. The separately approved trained-v2 attempt remains unused
+by this repair. Installed successor acceptance, concurrent model operation and
+the earlier severe stalls' cause remain open. Preserve #61's separate owner,
+#57/#62's historical receipts and #64's separate compression study.
 
 
 # Existing memory/reviewer owner status — October 5, 2026, issues #58 and #59

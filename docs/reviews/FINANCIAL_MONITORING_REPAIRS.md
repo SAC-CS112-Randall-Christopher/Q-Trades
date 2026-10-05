@@ -1,5 +1,11 @@
 # Financial monitoring correctness follow-up — October 5, 2026
 
+The R63-1 recovery follow-up below records source correction
+`5c8eca9ab128dfbc242f8ea87d2c3aaac89b2443`. Earlier C60 receipts and clear reviews
+at `932c2b7` remain historical evidence; they did not establish R63-1 recovery.
+Final published-head hosted results are recorded in
+[draft PR #63](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/pull/63).
+
 Source follow-up to merged #60, based on main `fca588586`. This implements the
 three C60 findings while preserving #60's sound cooldown/topology changes and
 #62's original release receipt. It is not a rollout or trained-model acceptance.
@@ -237,3 +243,134 @@ is per server statement. The owned-child fallback therefore covers the remaining
 client/drain lifecycle. [Python's spawn/termination contracts](https://docs.python.org/3.12/library/multiprocessing.html)
 also require that terminated-child IPC is discarded. Browser CI uses the
 [documented Playwright installation path](https://playwright.dev/docs/ci).
+
+## R63-1: preserve known optional-refresh failures through retry audits
+
+### Original reproduction and correction
+
+At published `932c2b729d291114ff105a5cc0cd36462743eb44`, the actual native Windows
+runtime/reader and disposable PostgreSQL selection recorded **4 failed / 1
+passed / 11 deselected**, 71.20 seconds. History-only, storage-only and both
+independent-recovery directions falsely became balanced after a new successful
+audit arrived while a previously failing optional query remained held. The
+healthy routine in-flight control passed. These native receipts preceded complete
+Python lock restoration; their recorded environment is not retroactively changed.
+
+The original-source compiled Accounts run reproduced the same defect after
+restoring all 33 Python lock versions. Its saved final held probe established a
+live owned reader, no whole-operation error and unchanged completed-sample time.
+Owner, API, health and Accounts falsely reported current balanced monitoring;
+the actual research prerequisite opened. This run failed its acceptance assertion
+and closed the owned server normally in 25.843 seconds.
+
+These fixtures use the actual `FinancialReadback`, spawned `ReadbackWorker`,
+runtime loop, API and compiled UI with real disposable financial history. Optional
+query failures/holds, presentation liveness and a 61-second audit-scheduling
+advance are explicitly synthetic. No production method is copied into a probe,
+no passing audit is fabricated, and no model or operating database is used.
+The earlier copied-method Linux probe remains a separate synthetic finding.
+
+The correction changes only production `src/trading/tiered_runtime.py`:
+
+- `_accept_financial_audit` publishes the completed audit without clearing an
+  unresolved whole-operation or optional-query error. Confirmed negative audits
+  still wake financial supervision immediately, before ancillary queries.
+- `_accept_financial_sample` retains named failures in the existing sample receipt
+  until that query supplies a successful result. Recovery of one query cannot
+  clear another query's failure or a query omitted from the sample. A completed
+  whole sample clears its operation error.
+- `journal_status` derives availability from those existing owners. Performance,
+  API, health, notices and the research prerequisite share that result. Healthy
+  routine refreshes remain available while a valid audit has no known failure.
+
+`latest_query` timing still describes the last completed sample; its
+`refresh_errors` now retains unresolved named errors until genuine recovery.
+There is no additional store, scheduler, general state machine or status authority.
+Financial-loop work, writer ownership, audit validity, guards and the existing
+15-second operation / four-second drain / one-second termination limits are
+unchanged. Optional failures remain nonfatal to financial supervision.
+
+### Corrected source and independent review
+
+Source/test commit **`5c8eca9ab128dfbc242f8ea87d2c3aaac89b2443`**, production blob
+`93c8c6c73d1c0643905bebe9dc0c400254fcb6c8`, contains the reviewed correction and
+regressions. Subsequent publication documentation does not change those files.
+
+| Local evidence | Observed result and scope |
+| --- | --- |
+| Initial seven recovery cases | 7 passed / 9 deselected, 121.12s; original pre-lock-restoration environment and earlier timeout fixture retained |
+| Stronger forced recovery | 1 passed, 39.39s; waits for actual owned-child termination before releasing the hold, then proves fresh-reader recovery |
+| Broader native/disposable PG selection | 125 passed, no skips, one existing warning, 296.43s; eleven affected files, all seven new transition cases and existing negative/incomplete audit, notice, API, reader cancellation and identity-safe shutdown coverage |
+| Final outage-fixture delta | 2 passed / 13 deselected, 28.39s; adds initial balanced/available/empty-errors assertions before real bad-endpoint injection, retains 10s outage and 8s recovery limits |
+| Compiled ordinary Accounts/API/PG | 23 actual-owner checkpoints plus seven original presentation states, 141.563s, browser/server exit 0, 390px viewport, zero browser exceptions |
+| Static checks/build | Ruff 0.16.9 `src tests`; strict Windows-targeted mypy 2.3.1, 108 source files; dashboard TypeScript/build, 1,932 modules |
+
+The broader run preceded only the final three healthy-start assertions, whose
+two affected cases were then rerun. Selections overlap and are not added together.
+The compiled checks cover each independent failure, newer audit during a held
+retry, repeated failure, partial recovery, healthy routine refresh, real timeout
+and termination, restart and genuine recovery. Together with native owner coverage,
+they verify nonempty history, audit date/revision, immediate imbalance propagation
+and incomplete-audit refusal.
+The complete notice producer batch passes the registry and API through confirmation
+and recovery. The real lab prerequisite is checked without model dispatch or new
+experiments.
+
+The task-owned Python 3.12.10 environment matches all **33** requirements-lock
+versions. The local browser uses existing offline **Playwright 1.63.0 / Chromium
+151.0.7922.34**, explicitly different from unchanged CI's **1.62.1** pin. Receipt
+filenames containing `pinned` refer to the restored Python lock; they do not prove
+browser-version equivalence. The hosted browser gate is separate qualification.
+
+Independent Codex review found no remaining material actionable findings in the
+correction and affected contracts. Its two fixture findings were repaired: a
+post-screenshot final probe proves the held interval still exists, and the real
+connection-outage fixture proves healthy monitoring before injection. Review
+inspected source and retained receipts, not a new test run or installed state.
+
+### Retained failed attempts and remaining limits
+
+- The constrained native attempt had five fixture setup/cleanup access-denial
+  errors; these are not behavioral reproductions. The initial dashboard attempt
+  failed with `spawn EPERM`; the later native build is a separate pass.
+- The first corrected browser attempt reached timeout completion but stalled on
+  QA control recovery and hit its 300-second runner limit. A native isolated probe
+  reproduced a shared `Event.set` stall after terminating its waiting child.
+  Test controls now use single-writer RawValue flags with bounded polling; browser
+  closure is guaranteed even when the owned-server shutdown request fails.
+  Production IPC and deadlines were not changed.
+- A diagnostic-wrapper browser attempt failed when its owned server exited with
+  access violation **3221225477**. The cause remains unverified; no application,
+  driver or wrapper cause is asserted. The ordinary direct browser pass does not
+  relabel this failed attempt.
+- The first broader native selection remains **1 failed / 124 passed**, one
+  warning, 295.19s: the after-good-audit connection-outage case exceeded its 10s
+  observation limit. A separate unchanged-predicate diagnostic rerun passed both
+  cases in 27.22s and did not establish that failure's cause. The fixture now
+  observes the public derived monitoring error, retains timeout diagnostics,
+  checks the initial healthy state and uses the same deadlines. The subsequent
+  125-pass run and final two-case pass are separate receipts, not a reclassification.
+
+All earlier C60 failures, interrupted/cancelled jobs, skips, historical installed
+observations and reviews retain their original revision and limitations. All six
+unchanged gates must pass on the final published head: native, windows-dashboard,
+runtime-ownership, postgres-integration, browser-monitoring and persistent-research.
+Results and skipped counts are reported in the owning PR rather than inferred
+from an earlier head. No local competing full suite was launched while another
+project's full suite was active; local heavy verification ran serially.
+
+Private QA logs, hashes, screenshots and environment receipts remain under the
+task-owned `outputs/qtrades-monitoring-repairs/r63-1-20261005-01` directory, outside
+Git. The owned disposable cluster and servers were stopped after local verification;
+the open PR worktree and other lanes remain available. Safety stashes are preserved.
+A bounded loopback health GET at **19:09 UTC** observed installed
+`fca588586f9b72e9506caef6384ee8e65edea738`, running paper, fresh, balanced and no
+reported paper error. No operating SQL, installation, restart or service/task change
+was part of this recovery follow-up.
+
+This is source/isolated-QA acceptance only. No model call, paid call, training,
+download, holdout consumption, capture campaign, financial/storage-policy change,
+merge or trading activation occurred. The separately approved trained-v2 attempt
+was not consumed. Installed successor acceptance, actual model/market qualification
+and broader research completion remain separate. Preserve #61's owner, #57/#62's
+historical receipts, #64's compression study and the private Training Lab.
