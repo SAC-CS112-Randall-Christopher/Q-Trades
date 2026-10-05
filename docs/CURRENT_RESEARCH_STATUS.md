@@ -7,11 +7,24 @@ The authoritative rollout, preservation, UI and capture-incident receipt is
 That completed release should not be repeated. Its exact historical receipts
 remain below; older draft/uninstalled headings do not describe current dispatch.
 
-The next source work is owner-only capture recovery and the trained-v2 serving
-connection, followed by separately authorized actual development inference.
+Owner-only capture recovery and the trained-v2 serving connection are delivered
+in draft PRs #54 and #55, with their recorded source/procedural verification.
+The human has authorized one actual attempt with the reviewed CPU float32,
+two-processor, 600-second development profile. That unused attempt needs no
+repeat authorization. Actual backend admission refused engine-work cooldown,
+before loading weights, calling a model or reserving an allowance; see
+[issue #48 comment 5985924232](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/48#issuecomment-5985924232).
 The installed model runtime remains stopped and research unqualified/disabled;
 the retained operating samples still refuse inference through engine-work cooldown.
 No new model training, conversion, dashboard expansion or guard relaxation is needed.
+
+The latest request is to use spare RAM so paper processing and the trained model
+can coexist. The bounded financial-projection cache retains SQL writer/row locks,
+version checks, journal/invariant validation and real commit authority. Its source
+and isolated measurement are described in
+[RAM_ASSISTED_CAPACITY.md](reviews/RAM_ASSISTED_CAPACITY.md). New installation and
+actual simultaneous operating measurements remain separate from disposable proof;
+the guard and installed PostgreSQL settings are unchanged.
 
 The capture repair's isolated proof and compatibility limits are recorded in
 [CAPTURE_RECOVERY.md](reviews/CAPTURE_RECOVERY.md). Source/test delivery is distinct

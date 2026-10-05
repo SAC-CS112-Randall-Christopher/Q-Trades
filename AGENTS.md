@@ -1,5 +1,14 @@
 # Current direction — October 4, 2026, capture recovery and trained-v2 serving
 
+The human has now authorized one actual development attempt with the reviewed
+CPU float32/two-processor/600-second profile. That same unused attempt needs no
+repeat authorization. The actual backend admission still refuses engine-work
+cooldown; see issue #48 comment 5985924232. The latest request authorizes source
+work and isolated measurement to use RAM to reduce contention so model and paper
+processing can coexist. Preserve financial database authority and the unchanged
+guard. No installed PostgreSQL settings, services or operating data are changed
+by source/QA work; installation remains a separate boundary.
+
 Main `7b062a0222674d62697f88e1f99d67278298a441` contains the completed six-PR
 rollout (#40 and #49–53). Both merged-main CI jobs passed. The installed rollout
 and bounded preservation/UI observations are recorded in issue #48 comment

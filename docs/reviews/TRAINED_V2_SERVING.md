@@ -12,7 +12,17 @@ agrees with the completed v2 run; this is linkage evidence, not actual serving.
 The private base identity is pinned in the operator configuration/attempt receipt.
 Neither weights, private paths, corpus material nor run contents belong in Git.
 
-## Frozen proposed development profile
+## Current authorization and admission
+
+The human has authorized one actual attempt with the profile below. The real
+backend's `development_admit` refused engine-work cooldown on October 5 at
+00:09:20 UTC, before model imports/loading, a role question or allowance
+reservation. The attempt remains unused; do not ask again for that same profile.
+See [issue #48 comment 5985924232](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/48#issuecomment-5985924232).
+[RAM_ASSISTED_CAPACITY.md](RAM_ASSISTED_CAPACITY.md) records the bounded capacity
+repair; it does not override admission or change this approved model profile.
+
+## Frozen authorized development profile
 
 | Setting | Declared value |
 | --- | --- |
@@ -31,7 +41,7 @@ CPU float32/unquantized serving differs explicitly from the CUDA float16/NF4
 training recipe. The inference context allowance also differs from training's
 2,048-token preprocessing limit. No training/qualification result transfers to
 this new profile. Actual compatibility, load/response time, peak RAM and protected
-work impact remain unmeasured until the applicable development authorization.
+work impact remain unmeasured because the unchanged guard has refused admission.
 The memory allowance provides float32 weights plus loading/runtime headroom;
 it is a declared conservative development budget, not an observed requirement.
 
