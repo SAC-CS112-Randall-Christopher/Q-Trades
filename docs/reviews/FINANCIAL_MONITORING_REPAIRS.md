@@ -3,6 +3,9 @@
 Source follow-up to merged #60, based on main `fca588586`. This implements the
 three C60 findings while preserving #60's sound cooldown/topology changes and
 #62's original release receipt. It is not a rollout or trained-model acceptance.
+PR #61 subsequently merged to main at `dcf7ccbb1`; this branch incorporates its
+memory/reviewer owner and independent CI job. Its model/installed finish line
+remains separate from these monitoring repairs.
 
 ## Ordered request and acceptance checklist
 
