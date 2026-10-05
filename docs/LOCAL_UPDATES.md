@@ -19,6 +19,14 @@ without application files or a build failure stop before touching the running ap
 No reset, force-pull, stash or branch switching is performed. The fetched commit,
 not an unmerged development head, supplies the installed source.
 
+For an update approved at a specific revision, pass `-ExpectedCommit` with that
+full 40-hex commit to `scripts/Update-QTrades.ps1`. The updater compares its own
+fetched main with the approved value before changing the checkout, building,
+backing up or stopping the application. A mismatch requires reconciling the new
+target and its approval; malformed or empty explicit values are refused. Omitting
+this option preserves the existing manual main-update behavior. This check does
+not grant installation or restart authority.
+
 ## What is and is not copied
 
 Only **src**, **scripts**, **apps/web**, and four root source/packaging files are

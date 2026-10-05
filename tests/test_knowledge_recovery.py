@@ -5,13 +5,17 @@ import base64
 import io
 import json
 import os
+import re
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from pathlib import Path
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 import pytest
+from fastapi.testclient import TestClient
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 from test_persistent_research import (
@@ -25,6 +29,8 @@ from test_persistent_research import (
 )
 from test_persistent_research import workspace as workspace
 
+from trading.api import create_app
+from trading.config import Settings
 from trading.knowledge_acquisition import URLImport, acquire, public_target
 from trading.research_knowledge import DocumentImport, KnowledgeDisposition, ResearchKnowledge
 from trading.research_reviews import ResearchReviews, ReviewDecision, ReviewReconcile
@@ -506,6 +512,49 @@ def test_review_to_existing_instructional_teaching_preserves_model_authorship(wo
     assert "Model-assisted" in first["candidate"]["authorship"]["author"]
     assert first["candidate"]["original_answer"] is None
     assert first["candidate"]["authorship"]["empirical_performance_claim"] is False
+
+
+def test_review_teaching_form_reaches_existing_api_and_reopens_originals(workspace, tmp_path):
+    knowledge, worker, reviews, *_ = workspace
+    knowledge.ingest(note(expected_revision=1).model_copy(update={"training_allowed": True}))
+    run = complete(reviews)
+    reviews.decide(run["id"], accept())
+    worker.reviews = reviews
+    original_source = knowledge.read("methods-costs", 2, cutoff=time.time(), operator=True)
+    original_review = reviews.get(run["id"])
+    form = (Path(__file__).parents[1] / "apps/web/src/KnowledgeWorkspace.tsx").read_text(
+        encoding="utf-8"
+    ).split("<summary>Create an instructional teaching draft</summary>", 1)[1]
+    route = re.search(r'await request[^(]*\(\s*"([^"]+)"', form)
+    assert route is not None, "The teaching form must call its retained candidate API"
+    app = create_app(Settings(), tmp_path / "api-monitor.sqlite", background=False)
+    with TestClient(app) as client:
+        # Attach this fixture's existing research owners; no transport/worker starts.
+        app.state.lab = SimpleNamespace(registry=worker.registry, roles=worker)
+        selection = {
+            "kind": "review_annotation",
+            "identity": run["id"],
+            "role": "reviewer",
+            "rights_reason": "Synthetic owner-authored teaching material permitted.",
+        }
+        headers = {"X-Local-Operator": "1"}
+        first = client.post(route[1], headers=headers, json=selection)
+        assert first.status_code == 200, first.text
+        candidate = first.json()
+        again = client.post(route[1], headers=headers, json=selection)
+        assert again.status_code == 200 and again.json()["id"] == candidate["id"]
+        reopened = client.get(
+            "/api/lab/training/examples/" + candidate["id"], headers=headers
+        )
+        assert reopened.status_code == 200
+        assert reopened.json()["candidate"] == candidate["candidate"]
+    assert candidate["candidate"]["source_kind"] == "instructional"
+    assert candidate["candidate"]["original_answer"] is None
+    assert candidate["candidate"]["authorship"]["empirical_performance_claim"] is False
+    assert knowledge.read("methods-costs", 2, cutoff=time.time(), operator=True) == original_source
+    assert reviews.get(run["id"]) == original_review
+    assert worker.registry.db.execute("SELECT count(*) FROM training_candidates").fetchone()[0] == 1
+    assert worker.registry.db.execute("SELECT count(*) FROM role_attempts").fetchone()[0] == 0
 
 
 def test_reconcile_unknown_never_refunds_or_replays(workspace):

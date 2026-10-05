@@ -245,3 +245,43 @@ unowned and unused with zero attempts/allowances. The existing single-attempt
 authorization is preserved. Installation/restart approval remains pending; #67
 remains an unmerged draft. Actual inference, qualification, external review,
 later compatible RAG use, mature feedback and #65 packaging remain open.
+
+## Approved-target and instructional handoff source follow-up — October 5
+
+The supported updater now accepts an optional full `ExpectedCommit`. It compares
+its own fetched main with that approved revision before merge, build, source
+backup, shutdown or copy. Explicit empty/malformed values refuse before fetch;
+uppercase hexadecimal is accepted. Omitting the option preserves the existing
+manual updater. This unmerged source addition does not authorize an operating
+update, replace the existing updater owner or change the pending main target.
+
+A retained disposable counterexample freezes the prior updater and advances its
+bare remote after the earlier target observation; that updater installed the newer
+revision. The corrected Windows selection passes all **27 updater scenarios, zero
+skips**, in 111.42 seconds. Refusal checks compare the entire disposable runtime,
+checkout head/dirty state, missing backup/build output and unchanged enabled/running
+owner. Git/PowerShell/robocopy are real; task, dependency, build and health operations
+are explicitly mocked. This is updater source proof, not an operating restart.
+
+The accepted review annotation's instructional teaching form previously requested
+an absent `/api/lab/training/select` route. It now uses the existing
+`/api/lab/training/candidates` owner and unchanged `SourceSelection`. The actual
+client/server counterexample returned 404. The repair saves one idempotent
+instructional candidate and reopens it through the normal example API while
+preserving source/review originals, model authorship and zero role attempts.
+The complete changed recovery file passes **29 tests, zero skips**, in 7.79 seconds,
+with the existing Starlette/httpx warning. An initial long assertion's Ruff failure
+was repaired; whole-source/test Ruff and the compiled dashboard (1,932 modules)
+pass. These counts are separate from earlier overlapping source selections.
+
+Independent Codex reviews are clear for the final updater, instructional form and
+API regression-test hashes. The compiled disposable UI passed six visible checks:
+review to actual candidate POST/detail, original linked context and uncertainty,
+unapproved instructional draft, normal reopen and full document reload. One real
+candidate POST returned 200; one candidate remains, original source/review hashes
+are unchanged, and actual role attempts/allowances remain zero. The owned server
+exited and listener closure was verified. Final combined hosted gates remain
+pending publication. Existing development results,
+original profile/allowance/guard and ordinary training-eligibility policy remain
+unchanged. No actual trained model/provider call, operating rollout, merge,
+activation, migration, schedule cutover or financial-policy change occurred.

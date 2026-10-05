@@ -1245,7 +1245,7 @@ export function KnowledgeWorkspace() {
                         e.preventDefault();
                         void action(async () => {
                           const saved = await request<{ id: string }>(
-                            "/api/lab/training/select",
+                            "/api/lab/training/candidates",
                             {
                               kind: "review_annotation",
                               identity: review.id,
