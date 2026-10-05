@@ -9,16 +9,168 @@ import sqlite3
 import time
 from collections.abc import Iterator
 from contextlib import closing, contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from trading.research_evidence import MAX_PACKET, canonical, digest
 from trading.research_storage import ResearchStorage, StoragePlan, volume
 
-from .codecs import Clock, Identity, StudyError, identity
+from .codecs import MAX_INPUT, Clock, Identity, StudyError, identity
 
 SEED = 20261005
 EPOCH = 1_800_000_000.0
+STRATA = {
+    "age": ["under-1-day", "1-to-7-days", "over-7-days"],
+    "content": ["wire", "decision-summary", "mixed-other"],
+    "size": ["under-1-MiB", "1-to-8-MiB", "8-to-32-MiB"],
+}
+PUBLISHED_FIXTURE_SHA256 = "d7ffd7e47c80493026b1e44d5cea3897fba755aee9ef5075e38f06f6e0d7f39c"
+
+
+def published_synthetic(spec: dict[str, Any]) -> bool:
+    receipt = (
+        Path(__file__).resolve().parents[2]
+        / "docs/reviews/temporary-lossless-compression/synthetic-results.json"
+    )
+    if identity(receipt).sha256 != PUBLISHED_FIXTURE_SHA256:
+        raise StudyError("Historical synthetic receipt identity changed")
+    recorded = json.loads(receipt.read_text(encoding="utf-8"))
+    return recorded["real_specimens"] == 0 and any(
+        all(spec.get(key) == original.get(key) for key in (
+            "label", "representation", "input", "signature", "provenance",
+        )) for original in recorded["specimens"]
+    )
+
+
+def private_file(path: Path, scratch: Path, *, max_bytes: int) -> None:
+    """Admit already-frozen private inputs only; never acquire an operating source."""
+    if not path.is_absolute() or not path.resolve().is_relative_to(scratch.resolve()):
+        raise StudyError("Frozen input must be inside the verified private study scratch")
+    for component in (path, *path.parents):
+        if component.is_symlink() or (
+            os.name == "nt" and component.stat().st_file_attributes & 0x400
+        ):
+            raise StudyError("Redirected frozen input refused")
+        if (component / ".git").exists():
+            raise StudyError("Frozen input overlaps a Git checkout")
+    if not path.is_file() or path.stat().st_size > max_bytes:
+        raise StudyError("Frozen input or receipt exceeds its bound")
+    if path.stat().st_nlink != 1:
+        raise StudyError("Hard-linked frozen input or receipt refused")
+
+
+def utc_timestamp(value: Any) -> datetime:
+    if not isinstance(value, str):
+        raise StudyError("Selection and receipt require explicit UTC timestamps")
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo != UTC:
+        raise StudyError("Selection and receipt timestamps must be UTC")
+    return parsed
+
+
+def real_stratum(length: int, completed: datetime, selected: datetime) -> dict[str, str]:
+    age = (selected - completed).total_seconds()
+    if age < 0:
+        raise StudyError("Specimen completion occurs after selection")
+    return {
+        "age": "under-1-day" if age < 86400 else "1-to-7-days" if age <= 604800 else "over-7-days",
+        "size": "under-1-MiB" if length < 1024**2
+        else "1-to-8-MiB" if length < 8 * 1024**2 else "8-to-32-MiB",
+    }
+
+
+def load_frozen_specimens(
+    manifest: Path, scratch: Path
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    private_file(manifest, scratch, max_bytes=1024**2)
+    packet = json.loads(manifest.read_text(encoding="utf-8-sig"))
+    selection = packet["selection"]
+    if (
+        selection.get("declared_before_compression") is not True
+        or selection.get("seed") != SEED
+        or selection.get("strata") != STRATA
+    ):
+        raise StudyError("Sampling strata and seed must be declared before compression")
+    specs = packet["specimens"]
+    if not isinstance(specs, list) or not 1 <= len(specs) <= 8:
+        raise StudyError("Frozen SQLite selection must contain one to eight specimens")
+    labels, paths, total = set(), set(), 0
+    for spec in specs:
+        source = Path(spec["path"])
+        private_file(source, scratch, max_bytes=MAX_INPUT)
+        expected = Identity(**spec["input"])
+        expected.validate()
+        total += expected.length
+        if total > 128 * 1024**2:
+            raise StudyError("Combined frozen input exceeds 128 MiB")
+        if spec["label"] in labels or source.resolve() in paths:
+            raise StudyError("Duplicate frozen specimen or label")
+        labels.add(spec["label"])
+        paths.add(source.resolve())
+        if spec.get("representation") != "sqlite":
+            raise StudyError("Access study accepts SQLite containers only")
+        provenance = spec.get("provenance")
+        if provenance == "real-reviewed-frozen-sqlite":
+            receipt = Path(spec["acquisition_receipt"])
+            private_file(receipt, scratch, max_bytes=64 * 1024)
+            if identity(receipt).dump() != spec.get("acquisition_receipt_identity"):
+                raise StudyError("Acquisition receipt identity differs from the reviewed handoff")
+            proof = json.loads(receipt.read_text(encoding="utf-8-sig"))
+            if (
+                proof.get("input") != expected.dump()
+                or proof.get("status") != "reviewed-consistent-eligible-copy"
+                or proof.get("source_lifecycle") not in {"sealed", "retained"}
+                or proof.get("consistency_method")
+                not in {"closed-owner-copy", "consistent-snapshot", "readonly-sqlite-backup"}
+                or not all(
+                    isinstance(proof.get(key), str) and proof[key].strip()
+                    for key in (
+                        "ownership_evidence",
+                        "authorization_evidence",
+                        "custody_evidence",
+                        "consistency_evidence",
+                        "exclusion_evidence",
+                        "acquired_utc",
+                        "eligibility_utc",
+                        "transformation",
+                        "independent_review_evidence",
+                    )
+                )
+                or any(
+                    proof.get("exclusions", {}).get(key) is not False
+                    for key in (
+                        "active", "unresolved", "unknown_owner", "pinned", "pending_outcome",
+                        "protected_evaluation", "unrelated",
+                    )
+                )
+            ):
+                raise StudyError("Real input lacks its reviewed acquisition/eligibility evidence")
+            # These are evidence pointers for independent review, not software proof that
+            # the source was eligible. The runner has no live acquisition or owner authority.
+            if any(spec.get("stratum", {}).get(k) not in values for k, values in STRATA.items()):
+                raise StudyError("Real specimen lacks its predeclared age/content/size stratum")
+            selected = utc_timestamp(selection.get("selected_utc"))
+            if utc_timestamp(proof["acquired_utc"]) > selected or (
+                utc_timestamp(proof["eligibility_utc"]) > selected
+            ):
+                raise StudyError("Receipt acquisition and eligibility must precede selection")
+            bins = real_stratum(
+                expected.length, utc_timestamp(proof.get("completed_utc")), selected
+            )
+            if any(spec["stratum"][key] != value for key, value in bins.items()) or (
+                spec["stratum"]["content"] != proof.get("content_stratum")
+            ):
+                raise StudyError("Declared stratum differs from reviewed completion/content/size")
+        elif provenance != "synthetic-existing-storage-writer" or not published_synthetic(spec):
+            raise StudyError("Frozen synthetic input lacks its published generation identity")
+        if identity(source) != expected:
+            raise StudyError("Frozen input differs from the reviewed byte identity")
+        signature = sqlite_signature(source)
+        if signature != spec["signature"]:
+            raise StudyError("Frozen SQLite signature differs")
+        spec["probes"] = probes(source)
+    return specs, selection
 
 
 @contextmanager
@@ -149,7 +301,19 @@ def probes(path: Path) -> dict[str, Any]:
             for i in offsets
         ]
         middle_id = refs[offsets.index(count // 2)][0]
-        return {"references": refs, "range": [middle_id, middle_id + 3]}
+        return {
+            "references": refs,
+            "range": [middle_id, middle_id + 3],
+            "single_reference": refs[offsets.index(count // 2)],
+        }
+
+
+def access_selection(selection: dict[str, Any], workload: str) -> dict[str, Any]:
+    if workload == "batch":
+        return selection
+    if workload == "one-reference" and selection["references"]:
+        return {"references": [selection["single_reference"]], "range": None}
+    raise StudyError("Unknown or empty exact-reference access workload")
 
 
 def read_sqlite(path: Path, selection: dict[str, Any]) -> dict[str, Any]:
@@ -166,12 +330,14 @@ def read_sqlite(path: Path, selection: dict[str, Any]) -> dict[str, Any]:
             if row is None:
                 raise StudyError("Exact reference unavailable")
             h.update(canonical(exported(row)).encode())
-        for row in db.execute(
-            "SELECT r.id,r.sha,r.body,a.available FROM records r "
-            "LEFT JOIN record_availability a ON a.id=r.id WHERE r.id BETWEEN ? AND ? ORDER BY r.id",
-            tuple(selection["range"]),
-        ):
-            h.update(canonical(exported(row)).encode())
+        if selection.get("range") is not None:
+            for row in db.execute(
+                "SELECT r.id,r.sha,r.body,a.available FROM records r "
+                "LEFT JOIN record_availability a ON a.id=r.id "
+                "WHERE r.id BETWEEN ? AND ? ORDER BY r.id",
+                tuple(selection["range"]),
+            ):
+                h.update(canonical(exported(row)).encode())
     return {
         "wall_s": time.perf_counter() - wall,
         "cpu_s": time.process_time() - cpu,

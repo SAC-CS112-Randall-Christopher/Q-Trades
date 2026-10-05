@@ -1,5 +1,46 @@
 # Verification and retained attempts
 
+## Approved continuation ledger
+
+The resumed lane began clean at study head
+`14029309ea0439b643b51eb8c0217d174184e149`; local/remote branch and draft PR #64
+agreed. Its base remained `dcf7ccbb178cdd89175e427962dec80475620c73`; no active Git
+operation or rebase was found. The updated global worktree/Goal/execution and
+retirement agreement applies. The existing lane and Goal are reused; an open
+draft under review keeps its worktree/branch. Other lanes' work is preserved.
+
+The historical fixture result retains SHA-256
+`d7ffd7e47c80493026b1e44d5cea3897fba755aee9ef5075e38f06f6e0d7f39c`.
+Independent sampling review found no established real acquisition among the
+bounded accessible private study receipts. Cached operating metadata lacks
+per-segment eligibility/consistency proof. Inaccessible historical test trees
+were not treated as an exhaustive inventory. No operating DB was opened.
+
+| Continuation attempt | Observed result | Meaning |
+| --- | --- | --- |
+| Initial scoped lint/types | Findings retained | Formatting and explicit type annotations were corrected. |
+| Scoped strict Windows types | Passed, 8 source modules | Study code only; not full-product acceptance. |
+| New-case attempt 1 | 20 passed, 2 failed, 299.88 s | Both new cancellation assertions assumed Windows Job termination would return nonzero. The supervisor had refused the operations and retained output. |
+| Affected attempt 2 | 10 passed, 1 failed, 10.63 s | Simulated overlap arrived before child output; a completed readiness marker now defines when this test introduces overlap. |
+
+The attempted 300-second bound found no remaining test runner to stop: the batch
+had completed. Its private bounded-attempt receipt and all failed outputs remain.
+This is not evidence of a production recovery failure or its cause. No shared
+capture test, assertion or five-second deadline was changed.
+
+Independent source review repaired hard-link admission, size/age stratum binding,
+private nested metadata publication, synthetic provenance binding, child temporary
+placement, and contradictory seed/repetition completion claims. Tests use
+synthetic disposable receipt-format examples; they are not real acquisition
+receipts or operating approval.
+
+The predeclared continuation protocol and acceptance limits are in
+[README.md](README.md). Process observations found foreign tests/model work and
+an unclassified resident model runtime. They prevent controlled timing evidence;
+they do not by themselves diagnose the preserved capture failure.
+
+## Historical verification
+
 Product source is frozen at `dcf7ccbb178cdd89175e427962dec80475620c73`.
 The final synthetic result records SHA-256 identities for every benchmark module,
 this test module, the relevant existing owners, the shared lockfile and project

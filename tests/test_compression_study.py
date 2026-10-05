@@ -510,3 +510,302 @@ def test_one_record_segment_has_exact_reference_and_bounded_range(tmp_path):
             selection,
         )["selection_sha256"]
     )
+
+
+def frozen_test_packet(tmp_path):
+    from scripts.compression_study.specimens import SEED, STRATA
+
+    source = make_fixture(tmp_path, "mixed", rows=2)
+    expected = identity(source).dump()
+    receipt = tmp_path / "test-only-acquisition.json"
+    proof = {
+        "input": expected, "status": "reviewed-consistent-eligible-copy",
+        "source_lifecycle": "sealed", "consistency_method": "closed-owner-copy",
+        "acquired_utc": "2026-10-04T10:00:00Z", "eligibility_utc": "2026-10-04T10:00:00Z",
+        "completed_utc": "2026-10-04T00:00:00Z", "content_stratum": "mixed-other",
+        "exclusions": {key: False for key in (
+            "active", "unresolved", "unknown_owner", "pinned", "pending_outcome",
+            "protected_evaluation", "unrelated",
+        )},
+        **{key: "Test-only receipt-format evidence; no real acquisition" for key in (
+            "ownership_evidence", "authorization_evidence", "custody_evidence",
+            "consistency_evidence", "exclusion_evidence", "transformation",
+            "independent_review_evidence",
+        )},
+    }
+    receipt.write_text(json.dumps(proof), encoding="utf-8")
+    packet = {
+        "selection": {
+            "declared_before_compression": True, "seed": SEED, "strata": STRATA,
+            "selected_utc": "2026-10-05T00:00:00Z",
+        },
+        "specimens": [{
+            "label": "private-test-identity", "path": str(source), "input": expected,
+            "representation": "sqlite", "signature": sqlite_signature(source),
+            "provenance": "real-reviewed-frozen-sqlite",
+            "acquisition_receipt": str(receipt),
+            "acquisition_receipt_identity": identity(receipt).dump(),
+            "stratum": {"age": "1-to-7-days", "content": "mixed-other", "size": "under-1-MiB"},
+        }],
+    }
+    return packet, proof
+
+
+@pytest.mark.parametrize("change", [
+    "active", "missing-custody", "receipt-identity", "size-bin", "age-bin", "sidecar",
+    "hard-link", "outside", "synthetic-label", "changed-source", "duplicate", "specimen-cap",
+])
+def test_frozen_import_refuses_unsafe_or_unproven_handoff_before_sqlite(
+    tmp_path, monkeypatch, change
+):
+    from scripts.compression_study import specimens
+
+    packet, proof = frozen_test_packet(tmp_path)
+    spec = packet["specimens"][0]
+    receipt = Path(spec["acquisition_receipt"])
+    if change == "active":
+        proof["exclusions"]["active"] = True
+    elif change == "missing-custody":
+        proof.pop("custody_evidence")
+    elif change == "receipt-identity":
+        proof["transformation"] = "changed after independent review"
+    elif change == "size-bin":
+        spec["stratum"]["size"] = "8-to-32-MiB"
+    elif change == "age-bin":
+        spec["stratum"]["age"] = "over-7-days"
+    elif change == "sidecar":
+        Path(spec["path"] + "-journal").write_bytes(b"unresolved")
+    elif change == "hard-link":
+        os.link(spec["path"], tmp_path / "linked.sqlite")
+    elif change == "outside":
+        spec["path"] = str(tmp_path.parent / "outside-operating.sqlite")
+    elif change == "synthetic-label":
+        spec["provenance"] = "synthetic-existing-storage-writer"
+    elif change == "changed-source":
+        with Path(spec["path"]).open("ab") as out:
+            out.write(b"changed")
+    elif change == "duplicate":
+        packet["specimens"].append(spec.copy())
+    else:
+        packet["specimens"] *= 9
+    receipt.write_text(json.dumps(proof), encoding="utf-8")
+    if change != "receipt-identity":
+        spec["acquisition_receipt_identity"] = identity(receipt).dump()
+    manifest = tmp_path / "packet.json"
+    manifest.write_text(json.dumps(packet), encoding="utf-8")
+    opened = []
+    original_connect = specimens.sqlite3.connect
+
+    def observe_open(*args, **kwargs):
+        opened.append(args[0])
+        return original_connect(*args, **kwargs)
+
+    monkeypatch.setattr(specimens.sqlite3, "connect", observe_open)
+    with pytest.raises(StudyError):
+        specimens.load_frozen_specimens(manifest, tmp_path)
+    # A duplicate is found after the first specimen has been verified; other refusals precede SQL.
+    if change != "duplicate":
+        assert opened == []
+
+
+def test_frozen_import_preserves_reviewed_identity_and_does_not_create_sqlite_sidecars(tmp_path):
+    from scripts.compression_study.specimens import load_frozen_specimens
+
+    packet, _ = frozen_test_packet(tmp_path)
+    manifest = tmp_path / "packet.json"
+    manifest.write_text(json.dumps(packet), encoding="utf-8")
+    specs, selection = load_frozen_specimens(manifest, tmp_path)
+    assert selection == packet["selection"]
+    assert specs[0]["input"] == packet["specimens"][0]["input"]
+    assert identity(Path(specs[0]["path"])).dump() == specs[0]["input"]
+    assert len(specs[0]["probes"]["references"]) == 2
+    assert all(
+        not Path(specs[0]["path"] + suffix).exists() for suffix in ("-wal", "-shm", "-journal")
+    )
+
+
+def test_three_access_controls_preserve_one_reference_and_same_segment_batch(tmp_path):
+    require_codec("zstd-1")
+    from scripts.compression_study.run import access_worker, source_identity
+    from scripts.compression_study.specimens import access_selection
+
+    source = make_fixture(tmp_path, "mixed", rows=4)
+    spec = {
+        "path": str(source), "label": "private-test-label", "input": identity(source).dump(),
+        "signature": sqlite_signature(source), "probes": probes(source),
+    }
+    spec["access_hashes"] = {
+        work: read_sqlite(source, access_selection(spec["probes"], work))["selection_sha256"]
+        for work in ("one-reference", "batch")
+    }
+    assert spec["access_hashes"]["one-reference"] != spec["access_hashes"]["batch"]
+    sources, results = source_identity(), tmp_path / "artifacts"
+    for arm in ("none", "zstd-1"):
+        prep = access_worker({
+            "operation": "prepare", "source_files": sources, "specimen": spec,
+            "arm": arm, "name": arm, "results": str(results),
+        })
+        assert prep["compression"]["stream_input_bytes"] == spec["input"]["length"]
+    for arm in ("direct", "none", "zstd-1"):
+        for workload in ("one-reference", "batch"):
+            result = access_worker({
+                "operation": "access", "source_files": sources, "specimen": spec, "arm": arm,
+                "workload": workload, "name": arm + workload, "results": str(results),
+                "artifact": str(results / arm), "repetition": 0,
+            })
+            assert result["database_read"]["selection_sha256"] == spec["access_hashes"][workload]
+            assert result["total_wall_s"] >= result["access"]["wall_s"]
+            assert result["total_wall_s"] >= result["full_validation"]["wall_s"]
+            if arm == "direct":
+                assert result["restoration"] is None and result["restored_scratch_bytes"] == 0
+            else:
+                assert result["restoration"]["stream_output_bytes"] == spec["input"]["length"]
+                assert "hash" in result["restoration"]["phases"]
+                assert "flush" in result["restoration"]["phases"]
+                assert not (results / (arm + workload + ".decoded")).exists()
+    assert identity(source).dump() == spec["input"]
+
+
+def access_publication_input():
+    pytest.importorskip("psutil", reason="Dedicated study publication environment")
+    require_codec("zstd-1")
+    from scripts.compression_study.codecs import dependencies, profile
+    from scripts.compression_study.run import source_identity
+
+    return {
+        "version": "frozen-sqlite-access-v1", "mode": "smoke", "status": "completed",
+        "source_base": "d" * 40, "source_files": source_identity(),
+        "dependencies": dependencies(),
+        "profiles": {arm: profile(arm) for arm in ("none", "zstd-1")},
+        "actual_reclaimed_bytes": 0, "operating_quota_change_bytes": 0,
+        "seed": 20261005, "repetitions": 1, "real_specimens": 1,
+        "specimens": [{
+            "label": "PRIVATE-REAL-ID", "input": {"length": 8192, "sha256": "PRIVATE-INPUT-HASH"},
+            "signature": {"records": 2},
+            "stratum": {"age": "over-7-days", "content": "wire", "size": "under-1-MiB"},
+        }],
+        "preparations": [], "samples": [], "failures": [],
+    }
+
+
+def test_access_publication_drops_private_payloads_and_unknown_nested_metadata():
+    value = access_publication_input()
+    from scripts.compression_study.sanitize import access_aggregate
+    value["source_files"]["private"] = "PRIVATE-REAL-ID"
+    value["dependencies"]["payload"] = "PRIVATE-PAYLOAD"
+    value["specimens"][0]["path"] = r"G:\PRIVATE-PATH"
+    public = access_aggregate(value)
+    encoded = json.dumps(public)
+    assert "PRIVATE" not in encoded
+    assert public["real_specimens"] == 1
+    assert public["eligible_frame_bytes"] is None
+    assert not public["complete_five_repetitions"]
+
+
+@pytest.mark.parametrize("field", ["source_base", "dependency-version", "profile", "reclaimed"])
+def test_access_publication_refuses_invalid_fixed_metadata_and_mutation_claims(field):
+    value = access_publication_input()
+    from scripts.compression_study.sanitize import access_aggregate
+    if field == "source_base":
+        value["source_base"] = "PRIVATE-ID"
+    elif field == "dependency-version":
+        value["dependencies"]["python"] = "PRIVATE-PAYLOAD"
+    elif field == "profile":
+        value["profiles"]["zstd-1"]["private"] = "PRIVATE-PAYLOAD"
+    else:
+        value["actual_reclaimed_bytes"] = 1000
+    with pytest.raises(StudyError):
+        access_aggregate(value)
+
+
+def test_access_publication_rejects_duplicate_samples_and_recomputes_completion():
+    value = access_publication_input()
+    from scripts.compression_study.sanitize import access_aggregate
+    value.update({"mode": "measure", "repetitions": 5, "complete_five_repetitions": True})
+    sample = {
+        "label": "PRIVATE-REAL-ID", "arm": "direct", "workload": "one-reference", "repetition": 0,
+        "memory": {}, **{key: {"wall_s": 0.1, "cpu_s": 0.01} for key in (
+            "access", "frozen_source_check", "database_read", "full_validation",
+        )},
+    }
+    value["samples"] = [sample]
+    assert not access_aggregate(value)["complete_five_repetitions"]
+    value["samples"].append(sample.copy())
+    with pytest.raises(StudyError, match="Duplicate"):
+        access_aggregate(value)
+
+
+@pytest.mark.parametrize("mismatch", [None, "seed", "repetitions"])
+def test_access_publication_complete_grid_requires_declared_protocol_and_unique_denominator(
+    mismatch
+):
+    value = access_publication_input()
+    from scripts.compression_study.sanitize import access_aggregate
+    value.update({"mode": "measure", "repetitions": 5})
+    timing = {"wall_s": 0.1, "cpu_s": 0.01}
+    value["preparations"] = [{
+        "label": "PRIVATE-REAL-ID", "arm": arm,
+        "manifest": {"input": {"length": 8192}, "output": {"length": length}},
+        "metadata_bytes": 64, "claim_bytes": 2,
+        **{key: {} for key in (
+            "compression", "verification_decode", "verification_total", "metadata_write",
+            "finalization", "memory",
+        )},
+    } for arm, length in (("none", 8192), ("zstd-1", 6144))]
+    value["samples"] = [{
+        "label": "PRIVATE-REAL-ID", "arm": arm, "workload": work, "repetition": repetition,
+        "memory": {}, **{key: timing for key in (
+            "access", "frozen_source_check", "database_read", "full_validation",
+        )},
+    } for repetition in range(5) for arm in ("direct", "none", "zstd-1")
+        for work in ("one-reference", "batch")]
+    if mismatch:
+        value[mismatch] = 1
+        with pytest.raises(StudyError):
+            access_aggregate(value)
+        return
+    public = access_aggregate(value)
+    assert public["complete_five_repetitions"]
+    savings = public["savings"][1]
+    assert savings["input_bytes_counted_once"] == 8192  # Thirty reads are one storage input.
+    assert savings["replacement_bytes"] == 6210
+    assert savings["replacement_allocation_bytes"] is None
+
+
+@pytest.mark.parametrize("cancel", ["deadline", "overlap"])
+def test_supervisor_stops_only_owned_child_keeps_failure_and_binds_private_temp(
+    tmp_path, monkeypatch, cancel
+):
+    pytest.importorskip("psutil", reason="Dedicated study child ownership environment")
+    from scripts.compression_study import run
+
+    task, receipt = tmp_path / "task.json", tmp_path / "receipt.json"
+    task.write_text("{}", encoding="utf-8")
+    # A real child checks actual temp placement and emits output before it is interrupted.
+    bootstrap = (
+        "import os,sys,time\n"
+        "from pathlib import Path\n"
+        "assert sys.stdin.buffer.read(1)==b'1'\n"
+        "print('child-started',flush=True)\n"
+        "marker=Path(os.environ['TEMP'],'child-owned-marker-partial')\n"
+        "marker.write_text('private')\n"
+        "marker.rename(marker.with_name('child-owned-marker'))\n"
+        "time.sleep(60)\n"
+    )
+    monkeypatch.setattr(run, "BOOTSTRAP", bootstrap)
+    monkeypatch.setenv("TEMP", r"C:\unverified-caller-temp")
+    monkeypatch.setenv("TMP", r"C:\unverified-caller-temp")
+    monkeypatch.setattr(run, "workloads", lambda: {
+        "quiet_window_established": not (tmp_path / "receipt-temp/child-owned-marker").exists()
+    })
+    with pytest.raises(TimeoutError if cancel == "deadline" else StudyError):
+        run.supervised(
+            task, receipt, deadline=time.monotonic() + (6 if cancel == "deadline" else 10),
+            quiet=cancel == "overlap",
+        )
+    failure = json.loads(receipt.read_text(encoding="utf-8"))
+    # Windows Job close may terminate with status 0; the refused operation is the authority.
+    assert failure["failure_type"] == ("TimeoutError" if cancel == "deadline" else "StudyError")
+    assert failure["owned_child_exited"]
+    assert "child-started" in failure["stdout"]
+    assert (tmp_path / "receipt-temp/child-owned-marker").read_text() == "private"

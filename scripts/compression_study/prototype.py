@@ -11,12 +11,24 @@ from typing import Any
 
 from trading.ownership import CollectorLock
 
-from .codecs import CHUNK, MAX_INPUT, Clock, Identity, StudyError, identity, profile, transfer
+from .codecs import (
+    CHUNK,
+    MAX_INPUT,
+    Clock,
+    Identity,
+    Metrics,
+    StudyError,
+    identity,
+    profile,
+    transfer,
+)
 
 VERSION = "compression-study-v1"
 
 
-def read_manifest(result: Path, expected: Identity, arm: str) -> dict[str, Any]:
+def read_manifest(
+    result: Path, expected: Identity, arm: str, *, metrics: Metrics | None = None
+) -> dict[str, Any]:
     expected.validate()
     if not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", result.name) or result.is_symlink():
         raise StudyError("Partial or redirected result is not published")
@@ -35,6 +47,7 @@ def read_manifest(result: Path, expected: Identity, arm: str) -> dict[str, Any]:
     if identity(
         result / "payload",
         max_bytes=MAX_INPUT + MAX_INPUT // 8 + CHUNK,
+        metrics=metrics,
     ).dump() != manifest.get("output"):
         raise StudyError("Compressed artifact checksum or length differs")
     return manifest
@@ -43,8 +56,13 @@ def read_manifest(result: Path, expected: Identity, arm: str) -> dict[str, Any]:
 def restore(result: Path, target: Path, expected: Identity, arm: str) -> dict[str, Any]:
     clock = Clock()
     started, cpu = time.perf_counter(), time.process_time()
-    read_manifest(result, expected, arm)
-    verification = {"wall_s": time.perf_counter() - started, "cpu_s": time.process_time() - cpu}
+    verification_metrics = Metrics()
+    read_manifest(result, expected, arm, metrics=verification_metrics)
+    verification = {
+        "wall_s": time.perf_counter() - started,
+        "cpu_s": time.process_time() - cpu,
+        "phases": verification_metrics.values,
+    }
     metrics = transfer(arm, result / "payload", target, expected, decompress=True, clock=clock)
     metrics["artifact_verification"] = verification
     metrics["reopen_decode_wall_s"] = time.perf_counter() - started
@@ -66,6 +84,8 @@ def publish(
 ) -> dict[str, Any]:
     expected.validate()
     profile(arm)
+    publish_started, publish_cpu = time.perf_counter(), time.process_time()
+    source_metrics = Metrics()
     if not re.fullmatch(r"[a-zA-Z0-9_-]{1,100}", name):
         raise StudyError("Unsafe result name")
     parent.mkdir(exist_ok=True, parents=True)
@@ -74,7 +94,7 @@ def publish(
     lock.acquire()
     try:
         result = parent / name
-        if identity(source, clock) != expected:
+        if identity(source, clock, metrics=source_metrics) != expected:
             raise StudyError("Frozen source differs from expected identity")
         if result.exists():
             manifest = read_manifest(result, expected, arm)
@@ -107,7 +127,7 @@ def publish(
         )
         if verify_evidence:
             verify_evidence(restored)
-        if identity(source, clock) != expected:
+        if identity(source, clock, metrics=source_metrics) != expected:
             raise StudyError("Frozen source changed during operation")
         verification = {
             "wall_s": time.perf_counter() - verify_started,
@@ -161,6 +181,9 @@ def publish(
             "peak_staging_bytes": peak_staging,
             "peak_staging_allocation_bytes": physical_staging,
             "metadata_bytes": (result / "manifest.json").stat().st_size,
+            "source_verification_phases": source_metrics.values,
+            "publish_total_wall_s": time.perf_counter() - publish_started,
+            "publish_total_cpu_s": time.process_time() - publish_cpu,
         }
     finally:
         lock.release()

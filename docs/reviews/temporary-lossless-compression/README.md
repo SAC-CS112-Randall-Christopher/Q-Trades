@@ -1,4 +1,4 @@
-# Completed temporary-segment lossless compression study
+# Temporary-segment lossless compression study
 
 Across three small synthetic SQLite segments, Zstandard level 1 reduced identical
 container bytes from **245,760 to 58,581 bytes (76.16%)**, with exact length/SHA-256
@@ -88,6 +88,94 @@ permission to compress or remove a file. A sealed label alone proves neither
 snapshot consistency nor absence of another writer.
 
 ## Fixture and codec protocol
+
+### Approved continuation protocol, declared before new observations
+
+Continue the same draft PR #64, branch and worktree. The resumed starting study
+head is `14029309ea0439b643b51eb8c0217d174184e149`; the product base remains
+`dcf7ccbb178cdd89175e427962dec80475620c73`. Record benchmark module/test hashes
+for each experiment and do not rebase while measuring. The historical
+`synthetic-results.json` is preserved byte-for-byte. Its outcomes are already
+known; reuse of those three SQLite files is software verification, not new
+representative sampling.
+
+Predeclare marginal coverage across age, content and size, with seed 20261005:
+
+- Age uses authoritative completion time relative to one recorded UTC selection
+  time: under 1 day; 1 through 7 days inclusive; over 7 days. Filesystem mtime
+  is not completion evidence.
+- Content: wire; decision-summary; mixed-other. Classify from reviewed owner
+  evidence before compression, not from the resulting ratio.
+- SQLite file size: below 1 MiB; at least 1 MiB and below 8 MiB; at least 8 MiB
+  through 32 MiB. Prefer fuller completed segments when safely available.
+
+Eight specimens cannot cover all 27 joint cells. Record candidate-frame size,
+eligibility/exclusion counts, missing marginal/joint strata and any cap-induced
+omission privately before selection. Use at most eight real specimens, at most
+32 MiB per file and 128 MiB combined input. No eligible operating-byte denominator
+is currently known. Selected-input totals count each original once, independent
+of repetitions and read workloads. JSONL codec comparisons retain their separate
+historical denominator; the continuation access controls are SQLite only.
+
+Prefer already authorized frozen copies. The bounded private-scratch inspection
+found accessible synthetic generation receipts and their original files, but no
+reviewed eligible real acquisition. Inaccessible historical test directories
+were not searched exhaustively. Cached operating totals do not establish a
+per-segment candidate frame, consistency, ownership, pins, pending outcomes or
+evaluation protections. No operating database is instantiated or opened.
+
+The real handoff must provide an already-frozen private SQLite file, exact
+length/SHA-256, and the digest/length of an independently reviewed acquisition
+receipt. That receipt binds prior authorization, custody, owning plan/segment,
+completion and acquisition times, eligibility as of the declared selection time,
+consistency method and journal disposition, transformations, exclusions and the
+independent review. The importer checks receipt/file identities, bounds, paths,
+single-link ownership, sidecar absence, schema, complete evidence and probes.
+It validates a reviewed handoff format; a populated JSON receipt cannot itself
+prove truthful original acquisition. No live acquisition route has been verified.
+A sealed label alone is insufficient, and no mutable input uses `immutable=1`.
+
+Compare three controls with identical reference selections and full evidence
+validation: direct original frozen SQLite; uncompressed copy/flush/hash/read;
+Zstandard-1 restore/flush/hash/read. Test one middle exact reference and a bounded
+same-segment batch of first/middle/last/seeded-random references plus a small
+range. Prepare each encoded artifact once; run each read in a fresh supervised
+child, sharing a single restore within that batch. Add no cache or representation.
+All arms hash the original source and separately validate the complete SQLite
+evidence. Report those costs as well as access, stream I/O, codec, durable flush,
+hashes, SQLite reads, module-import startup, worker and supervisor elapsed/CPU.
+Supervisor elapsed includes launch/scheduling; import time alone is not startup.
+Process I/O counters include imports and are not measured device traffic.
+
+Acceptance is declared before new results:
+
+- Exact original/restored length and SHA-256, integrity, schema, IDs/hashes,
+  raw payloads, availability and timestamps must match. One-reference and batch
+  results must agree across all arms. Retain all existing failure/recovery cases.
+- Any resource refusal, source drift, failed verification or overlap invalidates
+  completion. Enforce one IDLE codec child, fixed single-thread profiles, hard
+  512 MiB child memory, 1 GiB total owned scratch, 60-second operation and
+  900-second measured phase limits, plus the stricter operating free reserve.
+  Child `TEMP`/`TMP` are individually owned G: directories under private receipts.
+- Controlled runs require a quiet window before, during and after child work,
+  five repetitions in seeded randomized blocks, and individual samples with
+  median/min/max. A bounded recheck may establish deferral; do not stop another
+  owner or poll indefinitely. Smoke observations have no reliable tail, cold-cache
+  or representative-performance interpretation.
+- Report payload and metadata/claim replacement lengths, supported stream
+  allocation, full restored scratch and legitimate original/retained overlap.
+  Unknown allocation remains unknown. No predetermined savings percentage is
+  required; expansion and no-benefit outcomes remain valid evidence.
+- No product-level read-latency/CPU/I/O acceptance threshold is approved. Positive
+  selected-file savings alone cannot justify integration. A recommendation may
+  defer with the exact acquisition, latency decision or owner-recovery gap.
+
+Bounded capture diagnostics run the unchanged recorded failing test once without
+tracing, then at most twice with owner/lock/recorder call tracing if useful. Keep
+its original five-second deadline and assertions. Record import/launch cost,
+lock releases and recorder transitions in private disposable state; tracing adds
+overhead. Current passes and hosted checks do not diagnose historical failures.
+Changes needing the production owner are handed off, not patched in this lane.
 
 Three small finalized SQLite fixtures use the actual existing writer, with
 24 records each: repeated structure, varied seeded hexadecimal content, and
@@ -345,17 +433,45 @@ $StudyPython = Join-Path $StudyScratch 'environment/Scripts/python.exe'
 & $StudyPython -B -m mypy --platform win32 --follow-imports=silent `
   --ignore-missing-imports --cache-dir $PrivateTypeCache scripts/compression_study
 
-# Only explicitly synthetic runs can use this public-result exporter.
+# Historical synthetic exporter; preserve the original published result.
 & $StudyPython -B -m scripts.compression_study.sanitize `
   --private-result $PrivateResult --output $NewPublicSyntheticResult
 ```
 
-The scripts never compress an operating path supplied as a source: this CLI only
-generates its declared synthetic fixtures in owned scratch. Exit 2 denotes a
-failed run with retained private receipts; exit 3 denotes a deferred measured run.
+The CLI generates synthetic fixtures unless `--frozen-specimens` supplies a
+reviewed private handoff. That importer admits only inputs inside verified private
+scratch; the synthetic branch requires the published generation identity and
+the real branch requires independently reviewed acquisition/eligibility evidence.
+It does not acquire operating data. Exit 2 denotes a failed run with retained
+private receipts; exit 3 denotes a deferred measured run.
 The smallest smoke is a correctness starter, not real-drive evidence. See
 `RESULTS.md` and `synthetic-results.json` for the recorded study result and exact
 individual samples.
+
+For the continuation, reuse an eligible reviewed handoff packet and the existing
+owned environment. No new environment or framework is required:
+
+```powershell
+& $StudyPython -B -m scripts.compression_study.run `
+  --scratch $StudyScratch --owner-token $StudyOwnerToken --live-root $LiveResearchRoot `
+  --base dcf7ccbb178cdd89175e427962dec80475620c73 `
+  --frozen-specimens $PrivateFrozenPacket --mode measure --repetitions 5 --seconds 900
+
+# One repetition is separately labeled software validation.
+& $StudyPython -B -m scripts.compression_study.run `
+  --scratch $StudyScratch --owner-token $StudyOwnerToken --live-root $LiveResearchRoot `
+  --base dcf7ccbb178cdd89175e427962dec80475620c73 `
+  --frozen-specimens $PrivateFrozenPacket --mode smoke --repetitions 1 --seconds 300
+
+# Numeric allowlist; review the aggregate before committing it.
+& $StudyPython -B -m scripts.compression_study.sanitize `
+  --private-result $PrivateAccessResult --output $NewPublicAccessResult --access-aggregate
+
+& $StudyPython -B -m scripts.compression_study.run `
+  --scratch $StudyScratch --owner-token $StudyOwnerToken --live-root $LiveResearchRoot `
+  --base dcf7ccbb178cdd89175e427962dec80475620c73 --diagnose-capture plain
+# If useful, repeat once or twice with --diagnose-capture trace in fresh private state.
+```
 
 **Benchmark-only. Operating storage and settings are unchanged.
 No space has yet been reclaimed by this lane.**

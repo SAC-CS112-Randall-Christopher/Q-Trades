@@ -130,6 +130,8 @@ def allocation(path: Path) -> int | None:
 def own_memory() -> dict[str, Any]:
     proc = psutil.Process()
     memory = proc.memory_info()
+    cpu = proc.cpu_times()
+    io = proc.io_counters()
     return {
         "rss_bytes": memory.rss,
         "peak_working_set_bytes": getattr(memory, "peak_wset", None),
@@ -137,6 +139,12 @@ def own_memory() -> dict[str, Any]:
         "priority_class": int(proc.nice()) if os.name == "nt" else proc.nice(),
         "threads_observed": proc.num_threads(),
         "peak_scope": "one child operation including imports, correctness, codec and read work",
+        "process_cpu_s": cpu.user + cpu.system,
+        "process_io": {
+            name: getattr(io, name, None)
+            for name in ("read_count", "write_count", "read_bytes", "write_bytes")
+        },
+        "io_scope": "process counters include imports; not physical device traffic",
     }
 
 

@@ -145,16 +145,22 @@ def identity(
     clock: Clock | None = None,
     *,
     max_bytes: int = MAX_INPUT,
+    metrics: Metrics | None = None,
 ) -> Identity:
     h, length = hashlib.sha256(), 0
     with path.open("rb") as src:
-        while block := src.read(CHUNK):
+        while block := (
+            metrics.call("io_read", src.read, CHUNK) if metrics else src.read(CHUNK)
+        ):
             if clock:
                 clock.check()
             length += len(block)
             if length > max_bytes:
                 raise StudyError("Specimen exceeds per-file study limit")
-            h.update(block)
+            if metrics:
+                metrics.call("hash", h.update, block)
+            else:
+                h.update(block)
     return Identity(length, h.hexdigest())
 
 
@@ -182,7 +188,7 @@ class Sink:
         if written != len(block):
             raise OSError("Interrupted/short output write")
         self.length += written
-        self.hash.update(block)
+        self.metrics.call("hash", self.hash.update, block)
         return written
 
     def flush(self) -> None:
@@ -344,6 +350,7 @@ def transfer(
         metrics.call("flush", target.flush)
         metrics.call("flush", os.fsync, target.fileno())
         actual = Identity(sink.length, sink.hash.hexdigest())
+        input_bytes = src.tell()
     if decompress and actual != expected:
         raise StudyError("Decompressed length or SHA-256 differs")
     return {
@@ -351,4 +358,6 @@ def transfer(
         "phases": metrics.values,
         "wall_s": time.perf_counter() - started,
         "cpu_s": time.process_time() - cpu,
+        "stream_input_bytes": input_bytes,
+        "stream_output_bytes": sink.length,
     }
