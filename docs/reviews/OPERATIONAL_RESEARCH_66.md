@@ -112,7 +112,7 @@ counterexample independently retained **2 failed / 1 passed**. Initial scoped
 runs encountered disposable-directory access errors. Those setup failures and
 the reproduced source failures are distinct from the corrected runs.
 
-Final combined affected-owner verification uses CPython 3.12.10 with the retained
+Initial combined affected-owner verification used CPython 3.12.10 with the retained
 33-version locked environment and a fresh password-authenticated, loopback-only
 native PostgreSQL 17.2 cluster. **74 passed, zero skipped**, in 32.16 seconds,
 with the existing Starlette/httpx deprecation warning. The selection covers new
@@ -166,3 +166,82 @@ No desktop host/package implementation occurred before the goal changed to
 public issue-text scratch file. Other open PR worktrees and all three existing
 cleanup safety stashes were preserved. #65 packaging remains a separately
 uncompleted goal; it contributes no native acceptance or inference evidence.
+
+## Development failure/history follow-up — October 5
+
+The normal detail interface now excludes teaching/export controls for
+`development_*` attempts, matching the unchanged backend's idea/review/followup
+allowlist. Development results keep their original profile, response and resource
+details, visibly labeled unqualified and without financial or operating authority.
+
+A baseline procedural child exiting 7 reproduced the second defect: the ordinary
+attempt remained failed with `response=None`, while its private receipt retained
+0.399 seconds, 4,349,952 bytes and exit 7. The transport now carries a specific
+structured failure through the existing attempt owner. It records failure category,
+actual wall time, positive RSS observations or explicit unknown, profile digest,
+opaque job ID, exit and owned-cleanup status. Diagnostic exception text stays in
+the private job receipt. Failed attempts keep their frozen packet/profile, one
+allowance and original task stage; reopening cannot dispatch an invisible retry.
+
+Independent review found and repaired a near-limit retention defect in the first
+patch: adding a supervisor annotation could erase an otherwise bounded original
+answer. The original response still has its existing 32-KiB bound. A separately
+bounded supervisor failure annotation adds at most 2 KiB, preserving that original
+answer with failed transport status. This changes no model/profile/context/token,
+hourly allowance, admission or financial limit. Final independent source/test/UI
+review is clear; it does not constitute actual-model or installed acceptance.
+
+Ten owned procedural-child cases plus four preflight checks passed, zero skips.
+They cover timeout, child exit, bad identity/receipt, unsampled RSS, invalid original
+answer and cleanup/private-receipt failures, including near-limit originals and
+normal API reopening. Two earlier expanded runs each retained 12 passes and two
+fixture failures: an oversized Windows command line, then a fixture original that
+exceeded the existing response bound. The final fixture passes its input through a
+private owned file and measures the original bound before adding metadata.
+
+Final integrated Windows verification passed **93 tests, zero skips**, in 66.02
+seconds against the authenticated owned PostgreSQL 17.2 cluster. It includes
+development, loader/packet, readiness, role-worker, LocalRoles and hot/archived
+history checks. CPython 3.12.10 and all 33 locked package versions were verified;
+whole-source/test Ruff and strict Windows mypy (108 source files) pass. The existing
+Starlette/httpx deprecation warning remains. The earlier 14/74 and this selection
+overlap and are not summed. The added failure cases run in the existing native
+CI selector; all selectors and eight-minute job bounds remain. The owned QA
+database was stopped and listener closure confirmed after final tests.
+
+The final compiled dashboard (`index-CcNG07t0.js`, UI source SHA-256
+`4ff7e7cc6a241d612aa070590af070b1b0dfc32d41c6ce5a772559fd0318a810`)
+passed visible development-answer, structured-failure, full-document reload and
+ordinary teaching-control checks. Normal list/detail API reads use an actual
+disposable registry seeded with three explicitly synthetic attempts. All three
+original response hashes remain unchanged; 34 normal role reads include ten failed
+detail reads. No teaching action or model was dispatched. Initial same-hash
+navigation did not reload the document and caused a summary-toggle assertion
+failure; an actual document reload passed. The owned UI server exited and its
+listener was confirmed closed. These are source/workflow fixtures, not the original
+trained-v2 result, semantic usefulness, normal installed use or desktop acceptance.
+
+OCP1 preparation additionally retains a private offline comparator with 28
+procedural checks and a precise fresh-collection amendment. It permits verified
+ordinary archival/appends while refusing original loss, incomplete coverage,
+unavailable current audit, changed target/ownership/capacity or optional activation.
+Fresh operating collection/update/UI acceptance has not run. The historical probe
+and completed rollout receipts remain unchanged. A proposed copy-only migration
+check stopped before backup or current constructors when read-only preflight
+disproved its assumed missing-column premise; no migration proof is claimed.
+
+The review route still intentionally shares its due-occurrence/schedule owner.
+Disposable API evidence confirms a paused reviewer returns a paused result with
+zero dispatches/reservations, and enabling without the required owner is refused.
+It selects completed operating research; the original development task remains
+queued and cannot enter that population. Actual provider/profile/data/credential,
+spending and any schedule cutover retain their separate approvals.
+
+At 22:08:06 UTC a bounded read-only health request (18 ms) still reported
+`fca588586`, running paper, fresh processing, balanced journal and no paper error.
+This is a point observation after source QA, not measured complete latency tails,
+concurrent model capacity or sustained uptime. The original task remains queued,
+unowned and unused with zero attempts/allowances. The existing single-attempt
+authorization is preserved. Installation/restart approval remains pending; #67
+remains an unmerged draft. Actual inference, qualification, external review,
+later compatible RAG use, mature feedback and #65 packaging remain open.

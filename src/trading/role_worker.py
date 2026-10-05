@@ -20,6 +20,7 @@ from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
 from trading.local_role_model import LocalRoles
+from trading.peft_role_model import DevelopmentTransportFailure
 from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
 
 if TYPE_CHECKING:
@@ -976,6 +977,10 @@ class RoleWorker:
             if not previous["response"]:
                 raise ValueError("Previous development completion unknown; no invisible retry")
             response = json.loads(previous["response"])
+            if response.get("kind") == "development_transport_failure" or response.get(
+                "transport_failure"
+            ):
+                raise ValueError("Retained development transport failed; no invisible retry")
             if not response.get("complete"):
                 raise ValueError("Retained development response is incomplete")
             return validate(role, response["answer"], packet)
@@ -1053,15 +1058,32 @@ class RoleWorker:
                 raise cancelled
             return validate(role, response["answer"], packet)
         except BaseException as exc:
+            failure_body = None
+            if isinstance(exc, DevelopmentTransportFailure):
+                failure_body = json.dumps(exc.receipt, sort_keys=True, allow_nan=False)
+                if exc.response is not None:
+                    # Cleanup must not discard a returned original answer. Its failure
+                    # annotation withholds success while retaining that exact answer.
+                    original = json.dumps(exc.response, sort_keys=True, allow_nan=False)
+                    if len(original.encode()) <= 32768:
+                        # The model answer keeps its existing 32-KiB limit. The
+                        # supervisor's <=2-KiB failure receipt has its own bound;
+                        # adding that metadata cannot erase a bounded original.
+                        failure_body = json.dumps(
+                            exc.response | {"transport_failure": exc.receipt},
+                            sort_keys=True,
+                            allow_nan=False,
+                        )
             with self.registry.transaction():
                 self.registry.db.execute(
                     "UPDATE role_attempts SET finished=?,status='failed',reason=?,"
-                    "wall_reserved=max(wall_reserved,?-started) "
+                    "wall_reserved=max(wall_reserved,?-started),response=coalesce(response,?) "
                     "WHERE task=? AND stage=? AND attempt=1",
                     (
                         time.time(),
                         type(exc).__name__ + ": " + str(exc)[:400],
                         time.time(),
+                        failure_body,
                         identity,
                         stage,
                     ),

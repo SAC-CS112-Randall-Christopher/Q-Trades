@@ -218,7 +218,13 @@ export function RoleResearchPanel() {
       {task.proposal?.strategy.entry_filter && <p>Entry component: frozen historical memory · {task.proposal.strategy.entry_filter.horizon_seconds / 60} minutes · artifact {task.proposal.strategy.entry_filter.artifact.sha256} · marginal ${task.proposal.strategy.entry_filter.marginal_daily_usd}/day · fallback {task.proposal.strategy.entry_filter.fallback}. Baseline exits and financial risk remain authoritative.</p>}
       {task.result?.outcome && <section><h4>Recorded comparison: {task.result.outcome.body.outcome}</h4><p>{task.result.outcome.body.reason}</p><p>Window {stamp(task.result.outcome.body.window_start)} to {stamp(task.result.outcome.body.window_end)} · outcome available {stamp(task.result.outcome.body.available_at)}.</p><p>Whole-account result after declared operating costs: candidate ${task.result.outcome.body.net_after_operating_usd?.candidate ?? "unknown"}; reference ${task.result.outcome.body.net_after_operating_usd?.reference ?? "unknown"}; difference ${task.result.outcome.body.delta_usd ?? "unknown"}. Execution fees remain counted once.</p><p>{task.result.outcome.body.qualification}</p><details><summary>Recorded comparison outcome</summary><pre>{JSON.stringify(task.result.outcome, null, 2)}</pre></details></section>}
       {task.result?.followup && <p>Supported follow-up: {task.result.followup.action} · {task.result.followup.rationale} {task.result.followup.dependency}</p>}
-      <details><summary>Model attempts, final answers and resource receipts</summary>{task.attempts.map((a, i) => <div key={i}><h4>{a.stage} · {a.status}</h4><p>{stamp(a.started)} {a.finished ? `to ${stamp(a.finished)}` : "completion pending or unknown"} {a.reason}</p><pre>{JSON.stringify({ profile: a.profile, final_response: a.response }, null, 2)}</pre><TrainingCandidateExport key={`${task.id}-${a.stage}-${a.attempt}`} task={task.id} stage={a.stage} attempt={a.attempt} completed={a.finished !== null && a.response !== null} /></div>)}</details>
+      <details><summary>Model attempts, final answers and resource receipts</summary>{task.attempts.map((a, i) => <div key={i}>
+        <h4>{a.stage} · {a.status}</h4>
+        <p>{stamp(a.started)} {a.finished ? `to ${stamp(a.finished)}` : "completion pending or unknown"} {a.reason}</p>
+        {a.stage.startsWith("development_") && <p>Development-only attempt. Any retained answer is unqualified and has no financial or operating authority.</p>}
+        <pre>{JSON.stringify({ profile: a.profile, final_response: a.response }, null, 2)}</pre>
+        {["idea", "review", "followup"].includes(a.stage) && <TrainingCandidateExport key={`${task.id}-${a.stage}-${a.attempt}`} task={task.id} stage={a.stage} attempt={a.attempt} completed={a.finished !== null && a.response !== null} />}
+      </div>)}</details>
     </article>}
     <LessonPanel openTask={open} />
     <StockResearchPanel />
