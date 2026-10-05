@@ -72,8 +72,9 @@ def test_reconciliation_uses_one_snapshot_while_financial_writer_commits(pg_stor
         view.close()
 
 
+@pytest.mark.parametrize("after_good_audit", [False, True])
 def test_background_readback_recovers_real_connection_outage_without_restart(
-    pg_store, monkeypatch, tmp_path
+    pg_store, monkeypatch, tmp_path, after_good_audit
 ):
     import trading.tiered_runtime as runtime_module
 
@@ -82,20 +83,38 @@ def test_background_readback_recovers_real_connection_outage_without_restart(
     runtime.disk_free = 10 * 1024**3  # Isolate this reader test from the host's capture reserve.
     view = FinancialReadback(store)
     original_dsn = view._dsn
-    monkeypatch.setattr(runtime_module, "FinancialReadback", lambda _: view)
+    from trading.financial_readback_worker import ReadbackWorker
+
+    reader = ReadbackWorker(view)
+    monkeypatch.setattr(runtime_module, "ReadbackWorker", lambda _: reader)
 
     async def scenario():
         with socket.socket() as unavailable:
             unavailable.bind(("127.0.0.1", 0))
-            view._dsn = make_conninfo(original_dsn, port=unavailable.getsockname()[1])
+            outage_dsn = make_conninfo(original_dsn, port=unavailable.getsockname()[1])
+            if not after_good_audit:
+                reader._dsn = outage_dsn
             worker = asyncio.create_task(runtime._financial_readback_loop())
             try:
-                async with asyncio.timeout(6):
+                retained = None
+                if after_good_audit:
+                    async with asyncio.timeout(6):
+                        while runtime._readback_sample is None:
+                            await asyncio.sleep(0.01)
+                    retained = dict(runtime.receipts)
+                    reader._dsn = outage_dsn
+                    await reader.close()  # The owned idle disposable connection only.
+                # Include the real 5s poll interval, 3s connect timeout and spawn.
+                async with asyncio.timeout(10):
                     while runtime._readback_error is None:
                         await asyncio.sleep(0.01)
                 assert not worker.done() and runtime.constrained()
-                assert runtime._readback_audit_mono is None
-                view._dsn = original_dsn
+                if retained:
+                    assert runtime.receipts == retained
+                    assert runtime.journal_status()["status"] == "unavailable"
+                else:
+                    assert runtime._readback_audit_mono is None
+                reader._dsn = original_dsn
                 async with asyncio.timeout(8):
                     while runtime.readback_unavailable():
                         await asyncio.sleep(0.01)
@@ -107,7 +126,66 @@ def test_background_readback_recovers_real_connection_outage_without_restart(
                 worker.cancel()
                 with suppress(asyncio.CancelledError):
                     await worker
+
     asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("mode", ["pending", "balanced", "expired", "unavailable", "imbalanced"])
+def test_api_snapshot_notice_and_admission_share_current_audit_status(pg_store, tmp_path, mode):
+    from fastapi.testclient import TestClient
+
+    from trading.api import create_app
+    from trading.config import Settings
+    from trading.research_notices import operational_conditions
+
+    store, _ = pg_store
+    runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
+    runtime.running = True
+    runtime.state["last_tick"] = time.time()
+    runtime.disk_free = 10 * 1024**3
+    if mode != "pending":
+        reader = FinancialReadback(store)
+        try:
+            runtime._accept_financial_audit(reader.sample(audit=True))
+        finally:
+            reader.close()
+    if mode == "expired":
+        runtime._readback_audit_mono = time.monotonic() - 121
+        runtime.receipts["available"] = True  # A stale stored flag must not govern publication.
+    elif mode == "unavailable":
+        runtime._readback_error = "Synthetic monitoring failure"
+    elif mode == "imbalanced":
+        store.transact(START, lambda e: e.state["accounts"]["primary"].update(cash="90"))
+        reader = FinancialReadback(store)
+        try:
+            with pytest.raises(RuntimeError, match="reconciliation failed"):
+                runtime._accept_financial_audit(reader.sample(audit=True))
+        finally:
+            reader.close()
+    original = dict(runtime.receipts)
+    app = create_app(Settings(), tmp_path / "api.sqlite", background=False)
+    with TestClient(app) as client:
+        app.state.paper = runtime
+        api = client.get("/api/status").json()["paper"]
+        health = client.get("/api/health").json()
+    notice = next(
+        r
+        for r in operational_conditions(runtime, time.time())
+        if r["key"] == "financial_monitoring"
+    )
+    assert api["journal"]["status"] == health["journal_monitoring"]["status"] == mode
+    assert notice["facts"]["status"] == mode
+    assert notice["condition"] == (
+        "clear" if mode == "balanced" else "active" if mode == "imbalanced" else "unknown"
+    )
+    assert api["journal"]["available"] == api["performance"]["financial_readback"]["available"]
+    assert runtime.constrained() == (mode != "balanced")
+    assert runtime.receipts == original  # Reads do not rewrite dates or verified history.
+    if mode in {"expired", "unavailable"}:
+        assert api["journal"]["balanced"] is True
+        assert health["journal_balanced"] is None
+        assert health["journal_last_balanced"] is True
+        assert api["journal"]["checked_at"] == original["checked_at"]
 
 
 def test_normal_supervisor_stops_for_a_confirmed_reconciliation_failure(
@@ -136,50 +214,6 @@ def test_normal_supervisor_stops_for_a_confirmed_reconciliation_failure(
     assert runtime.constrained()
 
 
-@pytest.mark.parametrize("cancel_count", [1, 2])
-def test_shutdown_drains_owned_query_before_closing_connection(
-    pg_store, monkeypatch, tmp_path, cancel_count
-):
-    import trading.tiered_runtime as runtime_module
-
-    store, _ = pg_store
-    runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
-    view = FinancialReadback(store)
-    entered, release, closed = Event(), Event(), Event()
-    sample, close = view.sample, view.close
-
-    def blocked_sample(*, audit):
-        entered.set()
-        assert release.wait(3)
-        assert not closed.is_set()
-        return sample(audit=audit)
-
-    def verified_close():
-        assert release.is_set()
-        close()
-        closed.set()
-
-    monkeypatch.setattr(view, "sample", blocked_sample)
-    monkeypatch.setattr(view, "close", verified_close)
-    monkeypatch.setattr(runtime_module, "FinancialReadback", lambda _: view)
-
-    async def scenario():
-        worker = asyncio.create_task(runtime._financial_readback_loop())
-        assert await asyncio.to_thread(entered.wait, 2)
-        worker.cancel()
-        await asyncio.sleep(0.02)
-        assert not worker.done() and not closed.is_set()
-        if cancel_count == 2:
-            worker.cancel()
-            await asyncio.sleep(0.02)
-            assert not worker.done() and not closed.is_set()
-        release.set()
-        with pytest.raises(asyncio.CancelledError):
-            await worker
-        assert closed.is_set()
-    asyncio.run(scenario())
-
-
 def test_readback_age_and_query_error_keep_optional_research_closed(pg_store, tmp_path):
     store, _ = pg_store
     runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
@@ -194,7 +228,50 @@ def test_readback_age_and_query_error_keep_optional_research_closed(pg_store, tm
     runtime._readback_audit_mono = time.monotonic() - 120
     assert runtime.constrained()
     snapshot = runtime.snapshot()
-    assert "financial_readback_unavailable" in snapshot["performance"]["resource_guard"][
-        "blocking_conditions"
-    ]
+    assert (
+        "financial_readback_unavailable"
+        in snapshot["performance"]["resource_guard"]["blocking_conditions"]
+    )
     assert snapshot["performance"]["financial_readback"]["available"] is False
+    assert snapshot["journal"]["available"] is False
+    assert snapshot["journal"]["status"] == "expired"
+
+
+@pytest.mark.parametrize("ancillary", ["recent", "storage_usage"])
+def test_completed_negative_audit_cannot_be_hidden_by_ancillary_failure(
+    pg_store, monkeypatch, ancillary
+):
+    store, _ = pg_store
+    view = FinancialReadback(store)
+    view.sample(audit=False)
+    store.transact(START, lambda e: e.state["accounts"]["primary"].update(cash="90"))
+
+    def unavailable():
+        raise psycopg.OperationalError("Synthetic ancillary outage")
+
+    monkeypatch.setattr(view._view, ancillary, unavailable)
+    try:
+        result = view.sample(audit=True)
+        assert result["reconciliation"]["balanced"] is False
+        assert result["reconciliation"]["revision"] == store.read()["revision"]
+    finally:
+        view.close()
+
+
+@pytest.mark.parametrize("ancillary", ["recent", "storage_usage"])
+def test_ancillary_failure_does_not_prevent_completed_audit(pg_store, monkeypatch, ancillary):
+    store, _ = pg_store
+    view = FinancialReadback(store)
+    view.sample(audit=False)
+
+    def unavailable():
+        raise psycopg.OperationalError("Synthetic ancillary outage")
+
+    monkeypatch.setattr(view._view, ancillary, unavailable)
+    try:
+        result = view.sample(audit=True)
+        assert result["reconciliation"]["balanced"] is True
+        assert ancillary in result["refresh_errors"]
+        assert ancillary not in result
+    finally:
+        view.close()

@@ -1,4 +1,24 @@
-# Current direction — October 5, 2026 UTC, measured paper/model coexistence
+# Current direction — October 5, 2026, financial monitoring audit repairs
+
+The current source follow-up implements C60-1/2/3 from Chris's #60 audit. Read
+`docs/reviews/FINANCIAL_MONITORING_REPAIRS.md` for the ordered checklist, actual
+native/driver/browser proof, preserved failures and bounded installed observation.
+Keep the completed negative audit independent of optional refreshes, last verified
+audit separate from current availability, and the owned read-only child's query,
+cancellation/drain and termination lifecycle bounded. Preserve the financial
+writer/history, frozen account/risk/strategy configuration, full resource guard,
+sound cooldown/topology changes, twenty slots and 400/100-GB storage policy.
+
+Installed source remains `fca588586`; this successor is source/isolated QA only.
+No merge/install/restart, model dispatch/activation, training/downloads, holdout
+access or operating data/configuration changes are authorized by this follow-up.
+The existing single trained-v2 attempt remains unused. Preserve #61's separate
+memory/reviewer owner and #62's original installed receipt and limitations. Source
+commits/push, bounded read-only measurement, issue coordination and a draft PR
+remain authorized. New thread identity metadata enables future attribution; the
+earlier severe stalls' cause and concurrent trained-model capacity are unproven.
+
+# Historical direction — October 5, 2026 UTC, measured paper/model coexistence
 
 Chris requested implementation and testing of the optimizations needed to run
 trained-v2 research alongside paper processing. Main/installation is `fa3accde`;

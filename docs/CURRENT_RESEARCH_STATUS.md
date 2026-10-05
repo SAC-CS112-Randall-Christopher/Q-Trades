@@ -1,4 +1,17 @@
-# Current research status — October 4, 2026, issue #48
+# Current source follow-up — October 5, 2026, C60 monitoring repairs
+
+Merged/installed #60 is `fca588586`. The new, unmerged source successor repairs
+completed-audit propagation, truthful monitoring freshness and bounded owned-reader
+shutdown. The [ordered repair/acceptance ledger](reviews/FINANCIAL_MONITORING_REPAIRS.md)
+records 109 native affected-owner passes, actual cancellation/drain faults,
+compiled Accounts browser transitions and a separate bounded installed read-only
+observation. Preserve the failed/partial receipts and #62's original rollout limits.
+This source delivery has not changed installed services, financial history,
+accounts, rules, resource thresholds or model authority. The single approved
+trained-v2 attempt remains unused; concurrent model operation and the earlier
+severe stalls' cause are unproven. Keep #61's memory/reviewer work separately owned.
+
+# Historical research status — October 4, 2026, issue #48
 
 The six-PR release (#40 and #49–53) is merged and installed at
 `7b062a0222674d62697f88e1f99d67278298a441`. Both merged-main CI jobs passed.

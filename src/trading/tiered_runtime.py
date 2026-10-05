@@ -12,7 +12,7 @@ from collections import deque
 from contextlib import suppress
 from decimal import Decimal
 from pathlib import Path
-from threading import RLock
+from threading import RLock, get_native_id
 from typing import Any
 
 import psycopg
@@ -22,6 +22,7 @@ from trading.engine_diagnostics import EngineWorkDiagnostics
 from trading.evidence_runtime import EvidenceRecorder, compact_prefix, state_snapshot
 from trading.execution_window import tick_preamble
 from trading.financial_readback import FinancialReadback
+from trading.financial_readback_worker import ReadbackWorker
 from trading.futures_context import POLL_SECONDS, FuturesContext, FuturesPublicData
 from trading.live_quotes import quote_snapshot
 from trading.market import parse_book
@@ -84,6 +85,8 @@ class TieredPaperRuntime(PaperRuntime):
         self._readback_audit_mono: float | None = None
         self._readback_error: str | None = None
         self._readback_sample: dict[str, Any] | None = None
+        self._readback_shutdown: dict[str, Any] | None = None
+        self._financial_failure: str | None = None
         self.futures = FuturesContext(self.state.get("futures_context"))
 
     def held(self) -> set[str]:
@@ -114,15 +117,40 @@ class TieredPaperRuntime(PaperRuntime):
         )
 
     def readback_unavailable(self) -> bool:
-        return (
-            self._readback_error is not None
-            or self.receipts.get("balanced") is not True
-            or self._readback_audit_mono is None
-            or time.monotonic() - self._readback_audit_mono >= 120
+        return bool(self.journal_status()["status"] != "balanced")
+
+    def journal_status(self, observed_mono: float | None = None) -> dict[str, Any]:
+        age = (
+            max(0, (observed_mono if observed_mono is not None else time.monotonic())
+                - self._readback_audit_mono)
+            if self._readback_audit_mono is not None else None
         )
+        current = (
+            self._readback_error is None and age is not None and age < 120
+            and isinstance(self.receipts.get("balanced"), bool)
+        )
+        status = (
+            "imbalanced" if self.receipts.get("balanced") is False
+            else "unavailable" if self._readback_error is not None
+            else "pending" if age is None or self.receipts.get("balanced") is not True
+            else "expired" if not current
+            else "balanced"
+        )
+        return {**self.receipts, "status": status, "available": current,
+                "error": self._readback_error, "audit_age_seconds":
+                round(age, 3) if age is not None else None}
+
+    def _accept_financial_audit(self, result: dict[str, Any]) -> None:
+        self.receipts = {**result["reconciliation"], "checked_at": result["observed_at"]}
+        self._readback_audit_mono = result["observed_mono"]
+        self._readback_error = None
+        if self.receipts["balanced"] is False:
+            self._financial_failure = "Paper journal reconciliation failed; engine stopped"
+            self.stream.changed.set()
+            raise RuntimeError(self._financial_failure)
 
     async def _financial_readback_loop(self) -> None:
-        view = FinancialReadback(self.store)
+        view = ReadbackWorker(FinancialReadback(self.store))
         try:
             while True:
                 now = time.monotonic()
@@ -131,47 +159,46 @@ class TieredPaperRuntime(PaperRuntime):
                     or self._readback_audit_mono is None
                     or now - self._readback_audit_mono >= 60
                 )
-                work = asyncio.create_task(asyncio.to_thread(view.sample, audit=audit))
                 try:
-                    # Cancellation must drain the owned query before closing its
-                    # connection; a cancelled to_thread alone leaves it running.
-                    result = await asyncio.shield(work)
-                except asyncio.CancelledError:
-                    while not work.done():
-                        with suppress(asyncio.CancelledError, Exception):
-                            await asyncio.shield(work)
-                    with suppress(Exception):
-                        work.result()
-                    raise
-                except (psycopg.Error, OSError):
-                    self._readback_error = "Durable financial monitoring query unavailable"
-                    self.receipts = {
-                        **self.receipts,
-                        "available": False,
-                        "error": self._readback_error,
-                    }
+                    result = await view.sample(
+                        audit=audit, publish_audit=self._accept_financial_audit
+                    )
+                except (psycopg.Error, OSError, EOFError) as exc:
+                    self._readback_error = (
+                        "Financial readback operation deadline exceeded"
+                        if isinstance(exc, TimeoutError)
+                        else "Durable financial monitoring query unavailable"
+                    )
+                    self._readback_shutdown = await view.close()
                 else:
-                    self._readback_error = None
+                    self._readback_error = (
+                        "Financial history or storage refresh unavailable"
+                        if result["refresh_errors"] else None
+                    )
                     self._readback_sample = {
                         k: result[k]
-                        for k in ("observed_at", "completed_at", "elapsed_ms", "stages_ms")
+                        for k in ("observed_at", "completed_at", "elapsed_ms", "stages_ms",
+                                  "refresh_errors")
                     }
-                    self.recent = result["recent"]
-                    if audit:
-                        self.receipts = {
-                            **result["reconciliation"],
-                            "available": True,
-                            "checked_at": result["observed_at"],
-                        }
+                    if "recent" in result:
+                        self.recent = result["recent"]
+                    if "storage_usage" in result:
                         self.database_usage = result["storage_usage"]
-                        self._readback_audit_mono = result["observed_mono"]
-                        if not self.receipts["balanced"]:
-                            raise RuntimeError(
-                                "Paper journal reconciliation failed; engine stopped"
-                            )
                 await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            self._readback_error = "Financial monitoring stopped"
+            raise
         finally:
-            await asyncio.to_thread(view.close)
+            try:
+                self._readback_shutdown = await view.close()
+            finally:
+                self._readback_shutdown = view.last_shutdown
+                if self._readback_shutdown and self._readback_shutdown["status"] in {
+                    "terminated_owned_reader", "termination_failed"
+                }:
+                    logger.warning(
+                        "Financial reader shutdown: %s", self._readback_shutdown["status"]
+                    )
 
     def observe_engine_work(
         self, elapsed_ms: float, now_mono: float, details: dict[str, Any] | None = None
@@ -686,6 +713,8 @@ class TieredPaperRuntime(PaperRuntime):
                 started = time.monotonic()
                 measured_start, cpu_start = time.perf_counter(), time.thread_time()
                 stage_ms: dict[str, float] = {}
+                if self._financial_failure is not None:
+                    raise RuntimeError(self._financial_failure)
                 for task in tasks:
                     if task.done():
                         task.result()
@@ -882,6 +911,7 @@ class TieredPaperRuntime(PaperRuntime):
                         "measured_elapsed_ms": round(elapsed, 3),
                         "coarse_elapsed_ms": round((time.monotonic() - started) * 1000, 3),
                         "thread_cpu_ms": round((time.thread_time() - cpu_start) * 1000, 3),
+                        "measured_thread_id": get_native_id(),
                         "stages_ms": {name: round(value, 3) for name, value in stage_ms.items()},
                         "active_portfolios": active,
                         "frames": len(frames),
@@ -912,6 +942,8 @@ class TieredPaperRuntime(PaperRuntime):
     def snapshot(self) -> dict[str, Any]:
         result = super().snapshot()
         observed_mono = time.monotonic()
+        journal = self.journal_status(observed_mono)
+        result["journal"] = journal
         resource_guard = self._work_diagnostics.snapshot(observed_mono, self._constrained_until)
         resource_guard["latency_policy"] = {
             "version": "engine-work-recovery-v2",
@@ -928,7 +960,10 @@ class TieredPaperRuntime(PaperRuntime):
                 ("engine_work_cooldown", observed_mono < self._constrained_until),
                 ("local_capture_disk_space", self.disk_free < 5 * 1024**3),
                 ("raw_capture_failure", self._capture_failure is not None),
-                ("financial_readback_unavailable", self.readback_unavailable()),
+                ("financial_readback_unavailable", journal["status"] not in {
+                    "balanced", "imbalanced"
+                }),
+                ("financial_reconciliation_failed", journal["status"] == "imbalanced"),
             )
             if active
         ]
@@ -965,15 +1000,14 @@ class TieredPaperRuntime(PaperRuntime):
                     "commit_p95_ms": self._percentile(self._commit_ms),
                     "resource_guard": resource_guard,
                     "financial_readback": {
-                        "available": not self.readback_unavailable(),
+                        "available": journal["available"],
+                        "status": journal["status"],
                         "error": self._readback_error,
-                        "audit_age_seconds": (
-                            round(observed_mono - self._readback_audit_mono, 3)
-                            if self._readback_audit_mono is not None
-                            else None
-                        ),
+                        "audit_age_seconds": journal["audit_age_seconds"],
                         "latest_query": self._readback_sample,
-                        "policy": "Read-only snapshot: 5s refresh / 60s audit / 120s expiry",
+                        "last_shutdown": self._readback_shutdown,
+                        "policy": "Owned read-only reader: 5s refresh / 60s audit / 120s expiry; "
+                        "15s operation / 4s cancellation and drain / 1s termination",
                     },
                 },
                 "storage": {

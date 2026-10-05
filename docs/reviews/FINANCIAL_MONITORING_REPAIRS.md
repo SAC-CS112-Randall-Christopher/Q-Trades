@@ -1,0 +1,146 @@
+# Financial monitoring correctness follow-up — October 5, 2026
+
+Source follow-up to merged #60, based on main `fca588586`. This implements the
+three C60 findings while preserving #60's sound cooldown/topology changes and
+#62's original release receipt. It is not a rollout or trained-model acceptance.
+
+## Ordered request and acceptance checklist
+
+1. [x] **C60-1: completed negative reconciliation survives ancillary failures.**
+   `FinancialReadback` completes its repeatable-read/read-only safety transaction
+   first. Its audit receipt includes the captured revision and observation time,
+   and reaches the runtime before optional history/storage queries. A confirmed
+   negative skips those refreshes and wakes the existing financial supervisor.
+   Query/connection failure before completion supplies no passing audit. Optional
+   refresh errors retain the completed audit and previous history; they block
+   optional research conservatively and do not stop financial work by themselves.
+   The older inline implementation shared some of the original ordering weakness.
+2. [x] **C60-2: current monitoring and last verified result agree across surfaces.**
+   One derived `journal_status()` supplies snapshot, health, guard and notices.
+   Pending, balanced, expired, unavailable and confirmed-imbalanced are distinct.
+   Last completed audit time/revision/result remain unchanged during an outage or
+   expiry. Health's `journal_balanced` describes a currently available audit;
+   `journal_last_balanced` retains the historical result. The ordinary Accounts
+   interface's **Original Tier 3 trial and review history** shows both meanings,
+   with amber unknown/unavailable, green current-balanced and red imbalance.
+3. [x] **C60-3: cancellation and drainage have a fixed operation lifecycle.**
+   The existing authenticated read-only reader runs in one owned spawned child,
+   using the same `PaperStore` queries. The financial connection/owner lock are
+   never inherited; credentials travel over private local IPC, not command-line
+   arguments. One request at a time, 15-second operation limit, 1-second bounded
+   `cancel_safe` request inside a fixed four-second drain, then at most one second
+   to terminate that exact original child handle. Repeated cancellation does not
+   extend the deadline. Normal closure follows worker completion; a stuck client
+   thread is contained by child termination, without closing its live connection
+   from another thread or terminating a looked-up database backend. Escalation is
+   exposed in `last_shutdown` and logged. Termination failure is explicit, retains
+   ownership and stops continuation. Receipts have a two-MiB ceiling and small
+   atomic IPC frames. Reconnection discards the old child's IPC entirely.
+4. [x] **Bounded installed attribution observation; retain uncertainty.**
+   One 20.001-second read-only window, 92 database-wait samples and 19 status
+   requests retained 37 distinct in-window work samples: seven over 100 ms and
+   zero at/over one second. There were no observation errors; paper processing
+   was fresh before/after. Query observations were almost entirely inactive
+   clients awaiting commands; one active projection read and one active update
+   were sampled without reported waits. Four of the seven estimated slow work
+   intervals contained any wait snapshot, and three contained none. This cannot
+   exclude unsampled database/transport waits or establish a unique stall cause.
+   A subsequent native thread-state read succeeded (19 application threads,
+   one running/eighteen waiting); the requested WMI thread-counter read was
+   unavailable. No installed financial-thread identity was retained, so these
+   host states cannot be assigned to a particular financial interval. New source
+   tags the existing timing receipt with `measured_thread_id` for future controlled
+   correlation, without changing measurement intervals or guard thresholds.
+5. [x] **Installed state and existing authorization remain preserved.**
+   Installed process/API still reports `fca588586`, paper-only, fresh processing
+   and no reported paper error. Installed inspection used HTTP GETs, authenticated
+   read-only metadata queries and native process/thread inspection. No installed
+   source, service, account, journal, configuration or model was changed. The
+   single approved trained-v2 attempt is unused; no dispatch, paid call, model
+   download, holdout exposure, model activation or financial-policy change occurred.
+6. [ ] **Separate merge/install/restart and installed repair acceptance.**
+   Draft source delivery does not fulfill this boundary. Concurrent trained-model
+   operation, active-position protection and the cause of the earlier one-second
+   stalls remain unproven; no cache/RAM tuning or permissive threshold is inferred.
+
+## Verification and retained failures
+
+- Actual-owner initial counterexamples: five failed / one passed. They reproduce
+  history/storage masking, ancillary suppression of a due audit and expiry's
+  stored/computed availability disagreement. Original receipts remain private.
+- Final native Windows/disposable PostgreSQL affected-owner selection: **109
+  passed**, no skips, one existing TestClient deprecation warning, 128.98 seconds.
+  It includes the financial reader, read-only rejection, consistent snapshots
+  across a writer commit, real connection failure/restoration before and after a
+  good audit, critical supervision, API/notice states, streaming, projections,
+  resilience and updater shutdown. The earlier expanded run retained one fixture
+  timeout / 108 passes: its six-second wait omitted the actual five-second refresh
+  plus three-second connection budget. The fixture now permits ten seconds;
+  operating deadlines, freshness and guards are unchanged.
+- Native driver cases cancel an actual disposable `pg_sleep(30)` session and
+  drain after one/two cancellation requests, preserving writer/history and
+  subsequent writer usability. A client-side block has **no test release**; fixed
+  drain/termination finishes it and its owned database session disappears. The
+  operation-timeout case injects a two-second **test-only** sample budget; drainage
+  uses the actual four-second source budget. Incomplete audits publish no result.
+  Oversized optional history cannot hide the audit delivered beforehand.
+- Pinned native and installed driver introspection: psycopg **3.3.4**, binary
+  libpq **18.3**, bounded-cancellation support available. Disposable native
+  PostgreSQL is **17.2**. A separate `pythonw` native probe confirms a non-visible
+  child console, an actual balanced read and clean owned-child drainage. This
+  demonstrates the windowless parent path, not installation of this successor.
+- Ruff and strict Windows-targeted mypy pass (**102 source files**); dashboard
+  TypeScript/production build passes (**1,930 modules**).
+- Actual compiled browser + disposable API/PG: seven sequential states,
+  pending → balanced → failed → balanced → expired → balanced → imbalanced,
+  API/health agreement, retained audit dates/revisions, distinct status colors,
+  390-pixel viewport and zero browser exceptions. API responses are not mocked.
+  Initial browser failure exposed the pending label; a subsequent harness
+  failure toggled an already-open details element. Both failed logs remain
+  private, and the final complete rerun passes. Fixture times/failure/expiry and
+  presentation liveness are synthetic; positive/negative audits use the actual
+  disposable journal. These are software/UI proofs, not market or trading proof.
+- The added `browser-monitoring` CI job repeats this compiled workflow using
+  disposable password-authenticated PostgreSQL and Playwright **1.62.1**. Its
+  uploaded receipts/screenshots contain synthetic fixtures only. Existing native,
+  runtime-ownership and full PostgreSQL gates remain separate; exact-head hosted
+  results are reported in the owning PR after completion, with skips retained.
+
+### Observer overhead and limits
+
+The 20-second observer used 0.391 seconds of its measured Python thread's CPU.
+Database probes: median/p95/max **2.686/3.899/11.546 ms**. Status requests:
+**53.098/142.305/283.014 ms**, including response transport/decoding. The later
+native process-thread read cost **55.368 ms**. Provider/financial workload,
+other workstation activity and observer effects were uncontrolled; this is not
+a matched optimization experiment. Seven sampled slow intervals span roughly
+103–149 ms and 46.875–109.375 ms of charged financial-thread CPU. They are not the
+earlier severe low-thread-CPU intervals in #62. No model was dispatched.
+
+Next controlled attribution should use the existing phase receipts and the
+tagged native thread ID, align owned DB wait/host-state observations to complete
+work intervals, retain observer cost and missed samples, and keep the full guard.
+Unique cause and an optimization choice remain open when those observations do
+not identify them. No further long wait for admission or speculative cache change
+is part of this source follow-up.
+
+## Reproduce the isolated UI check
+
+Use the pinned Python requirements, built `apps/web/dist`, a separately owned
+disposable PostgreSQL config and a fresh QA directory. Set a private arbitrary
+`QTRADES_BROWSER_QA_TOKEN`, then run
+`tests/browser/financial_monitoring_server.py --directory <fresh-qa-directory>
+--database-config <disposable-config> --web-dist <built-dashboard>` on loopback.
+Set `QTRADES_BROWSER_QA_OUTPUT` and make Playwright 1.62.1 available through
+`NODE_PATH`; run `node tests/browser/financial_monitoring.cjs`. The harness requests
+clean shutdown and the server drops only its generated disposable schema. Never
+point this fixture helper at operating data. Original private installed evidence,
+configs, query/host receipts and native failure logs are not committed/uploaded.
+
+The cancellation choices follow [Psycopg's cancellation contract](https://www.psycopg.org/psycopg3/docs/api/connections.html#psycopg.Connection.cancel_safe):
+request success does not imply completion, and bounded native cancellation needs
+libpq 17+. [PostgreSQL statement timeout](https://www.postgresql.org/docs/17/runtime-config-client.html#GUC-STATEMENT-TIMEOUT)
+is per server statement. The owned-child fallback therefore covers the remaining
+client/drain lifecycle. [Python's spawn/termination contracts](https://docs.python.org/3.12/library/multiprocessing.html)
+also require that terminated-child IPC is discarded. Browser CI uses the
+[documented Playwright installation path](https://playwright.dev/docs/ci).

@@ -17,6 +17,9 @@
   font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   font-size: 14px;
 }
+.q-workspace .journal-monitoring { color: var(--amber); }
+.q-workspace .journal-monitoring[data-status="balanced"] { color: var(--green); }
+.q-workspace .journal-monitoring[data-status="imbalanced"] { color: var(--red); }
 .role-research { padding: 24px; line-height: 1.55; }
 .role-research h2 { margin: 0 0 12px; }
 .role-research p { margin: 10px 0; overflow-wrap: anywhere; }
