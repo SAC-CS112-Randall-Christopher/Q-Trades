@@ -99,6 +99,81 @@ The reclaimed task storage is insufficient to establish the required local
 reserve. Do not relabel this as capture recovery or reduce the reserve to claim
 model admission. New QA temporary output is on separately owned G: storage.
 
+The later finite software run uses a private fixture-placement helper: ordinary
+paper-admission fixtures physically reside on G:, while recovery timing and
+remaining software fixtures use a bounded local folder. It supplies no fake
+resource readings and changes no test, assertion, deadline, clock or policy.
+The existing interrupted-capture test exceeds its five-second deadline on the
+slower G: storage and passes on fast local storage. The ordinary low-information
+paper comparison refuses C: admission under its real reserve and passes with its
+files on G:. Both cases pass together with the declared placement.
+
+The original all-G: and all-C: runs were interrupted; their failed/partial logs
+and fixtures remain distinct evidence. The local fixture copy (4,418 files) and
+the completed release-source dependency copy (5,255 files) were subsequently
+hash-verified on G: with their original paths available. During the split run,
+local free space fell below its initial two-GiB QA headroom declaration. That
+deviation is retained, not accepted as an operating resource profile. Software
+assertions cannot establish host capacity or concurrent trained-model execution.
+During that split run the separately owned QA PostgreSQL cluster measured
+approximately 90 MiB, including 64 MiB of WAL. It was subsequently stopped as
+recorded below. No operating database setting was changed.
+
+The first completed split-storage suite recorded 1,031 passes and ten failures
+in 2,631.10 seconds. All ten storage-expansion fixtures had still landed on C:
+and failed during initial evidence admission with the actual free-space reserve.
+The unchanged file passes on G: (ten passed / one Windows symlink-permission
+skip). That focused result does not make the failed full run green. The corrected
+fixture placement includes this file. The complete workstation rerun could not
+finish: local free space abruptly fell to 123 MiB, below its declared one-GiB
+floor, and it was stopped. Its buffered log reaches 69%; there is no completed
+result or JUnit report. This remains partial evidence, not a passing native suite.
+
+Before the rerun, the completed failed fixtures (4,281 files / 0.129 GiB) and
+three completed type-check caches were also hash-preserved with their original
+paths available. Its separate finite-QA declaration bounds remaining local
+fixtures to 300 MiB with a one-GiB minimum local QA reserve. The observed previous
+local total was 129 MiB. These software-only bounds neither change nor satisfy
+the five-GiB operating reserve. The remaining task-owned local directories total
+only a few hundred MiB; shared temporary folders with other or unestablished
+owners remain unchanged.
+
+The interrupted rerun's local fixtures (919 files / 117,728,622 bytes) and the
+confirmed-stopped isolated database (999 files / 94,782,543 bytes) were then
+fully hash-preserved on G:, with original paths available. No test Python process
+remained. Only that owned QA cluster was stopped. C: still has only a few hundred
+MiB free; the cause of the abrupt loss remains unattributed. Neither the fixture
+sizes nor the unchanged six-GiB page-file allocation account for that loss.
+
+A subsequent installed observation still has fresh/error-free paper processing,
+about 50.5 GiB of available RAM, engine cooldown and the local recording failure.
+Recording omissions remain visible. The RAM allowance is not the present
+admission blocker; the changed financial loop itself is still uninstalled.
+
+A later fresh installed sample records 210.116 ms of complete work: reconciliation
+45.314 ms, storage counts 84.307 ms and recent history 9.249 ms, about 139 ms
+together; the financial calculation is 0.709 ms. Available RAM is then about
+59.7 GiB, while local disk is about 1.9 GiB and recording remains paused. This
+locates the monitoring contribution in that sample; subtracting it is not a
+measurement of the changed installation or concurrent model execution.
+
+Read-only Windows memory counters separately report 95.691 GiB physical RAM,
+58.828 GiB available and 50.961 GiB committed against a 101.691-GiB commit limit.
+The system-managed C: page file reserves six GiB; current/peak use is 32/808 MiB.
+These idle-host observations identify headroom, not the trained model's peak.
+No memory or page-file setting was changed. A different Windows storage policy
+is a separate decision: sizing depends on peak commit and crash-dump needs,
+not a single low-usage observation ([Microsoft page-file guidance](https://learn.microsoft.com/en-GB/troubleshoot/windows-client/performance/how-to-determine-the-appropriate-page-file-size-for-64-bit-versions-of-windows)).
+
+Additional bounded read-only metadata shows an approximately 835-MiB operating
+database, a one-row approximately 30-MiB projection relation, regular autovacuum
+and no pinned reader transactions in that database. This does not support a
+stale-reader bloat diagnosis. The server's WAL files were not accessible through
+the Windows filesystem path. The active Docker data disk on C: is about 141 GiB;
+it is a substantial space holder, not a confirmed cause of the abrupt growth.
+Operating files, Docker storage and services remain untouched. Moving database
+storage to the slower G: drive would need its own measured placement decision.
+
 ## Verification ledger
 
 - Affected reader/driver/projection/stream/counter/regression set: 77 passed
@@ -112,15 +187,41 @@ model admission. New QA temporary output is on separately owned G: storage.
   IDLE priority. Pure topology cases reject incomplete, foreign-group, overlapping
   and insufficient allocations. Loader call-contract fixtures remain synthetic.
 - Ruff and strict Windows-targeted mypy pass; 101 source files checked.
-- Full native and exact-head hosted results will be appended after completion.
-  All existing hosted selectors and the separate ownership job remain; both new
-  test files are selected by the native job.
+- The new fast-recovery regression fails against unchanged main: a fast pass
+  extends the deadline from 1300 to 1301. It passes with this repair.
+- Final focused reader/topology/guard/disk set: 15 passed. The placement control
+  above adds two passing unchanged tests on their actual declared volumes.
+- Exact source-head hosted run 37266632682 at `49137cd4761e1fdea5011c20aeeb60baee698ba4`
+  passes both jobs: native 635 passed / 196 skipped (no hosted PostgreSQL),
+  runtime ownership 46 passed. The TypeScript/Vite build passes with 1,930 modules.
+- The completed workstation full run remains failed (1,031 passed / ten failed);
+  the corrected rerun remains interrupted. The private manifest binds 296
+  application, script, test, dependency, dashboard and CI files and the fixture
+  helper's SHA-256. All 295 files other than the subsequently extended workflow
+  retain their original content. Documentation changes do not replace that
+  source-head evidence.
+- To complete broad source integration without adding local disk pressure,
+  `22f12e985dae029d7fbe6257ecfd86255e0b1004` adds a standard Ubuntu job with
+  disposable password-authenticated PostgreSQL. Both existing Windows job
+  bodies, every selector and their eight-minute budgets remain unchanged.
+  No operating data, private models or larger/paid runners are used.
+- [Hosted run 37278413162](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/37278413162)
+  passes all three jobs at that head: complete portable PostgreSQL suite
+  959 passed / 82 skipped / one warning in 169.15 seconds, PostgreSQL 17.11;
+  Windows selected suite 635 passed / 196 skipped (no configured PostgreSQL);
+  runtime ownership 46 passed in 19.54 seconds. The dashboard build passes with
+  1,930 modules.
+  The portable result does not make the failed/partial workstation runs green
+  or establish actual Windows model coexecution. The public repository uses
+  free standard runners ([GitHub billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions)).
+  Both new test files remain selected by the Windows native job.
 
 ## Remaining acceptance
 
 Keep the PR draft and unmerged pending the applicable release authorization.
 Resolve the actual local recording reserve without touching unrelated private
-data or waiving capture protections. Use the existing updater for any approved
+data or waiving capture protections. Restore safe workstation QA capacity before
+claiming a complete local native acceptance. Use the existing updater for any approved
 installation, preserve the financial prefix/configuration/parents and verify
 normal activity/history/Journal, recording and guard recovery in the running app.
 
