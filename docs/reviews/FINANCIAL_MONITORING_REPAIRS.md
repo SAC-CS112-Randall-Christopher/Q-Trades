@@ -30,7 +30,8 @@ remains separate from these monitoring repairs.
    The existing authenticated read-only reader runs in one owned spawned child,
    using the same `PaperStore` queries. The financial connection/owner lock are
    never inherited; credentials travel over private local IPC, not command-line
-   arguments. One request at a time, 15-second operation limit, 1-second bounded
+   arguments. One request at a time, 15-second operation budget including startup
+   and dispatch, 1-second bounded
    `cancel_safe` request inside a fixed four-second drain, then at most one second
    to terminate that exact original child handle. Repeated cancellation does not
    extend the deadline. Normal closure follows worker completion; a stuck client
@@ -109,8 +110,13 @@ remains separate from these monitoring repairs.
   PostgreSQL is **17.2**. A separate `pythonw` native probe confirms a non-visible
   child console, an actual balanced read and clean owned-child drainage. This
   demonstrates the windowless parent path, not installation of this successor.
-- Ruff and strict Windows-targeted mypy pass (**102 source files**); dashboard
-  TypeScript/production build passes (**1,930 modules**).
+- Before incorporating #61, Ruff and strict Windows-targeted mypy passed
+  (**102 source files**); dashboard TypeScript/production build passed
+  (**1,930 modules**). After integration, the actual API/reader/health native
+  selection passes **34 tests**, no skips, one existing warning, 73.82 seconds;
+  Ruff and Windows mypy pass **108 source files**, and dashboard build passes
+  **1,932 modules**. The final source operation budget starts before child startup
+  and request dispatch; exact-head hosted gates include that final adjustment.
 - Actual compiled browser + disposable API/PG: seven sequential states,
   pending → balanced → failed → balanced → expired → balanced → imbalanced,
   API/health agreement, retained audit dates/revisions, distinct status colors,
@@ -123,7 +129,8 @@ remains separate from these monitoring repairs.
 - The added `browser-monitoring` CI job repeats this compiled workflow using
   disposable password-authenticated PostgreSQL and Playwright **1.62.1**. Its
   uploaded receipts/screenshots contain synthetic fixtures only. Existing native,
-  runtime-ownership and full PostgreSQL gates remain separate; exact-head hosted
+  runtime-ownership, full PostgreSQL and #61's persistent-research gates remain
+  separate; exact-head hosted
   results are reported in the owning PR after completion, with skips retained.
 
 ### Observer overhead and limits

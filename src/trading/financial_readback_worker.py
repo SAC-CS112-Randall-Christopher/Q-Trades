@@ -133,11 +133,11 @@ class ReadbackWorker:
     async def sample(
         self, *, audit: bool, publish_audit: Callable[[dict[str, Any]], None]
     ) -> dict[str, Any]:
+        deadline = time.monotonic() + SAMPLE_SECONDS
         if self._process is None:
             self._start()
         assert self._pipe is not None and self._process is not None
         self._pipe.send(("sample", audit))
-        deadline = time.monotonic() + SAMPLE_SECONDS
         content = bytearray()
         message_kind: bytes | None = None
         while time.monotonic() < deadline:
