@@ -5,7 +5,8 @@ The current source follow-up implements C60-1/2/3 from Chris's #60 audit. Read
 native/driver/browser proof, preserved failures and bounded installed observation.
 Keep the completed negative audit independent of optional refreshes, last verified
 audit separate from current availability, and the owned read-only child's query,
-cancellation/drain and termination lifecycle bounded. Preserve the financial
+cancellation/drain and termination lifecycle bounded. Verify the complete notice
+producer/consumer contract through the registry and API. Preserve the financial
 writer/history, frozen account/risk/strategy configuration, full resource guard,
 sound cooldown/topology changes, twenty slots and 400/100-GB storage policy.
 

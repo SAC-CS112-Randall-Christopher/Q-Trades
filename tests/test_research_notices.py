@@ -4,6 +4,7 @@ import asyncio
 import copy
 import json
 import sqlite3
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -315,6 +316,113 @@ def test_notice_api_reads_are_side_effect_free_and_presentation_cannot_change_fi
         assert runtime.state == before and not runtime.stream.records
         app.state.lab = None
         assert client.get("/api/research/notices").status_code == 503
+
+
+def test_full_notice_batch_retains_audit_states_and_recovery_in_the_api(
+    notices, runtime, tmp_path, monkeypatch
+):
+    """Synthetic audit receipts through the actual status, registry and API owners."""
+    clock = [time.time()]
+    monkeypatch.setattr("trading.api.time.time", lambda: clock[0])
+    accounts = copy.deepcopy(runtime.state["accounts"])
+    runtime._capture_failure = "Explicit synthetic recording fault"
+    app = create_app(Settings(), tmp_path / "monitor.sqlite", background=False)
+    stages = [
+        ("pending", "unknown"),
+        ("balanced", "unknown"),
+        ("balanced", "recovered"),
+        ("unavailable", "unknown"),
+        ("balanced", "unknown"),
+        ("balanced", "recovered"),
+        ("expired", "unknown"),
+        ("balanced", "unknown"),
+        ("balanced", "recovered"),
+        ("imbalanced", "active"),
+        ("balanced", "active"),
+        ("balanced", "recovered"),
+    ]
+    with TestClient(app) as client:
+        app.state.lab = SimpleNamespace(notices=notices, notice_error=None)
+        app.state.paper = runtime
+        for index, (mode, expected) in enumerate(stages):
+            clock[0] += 5  # Distinct fixture observations; retain ordinary confirmation rules.
+            runtime.state["last_tick"] = clock[0]
+            original_audit = copy.deepcopy(runtime.receipts)
+            if mode in {"balanced", "imbalanced"}:
+                result = {
+                    "reconciliation": {"balanced": mode == "balanced", "revision": index},
+                    "observed_at": clock[0],
+                    "observed_mono": time.monotonic(),
+                }
+                if mode == "imbalanced":
+                    with pytest.raises(RuntimeError, match="reconciliation failed"):
+                        runtime._accept_financial_audit(result)
+                else:
+                    runtime._accept_financial_audit(result)
+            elif mode == "unavailable":
+                runtime._readback_error = "Explicit synthetic monitoring outage"
+            elif mode == "expired":
+                runtime._readback_audit_mono = time.monotonic() - 121
+            notices.observe(operational_conditions(runtime, clock[0]), clock[0])
+            changes = notices.registry.db.total_changes
+            response = client.get("/api/research/notices")
+            assert response.status_code == 200
+            body = response.json()
+            rows = {row["key"]: row for row in body["operational"]}
+            journal = rows["financial_monitoring"]
+            assert body["detector_error"] is None and body["detector_last_check_at"] == clock[0]
+            assert journal["state"] == expected
+            assert journal["condition_evidence"]["facts"]["status"] == mode
+            assert rows["raw_recording"]["state"] == "active"
+            assert rows["raw_recording"]["observations"] == index + 1
+            assert client.get("/api/status").json()["paper"]["journal"]["status"] == mode
+            assert client.get("/api/health").json()["journal_monitoring"]["status"] == mode
+            assert notices.registry.db.total_changes == changes
+            if mode in {"unavailable", "expired"}:
+                assert runtime.receipts == original_audit
+                assert (
+                    journal["condition_evidence"]["facts"]["checked_at"]
+                    == original_audit["checked_at"]
+                )
+            if mode == "imbalanced":
+                assert journal["severity"] == "critical" and journal["notifications"] == 1
+        detail = client.get("/api/research/notices/financial_monitoring").json()
+        transitions = [row["body"] for row in detail["transitions"]]
+        assert any(row.get("state") == "active" for row in transitions)
+        assert transitions[0]["state"] == "recovered"
+    assert runtime.state["accounts"] == accounts and not runtime.stream.records
+    # A synthetic later audit does not authorize restarting the financial supervisor.
+    assert runtime._financial_failure and runtime.stream.changed.is_set()
+
+
+def test_supervisor_persists_the_complete_producer_batch_without_research(tmp_path):
+    lab = ExperimentLab(tmp_path / "registry.sqlite", None, lambda: False)
+    lab.notice_source = lambda: operational_conditions(None, time.time())
+
+    async def scenario():
+        task = asyncio.create_task(lab.run())
+        try:
+            async def observed():
+                while lab.notices.last_checked_at is None and lab.notice_error is None:
+                    await asyncio.sleep(0.01)
+
+            await asyncio.wait_for(observed(), 2)
+            assert lab.notice_error is None and lab.child is None
+            rows = lab.notices.snapshot(time.time())["operational"]
+            assert {row["key"] for row in rows} == {
+                row["key"] for row in operational_conditions(None, time.time())
+            }
+            assert len(rows) == 7 and all(row["state"] == "unknown" for row in rows)
+            assert lab.registry.db.execute("SELECT count(*) FROM experiments").fetchone()[0] == 0
+        finally:
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+
+    try:
+        asyncio.run(scenario())
+    finally:
+        lab.registry.close()
 
 
 @pytest.mark.parametrize("failed", [False, True])

@@ -26,6 +26,10 @@ remains separate from these monitoring repairs.
    `journal_last_balanced` retains the historical result. The ordinary Accounts
    interface's **Original Tier 3 trial and review history** shows both meanings,
    with amber unknown/unavailable, green current-balanced and red imbalance.
+   The complete producer batch passes the existing notice validator and registry,
+   including current/historical audit facts, critical imbalance and confirmed
+   recovery. Existing recording/input/resource notices continue to advance in the
+   same atomic batch; invalid conditions remain rejected.
 3. [x] **C60-3: cancellation and drainage have a fixed operation lifecycle.**
    The existing authenticated read-only reader runs in one owned spawned child,
    using the same `PaperStore` queries. The financial connection/owner lock are
@@ -124,6 +128,27 @@ remains separate from these monitoring repairs.
   new counterexample and original failure are retained. Final independent Codex
   review and exact-head gates are reported in the owning PR, rather than treating
   a previous head's successful jobs as proof of a later correction.
+- All five gates also passed on `ecda63d`: native **638 passes / 213 skips**,
+  full PostgreSQL **1,052 passes / 84 skips**, memory/reviewer **74 passes**,
+  runtime ownership **46 passes**, and compiled Accounts/browser acceptance.
+  The independent Codex review of this exact head found one material integration
+  issue despite those green gates: the monitoring producer added a seventh key
+  without registering it in the notice consumer. Every full batch failed
+  validation, rolling back existing notice updates. Two actual-owner
+  counterexamples failed before repair, then both passed in **1.91 seconds**.
+  The consumer now accepts the explicitly supported key, preserving all size,
+  source, confirmation and capacity constraints. Regressions exercise the normal
+  refused-research supervisor plus full producer -> registry -> API transitions,
+  prior-audit preservation, a critical alert, confirmed recovery, existing alert
+  updates and side-effect-free reads. The review found no further material issue;
+  it inspected source and an isolated rejection, without rerunning native/browser
+  suites or inspecting the installation. The affected notice/contention/health
+  owner selection passes **35 tests**, one existing warning, **59.21 seconds**;
+  its one real-role PostgreSQL case was explicitly deselected while the disposable
+  cluster was stopped and remains covered by the full hosted PostgreSQL gate.
+  Ruff and strict Windows-targeted mypy pass (**108 source files**).
+  Final repair review and exact-head gates
+  remain separately reported in PR #63; pre-repair green jobs do not cover it.
 - Native driver cases cancel an actual disposable `pg_sleep(30)` session and
   drain after one/two cancellation requests, preserving writer/history and
   subsequent writer usability. A client-side block has **no test release**; fixed

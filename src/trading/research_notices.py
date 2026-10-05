@@ -202,6 +202,7 @@ class ResearchNotices:
             key
             not in {
                 "paper_processing",
+                "financial_monitoring",
                 "research_resource",
                 "raw_recording",
                 "retained_recording",

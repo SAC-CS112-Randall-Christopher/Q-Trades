@@ -6,6 +6,9 @@ shutdown. The [ordered repair/acceptance ledger](reviews/FINANCIAL_MONITORING_RE
 records 121 native affected-owner passes, actual cancellation/drain faults,
 compiled Accounts browser transitions and a separate bounded installed read-only
 observation. Preserve the failed/partial receipts and #62's original rollout limits.
+The independent review's full-batch notice validation failure is repaired and
+retained with its actual-owner regression; final review and exact-head gates are
+reported in draft PR #63. Earlier heads' green jobs do not qualify a later repair.
 This source delivery has not changed installed services, financial history,
 accounts, rules, resource thresholds or model authority. The single approved
 trained-v2 attempt remains unused; concurrent model operation and the earlier
