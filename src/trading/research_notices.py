@@ -40,6 +40,24 @@ def operational_conditions(paper: Any, now: float) -> list[dict[str, Any]]:
             },
         }
     ]
+    status_reader = getattr(paper, "journal_status", None)
+    journal = status_reader() if callable(status_reader) else {}
+    journal_state = journal.get("status", "pending")
+    journal_condition = {
+        "key": "financial_monitoring",
+        "condition": "clear" if journal_state == "balanced" else
+        "active" if journal_state == "imbalanced" else "unknown",
+        "severity": "critical" if journal_state == "imbalanced" else "warning",
+        "source_at": now,
+        "title": "Financial journal monitoring",
+        "market": None, "account": None,
+        "impact": "Last completed audit and current monitoring availability are separate",
+        "next_action": "Inspect audit time, revision and current monitoring; preserve history",
+        "link": "#accounts",
+        "facts": {k: journal.get(k) for k in
+                  ("status", "available", "balanced", "checked_at", "revision", "error",
+                   "audit_age_seconds")},
+    }
     guarded = getattr(paper, "constrained", None)
     rows.append(
         {
@@ -140,6 +158,7 @@ def operational_conditions(paper: Any, now: float) -> list[dict[str, Any]]:
                 },
             }
         )
+    rows.append(journal_condition)
     for row in rows:
         row["source_epoch"] = getattr(paper, "_notice_epoch", "legacy")
     return rows
@@ -183,6 +202,7 @@ class ResearchNotices:
             key
             not in {
                 "paper_processing",
+                "financial_monitoring",
                 "research_resource",
                 "raw_recording",
                 "retained_recording",

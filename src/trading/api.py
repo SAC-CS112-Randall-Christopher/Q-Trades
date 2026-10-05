@@ -2173,6 +2173,8 @@ def create_app(
     async def health(request: Request) -> dict[str, Any]:
         monitor = request.app.state.monitor
         paper: PaperRuntime | None = request.app.state.paper
+        status_reader = getattr(paper, "journal_status", None)
+        journal = status_reader() if callable(status_reader) else {}
         return {
             "service": "running",
             "mode": "paper",
@@ -2180,7 +2182,9 @@ def create_app(
             "paper_fresh": bool(
                 paper and paper.running and time.time() - paper.state["last_tick"] < 10
             ),
-            "journal_balanced": paper.receipts.get("balanced") if paper else None,
+            "journal_balanced": journal.get("balanced") if journal.get("available") else None,
+            "journal_last_balanced": paper.receipts.get("balanced") if paper else None,
+            "journal_monitoring": journal,
             "paper_error_reported": paper.error is not None if paper else None,
             "feed": monitor.snapshot()["runtime_state"],
             "paper": "running" if paper and paper.running else "stopped",

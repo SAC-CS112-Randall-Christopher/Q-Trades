@@ -1,4 +1,28 @@
-# Current direction — October 5, 2026, persistent research (#58 / #59)
+# Current direction — October 5, 2026, financial monitoring audit repairs
+
+The current source follow-up implements C60-1/2/3 from Chris's #60 audit. Read
+`docs/reviews/FINANCIAL_MONITORING_REPAIRS.md` for the ordered checklist, actual
+native/driver/browser proof, preserved failures and bounded installed observation.
+Keep the completed negative audit independent of optional refreshes, last verified
+audit separate from current availability, and the owned read-only child's query,
+cancellation/drain and termination lifecycle bounded. Verify the complete notice
+producer/consumer contract through the registry and API. Preserve the financial
+writer/history, frozen account/risk/strategy configuration, full resource guard,
+sound cooldown/topology changes, twenty slots and 400/100-GB storage policy.
+
+Installed source remains `fca588586`; this successor is source/isolated QA only.
+No merge/install/restart, model dispatch/activation, training/downloads, holdout
+access or operating data/configuration changes are authorized by this follow-up.
+The existing single trained-v2 attempt remains unused. Preserve #61's separate
+memory/reviewer owner and #62's original installed receipt and limitations. Source
+commits/push, bounded read-only measurement, issue coordination and a draft PR
+remain authorized. New thread identity metadata enables future attribution; the
+earlier severe stalls' cause and concurrent trained-model capacity are unproven.
+
+PR #61 merged to main at `dcf7ccbb1` during this source follow-up. This
+branch incorporates that owner without changing its activation/acceptance limits.
+
+# Existing owner direction — October 5, 2026, persistent research (#58 / #59)
 
 Use issue #59 as the implementation/acceptance ledger and preserve #58's mapped
 PM requirements, including evidence-driven questions and the optional System 1

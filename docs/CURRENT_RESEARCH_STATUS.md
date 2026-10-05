@@ -1,7 +1,35 @@
-# Current research status — October 5, 2026, issues #58 and #59
+# Current source follow-up — October 5, 2026, R63-1 monitoring recovery
 
-The new persistent knowledge/RAG/MCP/app-owned reviewer work is on
-`codex/persistent-research-workspace`. Its compact owner/verification/limitation
+Draft PR #63 continues the C60 repairs. Its follow-up R63-1 correction is
+`5c8eca9ab128dfbc242f8ea87d2c3aaac89b2443`: a newer completed audit preserves
+known history/storage refresh failures until each failing operation succeeds.
+The defect reproduced with actual native reader/runtime owners and the compiled
+Accounts workflow against published `932c2b7`. Corrected native affected-owner
+verification passed 125 cases; the final strengthened outage fixture separately
+passed both cases. The compiled ordinary UI/API run passed 23 owner checkpoints
+and seven presentation states, using offline Playwright 1.63.0 / Chromium 151.
+Independent review found no remaining material findings. The
+[ordered repair/acceptance ledger](reviews/FINANCIAL_MONITORING_REPAIRS.md)
+retains original failures, environment differences and overlapping selections.
+All six unchanged hosted gates, including CI's Playwright 1.62.1 browser path,
+must qualify the final published head; exact-head results are reported in
+[draft PR #63](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/pull/63).
+Earlier green gates do not qualify a later correction.
+
+A bounded read-only health GET at 19:09 UTC still reports installed
+`fca588586f9b72e9506caef6384ee8e65edea738`, running paper, fresh processing,
+balanced journal and no reported paper error. This source delivery has not
+changed installed services, financial history, accounts, rules, resource limits
+or model authority. The separately approved trained-v2 attempt remains unused
+by this repair. Installed successor acceptance, concurrent model operation and
+the earlier severe stalls' cause remain open. Preserve #61's separate owner,
+#57/#62's historical receipts and #64's separate compression study.
+
+
+# Existing memory/reviewer owner status — October 5, 2026, issues #58 and #59
+
+The persistent knowledge/RAG/MCP/app-owned reviewer source merged in PR #61
+at `dcf7ccbb1` on October 5. Its compact owner/verification/limitation
 ledger is [PERSISTENT_RESEARCH.md](PERSISTENT_RESEARCH.md). Source verification
 does not complete the issues' actual external/local-model or installed finish line.
 New reviewer configuration and spending default disabled.

@@ -86,7 +86,15 @@ export type PaperSnapshot = Partial<FeedDetails> & {
   campaigns?: { id: string; name: string; accounts: string[]; created_at: number }[];
   learning?: Learning;
   events: Event[];
-  journal: { balanced?: boolean };
+  journal: {
+    balanced?: boolean;
+    available?: boolean;
+    status?: "pending" | "balanced" | "expired" | "unavailable" | "imbalanced";
+    checked_at?: number;
+    revision?: number;
+    error?: string | null;
+    audit_age_seconds?: number | null;
+  };
   repeatability: {
     won: number;
     failed: number;
@@ -291,9 +299,25 @@ export function PaperPanel({
       <div className="paper-controls">
         <p>
           <strong>{a.version}</strong> ·{" "}
-          {data.journal.balanced
-            ? "Journal reconciled"
-            : "Reconciliation pending"}
+          <span className="journal-monitoring" role="status" data-testid="journal-monitoring"
+            data-status={data.journal.status ?? (data.journal.balanced === false ? "imbalanced" : "pending")}>
+            {data.journal.status === "imbalanced" || data.journal.balanced === false
+              ? "Journal imbalance confirmed · Financial processing stopped"
+              : data.journal.status === "pending"
+                ? "Journal audit pending"
+              : data.journal.status === "balanced" && data.journal.available === true
+                ? "Current journal audit balanced"
+                : data.journal.status === "expired"
+                  ? "Current journal monitoring expired"
+                  : data.journal.status === "unavailable" || data.journal.available === false
+                    ? "Current journal monitoring unavailable"
+                    : "Journal audit pending"}
+            {data.journal.checked_at != null && (
+              <> · Last completed audit {data.journal.balanced ? "balanced" : "imbalanced"}
+                {" at "}{when(data.journal.checked_at)} · Revision {data.journal.revision ?? "unavailable"}</>
+            )}
+            {data.journal.error && <> · {data.journal.error}</>}
+          </span>
           {a.daily_pause ? " · Daily loss pause until next UTC day" : ""}
           {a.drawdown_pause ? " · Drawdown review required" : ""}
           {a.cooldown_until > Date.now() / 1000

@@ -146,6 +146,7 @@ def test_disk_pressure_pauses_research_without_changing_financial_authority(tmp_
     runtime._capture_failure = None
     # This fixture isolates disk admission with a current successful readback.
     runtime._readback_error = None
+    runtime._readback_sample = None
     runtime._readback_audit_mono = time.monotonic()
     runtime.receipts = {"balanced": True}
     assert runtime.constrained()
