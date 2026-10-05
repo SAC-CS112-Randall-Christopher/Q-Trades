@@ -81,8 +81,11 @@ URL acquisition requires approval of the exact public HTTPS document and its
 rights. It refuses credentials, query tokens, private/nonpublic addresses,
 redirects and compressed responses. The checked public IP is pinned while TLS
 uses the original host. No model tool can choose a network target or import files.
-DNS resolution still relies on the Windows resolver; only socket/read/content
-processing has an explicit deadline. Large documents need deliberate sections.
+DNS resolution relies on the Windows resolver, with a five-second caller wait.
+An OS lookup cannot be cancelled safely; at most one unfinished daemon lookup
+can remain, and further URL imports show its occupied slot. A late result cannot
+initiate a fetch or import. Socket/read/content processing has separate limits.
+Large documents need deliberate sections.
 
 Use **Research reviews** to reopen the frozen packet, all delivered source
 contexts, original response, provider turns, usage, calculated cost, dispositions
@@ -106,6 +109,9 @@ request, never kept in browser storage, and not part of model/tool packets. A
 missing/different user identity requires explicit credential repair. The scoped
 connection test uses and revokes a short-lived CP22 claim and makes no paid call.
 It proves app-local discovery/read only, not external account or tunnel support.
+Credential renewal uses a unique owned staging file. A failed replacement keeps
+the prior key and removes only that attempt's staging file; a legacy abandoned
+staging file is preserved and cannot block renewal.
 
 Closing the browser leaves the existing API/Windows supervisor running. Sleep,
 power-off and sign-out remain unavailable intervals. One latest due occurrence
@@ -141,11 +147,15 @@ Private detailed receipts and synthetic corpus stay outside Git. They are in thi
 worktree's ignored `data/persistent-research-receipts` directory. No operating
 records, credential, model path or protected evaluation inputs are published.
 
-- Focused native reference/review/background selection: **55 passed**, one existing
+- Focused native reference/review/background selection: **59 passed**, one existing
   Starlette/httpx deprecation warning. Windows DPAPI, bounded PDF child, source-safe
   backup/restore, permission/time scope, correction continuation, lost acknowledgment,
   denied-budget acquisition, provider fault fixtures and two background occurrences
   are included. The provider HTTP responses and clock advancement are synthetic.
+  Three reproduced failures (credential staging recovery, DNS waiting and failed
+  MCP-call request accounting) have passing fixes. A fourth check proves task
+  scope is enforced before hydrating another task's retained context. Authenticated
+  tool lookup refusals consume the same request allowance before acquisition.
 - Scoped collaboration with owned disposable PostgreSQL: **13 passed**. An earlier
   run's 13 skips are retained separately; those skips are not database proof.
 - Real disposable PostgreSQL/CP18 lifecycle and subsequent producer: **1 passed**.
@@ -176,9 +186,11 @@ records, credential, model path or protected evaluation inputs are published.
   G: disposable directory. That completed rerun has **1,065 passed / 17 failed /
   1 skipped**: its ordinary temporary root was inside Git, correctly refusing
   private training fixtures. These are retained failures, not a green full run.
-  The next complete rerun places ordinary fixtures outside Git, with the same
-  selective G: placement and unchanged guards. Incomplete intermediate runs
-  remain incomplete. Its result is recorded in the owning PR/issue ledger.
+  The outside-Git rerun was stopped after the recovery fixes changed source after
+  collection; it remains incomplete and is not final-revision acceptance. A fresh
+  complete run uses a frozen committed implementation, ordinary fixtures outside
+  Git, the same selective G: placement and unchanged guards. Incomplete intermediate
+  runs remain incomplete. Its result is recorded in the owning PR/issue ledger.
 - The read-only installed before/final snapshots remain `fa3accd`, running paper,
   fresh processing and balanced journal. They are bounded observations and do not
   prove sustained uptime or authorize this branch's installation.

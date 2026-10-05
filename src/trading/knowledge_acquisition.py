@@ -2,15 +2,51 @@
 
 import http.client
 import ipaddress
+import queue
 import socket
 import ssl
+import threading
 import time
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import urlsplit
 
 from pydantic import Field
 
 from trading.research_knowledge import ResearchKnowledge, SourceImport
+
+DNS_WAIT_SECONDS = 5.0
+_DNS_ADMISSION = threading.BoundedSemaphore(1)
+
+
+def _resolve(host: str) -> list[Any]:
+    # OS lookup cannot be cancelled safely. Bound the caller's wait and allow only
+    # one unfinished daemon lookup; further imports report the occupied resource.
+    if not _DNS_ADMISSION.acquire(blocking=False):
+        raise ValueError("An unfinished public source DNS lookup occupies its bounded slot")
+    completed: queue.Queue[list[Any] | Exception] = queue.Queue(1)
+
+    def lookup() -> None:
+        try:
+            completed.put(socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM))
+        except Exception as exc:
+            completed.put(exc)
+        finally:
+            _DNS_ADMISSION.release()
+
+    try:
+        threading.Thread(target=lookup, name="qtrades-source-dns", daemon=True).start()
+    except Exception as exc:
+        _DNS_ADMISSION.release()
+        raise ValueError("Public source resolver resource unavailable") from exc
+    try:
+        result = completed.get(timeout=DNS_WAIT_SECONDS)
+    except queue.Empty as exc:
+        raise ValueError("Public source DNS deadline exceeded; no partial source imported") from exc
+    if isinstance(result, Exception):
+        raise ValueError("Public source DNS unavailable; no source imported") from result
+    if len(result) > 128:
+        raise ValueError("Public source resolved beyond its bounded address allowance")
+    return result
 
 
 class URLImport(SourceImport):
@@ -34,7 +70,7 @@ def public_target(url: str) -> tuple[str, str]:
     ):
         raise ValueError("Approve one exact public HTTPS document without credentials or query")
     host = parsed.hostname.encode("idna").decode()
-    addresses = socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+    addresses = _resolve(host)
     if not addresses or any(not ipaddress.ip_address(a[4][0]).is_global for a in addresses):
         raise ValueError("Source resolved to a private/reserved address; acquisition refused")
     return host, str(addresses[0][4][0])

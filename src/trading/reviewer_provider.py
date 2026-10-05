@@ -4,6 +4,7 @@ import ctypes
 import hashlib
 import json
 import os
+import secrets
 import time
 from pathlib import Path
 from typing import Any
@@ -57,14 +58,21 @@ class ReviewerCredential:
             raise ValueError("Provider credential format unavailable; nothing saved")
         ResearchStorage._not_redirected(self.directory)
         ResearchStorage._not_redirected(self.path)
-        staged = self.directory / "reviewer-credential.pending"
+        staged = self.directory / ("reviewer-credential-" + secrets.token_hex(16) + ".pending")
         ResearchStorage._not_redirected(staged)
         data = self._crypt(secret.encode(), decrypt=False)
-        with staged.open("xb") as out:
-            out.write(data)
-            out.flush()
-            os.fsync(out.fileno())
-        os.replace(staged, self.path)
+        created = False
+        try:
+            with staged.open("xb") as out:
+                created = True
+                out.write(data)
+                out.flush()
+                os.fsync(out.fileno())
+            os.replace(staged, self.path)
+        finally:
+            if created:
+                ResearchStorage._not_redirected(staged)
+                staged.unlink(missing_ok=True)
 
     def load(self) -> str:
         ResearchStorage._not_redirected(self.directory)

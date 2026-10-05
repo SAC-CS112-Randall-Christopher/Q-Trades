@@ -4,6 +4,8 @@ import asyncio
 import base64
 import io
 import json
+import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
@@ -17,12 +19,14 @@ from test_persistent_research import (
     policy,
     query,
     response,
+    task,
 )
 from test_persistent_research import workspace as workspace
 
 from trading.knowledge_acquisition import URLImport, acquire, public_target
 from trading.research_knowledge import DocumentImport, KnowledgeDisposition, ResearchKnowledge
 from trading.research_reviews import ResearchReviews, ReviewDecision, ReviewReconcile
+from trading.reviewer_provider import ReviewerCredential
 from trading.training_workflow import SourceSelection, TrainingWorkflow
 
 
@@ -153,6 +157,107 @@ def test_mcp_request_budget_stops_acquisition_before_receipt_growth(workspace):
             mcp.call(grant["token"], "knowledge_search", {"review": run["id"], "query": q})
     with knowledge.connection() as db:
         assert db.execute("SELECT count(*) FROM knowledge_receipts").fetchone()[0] == count
+
+
+def test_failed_mcp_tool_lookup_consumes_allowance_before_further_acquisition(workspace):
+    knowledge, _, reviews, actors, mcp = workspace
+    from trading.research_actors import ActorGrant
+
+    run = reviews.reserve(TASK, "fixture:failed-tool-budget", policy())
+    grant = actors.grant(
+        ActorGrant(
+            actor="fixture-failed-budget",
+            tasks=[TASK],
+            requests=1,
+            processing_location="synthetic local QA",
+        )
+    )
+    with pytest.raises(ValueError, match="permitted"):
+        mcp.call(grant["token"], "execute_sql", {"review": run["id"]})
+    with knowledge.connection() as db:
+        before = db.execute("SELECT count(*) FROM knowledge_receipts").fetchone()[0]
+    with pytest.raises(ValueError, match="allowance"):
+        mcp.call(grant["token"], "knowledge_search", {"review": run["id"], "query": "costs"})
+    with knowledge.connection() as db:
+        assert db.execute("SELECT count(*) FROM knowledge_receipts").fetchone()[0] == before
+
+
+def test_mcp_scope_is_checked_before_hydrating_other_task_context(workspace, monkeypatch):
+    _, worker, reviews, actors, mcp = workspace
+    from trading.research_actors import ActorGrant
+
+    run = reviews.reserve(TASK, "fixture:task-scope-first", policy())
+    task(worker, "fixture-other-task")
+    grant = actors.grant(
+        ActorGrant(
+            actor="fixture-other-scope",
+            tasks=["fixture-other-task"],
+            processing_location="synthetic local QA",
+        )
+    )
+
+    def must_not_read(_):
+        raise AssertionError("Out-of-scope retained context was read")
+
+    monkeypatch.setattr(reviews, "get", must_not_read)
+    with pytest.raises(ValueError, match="outside"):
+        mcp.call(grant["token"], "review_get_packet", {"review": run["id"]})
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows DPAPI credential recovery")
+def test_native_credential_renewal_preserves_old_key_on_lost_replace_and_legacy_stage(
+    tmp_path, monkeypatch
+):
+    credential = ReviewerCredential(tmp_path)
+    old = "synthetic-original-credential-" + "a" * 20
+    renewed = "synthetic-renewed-credential-" + "b" * 20
+    credential.save(old)
+    legacy = tmp_path / "reviewer-credential.pending"
+    legacy.write_bytes(b"synthetic abandoned encrypted staging marker")
+    credential.save(renewed)
+    assert credential.load() == renewed
+    original = credential.path.read_bytes()
+
+    def lost_replace(*_):
+        raise OSError("Synthetic owned replace failure")
+
+    monkeypatch.setattr("trading.reviewer_provider.os.replace", lost_replace)
+    with pytest.raises(OSError, match="Synthetic"):
+        credential.save("synthetic-refused-renewal-" + "c" * 20)
+    assert credential.path.read_bytes() == original
+    assert credential.load() == renewed
+    assert legacy.read_bytes() == b"synthetic abandoned encrypted staging marker"
+    assert list(tmp_path.glob("*.pending")) == [legacy]
+
+
+def test_dns_wait_and_unfinished_lookup_capacity_are_bounded(monkeypatch):
+    entered, release, finished = threading.Event(), threading.Event(), threading.Event()
+    owned = []
+
+    def stalled(*_, **__):
+        owned.append(threading.current_thread())
+        entered.set()
+        try:
+            if not release.wait(2):
+                raise OSError("Synthetic resolver wait exceeded")
+            return [(2, 1, 6, "", ("93.184.216.34", 443))]
+        finally:
+            finished.set()
+
+    monkeypatch.setattr("trading.knowledge_acquisition.DNS_WAIT_SECONDS", .05, raising=False)
+    monkeypatch.setattr("trading.knowledge_acquisition.socket.getaddrinfo", stalled)
+    started = time.monotonic()
+    try:
+        with pytest.raises(ValueError, match="deadline"):
+            public_target("https://example.com/owned-section")
+        assert entered.is_set() and time.monotonic() - started < 1
+        with pytest.raises(ValueError, match="unfinished"):
+            public_target("https://example.com/second-section")
+    finally:
+        release.set()
+        assert finished.wait(2)
+        owned[0].join(timeout=2)
+        assert not owned[0].is_alive()
 
 
 def test_two_disposable_scheduled_occurrences_restart_and_unchanged_backoff(workspace, monkeypatch):

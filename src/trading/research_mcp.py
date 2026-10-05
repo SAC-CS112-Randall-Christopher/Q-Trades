@@ -51,6 +51,10 @@ class ResearchMCP:
             )
 
     def call(self, token: str, name: str, args: dict[str, Any]) -> dict[str, Any]:
+        # Authenticated failed attempts consume the same allowance as valid calls.
+        # Charge before argument lookup, hydration or reference acquisition.
+        with self.actors.registry.transaction():
+            self.actors._charge(self.actors.auth(token), 0)
         if name not in NAMES:
             raise ValueError("Tool is outside the permitted research surface")
         required = {"review"} | (
@@ -64,9 +68,14 @@ class ResearchMCP:
             raise ValueError("Strict research tool arguments required")
         if len(args["review"]) > 60:
             raise ValueError("Review unavailable in this permitted context")
-        run = self.reviews.get(args["review"])
         with self.actors.registry.transaction():
-            self.actors._charge(self.actors.auth(token, run["task"]), 0)
+            row = self.actors.registry.db.execute(
+                "SELECT task FROM scheduled_reviews WHERE id=?", (args["review"],)
+            ).fetchone()
+            if row is None:
+                raise ValueError("Review unavailable in this permitted context")
+            self.actors.auth(token, row["task"])
+        run = self.reviews.get(args["review"])
         if name in {"review_get_packet", "review_get_result", "evidence_read"}:
             self.reviews.knowledge.check_passages(
                 self.reviews.delivered_passages(run["id"]), external=True
