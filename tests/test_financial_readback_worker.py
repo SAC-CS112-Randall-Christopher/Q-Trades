@@ -1,6 +1,7 @@
 """Owned-child faults, actual libpq cancellation and bounded Windows/POSIX shutdown."""
 
 import asyncio
+import copy
 import time
 import uuid
 from contextlib import suppress
@@ -8,6 +9,7 @@ from threading import Event
 
 import psycopg
 import pytest
+from financial_monitoring_fixture import FinancialMonitoringFixture
 from psycopg.conninfo import make_conninfo
 from test_paper_engine import START
 from test_paper_store import pg_store as pg_store
@@ -17,6 +19,259 @@ from trading.financial_readback import FinancialReadback
 from trading.financial_readback_worker import ReadbackWorker, readback_child
 from trading.paper_store import PaperStore
 from trading.tiered_runtime import TieredPaperRuntime
+
+
+@pytest.mark.parametrize("ancillary", ["recent", "storage_usage"])
+def test_retry_audit_keeps_known_optional_failure_unavailable_until_real_recovery(
+    pg_store, tmp_path, ancillary
+):
+    """R63-1: a new real audit cannot clear a prior optional-query failure."""
+    from trading.research_notices import operational_conditions
+
+    store, _ = pg_store
+    runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
+    runtime.disk_free = 10 * 1024**3
+    runtime.running = True
+    runtime.state["last_tick"] = time.time()
+    fixture = FinancialMonitoringFixture(runtime)
+
+    async def scenario():
+        await fixture.start()
+        try:
+            await fixture.wait_sample()
+            assert runtime.journal_status()["status"] == "balanced"
+            retained_history = copy.deepcopy(runtime.recent)
+            assert retained_history, "Retention proof requires real persisted history"
+            retained_storage = dict(runtime.database_usage)
+            first_completed = fixture.completed_at
+            fixture.fail(ancillary)
+            if ancillary == "storage_usage":
+                fixture.make_audit_due()  # Synthetic schedule; next actual query owns the result.
+            await fixture.wait_sample(first_completed)
+            assert runtime.journal_status()["status"] == "unavailable"
+            previous_audit = fixture.audit_at
+            failed_completed = fixture.completed_at
+            store.transact(START + 1, lambda engine: None)
+            before = store.read(), store.export(0, 1000)
+            fixture.hold(ancillary)
+            await fixture.wait_held(ancillary)
+            await fixture.wait_audit(previous_audit)
+
+            # The completed audit is new; the failing refresh has not completed.
+            assert runtime.receipts["balanced"] is True
+            assert runtime.receipts["revision"] == before[0]["revision"]
+            assert runtime.receipts["checked_at"] > previous_audit
+            assert fixture.completed_at == failed_completed
+            assert runtime.recent == retained_history
+            assert runtime.database_usage == retained_storage
+            journal = runtime.journal_status()
+            snapshot = runtime.snapshot()
+            notice = next(
+                row for row in operational_conditions(runtime, time.time())
+                if row["key"] == "financial_monitoring"
+            )
+            assert journal["status"] == "unavailable", (
+                "R63-1: a retry audit falsely reopened monitoring while the known "
+                f"{ancillary} failure is still held; actual owner state: {fixture.snapshot()}"
+            )
+            assert journal["available"] is False and journal["balanced"] is True
+            assert all(
+                snapshot["journal"][key] == journal[key]
+                for key in ("status", "available", "balanced", "checked_at", "revision", "error")
+            )
+            assert snapshot["performance"]["financial_readback"]["available"] is False
+            assert "financial_readback_unavailable" in (
+                snapshot["performance"]["resource_guard"]["blocking_conditions"]
+            )
+            assert runtime.readback_unavailable() and runtime.constrained()
+            assert notice["condition"] == "unknown"
+            assert notice["facts"]["status"] == "unavailable"
+            assert runtime._financial_failure is None and runtime.error is None
+
+            fixture.release(ancillary)  # The retry fails again after its actual audit.
+            await fixture.wait_sample(failed_completed)
+            assert runtime.journal_status()["status"] == "unavailable"
+            repeated_completed = fixture.completed_at
+            fixture.recover(ancillary)
+            await fixture.wait_sample(repeated_completed)
+            assert runtime.journal_status()["status"] == "balanced"
+            assert not runtime.readback_unavailable() and not runtime.constrained()
+            assert runtime._financial_failure is None and runtime.error is None
+            assert (store.read(), store.export(0, 1000)) == before
+        finally:
+            await fixture.stop()
+            assert fixture.reader._process is None
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize("recovered", ["recent", "storage_usage"])
+def test_recovery_of_one_optional_query_keeps_the_other_failure_outstanding(
+    pg_store, tmp_path, recovered
+):
+    store, _ = pg_store
+    runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
+    runtime.disk_free = 10 * 1024**3
+    fixture = FinancialMonitoringFixture(runtime)
+    remaining = "storage_usage" if recovered == "recent" else "recent"
+
+    async def scenario():
+        await fixture.start()
+        try:
+            await fixture.wait_sample()
+            completed = fixture.completed_at
+            fixture.fail("recent", "storage_usage")
+            fixture.make_audit_due()
+            await fixture.wait_sample(completed)
+            assert set(runtime._readback_sample["refresh_errors"]) == {
+                "recent", "storage_usage"
+            }
+            completed = fixture.completed_at
+            fixture.recover(recovered)
+            await fixture.wait_sample(completed)
+            assert set(runtime._readback_sample["refresh_errors"]) == {remaining}
+            assert runtime.journal_status()["status"] == "unavailable"
+            previous_audit = fixture.audit_at
+            completed = fixture.completed_at
+            fixture.hold(remaining)
+            await fixture.wait_held(remaining)
+            await fixture.wait_audit(previous_audit)
+            assert runtime.journal_status()["status"] == "unavailable"
+            assert runtime.constrained() and runtime._financial_failure is None
+            fixture.recover(remaining)
+            fixture.release(remaining)
+            await fixture.wait_sample(completed)
+            assert runtime._readback_sample["refresh_errors"] == {}
+            assert runtime.journal_status()["status"] == "balanced"
+            assert not runtime.constrained()
+        finally:
+            await fixture.stop()
+
+    asyncio.run(scenario())
+
+
+def test_healthy_optional_refresh_in_flight_keeps_current_monitoring_available(pg_store, tmp_path):
+    store, _ = pg_store
+    before = store.read(), store.export(0, 1000)
+    runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
+    runtime.disk_free = 10 * 1024**3
+    fixture = FinancialMonitoringFixture(runtime)
+
+    async def scenario():
+        await fixture.start()
+        try:
+            await fixture.wait_sample()
+            audit = dict(runtime.receipts)
+            completed = fixture.completed_at
+            fixture.hold("recent")
+            await fixture.wait_held("recent")
+            assert fixture.completed_at == completed
+            assert runtime.receipts == audit
+            assert runtime.journal_status()["status"] == "balanced"
+            assert runtime.journal_status()["available"] is True
+            assert not runtime.readback_unavailable() and not runtime.constrained()
+            fixture.release("recent")
+            await fixture.wait_sample(completed)
+            assert runtime.journal_status()["status"] == "balanced"
+            assert (store.read(), store.export(0, 1000)) == before
+        finally:
+            await fixture.stop()
+
+    asyncio.run(scenario())
+
+
+def test_optional_retry_timeout_retains_new_audit_and_recovers_without_restart(pg_store, tmp_path):
+    """Use the actual 15-second operation policy after a completed retry audit."""
+    store, _ = pg_store
+    before = store.read(), store.export(0, 1000)
+    runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
+    runtime.disk_free = 10 * 1024**3
+    fixture = FinancialMonitoringFixture(runtime)
+
+    async def scenario():
+        await fixture.start()
+        try:
+            await fixture.wait_sample()
+            completed = fixture.completed_at
+            fixture.fail("recent")
+            await fixture.wait_sample(completed)
+            completed, previous_audit = fixture.completed_at, fixture.audit_at
+            fixture.hold("recent")
+            await fixture.wait_held("recent")
+            await fixture.wait_audit(previous_audit)
+            audit = dict(runtime.receipts)
+            assert runtime.journal_status()["status"] == "unavailable"
+            assert runtime.constrained()
+            async with asyncio.timeout(
+                worker_module.SAMPLE_SECONDS + worker_module.DRAIN_SECONDS
+                + worker_module.TERMINATE_SECONDS + 3
+            ):
+                while (
+                    runtime._readback_error != "Financial readback operation deadline exceeded"
+                    or runtime._readback_shutdown is None
+                ):
+                    await asyncio.sleep(0.01)
+            assert runtime._readback_shutdown["status"] == "terminated_owned_reader"
+            assert fixture.reader._process is None
+            assert runtime.receipts == audit
+            assert fixture.completed_at == completed
+            assert runtime.journal_status()["status"] == "unavailable"
+            assert runtime._financial_failure is None and runtime.error is None
+            fixture.recover("recent")
+            fixture.release("recent")
+            await fixture.wait_sample(completed)
+            assert runtime.journal_status()["status"] == "balanced"
+            assert not runtime.constrained()
+            assert fixture.reader._process is not None and fixture.reader._process.is_alive()
+            assert (store.read(), store.export(0, 1000)) == before
+        finally:
+            await fixture.stop()
+            assert fixture.reader._process is None
+
+    asyncio.run(scenario())
+
+
+def test_reader_restart_retains_optional_failure_until_its_real_query_recovers(pg_store, tmp_path):
+    store, _ = pg_store
+    before = store.read(), store.export(0, 1000)
+    runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
+    runtime.disk_free = 10 * 1024**3
+    first = FinancialMonitoringFixture(runtime)
+
+    async def scenario():
+        await first.start()
+        try:
+            await first.wait_sample()
+            completed = first.completed_at
+            first.fail("recent")
+            await first.wait_sample(completed)
+            retained_history = copy.deepcopy(runtime.recent)
+            previous_audit = first.audit_at
+            completed = first.completed_at
+        finally:
+            await first.stop()
+        assert first.reader._process is None
+        assert runtime.journal_status()["status"] == "unavailable"
+        second = FinancialMonitoringFixture(runtime)
+        second.hold("recent")
+        await second.start()
+        try:
+            await second.wait_held("recent")
+            await second.wait_audit(previous_audit)
+            assert second.completed_at == completed
+            assert runtime.recent == retained_history
+            assert runtime.journal_status()["status"] == "unavailable"
+            assert runtime.constrained() and runtime._financial_failure is None
+            second.release("recent")
+            await second.wait_sample(completed)
+            assert runtime.journal_status()["status"] == "balanced"
+            assert not runtime.constrained()
+            assert (store.read(), store.export(0, 1000)) == before
+        finally:
+            await second.stop()
+            assert second.reader._process is None
+
+    asyncio.run(scenario())
 
 
 def blocked_database_child(pipe, dsn):

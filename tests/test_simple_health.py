@@ -58,6 +58,7 @@ def test_small_health_freezes_commit_at_start_and_uses_current_audit(tmp_path, m
                 else time.monotonic() - (121 if monitoring == "expired" else 0)
             ),
             _readback_error="Synthetic monitoring outage" if monitoring == "unavailable" else None,
+            _readback_sample=None,
         )
         app.state.paper.journal_status = MethodType(
             TieredPaperRuntime.journal_status, app.state.paper

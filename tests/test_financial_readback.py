@@ -101,14 +101,31 @@ def test_background_readback_recovers_real_connection_outage_without_restart(
                     async with asyncio.timeout(6):
                         while runtime._readback_sample is None:
                             await asyncio.sleep(0.01)
+                    assert runtime.journal_status()["status"] == "balanced"
+                    assert runtime.journal_status()["available"] is True
+                    assert runtime._readback_sample["refresh_errors"] == {}
                     retained = dict(runtime.receipts)
                     reader._dsn = outage_dsn
                     await reader.close()  # The owned idle disposable connection only.
                 # Include the real 5s poll interval, 3s connect timeout and spawn.
-                async with asyncio.timeout(10):
-                    while runtime._readback_error is None:
-                        await asyncio.sleep(0.01)
+                try:
+                    async with asyncio.timeout(10):
+                        while runtime.journal_status()["error"] is None:
+                            if worker.done():
+                                worker.result()
+                            await asyncio.sleep(0.01)
+                except TimeoutError:
+                    pytest.fail(str({
+                        "journal": runtime.journal_status(),
+                        "sample": runtime._readback_sample,
+                        "shutdown": runtime._readback_shutdown,
+                        "reader_alive": reader._process is not None
+                        and reader._process.is_alive(),
+                    }))
                 assert not worker.done() and runtime.constrained()
+                assert runtime.journal_status()["error"] is not None
+                if runtime._readback_error is None:
+                    assert runtime._readback_sample["refresh_errors"]
                 if retained:
                     assert runtime.receipts == retained
                     assert runtime.journal_status()["status"] == "unavailable"

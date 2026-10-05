@@ -121,24 +121,28 @@ class TieredPaperRuntime(PaperRuntime):
         return bool(self.journal_status()["status"] != "balanced")
 
     def journal_status(self, observed_mono: float | None = None) -> dict[str, Any]:
+        error = self._readback_error or (
+            "Financial history or storage refresh unavailable"
+            if self._readback_sample and self._readback_sample["refresh_errors"] else None
+        )
         age = (
             max(0, (observed_mono if observed_mono is not None else time.monotonic())
                 - self._readback_audit_mono)
             if self._readback_audit_mono is not None else None
         )
         current = (
-            self._readback_error is None and age is not None and age < 120
+            error is None and age is not None and age < 120
             and isinstance(self.receipts.get("balanced"), bool)
         )
         status = (
             "imbalanced" if self.receipts.get("balanced") is False
-            else "unavailable" if self._readback_error is not None
+            else "unavailable" if error is not None
             else "pending" if age is None or self.receipts.get("balanced") is not True
             else "expired" if not current
             else "balanced"
         )
         return {**self.receipts, "status": status, "available": current,
-                "error": self._readback_error, "audit_age_seconds":
+                "error": error, "audit_age_seconds":
                 round(age, 3) if age is not None else None}
 
     def _accept_financial_audit(self, result: dict[str, Any]) -> None:
@@ -157,11 +161,31 @@ class TieredPaperRuntime(PaperRuntime):
             raise OSError("Incomplete financial audit receipt")
         self.receipts = {**result["reconciliation"], "checked_at": result["observed_at"]}
         self._readback_audit_mono = result["observed_mono"]
-        self._readback_error = None
         if self.receipts["balanced"] is False:
             self._financial_failure = "Paper journal reconciliation failed; engine stopped"
             self.stream.changed.set()
             raise RuntimeError(self._financial_failure)
+
+    def _accept_financial_sample(self, result: dict[str, Any]) -> None:
+        # A completed audit cannot prove recovery of an optional query or a
+        # failed whole operation. Retain named failures until that query succeeds.
+        refresh_errors = dict(
+            self._readback_sample["refresh_errors"] if self._readback_sample else {}
+        )
+        for name in ("recent", "storage_usage"):
+            if name in result and name not in result["refresh_errors"]:
+                refresh_errors.pop(name, None)
+        refresh_errors.update(result["refresh_errors"])
+        self._readback_sample = {
+            k: result[k]
+            for k in ("observed_at", "completed_at", "elapsed_ms", "stages_ms")
+        }
+        self._readback_sample["refresh_errors"] = refresh_errors
+        if "recent" in result:
+            self.recent = result["recent"]
+        if "storage_usage" in result:
+            self.database_usage = result["storage_usage"]
+        self._readback_error = None
 
     async def _financial_readback_loop(self) -> None:
         view = ReadbackWorker(FinancialReadback(self.store))
@@ -169,7 +193,7 @@ class TieredPaperRuntime(PaperRuntime):
             while True:
                 now = time.monotonic()
                 audit = (
-                    self._readback_error is not None
+                    self.journal_status(now)["error"] is not None
                     or self._readback_audit_mono is None
                     or now - self._readback_audit_mono >= 60
                 )
@@ -185,19 +209,7 @@ class TieredPaperRuntime(PaperRuntime):
                     )
                     self._readback_shutdown = await view.close()
                 else:
-                    self._readback_error = (
-                        "Financial history or storage refresh unavailable"
-                        if result["refresh_errors"] else None
-                    )
-                    self._readback_sample = {
-                        k: result[k]
-                        for k in ("observed_at", "completed_at", "elapsed_ms", "stages_ms",
-                                  "refresh_errors")
-                    }
-                    if "recent" in result:
-                        self.recent = result["recent"]
-                    if "storage_usage" in result:
-                        self.database_usage = result["storage_usage"]
+                    self._accept_financial_sample(result)
                 await asyncio.sleep(5)
         except asyncio.CancelledError:
             self._readback_error = "Financial monitoring stopped"
@@ -1016,7 +1028,7 @@ class TieredPaperRuntime(PaperRuntime):
                     "financial_readback": {
                         "available": journal["available"],
                         "status": journal["status"],
-                        "error": self._readback_error,
+                        "error": journal["error"],
                         "audit_age_seconds": journal["audit_age_seconds"],
                         "latest_query": self._readback_sample,
                         "last_shutdown": self._readback_shutdown,

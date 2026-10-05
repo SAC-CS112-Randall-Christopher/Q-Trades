@@ -359,6 +359,12 @@ def test_full_notice_batch_retains_audit_states_and_recovery_in_the_api(
                         runtime._accept_financial_audit(result)
                 else:
                     runtime._accept_financial_audit(result)
+                    # Complete this explicitly synthetic sample as well as its
+                    # audit; the audit callback alone cannot recover an outage.
+                    runtime._accept_financial_sample({
+                        **result, "completed_at": clock[0], "elapsed_ms": 0,
+                        "stages_ms": {}, "refresh_errors": {},
+                    })
             elif mode == "unavailable":
                 runtime._readback_error = "Explicit synthetic monitoring outage"
             elif mode == "expired":
