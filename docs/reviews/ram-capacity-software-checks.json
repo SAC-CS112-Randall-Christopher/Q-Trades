@@ -1,0 +1,183 @@
+{
+  "format": "qtrades-projection-ram-software-proof-v1",
+  "source_head": "cb7924192456bbdf2629bd9052efffe0be006fa4",
+  "basis": "Private frozen actual projection; isolated native PostgreSQL; no-op serialization/commit benchmark, not complete paper workload or parallel model proof",
+  "input": {
+    "sha256": "9397cd294b42bbc3753e21a5204ef48146b8eede57ad96fb1dbb582173652383",
+    "stored_bytes": 226314
+  },
+  "method": {
+    "blocks": [
+      "off",
+      "on",
+      "on",
+      "off"
+    ],
+    "warmup_per_block": 5,
+    "measured_per_block": 30,
+    "writer_priority": "Windows BelowNormal",
+    "logical_time_frozen": true,
+    "whole_paper_workload": false,
+    "parallel_model_inference": false
+  },
+  "off": {
+    "elapsed_ms": {
+      "median": 64.40614990424365,
+      "p95": 116.666299989447
+    },
+    "read_decode": {
+      "median": 20.857,
+      "p95": 46.255
+    },
+    "projection_encode": {
+      "median": 8.389,
+      "p95": 14.755
+    },
+    "projection_update": {
+      "median": 30.46,
+      "p95": 45.592
+    },
+    "database_commit": {
+      "median": 2.167,
+      "p95": 2.881
+    },
+    "above_100_ms": 6
+  },
+  "on": {
+    "elapsed_ms": {
+      "median": 45.116250053979456,
+      "p95": 68.97520017810166
+    },
+    "read_decode": {
+      "median": 8.2075,
+      "p95": 15.508
+    },
+    "projection_encode": {
+      "median": 6.9435,
+      "p95": 12.658
+    },
+    "projection_update": {
+      "median": 25.9615,
+      "p95": 34.98
+    },
+    "database_commit": {
+      "median": 2.099,
+      "p95": 3.174
+    },
+    "above_100_ms": 0
+  },
+  "cache_blocks": [
+    {
+      "block": 0,
+      "info": {
+        "enabled": false,
+        "limit_bytes": 0,
+        "cached_bytes": 0,
+        "hits": 0,
+        "misses": 0
+      }
+    },
+    {
+      "block": 1,
+      "info": {
+        "enabled": true,
+        "limit_bytes": 8388608,
+        "cached_bytes": 840084,
+        "hits": 34,
+        "misses": 1
+      }
+    },
+    {
+      "block": 2,
+      "info": {
+        "enabled": true,
+        "limit_bytes": 8388608,
+        "cached_bytes": 840084,
+        "hits": 34,
+        "misses": 1
+      }
+    },
+    {
+      "block": 3,
+      "info": {
+        "enabled": false,
+        "limit_bytes": 0,
+        "cached_bytes": 0,
+        "hits": 0,
+        "misses": 0
+      }
+    }
+  ],
+  "native_suite": {
+    "passed": 1026,
+    "skipped": 1,
+    "warnings": 1,
+    "elapsed_seconds": 526.86,
+    "postgresql_dependent_tests_executed": true,
+    "tracked_source_files": 242
+  },
+  "focused_store_projection_capture": {
+    "passed": 53,
+    "elapsed_seconds": 17.88
+  },
+  "lint": "passed",
+  "strict_windows_mypy": {
+    "passed": true,
+    "source_files": 99
+  },
+  "exploratory_pre_final": {
+    "basis": "Earlier decoder before numeric normalization; not final-head proof",
+    "off": {
+      "elapsed_ms": {
+        "median": 58.77850006800145,
+        "p95": 79.18130001053214
+      },
+      "read_decode": {
+        "median": 19.538,
+        "p95": 29.909
+      },
+      "projection_encode": {
+        "median": 7.6355,
+        "p95": 12.773
+      },
+      "projection_update": {
+        "median": 27.04,
+        "p95": 35.875
+      },
+      "database_commit": {
+        "median": 1.9885000000000002,
+        "p95": 2.979
+      },
+      "above_100_ms": 0
+    },
+    "on": {
+      "elapsed_ms": {
+        "median": 46.15740000735968,
+        "p95": 62.799799954518676
+      },
+      "read_decode": {
+        "median": 7.905,
+        "p95": 12.566
+      },
+      "projection_encode": {
+        "median": 7.8745,
+        "p95": 11.52
+      },
+      "projection_update": {
+        "median": 25.9205,
+        "p95": 36.834
+      },
+      "database_commit": {
+        "median": 1.9635,
+        "p95": 2.433
+      },
+      "above_100_ms": 1
+    },
+    "raw_receipt_retained": true
+  },
+  "final_raw_receipt_sha256": "9abb49e5733f63b5ac2133b272b0deb68ee0b0838d6c41da42c93f3bb28d829d",
+  "actual_model_calls": 0,
+  "operating_writes": 0,
+  "guard_changed": false,
+  "installed": false
+}

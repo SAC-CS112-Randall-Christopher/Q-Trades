@@ -22,8 +22,8 @@ allocation and its interaction with the operating-system cache in
 The writer's current approximately 0.9 MB decoded projection is reread and
 decoded for every transaction. Retain one bounded serialized committed copy
 in the exclusive owner's RAM, with an 8 MiB ceiling. Ordinary readers continue
-to query PostgreSQL. Zero-byte/oversized projections use the ordinary path;
-no journal or historical evidence is cached or removed by this change.
+to query PostgreSQL. A zero-byte budget or oversized projection uses the ordinary
+path. No append-only journal rows are cached, removed or truncated by this change.
 
 Each transaction still acquires the existing writer lock and locks the SQL
 projection row. RAM is usable only when its revision, `xmin` and `ctid` match
@@ -61,9 +61,34 @@ It measures projection read, validation, serialization, update and commit, not
 the full paper workload, retained-journal scale or simultaneous model serving.
 The real projection and raw receipts remain private outside Git.
 
-Final measurement, full-suite and exact-head hosted results are recorded in the
-owning draft/issue after completion. Installation requires its own applicable
-authorization and preservation checks. Installed acceptance must measure ordinary
+The final source is `cb7924192456bbdf2629bd9052efffe0be006fa4`. Its complete
+native suite passed **1,026 cases, one existing skip** in **526.86 seconds**,
+with the existing Starlette warning and actual PostgreSQL-dependent cases.
+Ruff and strict Windows-targeted mypy pass (99 source files). The final frozen-
+input run used an 840,084-byte serialized RAM copy and produced:
+
+| Stage / observation | RAM off | RAM on |
+| --- | ---: | ---: |
+| Read/decode median ms | 20.857 | 8.208 |
+| Read/decode p95 ms | 46.255 | 15.508 |
+| Complete transaction median ms | 64.406 | 45.116 |
+| Complete transaction p95 ms | 116.666 | 68.975 |
+| Measured calls above 100 ms | 6 / 60 | 0 / 60 |
+
+The read median fell approximately 61%, and the complete transaction median
+approximately 30% in this run. Percentiles use the nearest lower sample and
+are not additive. An earlier exploratory run, before the numeric normalization
+correction, showed about 21% complete-transaction reduction and one 102.6 ms
+RAM-on outlier, dominated by a 49.9 ms commit. That receipt is retained, not
+filtered or represented as final-head evidence. Sixty final calls with no slow
+RAM-on observation do not establish sustained operating admission.
+
+The redacted [software receipt](ram-capacity-software-checks.json) retains both
+summaries and the final private raw-receipt hash. Exact-head hosted results are
+recorded in the owning draft/issue. Later documentation-only changes do not alter
+the tested 242 source/test/script/configuration files. Installation requires its
+own applicable authorization and preservation checks. Installed acceptance must
+measure ordinary
 paper work at retained-history scale, the unchanged full guard, capture health
 and the approved trained-v2 attempt together. RAM improvement alone does not
 prove safe parallel inference, qualification, genuine feedback or trading value.
