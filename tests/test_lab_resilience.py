@@ -1,5 +1,6 @@
 import asyncio
 import json
+import time
 
 import pytest
 from test_experiment_registry import plan, shifted_inputs
@@ -143,6 +144,10 @@ def test_disk_pressure_pauses_research_without_changing_financial_authority(tmp_
     runtime._constrained_until = 0
     runtime.disk_free = 4 * 1024**3
     runtime._capture_failure = None
+    # This fixture isolates disk admission with a current successful readback.
+    runtime._readback_error = None
+    runtime._readback_audit_mono = time.monotonic()
+    runtime.receipts = {"balanced": True}
     assert runtime.constrained()
     lab = ExperimentLab(tmp_path / "registry.sqlite", None, lambda: not runtime.constrained())
     frozen = plan(evidence_kind="synthetic_qa")

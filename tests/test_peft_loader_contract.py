@@ -3,6 +3,7 @@
 import hashlib
 import importlib
 import json
+import os
 from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace as NS
@@ -136,7 +137,8 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
         "trading.peft_role_runner.importlib.import_module",
         lambda name: modules[name] if name in modules else original_import(name),
     )
-    monkeypatch.setattr("trading.peft_role_runner.constrain_child", lambda pid: None)
+    placement = Mock()
+    monkeypatch.setattr("trading.peft_role_runner.constrain_child", placement)
     monkeypatch.setattr("trading.peft_role_runner.windows_profile", lambda: True)
     monkeypatch.setattr(
         "trading.peft_role_runner.own_limits",
@@ -148,6 +150,7 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
         frozen.generate.assert_not_called()
         return
     response = generate(request)
+    placement.assert_called_once_with(os.getpid(), distinct_cores=True)
     assert response["raw_answer"] == '{"action":"no_change"}' and response["complete"]
     assert response["identity"]["adapter_sha256"] == digest(files)
     assert response["placement"]["adapter_weights_verified"] is True

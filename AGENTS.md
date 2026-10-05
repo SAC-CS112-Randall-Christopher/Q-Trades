@@ -8,10 +8,11 @@ CP22 scoped authorization, registry, lessons, owned research storage and Trainin
 Lab. Keep canonical references separate from the financial database and capped
 experiment tables. Model changes must preserve original sources and answers.
 
-The inspected source and installed baseline is main
-`fa3accde7667404a7751f75a8d1b1cc6978a7808`. PRs #54–56 are merged/installed; do not
-repeat their rollout from historical draft headings. Documentation draft #57 and
-paper/model coexistence draft #60 have separate owners. Preserve their receipts,
+The original inspected baseline was main `fa3accde`. The repair follow-up refreshed
+main and bounded installed read-only health at `fca588586f9b72e9506caef6384ee8e65edea738`.
+PRs #54–56 and #60 are merged; do not repeat a rollout from historical draft headings.
+Documentation draft #57 and the merged #60 coexistence work retain their owners.
+Preserve their receipts,
 original runtime/resource guard and the separately authorized development attempt;
 new RAG packets are not covered by an old serving-profile authorization.
 
@@ -29,6 +30,30 @@ account history, frozen rules, journal/sole-writer authority, twenty slots,
 400/100 decimal-GB storage, guards and honest unavailable intervals. Distinguish
 software fixture evidence, actual external/local-model evidence, installed/recovery
 acceptance and market/qualification outcomes. Older sections below are historical.
+
+# Historical owner context — October 5, 2026 UTC, PR 60 coexistence
+
+Chris requested implementation and testing of the optimizations needed to run
+trained-v2 research alongside paper processing. Main/installation is `fa3accde`;
+the prior rollout is complete. This branch moves financial monitoring to an
+authenticated read-only worker, fixes cooldown renewal by old slow samples, and
+places the existing two inference threads on distinct physical cores. Preserve
+financial authority/history, original accounts/parents, twenty slots, inference
+outside financial locks, the 400/100 decimal-GB G: policy, and genuine maturity.
+Read `docs/reviews/PAPER_MODEL_COEXISTENCE.md` for exact proof and limitations.
+
+Source/isolated QA, bounded read-only measurements, commits/push, issue updates
+and a draft PR are authorized. The existing single CPU float32/two-processor/
+600-second actual development attempt remains unused and authorized when the
+complete guard admits it. Latency/severe/cooldown and disk/capture protections
+remain in force; a current successful financial readback is additionally required.
+Current installed C: pressure is a separate recording/admission fault, not model
+memory exhaustion. Task-owned QA artifacts may be preserved on G: with verified
+original path availability. Do not change operating data/configuration, consume
+holdouts, train/export/download, touch GIS, or infer merge/install/restart or
+operating activation authority from these source changes. Preserve draft #57's
+separate rollout record. Actual coexecution, qualification and CP18/23 remain
+open until their respective evidence exists.
 
 # Historical direction — October 4, 2026, capture recovery and trained-v2 serving
 
