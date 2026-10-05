@@ -1,4 +1,28 @@
-# Current direction — October 4, 2026, capture recovery and trained-v2 serving
+# Current direction — October 5, 2026 UTC, measured paper/model coexistence
+
+Chris requested implementation and testing of the optimizations needed to run
+trained-v2 research alongside paper processing. Main/installation is `fa3accde`;
+the prior rollout is complete. This branch moves financial monitoring to an
+authenticated read-only worker, fixes cooldown renewal by old slow samples, and
+places the existing two inference threads on distinct physical cores. Preserve
+financial authority/history, original accounts/parents, twenty slots, inference
+outside financial locks, the 400/100 decimal-GB G: policy, and genuine maturity.
+Read `docs/reviews/PAPER_MODEL_COEXISTENCE.md` for exact proof and limitations.
+
+Source/isolated QA, bounded read-only measurements, commits/push, issue updates
+and a draft PR are authorized. The existing single CPU float32/two-processor/
+600-second actual development attempt remains unused and authorized when the
+complete guard admits it. Latency/severe/cooldown and disk/capture protections
+remain in force; a current successful financial readback is additionally required.
+Current installed C: pressure is a separate recording/admission fault, not model
+memory exhaustion. Task-owned QA artifacts may be preserved on G: with verified
+original path availability. Do not change operating data/configuration, consume
+holdouts, train/export/download, touch GIS, or infer merge/install/restart or
+operating activation authority from these source changes. Preserve draft #57's
+separate rollout record. Actual coexecution, qualification and CP18/23 remain
+open until their respective evidence exists.
+
+# Historical direction — October 4, 2026, capture recovery and trained-v2 serving
 
 The human has now authorized one actual development attempt with the reviewed
 CPU float32/two-processor/600-second profile. That same unused attempt needs no

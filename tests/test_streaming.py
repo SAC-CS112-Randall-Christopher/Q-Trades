@@ -33,6 +33,28 @@ def test_resource_guard_ignores_isolated_jitter_but_demotes_sustained_or_severe_
     assert runtime._constrained_until == 2300
 
 
+def test_fast_work_cannot_renew_recovery_from_old_slow_samples():
+    runtime = object.__new__(TieredPaperRuntime)
+    runtime._loop_ms = deque([20] * 16 + [150] * 3, maxlen=1000)
+    runtime._constrained_until = 0
+    runtime._work_diagnostics = EngineWorkDiagnostics()
+    runtime._notice_queue = []
+    runtime.observe_engine_work(150, 1000)
+    assert runtime._constrained_until == 1300
+    first = runtime._work_diagnostics.triggers
+    for offset in range(1, 11):
+        runtime.observe_engine_work(20, 1000 + offset)
+        assert runtime._constrained_until == 1300
+    assert runtime._work_diagnostics.triggers == first
+    assert sum(value > 100 for value in list(runtime._loop_ms)[-20:]) == 4
+    # New sustained slow work and a severe stall retain their existing authority.
+    for offset in range(11, 15):
+        runtime.observe_engine_work(150, 1000 + offset)
+    assert runtime._constrained_until == 1314
+    runtime.observe_engine_work(1000, 1020)
+    assert runtime._constrained_until == 1320
+
+
 def snapshot(sequence=100, levels=30):
     return {
         "lastUpdateId": sequence,
