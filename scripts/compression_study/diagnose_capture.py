@@ -37,6 +37,14 @@ def diagnostic(task: dict[str, Any]) -> dict[str, Any]:
     base_temp = Path(task["basetemp"])
     if base_temp.exists():
         raise StudyError("Capture diagnostic never reuses a pytest basetemp")
+    progress = Path(task["progress_receipt"]).open("x", encoding="utf-8", buffering=1)
+    origin = time.perf_counter()
+
+    def observe(entry: dict[str, Any]) -> None:
+        # Private diagnostic observations, not durable publication or benchmark samples.
+        progress.write(json.dumps(entry, allow_nan=False) + "\n")
+
+    observe({"at_s": 0.0, "event": "diagnostic-start"})
     import_started, import_cpu = time.perf_counter(), time.process_time()
     import pytest
 
@@ -44,7 +52,7 @@ def diagnostic(task: dict[str, Any]) -> dict[str, Any]:
         "wall_s": time.perf_counter() - import_started,
         "cpu_s": time.process_time() - import_cpu,
     }
-    origin = time.perf_counter()
+    observe({"at_s": time.perf_counter() - origin, "event": "pytest-import", **import_timing})
     events: list[dict[str, Any]] = []
     frames: dict[int, int] = {}
     threads: dict[int, int] = {}
@@ -86,17 +94,27 @@ def diagnostic(task: dict[str, Any]) -> dict[str, Any]:
             entry["recorder_state"] = recorder.status.get("state")
             entry["recorder_reason"] = recorder.status.get("reason")
         events.append(entry)
+        observe(entry)
         if event == "return":
             frames.pop(id(frame), None)
 
     class Observer:
+        def pytest_collection_finish(self, session: Any) -> None:
+            observe({"at_s": time.perf_counter() - origin, "event": "collection-finished"})
+
+        def pytest_runtest_setup(self, item: Any) -> None:
+            observe({"at_s": time.perf_counter() - origin, "event": "test-setup"})
+
         def pytest_runtest_call(self, item: Any) -> None:
-            events.append({"at_s": time.perf_counter() - origin, "event": "test-call"})
+            entry = {"at_s": time.perf_counter() - origin, "event": "test-call"}
+            events.append(entry)
+            observe(entry)
 
         def pytest_runtest_logreport(self, report: Any) -> None:
             reports.append({
                 "when": report.when, "outcome": report.outcome, "duration_s": report.duration,
             })
+            observe({"at_s": time.perf_counter() - origin, "event": "test-report", **reports[-1]})
 
     out, err = io.StringIO(), io.StringIO()
     previous, thread_previous = sys.getprofile(), threading.getprofile()
@@ -112,6 +130,7 @@ def diagnostic(task: dict[str, Any]) -> dict[str, Any]:
     finally:
         sys.setprofile(previous)
         threading.setprofile(thread_previous)
+        progress.close()
     return {
         "operation": "capture-diagnostic", "mode": task["diagnostic_mode"],
         "pytest_exit_code": exit_code, "reports": reports, "events": events,
@@ -148,10 +167,18 @@ def execute(args: argparse.Namespace) -> Path:
         scratch.check(additional=32 * 1024**2)
         task = {
             **metadata, "operation": "capture-diagnostic", "basetemp": str(folder / "pytest"),
+            "progress_receipt": str(folder / "progress-private.jsonl"),
         }
         write_json(folder / "task.json", task)
-        result = supervised(folder / "task.json", folder / "receipt.json",
-                            deadline=time.monotonic() + 60)
+        try:
+            result = supervised(folder / "task.json", folder / "receipt.json",
+                                deadline=time.monotonic() + 60)
+        except Exception as exc:
+            write_json(folder / "results-private.json", {
+                **metadata, "failures": [{"failure_type": type(exc).__name__, "reason": str(exc)}],
+                "source_unchanged": sources == source_identity(), "status": "failed-diagnostic",
+            })
+            return folder
         result["source_unchanged"] = sources == source_identity()
         failures = []
         if result["pytest_exit_code"]:
