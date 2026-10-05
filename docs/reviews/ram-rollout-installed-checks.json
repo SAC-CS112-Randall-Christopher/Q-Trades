@@ -1,0 +1,217 @@
+{
+  "installed_commit": "fa3accde7667404a7751f75a8d1b1cc6978a7808",
+  "observation_started_at": 1791171489.3795109,
+  "observation_ended_at": 1791172308.0913448,
+  "observation_seconds": 818.712,
+  "polls": 163,
+  "successful_health_polls": 161,
+  "guard_admitted_polls": 0,
+  "unavailable_polls": 2,
+  "all_successful_polled_paper_healthy": true,
+  "blocking_conditions": [
+    "engine_work_cooldown"
+  ],
+  "distinct_reported_work": {
+    "count": 1494,
+    "median": 58.594,
+    "p95": 109.454,
+    "maximum": 634.495
+  },
+  "reported_work_over_100_ms": 115,
+  "reported_severe_stalls": 0,
+  "stage_distributions_ms": {
+    "before_state_capture": {
+      "count": 63,
+      "median": 9.32,
+      "p95": 25.095,
+      "maximum": 99.639
+    },
+    "compact_capture": {
+      "count": 1494,
+      "median": 0.018,
+      "p95": 0.034,
+      "maximum": 1.674
+    },
+    "financial_tick": {
+      "count": 1494,
+      "median": 0.74,
+      "p95": 2.191,
+      "maximum": 36.079
+    },
+    "full_capture": {
+      "count": 63,
+      "median": 10.824,
+      "p95": 18.914,
+      "maximum": 33.075
+    },
+    "prepare": {
+      "count": 1494,
+      "median": 1.25,
+      "p95": 3.808,
+      "maximum": 117.991
+    },
+    "recent": {
+      "count": 152,
+      "median": 9.857,
+      "p95": 19.129,
+      "maximum": 61.595
+    },
+    "reconcile": {
+      "count": 14,
+      "median": 47.878,
+      "p95": 64.936,
+      "maximum": 66.116
+    },
+    "storage_usage": {
+      "count": 14,
+      "median": 65.793,
+      "p95": 74.32,
+      "maximum": 75.392
+    },
+    "transaction": {
+      "count": 1494,
+      "median": 54.715,
+      "p95": 98.048,
+      "maximum": 630.654
+    },
+    "transaction_database_commit": {
+      "count": 1494,
+      "median": 3.324,
+      "p95": 5.216,
+      "maximum": 36.224
+    },
+    "transaction_financial_calculation": {
+      "count": 1494,
+      "median": 0.781,
+      "p95": 2.709,
+      "maximum": 101.833
+    },
+    "transaction_invariant_check": {
+      "count": 1494,
+      "median": 0.018,
+      "p95": 0.06,
+      "maximum": 0.295
+    },
+    "transaction_journal_append": {
+      "count": 1494,
+      "median": 1.731,
+      "p95": 2.91,
+      "maximum": 306.649
+    },
+    "transaction_projection_encode": {
+      "count": 1494,
+      "median": 8.122,
+      "p95": 21.262,
+      "maximum": 329.835
+    },
+    "transaction_projection_update": {
+      "count": 1494,
+      "median": 20.722,
+      "p95": 38.764,
+      "maximum": 94.489
+    },
+    "transaction_projection_verification": {
+      "count": 1494,
+      "median": 0.012,
+      "p95": 0.02,
+      "maximum": 1.394
+    },
+    "transaction_read_decode": {
+      "count": 1494,
+      "median": 12.495,
+      "p95": 29.355,
+      "maximum": 591.645
+    },
+    "transaction_writer_lock_wait": {
+      "count": 1494,
+      "median": 0.002,
+      "p95": 0.004,
+      "maximum": 74.648
+    }
+  },
+  "first_guard_triggers": 88,
+  "last_guard_triggers": 214,
+  "cpu_percent_last": 8.79,
+  "development_registry_counts": {
+    "role_tasks": 1,
+    "role_attempts": 0,
+    "role_attempt_allowances": 0,
+    "lab_proposals": 0
+  },
+  "health_summary": {
+    "paper_fresh": true,
+    "paper_error_reported": false,
+    "journal_balanced": true
+  },
+  "raw_observation_sha256": "c81bf7968b2a8057a0d4745974abe4558ade46f5121d7ddb7cb6a15e7fa3911c",
+  "samples_with_active_portfolios": 0,
+  "limits": "Distinct values from latest-twenty API windows; incomplete coverage remains possible. Observation includes ordinary navigation, read-only preservation queries, and separate development preparation. No controlled off/on installed comparison, actual inference, or active-position protection proof.",
+  "development_admission": {
+    "task": "role-3dc561bf69b31ba6fb55ed87f0ee3662",
+    "status": "admission_refused",
+    "actual_attempt_started": false,
+    "elapsed_seconds": 302.391,
+    "available_memory_before_gib": 54.80710220336914,
+    "retained_attempts": [],
+    "automatic_retry": false,
+    "operating_activation": false,
+    "paper_trial_created": false,
+    "preflight_checks": 29,
+    "approved_profile_attempt_unused": true
+  },
+  "question": {
+    "task": "role-3dc561bf69b31ba6fb55ed87f0ee3662",
+    "role": "researcher",
+    "packet_sha256": "a456cc36868ccd03e29a461dfe8330d3bed20d684cf1c6cebd9138f7013ced1b",
+    "packet_bytes": 3470,
+    "prompt_and_packet_bytes": 6071,
+    "normal_api_question_created": true,
+    "actual_evidence_sha256": "d9d2224367bbf75a22226d792eeaa02fc12d23ff9c2329f38d37f807794d32c3",
+    "paper_trial_created": false,
+    "qualified": false
+  },
+  "protection": {
+    "copied_interval_count": 29,
+    "prospective_interval_count": 0,
+    "payloads_read": false,
+    "operating_registry_read_only": true
+  },
+  "preservation": {
+    "unchanged_original_events": true,
+    "unchanged_original_journal": true,
+    "unchanged_protected_files": true,
+    "active_identity_changes": 0,
+    "new_accounts": 0,
+    "normally_retired_generated_accounts": 2,
+    "all_original_account_identity_and_funding_preserved_active_or_archived": true,
+    "each_retirement_matches_appended_archive_event": true
+  },
+  "installed_files": {
+    "expected_commit": "fa3accde7667404a7751f75a8d1b1cc6978a7808",
+    "checked_files": 218,
+    "mismatches": [],
+    "installed_marker_agrees": true
+  },
+  "merged_main_ci": {
+    "run": 37259390649,
+    "head": "fa3accde7667404a7751f75a8d1b1cc6978a7808",
+    "native": {
+      "status": "success",
+      "passed": 628,
+      "skipped": 189
+    },
+    "runtime_ownership": {
+      "status": "success",
+      "passed": 46
+    },
+    "dashboard_modules": 1930
+  },
+  "complete_native_proof": {
+    "head": "cb7924192456bbdf2629bd9052efffe0be006fa4",
+    "passed": 1026,
+    "skipped": 1,
+    "seconds": 526.86,
+    "stage": "Earlier final product source on owned PostgreSQL, unchanged through the reviewed merge"
+  },
+  "private_receipt_sha256": "01e333ce66f81afde56d190e7dcb7779bceb9a7ee60950f5f66a6ec31e7b4c90"
+}

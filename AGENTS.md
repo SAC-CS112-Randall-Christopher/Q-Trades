@@ -1,4 +1,40 @@
-# Current direction — October 4, 2026, capture recovery and trained-v2 serving
+# Current direction — October 5, 2026 UTC, authorized rollout and measured admission
+
+The human's "So lets find out" authorized merge/install/restart of reviewed
+PRs #54–56 and the existing single CPU development attempt when the full guard
+admits it. All three are merged; main and the running installation are
+`fa3accde7667404a7751f75a8d1b1cc6978a7808`. Both merged-main jobs passed and the
+updater/preservation/normal UI verification are complete. Read
+`docs/reviews/RAM_ROLLOUT_20261005.md` and its redacted receipt; do not repeat
+the completed rollout or call its earlier draft headings current instructions.
+
+Actual installed observation has 161 healthy successful status replies and two
+ReadError gaps over 818.712 seconds. The sole observed block is engine-work
+cooldown; zero polls admit research. Of 1,494 distinct reported work samples,
+115 exceed 100 ms. Available RAM is 54.807 GiB before development admission,
+above the declared 24 GiB child ceiling plus 8 GiB reserve. This does not prove
+spare critical-thread capacity, active-position protection or parallel inference.
+
+One separately owned normal API/UI question with actual 600-bar/public-book
+evidence is retained as `role-3dc561bf69b31ba6fb55ed87f0ee3662`. All 29 bounded
+development preflights refuse through the unchanged full guard. No weight load,
+model answer, attempt allowance, proposal or paper trial occurred. The temporary
+development helper/observer is stopped; private question, evidence, acknowledgments
+and failed/corrected setup receipts remain preserved. The same authorized CPU
+float32/two-processor/600-second attempt remains unused and needs no repeat
+approval. Reuse the retained question when admission materially changes; do not
+start another unchanged wait or create a replacement to conceal refused work.
+
+Continue measured projection/database/maintenance diagnosis within source/QA
+scope. Preserve the guard, financial authority/history, parents, twenty slots,
+G: 400/100 decimal-GB policy, GIS and genuine maturity. No PostgreSQL setting,
+operating role activation, qualification/holdout, training, conversion, download,
+paid call or account/configuration mutation follows from this rollout. New
+merges/installation/restarts and any different runtime/resource policy retain
+their applicable explicit authorization. The qualified CP18 cycle and CP23
+sustained/usefulness acceptance remain open under issue #28.
+
+# Historical pre-rollout direction — October 4, 2026, capture recovery and trained-v2 serving
 
 The human has now authorized one actual development attempt with the reviewed
 CPU float32/two-processor/600-second profile. That same unused attempt needs no

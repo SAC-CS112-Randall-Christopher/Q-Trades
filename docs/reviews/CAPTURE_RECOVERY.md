@@ -1,8 +1,16 @@
 # Owned capture rollback recovery — issue #48
 
+The reviewed recovery code is now merged and installed at main
+`fa3accde7667404a7751f75a8d1b1cc6978a7808`. Normal owner startup checks one owned
+segment and records zero rollbacks; retained recording resumes. This installed
+check did not repeat a hot-journal crash. Preserve the distinct fixture recovery
+proof and existing capture gap/retry evidence. See
+[RAM_ROLLOUT_20261005.md](RAM_ROLLOUT_20261005.md) for the complete authorized
+rollout and preservation observations.
+
 The installed incident exposed `SQLITE_READONLY_ROLLBACK`: owner startup opened
 an interrupted segment read-only, so SQLite could not roll back its hot journal.
-This draft repairs that startup boundary without changing ordinary historical
+The reviewed implementation repairs that startup boundary without changing ordinary historical
 readers, financial storage, quotas or the inference guard.
 
 All application segment mutations and startup share a short OS-released root

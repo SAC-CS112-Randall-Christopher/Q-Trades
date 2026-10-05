@@ -1,4 +1,40 @@
-# Current research status — October 4, 2026, issue #48
+# Current research status — October 5, 2026 UTC, issues #48 and #28
+
+Reviewed PRs #54–56 are merged and installed at main
+`fa3accde7667404a7751f75a8d1b1cc6978a7808` after the human's "So lets find out"
+authorization. Both merged-main jobs pass; the existing updater and exact
+preservation/UI checks are complete. The full main tree matches the reviewed
+#56 head. All 218 installed files, 247 protected metadata files, 1,208,535
+original events and 12,802 original journal lines are verified. Two generated
+trial accounts retired normally into verified archived states; their identities
+and funding remain preserved. Read
+[the rollout and admission receipt](reviews/RAM_ROLLOUT_20261005.md).
+
+The RAM cache is now installed. It has not established safe parallel inference:
+the 818.712-second observation has zero admitted polls, 161 healthy successful
+responses and two retained ReadError gaps. Across 1,494 distinct reported work
+samples, median/p95 are 58.594/109.454 ms; 115 exceed 100 ms and repeatedly renew
+cooldown. The full guard and installed PostgreSQL settings are unchanged.
+The earlier balanced isolated benchmark remains a separate proof stage.
+
+One separately owned normal research question with 600 actual candles and a
+fresh public book is saved and visible in the normal UI. All 29 actual backend
+preflights refuse in the bounded admission window, despite 54.807 GiB available
+RAM before checking. No model child, response, allowance or paper trial occurs.
+The temporary helper is stopped and its exact evidence/question remains retained.
+The original authorized CPU float32/two-processor/600-second attempt remains
+unused; no repeated approval is needed for that same attempt after actual guard
+admission. Do not repeat an unchanged wait or silently replace the question.
+
+The next measured capacity work is the remaining projection processing/writes,
+scheduling and periodic maintenance path. A single root cause, active-position
+protection and actual trained-v2 response/timing/peak-RAM evidence are not yet
+established. Qualification, operating activation, real mature feedback and CP23
+sustained/usefulness work retain their separate acceptance boundaries under #28.
+SEC native access and actual Crik connectivity remain open. Historical release
+receipts below are preserved; their draft/uninstalled wording is not current.
+
+## Historical status before the authorized #54–56 rollout
 
 The six-PR release (#40 and #49–53) is merged and installed at
 `7b062a0222674d62697f88e1f99d67278298a441`. Both merged-main CI jobs passed.

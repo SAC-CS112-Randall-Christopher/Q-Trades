@@ -1,5 +1,13 @@
 # Trained-v2 development serving — issue #48 / operational CP18 under #28
 
+The reviewed backend is now merged and installed at main
+`fa3accde7667404a7751f75a8d1b1cc6978a7808`. One normal, separately owned question
+with actual 600-bar/public-book evidence is retained and visible in the research
+detail. All 29 bounded backend preflights refuse the unchanged installed guard;
+no model, response or attempt allowance starts. The same authorized profile
+attempt remains unused. See [RAM_ROLLOUT_20261005.md](RAM_ROLLOUT_20261005.md)
+for preservation, installed measurements, exact question identity and continuation.
+
 The selected implementation directly reuses the private Lab's frozen
 `load_base`, `tokenizer_at` and `verify_model` functions, then loads the saved
 PEFT adapter with `is_trainable=False`. It does not run the Lab's paired evaluation,
@@ -12,7 +20,7 @@ agrees with the completed v2 run; this is linkage evidence, not actual serving.
 The private base identity is pinned in the operator configuration/attempt receipt.
 Neither weights, private paths, corpus material nor run contents belong in Git.
 
-## Current authorization and admission
+## Initial authorization and refused preflight
 
 The human has authorized one actual attempt with the profile below. The real
 backend's `development_admit` refused engine-work cooldown on October 5 at
