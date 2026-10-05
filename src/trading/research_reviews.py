@@ -843,8 +843,8 @@ class ResearchReviews:
             rows = (
                 self.registry.db.execute(
                     "SELECT id,updated FROM role_tasks WHERE stage='complete' AND "
-                    "(updated<? OR (updated=? AND id<?)) ORDER BY updated DESC,id DESC LIMIT 16",
-                    (cursor["updated"], cursor["updated"], cursor["task"]),
+                    "(updated,id)<(?,?) ORDER BY updated DESC,id DESC LIMIT 16",
+                    (cursor["updated"], cursor["task"]),
                 ).fetchall()
                 if cursor
                 else []

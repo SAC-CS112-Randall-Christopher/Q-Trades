@@ -372,7 +372,8 @@ def test_nondisclosable_newest_result_does_not_starve_older(workspace):
     assert all(r["task"] != OTHER for r in reviews.snapshot()["reviews"])
 
 
-def test_selection_progress_is_bounded_and_survives_restart(workspace, monkeypatch):
+@pytest.mark.parametrize("tied_updates", [False, True])
+def test_selection_progress_is_bounded_and_survives_restart(workspace, monkeypatch, tied_updates):
     knowledge, worker, reviews, *_ = workspace
     knowledge.ingest(note("blocked-window").model_copy(update={"external_allowed": False}))
     prior = knowledge.retrieve(
@@ -383,6 +384,11 @@ def test_selection_progress_is_bounded_and_survives_restart(workspace, monkeypat
         identity = "role-" + f"{n + 100:032x}"
         task(worker, identity)
         attach_prior(worker, prior, identity)
+    if tied_updates:
+        with worker.registry.transaction():
+            worker.registry.db.execute(
+                "UPDATE role_tasks SET updated=? WHERE id<>?", (time.time(), TASK)
+            )
     transport = enable(reviews)
     calls = []
     packet = reviews.packet
@@ -405,6 +411,36 @@ def test_selection_progress_is_bounded_and_survives_restart(workspace, monkeypat
         if transport.calls:
             break
     assert [r["task"] for r in transport.calls] == [TASK]
+
+
+def test_deep_candidate_cursor_seeks_without_scanning_prior_archive(workspace):
+    _, worker, reviews, *_ = workspace
+    now = time.time()
+    with worker.registry.transaction():
+        worker.registry.db.executemany(
+            "INSERT INTO role_tasks(id,created,updated,stage,status,context) "
+            "VALUES(?,?,?,'complete','complete','{}')",
+            [("role-" + f"{n:032x}", now, now - n) for n in range(10000)],
+        )
+        worker.registry.db.execute(
+            "INSERT INTO review_selection VALUES(1,?,?)", (now - 9000, "role-" + f"{9000:032x}")
+        )
+    steps = 0
+
+    def budget():
+        nonlocal steps
+        steps += 100
+        return int(steps > 4000)
+
+    with worker.registry.lock:
+        worker.registry.db.set_progress_handler(budget, 100)
+        try:
+            candidates = reviews._candidates()
+        finally:
+            worker.registry.db.set_progress_handler(None, 0)
+    assert len(candidates) == 16
+    assert candidates[0]["updated"] == now - 9001
+    assert steps <= 4000
 
 
 def test_selection_does_not_scan_past_global_budget_or_provider_backoff(workspace, monkeypatch):
