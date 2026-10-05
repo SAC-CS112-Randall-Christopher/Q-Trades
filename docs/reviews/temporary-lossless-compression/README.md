@@ -24,6 +24,12 @@ recovery state machine, quota, retention, reserve, protection or setting. The
 400 decimal GB temporary / 100 decimal GB retained policy remains the operating
 contract. Originals are untouched, so a codec ratio is not reclaimed space.
 
+The approved continuation adds frozen-input admission, direct/copy/Zstandard-1
+access controls and bounded owner diagnostics. It reuses the published synthetic
+SQLite files for software validation. Representative real acquisition and
+controlled performance remain separate prerequisites; details and the retained
+continuation attempts are below and in [VERIFICATION.md](VERIFICATION.md).
+
 ## Source, ownership and sampling boundary
 
 Main was refreshed once from the prompt's `fca588586f9b72e9506caef6384ee8e65edea738`
@@ -353,6 +359,13 @@ threading. Conservative owned-scratch charge was 215.49 MiB, including the
 environment/cache and retained attempts. No disk-device throughput, UI latency or
 whole-machine coexistence acceptance was measured.
 
+The uncompressed restore control was also expensive. Its historical intervals
+were about 132–146 ms. The mixed Zstandard-1 example spent about 0.269 ms in codec
+work and 110.383 ms in durable flush within a 121.363-ms restore/read interval.
+Copying, artifact/source hashing, flush, verification and reads must be attributed
+separately. These uncontrolled observations do not assign all restore cost to
+decompression or establish a reliable codec ranking.
+
 **Defer production integration.** The eligible real-byte denominator, controlled
 read/CPU/I/O acceptability, recovery/index integration and installed acceptance
 must be established first. No estimate is applied to the entire temporary tier.
@@ -368,7 +381,8 @@ copy into admitted bounded scratch for exact lookup. Do not introduce another
 storage owner or write these changes from this lane.
 
 Before production work, use an authorized quiet window and non-cherry-picked
-frozen real samples. Declare age strata (0–1 day and 1–7 days), content kind and
+frozen real samples. Declare age strata (under 1 day, 1 through 7 days and over
+7 days), content kind and
 file-size strata before selecting, with seeded choice within eligible strata,
 at most eight samples and 128 MiB total uncompressed input. Exclude active,
 unresolved, unknown-owner, pinned/pending-outcome and evaluation material. Prefer

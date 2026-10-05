@@ -19,9 +19,21 @@ were not treated as an exhaustive inventory. No operating DB was opened.
 | Continuation attempt | Observed result | Meaning |
 | --- | --- | --- |
 | Initial scoped lint/types | Findings retained | Formatting and explicit type annotations were corrected. |
-| Scoped strict Windows types | Passed, 8 source modules | Study code only; not full-product acceptance. |
 | New-case attempt 1 | 20 passed, 2 failed, 299.88 s | Both new cancellation assertions assumed Windows Job termination would return nonzero. The supervisor had refused the operations and retained output. |
 | Affected attempt 2 | 10 passed, 1 failed, 10.63 s | Simulated overlap arrived before child output; a completed readiness marker now defines when this test introduces overlap. |
+| Affected attempt 3 | 1 passed, 1 failed, 11.66 s | The readiness file preceded flushed stdout. The disposable child now flushes its acknowledgment before publishing the closed marker by rename. |
+| Final affected cancellation check | 2 passed, 90 deselected, 11.82 s | Actual deadline and introduced-overlap refusal terminate only the owned child and retain private output. A Windows Job termination return code of zero is not a successful operation claim. |
+| Final scoped Ruff | Passed | Study modules and the focused study test only. |
+| Final strict Windows types | Passed, 8 source modules | Study code only; not full-product acceptance. |
+| Plain capture diagnostic at `eb87abb` | Supervisor timeout at 60 s | No completed test verdict. The five-second test deadline and assertions were unchanged. |
+| First traced diagnostic at `482efaf` | Invalid diagnostic, missing import | The benchmark progress writer omitted `json`; this attempt is retained and excluded from owner findings. |
+| Final traced diagnostic at `a167fe8` | Supervisor timeout at 60 s | 322 progress observations survived; source hashes were unchanged. No completed test verdict or historical root-cause claim. |
+| Fresh five-repetition access gate at `a167fe8` | Deferred, exit 3 | Four foreign test processes, four model-work classifications and one unclassified resident runtime; zero measured children dispatched. |
+| Frozen historical fixture access smoke at `a167fe8` | Completed, exit 0; 6 preparations and 18 access samples | All three controls and both workloads passed exact input/evidence checks. One repetition, zero real specimens, uncontrolled timing. |
+| Combined 110-case focused/owner attempt | Interrupted after its declared 900-second bound | The captured progress contains one failure marker and no final pytest summary. Only the two identity-verified study runner processes were terminated; failed disposable state and the bound receipt remain private. This is incomplete broader verification, not a green run. |
+| First benchmark-only rerun wrapper | Invalid launch before collection, exit 1 | The receipt guard imported the storage module before setting the checkout's explicit source path. The runner setup was corrected; this output remains private and counts as no executed test. |
+| Final benchmark-only focused run at `a167fe8` | 92 passed, zero skips, 287.89 s, exit 0 | Fresh private test directory, IDLE process, empty caller `PYTHONPATH`, pinned dependencies, per-case receipts and an automatic 900-second bound. All 92 call reports passed; the completed receipt verifies unchanged source hashes. The broader interrupted attempt remains incomplete. |
+| Public artifact validation | Passed | All three new JSON artifacts parse, their 18 source hashes match the frozen checkout, unique sample/denominator totals agree, the private-field screen passes, and the historical result hash is unchanged. |
 
 The attempted 300-second bound found no remaining test runner to stop: the batch
 had completed. Its private bounded-attempt receipt and all failed outputs remain.
@@ -34,10 +46,69 @@ placement, and contradictory seed/repetition completion claims. Tests use
 synthetic disposable receipt-format examples; they are not real acquisition
 receipts or operating approval.
 
+Independent public-evidence review verified the individual observations,
+denominators, privacy, source identities, deferral claims and capture handoff. One
+reporting finding mislabeled input admission/probe setup as publication; it is
+repaired with separate input and publication/supervisor intervals. Re-review
+found no remaining material benchmark-owned source or evidence finding. This
+read-only review is separate from software execution and real acquisition proof.
+
+The continuation's measured software source is frozen at
+`a167fe84e9788fe09cbcf58f716543c169780954`. Only documentation and sanitized
+artifacts are added after that freeze. [access-smoke-results.json](access-smoke-results.json)
+retains all individual access/CPU/I/O/flush/startup/memory/scratch observations;
+[access-measure-deferred.json](access-measure-deferred.json) contains no measured
+samples. Source identities include the unchanged capture test and existing owners.
+
+The separate monitoring repair, PR #63, merged during this run. The root checkout
+advanced to `65fc680f1dff9aa7d08480e2c6b6c7bb17b49617`, clean on synchronized
+`main`; its owner retired the monitoring worktree. A read-only change comparison
+found no changes to this study's frozen existing-owner/configuration/lockfile
+identities. Its API/dashboard/monitoring and hosted workflow updates were not
+backported here. The study source remains at the declared base without rebase;
+new hosted checks must be reported against the eventual published head.
+
 The predeclared continuation protocol and acceptance limits are in
 [README.md](README.md). Process observations found foreign tests/model work and
 an unclassified resident model runtime. They prevent controlled timing evidence;
 they do not by themselves diagnose the preserved capture failure.
+
+## Capture-owner diagnostic handoff
+
+Reproduce the unchanged node
+`tests/test_capture_recovery.py::test_normal_recorder_retries_busy_startup_recovers_and_records_without_manual_repair`
+against the frozen product base and pinned study environment, using a newly
+named private disposable test directory. The README's diagnostic command runs
+it in one IDLE, memory-capped child with a 60-second study operation limit.
+Plain and traced failed attempts, stdout/stderr and partial progress are retained
+privately. Public aggregate observations are in
+[capture-diagnostic-summary.json](capture-diagnostic-summary.json).
+
+The test starts one five-second deadline before waiting for `unavailable`; it
+reuses that deadline after peer release while waiting for `recording` and the
+new packet. Neither the deadline nor its assertions were altered. The two
+historical failures occurred in the wait for `recording`. A current completed
+pass would not explain those failures, and diagnostic timeout alone is not a
+completed assertion failure.
+
+The final traced attempt observed pytest import at 0.255 s, collection finish
+at 7.042 s, passed setup and test-call entry at 7.111 s. Initial storage setup
+took 10.641 s and the first append 7.993 s. The recorder's first write returned
+`unavailable`; its second write took 23.489 s before returning `recording`.
+That second interval includes 2.090 s in `_recovery_source`, 6.758 s in
+`_mature_due` and 3.747 s in `_housekeeping`. They are nested, not additive
+components. Observed main-thread lock-release times and recorder transitions
+are retained, but this trace does not bind each release to a particular lock.
+Tracing and progress writes add overhead; resident model/work classifications
+are observations, not a demonstrated interference cause.
+
+The source at `evidence_runtime.py::_write_batch_inner` performs storage
+construction/continuation, maturity work and empty-retry housekeeping/admission
+before assigning `recording`. This is a concrete path for the capture owner to
+diagnose with the preserved receipts. A repair requires that owner to establish
+which work, lock or scheduling interval causes the deadline miss and verify
+normal recorder recovery without weakening the test. No shared capture,
+storage, financial code or test was edited in this lane.
 
 ## Historical verification
 

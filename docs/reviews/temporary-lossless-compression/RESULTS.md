@@ -1,5 +1,140 @@
 # Recorded synthetic result
 
+## Approved continuation outcome
+
+**Defer production integration.** Zero safely reviewed real specimens were
+established. The eligible operating-byte denominator is unknown, the controlled
+five-repetition gate deferred, and no product read-latency/CPU/I/O threshold is
+approved. The continuation supports benchmark correctness and more complete cost
+accounting; representative savings and installed acceptance remain unmeasured.
+
+The three original synthetic SQLite files were reused, with their published
+identities verified. Their prior outcomes were already known. Frozen product
+source is `dcf7ccbb178cdd89175e427962dec80475620c73`; frozen benchmark/test source
+is `a167fe84e9788fe09cbcf58f716543c169780954`, with exact module hashes in
+[access-smoke-results.json](access-smoke-results.json). No rebase occurred.
+The historical artifact and its exact-restoration/no-benefit evidence remain
+unchanged below.
+
+PR #63 merged independently during verification, advancing `main` to
+`65fc680f1dff9aa7d08480e2c6b6c7bb17b49617`. The relevant frozen owner/configuration
+identities did not change. This lane was not rebased while measuring; source
+and hosted merge-context checks remain separate evidence.
+
+The new software smoke completed **six preparations and 18 access samples**:
+three controls × two workloads × three specimens, one randomized repetition.
+All original/restored lengths/SHA-256, SQLite integrity/schema, IDs/hashes/raw
+payloads, availability, timestamps and exact-reference/batch checks passed.
+Input admission/signature/probe setup took 0.637 s. The six publication intervals
+sum to 18.783 s, or 27.162 s including their supervisors; the bounded
+preparation/access phase took 135.890 s.
+There were zero failures and no qualifying five-repeat distribution. No new
+JSONL-representation experiment was performed.
+
+| Storage arm | Original SQLite bytes, counted once | Payload bytes | Manifest/claim bytes | Replacement logical bytes | Supported replacement stream allocation |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Uncompressed control | 245,760 | 245,760 | 920 | 246,680 | 246,720 |
+| Zstandard-1 | 245,760 | 58,581 | 1,392 | 59,973 | 62,856 |
+
+The unchanged synthetic payload reduction is **76.16%**; including prototype
+manifest/claim lengths gives **75.60%**. Original data-stream allocation is
+245,760 bytes; the Zstandard replacement calculation reduces that stream charge
+by 74.42%. This excludes MFT/directory overhead and is not operating reclamation.
+The uncompressed representation grows once metadata is included. Originals,
+uncompressed controls and published prototypes remain legitimately present.
+The historical incompressible case still expands under every compressed arm.
+
+Access wall intervals below include restoration, durable flushing and artifact
+verification where required, plus selected SQLite reads. Original-source hashing,
+complete SQLite validation and startup remain separate and are included in the
+broader worker/supervisor observations. Each range covers three different tiny
+synthetic specimens, with one sample per specimen/workload; it is not a tail
+percentile, controlled repeated estimate or production latency acceptance.
+
+| Control | One exact reference, ms | Same-segment batch, ms | Complete worker, ms | Whole supervisor, ms |
+| --- | ---: | ---: | ---: | ---: |
+| Direct frozen SQLite | 1.279–2.844 | 2.213–3.224 | 17.251–32.553 | 622.572–965.341 |
+| Uncompressed copy/verify/read | 450.328–1,698.806 | 354.765–1,438.789 | 376.375–1,719.371 | 1,154.766–13,390.857 |
+| Zstandard-1 restore/verify/read | 1,410.316–1,569.262 | 978.042–1,598.794 | 999.919–1,624.737 | 1,982.379–3,288.117 |
+
+Original hashing took 0.293–1.421 ms; complete evidence validation took
+2.736–10.858 ms. Child module-import intervals ranged from 0.467 to 5.136 s.
+Supervisor elapsed includes process launch, scheduling, output and shutdown.
+The 13.391-second uncompressed outlier is preserved. No codec ranking follows
+from these uncontrolled observations, and no cache was cleared or added.
+
+Zstandard decoder codec calls took **0.251–0.720 ms**, while their durable flush
+calls took **878.920–1,351.770 ms**. The uncompressed flush calls took
+205.743–1,582.652 ms. Copy/write, hashing, artifact verification, open/close and
+Python/control overhead explain additional intervals; the whole restore cost
+cannot be assigned to decompression. Individual elapsed/CPU phase measurements
+are retained in the artifact rather than hidden behind a combined restore value.
+
+Selected-access process CPU observations ranged from 0 to 0.03125 s at coarse
+OS granularity; complete child process CPU, including imports, ranged from
+0.46875 to 0.859375 s. A zero phase CPU sample does not mean zero CPU work.
+Process counters show 4.75–5.11 million read bytes including imports and
+verification. Restoring either encoded arm writes the full 65,536 or 114,688
+original bytes; direct reads report zero process write bytes. Stream-call counts
+and process counters are not device traffic, throughput or physical I/O latency.
+All individual counters remain available for review.
+
+Peak access-child working set was **34.375 MiB**, commit **23.426 MiB**; all
+observations reported four total process threads, distinct from fixed single-thread
+codec settings. Restored scratch was the full original container, up to
+114,688 bytes. Publication staging peaked at 229,683 logical bytes for the
+uncompressed control and 155,727 for Zstandard-1, including a verification copy
+and manifest. Corresponding observed stream allocations were 229,688 and
+156,112 bytes. Conservative total owned scratch charge was **250,425,641 bytes
+(238.825 MiB)**, including environment/cache, prior artifacts, receipts and
+verification/restored scratch. Hard child and scratch ceilings remained
+512 MiB/1 GiB, with the operating reserve preserved.
+
+[access-measure-deferred.json](access-measure-deferred.json) records the fresh
+gate refusal: four foreign test processes, four model-work classifications and
+one unclassified resident runtime; **zero measured children dispatched**.
+Classification is a bounded observation and does not diagnose interference or
+identify an active request in the resident runtime. No owner was stopped to
+create a window. Real age/content/size strata remain missing; this synthetic
+selection is not an eligible operating-byte sample.
+
+[capture-diagnostic-summary.json](capture-diagnostic-summary.json) preserves the
+partial owner trace. The untraced attempt timed out at the study's 60-second
+limit; a first trace was invalid due to a repaired benchmark import error; the
+final trace also reached that unchanged limit. It retained 322 observations and
+unchanged source identities, but **no completed test verdict**. The recorder's
+second write attempt lasted about 23.49 s, including 2.09 s in recovery,
+6.76 s in maturity work and 3.75 s in housekeeping, before its observed return
+state was `recording`. These nested intervals must not be added as disjoint
+costs. Lock-release and recorder-state observations remain inspectable.
+Tracing adds overhead; this is a reproducible owner handoff, not a proven cause
+of the two preserved historical five-second failures. Shared code/assertions
+and the five-second test deadline remain unchanged.
+
+Final focused benchmark verification passed **92 tests, zero skips, in
+287.89 s**, with unchanged source hashes and the pinned private environment.
+Scoped Ruff and strict Windows-targeted types passed; independent source and
+evidence reviews have no remaining material finding after repairs. The broader
+110-case local selection exceeded its bounded attempt, retained one failure
+marker and produced no final summary. It remains incomplete. These software
+checks do not replace real specimens, controlled timing, the capture-owner
+diagnosis, hosted gates or installed acceptance. All attempts are retained in
+[VERIFICATION.md](VERIFICATION.md).
+
+The smallest later integration candidate remains a versioned compressed
+representation owned by existing `ResearchStorage` for completed, eligible,
+unprotected temporary SQLite segments, with verified atomic publication and
+bounded admitted scratch for exact reads. Leave active SQLite and retained gzip
+with their existing owners. Before opening that implementation lane, establish
+reviewed real frozen specimens/candidate coverage, a quiet repeated experiment,
+an approved read/resource tradeoff and a capture-owner disposition. No such
+production implementation, installation or activation is part of this study.
+
+**Operating storage was neither compressed nor replaced. Zero operating bytes
+were reclaimed; no policy, reserve or slot allocation changed.**
+
+## Historical fixture result
+
 Zstandard level 1 stored the three exact SQLite containers in **58,581 bytes**, versus **245,760 original bytes**: **76.16% fewer payload bytes**. Gzip level 9 saved 74.34% and the fixed LZ4 profile saved 64.89%. All 35 operations restored the exact input length and SHA-256. All SQLite/JSONL evidence, availability and selected references passed their separate complete checks.
 
 **This is a small synthetic correctness smoke, with one observation per arm.** It contains zero real specimens. Both requested five-repetition attempts were deferred by the workload gate. These results establish fixture density and prototype preservation; they do not establish eligible real-drive savings, acceptable production read latency or a fastest codec.
