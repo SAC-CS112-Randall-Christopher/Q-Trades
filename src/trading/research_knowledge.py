@@ -308,17 +308,24 @@ class ResearchKnowledge:
             "ORDER BY revision DESC LIMIT 1",
             (source,),
         ).fetchone()
-        if latest is None:
+        original = db.execute(
+            "SELECT metadata FROM knowledge_sources WHERE source=? AND revision=?",
+            (source, revision),
+        ).fetchone()
+        if latest is None or original is None:
             return False
+        now = time.time()
+        # A sanitized successor can revoke access, but cannot grant access to an
+        # older local-only/protected passage already saved in a context or receipt.
         return self._eligible(
-            json.loads(latest["metadata"]),
-            self._state(db, source, latest["revision"], time.time()),
+            json.loads(original["metadata"]),
+            self._state(db, source, revision, now),
             external=external,
-        ) and self._state(db, source, revision, time.time())["state"] not in {
-            "excluded",
-            "withdrawn",
-            "unavailable",
-        }
+        ) and self._eligible(
+            json.loads(latest["metadata"]),
+            self._state(db, source, latest["revision"], now),
+            external=external,
+        )
 
     def check_passages(self, passages: list[dict[str, Any]], *, external: bool) -> None:
         with self.connection() as db:

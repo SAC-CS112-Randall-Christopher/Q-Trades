@@ -91,6 +91,10 @@ class ReviewNotDispatched(ValueError):
     """Known local refusal before any recorded provider request; never uncertain spend."""
 
 
+class ReviewCandidateUnavailable(ValueError):
+    """This task has no changed disclosable packet; other candidates may be eligible."""
+
+
 class ResearchReviews:
     def __init__(self, worker: RoleWorker, knowledge: ResearchKnowledge, transport: Any = None):
         self.worker, self.registry, self.knowledge = worker, worker.registry, knowledge
@@ -120,6 +124,11 @@ class ResearchReviews:
                     state TEXT NOT NULL,task TEXT,reason TEXT,retry_at REAL NOT NULL);
                 CREATE TABLE IF NOT EXISTS review_checks(
                     signature TEXT PRIMARY KEY,reason TEXT NOT NULL,retry_at REAL NOT NULL);
+                CREATE TABLE IF NOT EXISTS review_selection(
+                    slot INTEGER PRIMARY KEY CHECK(slot=1),
+                    updated REAL NOT NULL,task TEXT NOT NULL);
+                CREATE INDEX IF NOT EXISTS review_completed_task_order
+                    ON role_tasks(updated DESC,id DESC) WHERE stage='complete';
                 CREATE TABLE IF NOT EXISTS review_reconciliations(
                     id TEXT,command_sha TEXT,body TEXT,created REAL,
                     PRIMARY KEY(id,command_sha));
@@ -301,43 +310,18 @@ class ResearchReviews:
     ) -> dict[str, Any]:
         now = time.time() if now is None else now
         with self.registry.transaction():
-            self.registry.db.execute(
-                "UPDATE scheduled_reviews SET state='unknown',reason="
-                "'Dispatch interrupted; provider completion unknown, no automatic replay' "
-                "WHERE state='dispatching' AND lease_until<?",
-                (now,),
-            )
-            existing = self.registry.db.execute(
-                "SELECT * FROM scheduled_reviews WHERE occurrence=?",
-                (occurrence,),
-            ).fetchone()
-            if existing:
-                if existing["state"] == "reserved" and existing["lease_until"] <= now:
-                    if fingerprint(json.loads(existing["policy"])) != fingerprint(
-                        policy.model_dump()
-                    ):
-                        raise ValueError("Reserved profile differs; reconcile before dispatch")
-                    self.registry.db.execute(
-                        "UPDATE scheduled_reviews SET owner=?,lease_until=? WHERE id=?",
-                        (self.owner, now + 150, existing["id"]),
-                    )
-                return self.get(existing["id"])
-            if self.registry.db.execute(
-                "SELECT 1 FROM scheduled_reviews "
-                "WHERE state IN ('reserved','dispatching','unknown')"
-            ).fetchone():
-                raise ValueError("Existing review is in flight or uncertain; reconcile it first")
-            retry_at = self.registry.db.execute(
-                "SELECT coalesce(max(retry_at),0) FROM review_provider_faults"
-            ).fetchone()[0]
-            if retry_at > now:
-                raise ValueError(
-                    "Provider backoff active; inspect authentication/rate-limit receipt"
-                )
-        packet = self.packet(task_id, cutoff=now, external=True)
+            existing = self._existing_review(occurrence, policy, now)
+            if existing is not None:
+                return existing
+        try:
+            packet = self.packet(task_id, cutoff=now, external=True)
+        except ValueError as exc:
+            raise ReviewCandidateUnavailable(str(exc)) from exc
         encoded = json.dumps(packet, allow_nan=False)
         if len(encoded.encode()) > 65536:
-            raise ValueError("Review packet exceeds 64 KiB; narrow evidence before dispatch")
+            raise ReviewCandidateUnavailable(
+                "Review packet exceeds 64 KiB; narrow evidence before dispatch"
+            )
         watermark = fingerprint(
             {
                 "task": task_id,
@@ -350,46 +334,17 @@ class ResearchReviews:
         )
         identity = "review-" + secrets.token_hex(16)
         with self.registry.transaction():
-            old = self.registry.db.execute(
-                "SELECT id FROM scheduled_reviews WHERE occurrence=?", (occurrence,)
-            ).fetchone()
-            if old:
-                return self.get(old[0])
-            self.registry.db.execute(
-                "UPDATE scheduled_reviews SET state='unknown',reason="
-                "'Lease expired; reconcile provider result before any chargeable retry' "
-                "WHERE state='dispatching' AND lease_until<?",
-                (now,),
-            )
-            if self.registry.db.execute(
-                "SELECT 1 FROM scheduled_reviews "
-                "WHERE state IN ('reserved','dispatching','unknown')"
-            ).fetchone():
-                raise ValueError("Existing review is in flight or uncertain; reconcile it first")
+            existing = self._existing_review(occurrence, policy, now)
+            if existing is not None:
+                return existing
             if self.registry.db.execute(
                 "SELECT 1 FROM scheduled_reviews WHERE watermark=? AND state='completed'",
                 (watermark,),
             ).fetchone():
-                raise ValueError("No changed evidence; completed review remains available")
-            budget_cost = (
-                "CASE WHEN state IN ('completed','rejected','blocked') AND cost_actual IS NOT NULL "
-                "THEN cost_actual ELSE max(cost_reserved,coalesce(cost_actual,0)) END"
-            )
-            used = self.registry.db.execute(
-                f"SELECT count(*),coalesce(sum({budget_cost}),0) FROM scheduled_reviews "
-                "WHERE created>=?",
-                (now - 86400,),
-            ).fetchone()
-            if used[0] >= policy.daily_requests or (
-                used[1] + policy.request_cost_ceiling_usd > policy.daily_cost_ceiling_usd
-            ):
-                raise ValueError("Rolling daily request/cost budget exhausted; no dispatch")
-            monthly = self.registry.db.execute(
-                f"SELECT coalesce(sum({budget_cost}),0) FROM scheduled_reviews WHERE created>=?",
-                (now - 30 * 86400,),
-            ).fetchone()[0]
-            if monthly + policy.request_cost_ceiling_usd > policy.monthly_cost_ceiling_usd:
-                raise ValueError("Rolling 30-day cost budget exhausted; no dispatch")
+                raise ReviewCandidateUnavailable(
+                    "No changed evidence; completed review remains available"
+                )
+            self._check_budget(policy, now)
             self.registry.db.execute(
                 "INSERT INTO scheduled_reviews(id,occurrence,task,created,updated,state,"
                 "owner,lease_until,policy,packet,packet_sha,watermark,cost_reserved) "
@@ -410,6 +365,60 @@ class ResearchReviews:
                 ),
             )
         return self.get(identity)
+
+    def _existing_review(
+        self, occurrence: str, policy: ReviewerPolicy, now: float
+    ) -> dict[str, Any] | None:
+        # Caller owns the registry transaction. Recheck before reservation commit too.
+        self.registry.db.execute(
+            "UPDATE scheduled_reviews SET state='unknown',reason="
+            "'Dispatch interrupted; provider completion unknown, no automatic replay' "
+            "WHERE state='dispatching' AND lease_until<?",
+            (now,),
+        )
+        existing = self.registry.db.execute(
+            "SELECT * FROM scheduled_reviews WHERE occurrence=?", (occurrence,)
+        ).fetchone()
+        if existing:
+            if existing["state"] == "reserved" and existing["lease_until"] <= now:
+                if fingerprint(json.loads(existing["policy"])) != fingerprint(policy.model_dump()):
+                    raise ValueError("Reserved profile differs; reconcile before dispatch")
+                self.registry.db.execute(
+                    "UPDATE scheduled_reviews SET owner=?,lease_until=? WHERE id=?",
+                    (self.owner, now + 150, existing["id"]),
+                )
+            return self.get(existing["id"])
+        if self.registry.db.execute(
+            "SELECT 1 FROM scheduled_reviews WHERE state IN ('reserved','dispatching','unknown')"
+        ).fetchone():
+            raise ValueError("Existing review is in flight or uncertain; reconcile it first")
+        retry_at = self.registry.db.execute(
+            "SELECT coalesce(max(retry_at),0) FROM review_provider_faults"
+        ).fetchone()[0]
+        if retry_at > now:
+            raise ValueError("Provider backoff active; inspect authentication/rate-limit receipt")
+        return None
+
+    def _check_budget(self, policy: ReviewerPolicy, now: float) -> None:
+        budget_cost = (
+            "CASE WHEN state IN ('completed','rejected','blocked') AND cost_actual IS NOT NULL "
+            "THEN cost_actual ELSE max(cost_reserved,coalesce(cost_actual,0)) END"
+        )
+        used = self.registry.db.execute(
+            f"SELECT count(*),coalesce(sum({budget_cost}),0) FROM scheduled_reviews "
+            "WHERE created>=?",
+            (now - 86400,),
+        ).fetchone()
+        if used[0] >= policy.daily_requests or (
+            used[1] + policy.request_cost_ceiling_usd > policy.daily_cost_ceiling_usd
+        ):
+            raise ValueError("Rolling daily request/cost budget exhausted; no dispatch")
+        monthly = self.registry.db.execute(
+            f"SELECT coalesce(sum({budget_cost}),0) FROM scheduled_reviews WHERE created>=?",
+            (now - 30 * 86400,),
+        ).fetchone()[0]
+        if monthly + policy.request_cost_ceiling_usd > policy.monthly_cost_ceiling_usd:
+            raise ValueError("Rolling 30-day cost budget exhausted; no dispatch")
 
     def get(self, identity: str) -> dict[str, Any]:
         with self.registry.lock:
@@ -825,6 +834,47 @@ class ResearchReviews:
             self.validate(identity) if command.action == "validate_retained" else self.get(identity)
         )
 
+    def _candidates(self) -> list[sqlite3.Row]:
+        # One durable keyset cursor, not an archive-wide packet rebuild each tick.
+        with self.registry.lock:
+            cursor = self.registry.db.execute(
+                "SELECT updated,task FROM review_selection WHERE slot=1"
+            ).fetchone()
+            rows = (
+                self.registry.db.execute(
+                    "SELECT id,updated FROM role_tasks WHERE stage='complete' AND "
+                    "(updated<? OR (updated=? AND id<?)) ORDER BY updated DESC,id DESC LIMIT 16",
+                    (cursor["updated"], cursor["updated"], cursor["task"]),
+                ).fetchall()
+                if cursor
+                else []
+            )
+            if not rows:
+                rows = self.registry.db.execute(
+                    "SELECT id,updated FROM role_tasks WHERE stage='complete' "
+                    "ORDER BY updated DESC,id DESC LIMIT 16"
+                ).fetchall()
+            return list(rows)
+
+    def _remember_check(self, signature: str, reason: str, policy: ReviewerPolicy) -> None:
+        with self.registry.transaction():
+            self.registry.db.execute(
+                "INSERT INTO review_checks VALUES(?,?,?) ON CONFLICT(signature) "
+                "DO UPDATE SET reason=excluded.reason,retry_at=excluded.retry_at",
+                (
+                    signature,
+                    reason,
+                    self.occurrence(policy, time.time())[1]
+                    if reason.startswith("No changed evidence")
+                    else time.time() + 300,
+                ),
+            )
+            # Cache state is rebuildable and bounded; historical attempts are retained.
+            self.registry.db.execute(
+                "DELETE FROM review_checks WHERE signature NOT IN "
+                "(SELECT signature FROM review_checks ORDER BY retry_at DESC LIMIT 128)"
+            )
+
     async def once(self) -> None:
         await asyncio.to_thread(self.continue_corrections)
         await asyncio.to_thread(self.continue_questions)
@@ -840,11 +890,22 @@ class ResearchReviews:
             return
         occurrence, _ = self.occurrence(policy, time.time())
         key = "daily:" + occurrence  # Model/policy changes cannot repeat the same paid occurrence.
-        with self.registry.lock:
-            row = self.registry.db.execute(
-                "SELECT id FROM role_tasks WHERE stage='complete' ORDER BY updated DESC LIMIT 1"
-            ).fetchone()
-        if not row:
+        try:
+            with self.registry.transaction():
+                existing = self._existing_review(key, policy, time.time())
+                if existing is None:
+                    self._check_budget(policy, time.time())
+        except ValueError as exc:
+            self.reason = str(exc)[:300]
+            return
+        if existing is not None:
+            if existing["state"] != "reserved" or existing["owner"] != self.owner:
+                self.reason = "Occurrence retained; no duplicate provider dispatch"
+                return
+            await self._dispatch_reserved(existing, policy, revision, fingerprint([key, revision]))
+            return
+        rows = self._candidates()
+        if not rows:
             self.reason = "Await an eligible completed research result; no fabricated review input"
             return
         with self.knowledge.connection() as db:
@@ -856,18 +917,49 @@ class ResearchReviews:
             state_key = db.execute("SELECT coalesce(max(seq),0) FROM knowledge_states").fetchone()[
                 0
             ]
-        signature = fingerprint([key, row[0], revision, revision_key, state_key])
-        with self.registry.lock:
-            wait = self.registry.db.execute(
-                "SELECT reason,retry_at FROM review_checks WHERE signature=?", (signature,)
-            ).fetchone()
-        if wait and wait["retry_at"] > time.time():
-            self.reason = wait["reason"]
+        reason = "Await changed, disclosable research evidence"
+        for row in rows:
+            signature = fingerprint(
+                [key, row["id"], row["updated"], revision, revision_key, state_key]
+            )
+            with self.registry.transaction():
+                self.registry.db.execute(
+                    "INSERT INTO review_selection VALUES(1,?,?) ON CONFLICT(slot) "
+                    "DO UPDATE SET updated=excluded.updated,task=excluded.task",
+                    (row["updated"], row["id"]),
+                )
+                wait = self.registry.db.execute(
+                    "SELECT reason,retry_at FROM review_checks WHERE signature=?", (signature,)
+                ).fetchone()
+            if wait and wait["retry_at"] > time.time():
+                reason = wait["reason"]
+                continue
+            try:
+                run = await asyncio.to_thread(self.reserve, row["id"], key, policy)
+            except ReviewCandidateUnavailable as exc:
+                reason = str(exc)[:300]
+                self._remember_check(signature, reason, policy)
+                continue
+            except (ValueError, OSError, TimeoutError) as exc:
+                # Inflight/uncertain, provider and spending limits stop the whole pass.
+                self.reason = str(exc)[:300]
+                self._remember_check(signature, self.reason, policy)
+                return
+            await self._dispatch_reserved(run, policy, revision, signature)
             return
+        self.reason = (
+            "Bounded result scan deferred; next pass continues. " + reason[:240]
+            if len(rows) == 16
+            else reason
+        )
+
+    async def _dispatch_reserved(
+        self, run: dict[str, Any], policy: ReviewerPolicy, revision: int, signature: str
+    ) -> None:
+        claimed: str | None = None
+        reason = "Occurrence retained; no duplicate provider dispatch"
         try:
-            run = await asyncio.to_thread(self.reserve, row[0], key, policy)
             if run["state"] != "reserved" or run["owner"] != self.owner:
-                self.reason = "Occurrence retained; no duplicate provider dispatch"
                 return
             with self.registry.transaction():
                 current, active = self.policy()
@@ -880,54 +972,44 @@ class ResearchReviews:
                 ).rowcount
                 if changed != 1:
                     return
+                claimed = run["id"]
+            assert self.transport is not None
             response = await asyncio.wait_for(
                 self.transport.review(run, policy),
                 timeout=policy.deadline_seconds,
             )
             await asyncio.to_thread(self.retain, run["id"], response)
-            self.reason = "Original response retained; independent disposition remains visible"
+            reason = "Original response retained; independent disposition remains visible"
         except asyncio.CancelledError:
-            self.reason = "Review cancelled after dispatch; external completion unknown"
+            reason = "Review cancelled after dispatch; external completion unknown"
             raise
         except ReviewNotDispatched as exc:
-            self.reason = str(exc)[:300]
+            reason = str(exc)[:300]
             with self.registry.transaction():
                 self.registry.db.execute(
                     "UPDATE scheduled_reviews SET state='blocked',reason=?,updated=?,"
                     "cost_actual=0 WHERE id=? AND state='dispatching' AND owner=?",
-                    (self.reason, time.time(), run["id"], self.owner),
+                    (reason, time.time(), claimed, self.owner),
                 )
         except (ValueError, OSError, TimeoutError) as exc:
-            self.reason = (
+            reason = (
                 str(exc)[:300]
                 if isinstance(exc, ValueError)
                 else ("External completion uncertain; reconcile provider identity, do not resend")
             )
         except Exception:
-            self.reason = "Review dependency failed; inspect retained attempt before any resend"
+            reason = "Review dependency failed; inspect retained attempt before any resend"
         finally:
-            with self.registry.transaction():
-                self.registry.db.execute(
-                    "UPDATE scheduled_reviews SET state='unknown',reason=? WHERE owner=? "
-                    "AND state='dispatching'",
-                    (self.reason, self.owner),
-                )
-                self.registry.db.execute(
-                    "INSERT INTO review_checks VALUES(?,?,?) ON CONFLICT(signature) "
-                    "DO UPDATE SET reason=excluded.reason,retry_at=excluded.retry_at",
-                    (
-                        signature,
-                        self.reason,
-                        self.occurrence(policy, time.time())[1]
-                        if self.reason.startswith("No changed evidence")
-                        else time.time() + 300,
-                    ),
-                )
-                # Cache state is rebuildable and bounded; historical attempts are retained.
-                self.registry.db.execute(
-                    "DELETE FROM review_checks WHERE signature NOT IN "
-                    "(SELECT signature FROM review_checks ORDER BY retry_at DESC LIMIT 128)"
-                )
+            if claimed is not None:
+                with self.registry.transaction():
+                    # Same-instance background/manual callers share owner, not a claim.
+                    self.registry.db.execute(
+                        "UPDATE scheduled_reviews SET state='unknown',reason=? WHERE id=? "
+                        "AND owner=? AND state='dispatching'",
+                        (reason, claimed, self.owner),
+                    )
+            self.reason = reason
+            self._remember_check(signature, reason, policy)
 
     async def run(self) -> None:
         while True:
