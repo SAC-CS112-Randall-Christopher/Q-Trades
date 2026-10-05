@@ -58,7 +58,22 @@ def incomplete_audit_child(pipe, dsn):
     pipe.close()
 
 
-@pytest.mark.parametrize("child", [malformed_receipt_child, incomplete_audit_child])
+def incomplete_sample_child(pipe, dsn):
+    pipe.recv()
+    reader = FinancialReadback.from_dsn(dsn)
+    try:
+        reader.sample(
+            audit=True, publish_audit=lambda value: worker_module._send(pipe, b"A", value)
+        )
+        worker_module._send(pipe, b"S", {})
+    finally:
+        reader.close()
+        pipe.close()
+
+
+@pytest.mark.parametrize(
+    "child", [malformed_receipt_child, incomplete_audit_child, incomplete_sample_child]
+)
 def test_incomplete_transport_receipt_remains_unknown_and_nonfatal(
     pg_store, monkeypatch, tmp_path, child
 ):
@@ -77,9 +92,13 @@ def test_incomplete_transport_receipt_remains_unknown_and_nonfatal(
                 while runtime._readback_error is None:
                     await asyncio.sleep(0.01)
             assert not task.done() and runtime.error is None
-            assert runtime._financial_failure is None and runtime.receipts == {}
+            assert runtime._financial_failure is None
+            if child is incomplete_sample_child:
+                assert runtime.receipts["balanced"] is True
+                assert runtime._readback_audit_mono is not None
+            else:
+                assert runtime.receipts == {} and runtime._readback_audit_mono is None
             assert runtime.journal_status()["status"] == "unavailable"
-            assert runtime._readback_audit_mono is None
         finally:
             task.cancel()
             with suppress(asyncio.CancelledError):

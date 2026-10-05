@@ -112,6 +112,18 @@ remains separate from these monitoring repairs.
   pytest path injection alone cannot supply a child's imports. Final hosted
   acceptance must validate this wiring. Locally, all **74 memory/reviewer tests
   pass**, including the deterministic boundary regression.
+- All five hosted gates passed on `30d995e` after those harness corrections:
+  native **638 passes / 212 skips**, full PostgreSQL **1,051 passes / 84 skips**,
+  memory/reviewer **74 passes**, runtime ownership **46 passes**, and the compiled
+  seven-state browser check. This remains pre-review evidence. A subsequent
+  source review reproduced an incomplete optional sample becoming a generic
+  worker failure after a valid audit. Required sample metadata is now validated
+  at the IPC boundary; malformed samples are unavailable monitoring, retain the
+  actual completed audit and do not become a financial failure. All **nine**
+  final native reader/driver/lifecycle cases pass, no skips, 23.45 seconds. The
+  new counterexample and original failure are retained. Final independent Codex
+  review and exact-head gates are reported in the owning PR, rather than treating
+  a previous head's successful jobs as proof of a later correction.
 - Native driver cases cancel an actual disposable `pg_sleep(30)` session and
   drain after one/two cancellation requests, preserving writer/history and
   subsequent writer usability. A client-side block has **no test release**; fixed

@@ -169,7 +169,15 @@ class ReadbackWorker:
                         raise OSError("Invalid financial audit receipt")
                     publish_audit(value)
                 elif kind == b"S":
-                    if not isinstance(value, dict):
+                    if (
+                        not isinstance(value, dict)
+                        or not {
+                            "observed_at", "completed_at", "elapsed_ms",
+                            "stages_ms", "refresh_errors"
+                        } <= value.keys()
+                        or not isinstance(value["stages_ms"], dict)
+                        or not isinstance(value["refresh_errors"], dict)
+                    ):
                         raise OSError("Invalid financial sample receipt")
                     return dict(value)
                 else:
