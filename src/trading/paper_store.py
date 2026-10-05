@@ -10,6 +10,7 @@ from threading import RLock
 from typing import Any
 
 import psycopg
+from psycopg.pq import TransactionStatus
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
@@ -71,10 +72,28 @@ def load_dsn(path: Path) -> str:
     return dsn
 
 
+def _projection_float(value: str) -> float | int:
+    """Match JSONB's numeric output before a cached value reaches the engine."""
+    if "e" in value:
+        # JSONB writes numeric without exponent notation, which can make a
+        # previously floating token an integer on the ordinary database read.
+        number = json.loads(format(Decimal(value), "f"))
+        assert isinstance(number, (float, int))
+        return number
+    # PostgreSQL numeric removes the sign from zero while retaining its scale.
+    return 0.0 if value == "-0.0" else float(value)
+
+
 class PaperStore:
-    def __init__(self, dsn: str, *, owner: bool = False):
+    def __init__(self, dsn: str, *, owner: bool = False, projection_cache_bytes: int = 8 * 1024**2):
+        if not 0 <= projection_cache_bytes <= 8 * 1024**2:
+            raise ValueError("Projection RAM cache must be bounded to at most 8 MiB")
         self.transaction_lock = RLock()
         self.owner = owner
+        self._projection_cache_limit = projection_cache_bytes if owner else 0
+        self._projection_cache: tuple[int, str, str, str] | None = None
+        self._projection_cache_hits = 0
+        self._projection_cache_misses = 0
         self.last_commit_receipt: dict[str, Any] | None = None
         self.last_transaction_diagnostics: dict[str, float] | None = None
         self._transaction_lock_wait_ms = 0.0
@@ -98,7 +117,18 @@ class PaperStore:
             raise RuntimeError("Financial mutation requires the exclusive engine writer lock")
 
     def close(self) -> None:
+        self._projection_cache = None
         self.connection.close()
+
+    def projection_cache_info(self) -> dict[str, int | bool]:
+        with self.transaction_lock:
+            return {
+                "enabled": bool(self._projection_cache_limit),
+                "limit_bytes": self._projection_cache_limit,
+                "cached_bytes": len(self._projection_cache[3]) if self._projection_cache else 0,
+                "hits": self._projection_cache_hits,
+                "misses": self._projection_cache_misses,
+            }
 
     def initialize(
         self, now: float, starting_cash: str = "100", execution_profile: str = LEGACY_EXECUTION
@@ -188,7 +218,13 @@ class PaperStore:
         waiting = time.perf_counter()
         with self.transaction_lock:
             self._transaction_lock_wait_ms = (time.perf_counter() - waiting) * 1000
-            state = self._transact(now, work, capture_projection=capture_projection)
+            try:
+                state = self._transact(now, work, capture_projection=capture_projection)
+            except BaseException:
+                # Includes lost commit acknowledgments. The next transaction must
+                # reread authoritative state instead of trusting an uncertain copy.
+                self._projection_cache = None
+                raise
             assert self.last_commit_receipt is not None
             return state, self.last_commit_receipt
 
@@ -204,15 +240,41 @@ class PaperStore:
         self.last_transaction_diagnostics = None
         stages = {"writer_lock_wait": self._transaction_lock_wait_ms}
         started = time.perf_counter()
+        cache_safe = bool(self._projection_cache_limit) and (
+            self.connection.info.transaction_status == TransactionStatus.IDLE
+        )
+        if not cache_safe:
+            # A nested transaction may roll back after our savepoint completes.
+            self._projection_cache = None
         with self.connection.transaction():
             row = self.connection.execute(
-                "SELECT * FROM paper_state WHERE id=1 FOR UPDATE"
+                "SELECT revision,xmin::text AS version,ctid::text AS location "
+                "FROM paper_state WHERE id=1 FOR UPDATE"
+                if cache_safe
+                else "SELECT * FROM paper_state WHERE id=1 FOR UPDATE"
             ).fetchone()
             if not row:
                 raise RuntimeError("Paper account was not initialized")
+            if cache_safe:
+                token = (row["revision"], row["version"], row["location"])
+                cached = self._projection_cache
+                if cached and cached[:3] == token:
+                    # Fresh detached objects: callers and failed work cannot mutate
+                    # the committed RAM copy. Row locking/version checks stay in SQL.
+                    state: dict[str, Any] = json.loads(cached[3], parse_float=_projection_float)
+                    self._projection_cache_hits += 1
+                else:
+                    self._projection_cache = None
+                    stored = self.connection.execute(
+                        "SELECT body FROM paper_state WHERE id=1"
+                    ).fetchone()
+                    assert stored is not None
+                    state = stored["body"]
+                    self._projection_cache_misses += 1
+            else:
+                state = row["body"]
             measured = time.perf_counter()
             stages["read_decode"] = (measured - started) * 1000
-            state: dict[str, Any] = row["body"]
             if state.get("schema") != 1:
                 raise RuntimeError("Unsupported paper state version")
             engine = PaperEngine(state, now)
@@ -240,9 +302,10 @@ class PaperStore:
             stages["journal_append"] = (appended - checked) * 1000
             encoding_ms = 0.0
             projection_sha256: str | None = None
+            committed_encoding: str | None = None
 
             def encode_projection(value: Any) -> str:
-                nonlocal encoding_ms, projection_sha256
+                nonlocal encoding_ms, projection_sha256, committed_encoding
                 encoding_started = time.perf_counter()
                 # PostgreSQL JSONB discards whitespace/key ordering. Selected
                 # capture uses the existing exact canonical evidence encoding
@@ -255,17 +318,32 @@ class PaperStore:
                 )
                 if capture_projection:
                     projection_sha256 = hashlib.sha256(encoded.encode()).hexdigest()
+                # This encoder uses ASCII JSON: character count equals payload
+                # bytes. Only one bounded immutable string survives the commit.
+                if cache_safe and len(encoded) <= self._projection_cache_limit:
+                    committed_encoding = encoded
                 encoding_ms += (time.perf_counter() - encoding_started) * 1000
                 return encoded
 
-            self.connection.execute(
-                "UPDATE paper_state SET revision=%s, body=%s WHERE id=1",
+            saved = self.connection.execute(
+                "UPDATE paper_state SET revision=%s, body=%s WHERE id=1 "
+                "RETURNING xmin::text AS version,ctid::text AS location",
                 (revision, Jsonb(engine.state, dumps=encode_projection)),
-            )
+            ).fetchone()
+            assert saved is not None
             updated = time.perf_counter()
             stages["projection_encode"] = encoding_ms
             stages["projection_update"] = max(0, (updated - appended) * 1000 - encoding_ms)
         stages["database_commit"] = (time.perf_counter() - updated) * 1000
+        if cache_safe and committed_encoding is not None:
+            self._projection_cache = (
+                revision,
+                saved["version"],
+                saved["location"],
+                committed_encoding,
+            )
+        else:
+            self._projection_cache = None
         self.last_transaction_diagnostics = {key: round(value, 3) for key, value in stages.items()}
         self.last_commit_receipt = {
             "revision": revision,

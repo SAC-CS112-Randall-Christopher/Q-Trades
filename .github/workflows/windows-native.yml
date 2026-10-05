@@ -62,6 +62,7 @@ jobs:
             tests/test_research_storage_expansion.py tests/test_capture_recovery.py `
             tests/test_continuous_audit.py tests/test_trade_history.py tests/test_scoped_tools.py `
             tests/test_activity_reader_recovery.py tests/test_capture_projection.py tests/test_paper_projection.py `
+            tests/test_projection_ram.py `
             tests/test_llm_training.py tests/test_training_workflow.py `
             tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
             tests/test_role_readiness.py tests/test_peft_development.py tests/test_peft_loader_contract.py `
