@@ -98,6 +98,20 @@ remains separate from these monitoring repairs.
   and incomplete-receipt cases pass in isolation and in the final 121-test run.
   The disposable QA cluster also required WAL recovery after an observed prior
   interruption; its log remains private. No operating cluster was restarted.
+- Integrated hosted head `c02a0fd`: native **638 passed / 212 skipped**, with
+  successful dashboard/ownership/browser checks. The inherited memory job had
+  **73 passes / 1 failure**, and full PostgreSQL had **1,048 passes / 3 failures /
+  84 skips**. One inherited fixture started at ambient 07:58; its six simulated
+  retries crossed the real 08:00 occurrence boundary and legitimately created
+  another retrieval receipt. That counterexample is reproduced, retained and
+  corrected by placing the fixture clock at noon after its synthetic inputs.
+  No operating schedule, time or reviewer behavior changes. The two other
+  failures were owned PDF/background child cases in the PostgreSQL CI job,
+  which had not installed the application package. The job now uses the same
+  declared editable source installation as native memory verification; parent
+  pytest path injection alone cannot supply a child's imports. Final hosted
+  acceptance must validate this wiring. Locally, all **74 memory/reviewer tests
+  pass**, including the deterministic boundary regression.
 - Native driver cases cancel an actual disposable `pg_sleep(30)` session and
   drain after one/two cancellation requests, preserving writer/history and
   subsequent writer usability. A client-side block has **no test release**; fixed

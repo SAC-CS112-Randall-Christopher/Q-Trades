@@ -8,6 +8,8 @@ import os
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 from pypdf import PdfWriter
@@ -262,7 +264,11 @@ def test_dns_wait_and_unfinished_lookup_capacity_are_bounded(monkeypatch):
 
 def test_two_disposable_scheduled_occurrences_restart_and_unchanged_backoff(workspace, monkeypatch):
     knowledge, worker, reviews, *_ = workspace
-    clock = time.time()
+    # Keep fixture inputs earlier than the cutoff and retries within one daily
+    # occurrence. Ambient 07:58 could cross the 08:00 boundary during six retries.
+    clock = datetime.fromtimestamp(time.time() + 2 * 86400, ZoneInfo("America/Denver")).replace(
+        hour=12, minute=0, second=0, microsecond=0
+    ).timestamp()
     monkeypatch.setattr("trading.research_reviews.time.time", lambda: clock)
 
     class Transport:

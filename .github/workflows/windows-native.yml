@@ -138,7 +138,11 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install pinned test requirements
-        run: python -m pip install --no-input -r requirements-lock.txt
+        run: |
+          python -m pip install --no-input -r requirements-lock.txt
+          # Owned PDF/background children need the installed application package;
+          # pytest's parent-only source-path injection does not reach them.
+          python -m pip install --no-input --no-deps -e .
       - name: Configure the disposable authenticated database
         run: |
           python - <<'PY'
