@@ -32,7 +32,9 @@ def generate(request: dict[str, Any]) -> dict[str, Any]:
     started = time.perf_counter()
     if request["settings"] != PROFILE or not windows_profile():
         raise ValueError("Actual serving requires the frozen Windows CPU development profile")
-    constrain_child(os.getpid())
+    # Retain the two-logical-processor ceiling and IDLE priority, while avoiding
+    # accidentally assigning both inference threads to siblings of one core.
+    constrain_child(os.getpid(), distinct_cores=True)
     placement = own_limits()
     if placement["priority_class"] != 0x40 or placement["processors_allowed"] != 2:
         raise ValueError("Development child placement differs")
@@ -187,6 +189,7 @@ def generate(request: dict[str, Any]) -> dict[str, Any]:
         },
         "placement": placement
         | {
+            "affinity_policy": "distinct-physical-cores-v1",
             "device": "cpu",
             "precision": "float32",
             "adapter_active": status.active_adapters,

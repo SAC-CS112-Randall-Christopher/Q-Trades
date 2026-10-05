@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 
-def constrain_child(pid: int) -> None:
+def constrain_child(pid: int, *, distinct_cores: bool = False) -> None:
     if os.name != "nt":
         return  # Numerical fits are single-threaded; Windows is the supported operator host.
     kernel = ctypes.windll.kernel32
@@ -23,7 +23,12 @@ def constrain_child(pid: int) -> None:
         if not kernel.GetProcessAffinityMask(handle, ctypes.byref(available), ctypes.byref(system)):
             raise OSError("Cannot read numerical worker processor allowance")
         bits = [1 << i for i in range(64) if available.value & (1 << i)]
-        if not kernel.SetProcessAffinityMask(handle, sum(bits[:2])):
+        mask = sum(bits[:2])
+        if distinct_cores:
+            from trading.cpu_topology import distinct_processors, physical_core_masks
+
+            mask = distinct_processors(available.value, physical_core_masks())
+        if not kernel.SetProcessAffinityMask(handle, mask):
             raise OSError("Cannot enforce numerical worker processor allowance")
         if not kernel.SetPriorityClass(handle, 0x40):
             raise OSError("Cannot enforce numerical worker IDLE priority")
@@ -33,7 +38,12 @@ def constrain_child(pid: int) -> None:
 
 def own_limits() -> dict[str, int | None]:
     if os.name != "nt":
-        return {"pid": os.getpid(), "processors_allowed": None, "priority_class": None}
+        return {
+            "pid": os.getpid(),
+            "processors_allowed": None,
+            "priority_class": None,
+            "affinity": None,
+        }
     kernel = ctypes.windll.kernel32
     kernel.OpenProcess.restype = ctypes.c_void_p
     kernel.CloseHandle.argtypes = [ctypes.c_void_p]
@@ -49,6 +59,7 @@ def own_limits() -> dict[str, int | None]:
             "pid": os.getpid(),
             "processors_allowed": affinity.value.bit_count(),
             "priority_class": int(kernel.GetPriorityClass(handle)),
+            "affinity": affinity.value,
         }
     finally:
         if handle:
