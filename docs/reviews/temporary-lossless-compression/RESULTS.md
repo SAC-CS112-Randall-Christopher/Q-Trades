@@ -1,9 +1,102 @@
-# Recorded synthetic result
+# Compression study results
 
-## Approved continuation outcome
+## Real acquisition and controlled-measurement follow-up
 
-**Defer production integration.** Zero safely reviewed real specimens were
-established. The eligible operating-byte denominator is unknown, the controlled
+**Defer production integration.** The approved G: verification established one
+exact, independently reviewed real frozen copy, but no real compression savings,
+restoration or controlled access/resource result. Its sparse single-decision
+scope cannot establish representative savings or a drive estimate. The eligible
+operating-byte denominator and product read-latency/resource decision remain open.
+The historical synthetic results below are unchanged.
+
+Product source remains `dcf7ccbb178cdd89175e427962dec80475620c73`; benchmark/test
+source remains `a167fe84e9788fe09cbcf58f716543c169780954`. The follow-up resumed
+published study head `1961cc06fe95172c3e32455b7e23667de155e9dc`, with all 18 recorded
+source hashes unchanged. Actual storage/evidence/protection owner files and the
+candidate's ten recorded producer files match the frozen inspected source.
+No rebase, harness rebuild or product edit occurred.
+
+[real-acquisition-summary.json](real-acquisition-summary.json) records a bounded
+1,024-segment metadata frame, formed from the earliest/latest 512 indexed rows.
+Three preliminary active/pin/empty exclusions left 1,021 rows; endpoint-window
+checks excluded 762 more, leaving 259 preliminary candidates. Endpoints alone did
+not establish eligibility. The seeded age/size draw then selected eight files,
+**89,935,872 distinct logical bytes and 147 records**, before any codec outcome.
+These lengths count each inspected source once, not actual I/O traffic. Content
+classification found three decision-summary and five mixed files, with no
+wire-only file; the draw is not content-balanced. Seven files contained embedded
+market history overlapping protected evaluation windows and were excluded.
+No replacement draw or compression-based selection was performed.
+
+The remaining copy is **860,160 bytes (840 KiB), one recent decision**, below
+1 MiB. Frames, bars, study, numerical rows, observed trades and feature origin are
+empty. Its exact original/frozen length and SHA-256 match; integrity/schema,
+IDs/hashes/raw bodies, availability/timestamps and exact-reference reads pass.
+The existing frozen importer also passes. These checks establish source-to-copy
+preservation; compressed restoration and recovery on this real file remain
+unmeasured. Earlier synthetic corruption, truncation, expansion, publication,
+claim/concurrency, exhaustion, cancellation and recovery evidence stays separate.
+
+The candidate-specific proof binds root/plan/volume, a matching individual owner
+marker, completed nonreclaimed index state, full record tuples and unchanged
+source identity. It refreshes pins, expiry, sidecars and known protections before
+and after a closed-container byte copy. Source handles permit write/delete sharing
+and close before destination flushing. Independent review repaired omitted clocks
+and unknown-shape handling before acquisition; the repaired check has no unknown
+producer key or market-information clock path. Ordinary financial snapshot history
+was kept private and was not relabeled as a Lab evaluation packet.
+
+Metadata-only protection inspection found seven accepted prepared handoffs, all
+training cases with windows disjoint from this candidate. Six have present review
+correspondence; one has legacy absent review metadata. Two configured legacy
+manifests have no source-window/content mappings. The proof is specific to this
+ordinary sparse candidate, not comprehensive historical Lab source independence.
+No dataset, target, bundle or model file was opened for this check.
+
+| Present storage | Logical bytes | Supported data-stream allocation |
+| --- | ---: | ---: |
+| Operating temporary SQLite original | 860,160 | 860,160 |
+| Existing retained JSONL gzip archive | 136,500 | 139,264 |
+| Additional private frozen SQLite copy | 860,160 | 860,160 |
+
+The original/retained overlap is a legitimate **996,660 logical bytes**. The
+archive's payload was not opened or its codec changed. Its length is not divided
+by SQLite length to claim a codec reduction: their representations/denominators
+differ. Full filesystem metadata and operating index/marker/WAL/SHM allocation
+remain unknown. No real compressed payload, prototype manifest/claim, staging or
+restored scratch was created. There is no real savings percentage to report.
+
+Acquisition after imports took an uncontrolled 0.343 s; its supervised interval
+was 1.000 s. Complete child CPU including imports was 0.6875 s, peak working set
+41,693,184 bytes and commit 29,814,784 bytes. Process counters include imports and
+verification: 13,699,687 read bytes and 860,160 write bytes, not device traffic.
+Owned scratch increased from 263,924,994 to 264,790,455 logical bytes, including
+the environment and retained earlier receipts. One IDLE child ran under the
+512-MiB/60-second bounds with G-only temporary storage. These are acquisition
+and checking costs, not codec, restore or production access latency.
+
+The unchanged five-repetition runner then deferred before input preparation:
+four foreign test processes, four model-work classifications and one unknown
+resident runtime; **zero preparation or measured children**. The null specimen
+count in [real-access-measure-deferred.json](real-access-measure-deferred.json)
+records that early return, independently of the passed one-real-file importer.
+Classification does not diagnose an active inference or the capture failure.
+No owner was stopped, no cache was added and no durability or guard was weakened.
+
+Remaining evidence is precise: richer eligible real age/content/size coverage,
+an eligible-byte denominator for any tier extrapolation, a qualifying repeated
+window, approved read/CPU/I/O limits and a capture-owner disposition. The two
+recorded five-second capture failures and the incomplete broader owner run remain
+unresolved. Prior focused and hosted software checks do not supply these missing
+measurements. The smallest later integration candidate remains an existing-owner
+compressed representation for eligible completed temporary SQLite, with exact
+publication/recovery and admitted bounded read scratch; this study does not
+implement or authorize that integration. Zero operating bytes were reclaimed.
+
+## Earlier approved continuation software evidence
+
+The first continuation publication established zero safely reviewed real
+specimens. The eligible operating-byte denominator was unknown, the controlled
 five-repetition gate deferred, and no product read-latency/CPU/I/O threshold is
 approved. The continuation supports benchmark correctness and more complete cost
 accounting; representative savings and installed acceptance remain unmeasured.

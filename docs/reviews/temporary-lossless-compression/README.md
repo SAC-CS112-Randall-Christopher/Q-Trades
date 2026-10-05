@@ -7,8 +7,8 @@ level 9 saved 74.34%; the fixed LZ4 profile saved 64.89%. The prototype's Zstand
 payload plus manifest/claim lengths total 59,973 bytes; reported data-stream
 allocation totals 62,856 bytes. These are fixture replacement calculations.
 
-All 35 final fixture operations completed, with one observation per arm. There
-were **zero real specimens**. Both five-repetition performance attempts were
+All 35 final fixture operations completed, with one observation per arm. That
+fixture result contains **zero real specimens**. Both performance attempts were
 deferred because a quiet window could not be established. Real-drive benefit and
 an acceptable production read/CPU/I/O tradeoff remain **inconclusive**. The first
 candidate for a later representative experiment is Zstandard level 1; this result
@@ -30,6 +30,47 @@ SQLite files for software validation. Representative real acquisition and
 controlled performance remain separate prerequisites; details and the retained
 continuation attempts are below and in [VERIFICATION.md](VERIFICATION.md).
 
+## Real acquisition follow-up
+
+The approved G: verification established **one independently reviewed real frozen
+SQLite copy: 860,160 bytes and one decision record**. Original and frozen length
+and SHA-256 match exactly. The private copy passes integrity, schema, complete
+record/availability/timestamp and exact-reference checks through the existing
+importer. No real compression, restoration or controlled access sample ran.
+See [real-acquisition-summary.json](real-acquisition-summary.json) for sanitized
+selection, correctness, allocation and acquisition-resource evidence.
+
+Before examining any compression outcome, the bounded frame covered the earliest
+and latest 512 indexed segments, with intervening segments unobserved. A seeded
+age/size draw selected eight candidates totaling 89,935,872 logical bytes. Their
+content was classified before compression; the draw was not content-balanced.
+Seven candidates were excluded because embedded market-information history
+overlapped protected evaluation windows. Rejected candidates were not replaced.
+The remaining recent, sub-1-MiB decision has no frames, bars, study, numerical
+rows, observed trades or feature origin. Older, fuller, wire and mixed-content
+real strata remain missing. This is specific acquisition evidence, not a
+representative savings sample or an operating eligible-byte denominator.
+
+The closed-container route binds the root/plan/volume, exact owner marker,
+completed indexed lifecycle, full record tuple, current protections and source
+identities. Source/pin/expiry/reclamation facts were refreshed around a byte copy
+using short read-only handles shared for writes and deletion. No operating
+constructor, recovery, checkpoint, VACUUM, pin or owner lock was used. The
+independent review repaired incomplete clock/shape checks before acquisition.
+Known prepared-handoff windows were checked through metadata only; two legacy
+Lab manifests lack source mappings, and one of seven prepared manifests lacks
+review metadata. These limits do not establish comprehensive historical Lab
+source independence. Real payloads, paths, IDs, hashes and receipts remain private.
+
+The fresh five-repetition gate deferred with four foreign test processes, four
+model-work classifications and one unclassified resident runtime. It dispatched
+**zero preparation or measurement children**; see
+[real-access-measure-deferred.json](real-access-measure-deferred.json). Its null
+real-specimen count means the gate returned before loading the separately
+validated private packet. No other owner was stopped. Representative savings,
+full access/resource costs and an approved product latency tradeoff remain
+unmeasured; the recommendation continues to **defer production integration**.
+
 ## Source, ownership and sampling boundary
 
 Main was refreshed once from the prompt's `fca588586f9b72e9506caef6384ee8e65edea738`
@@ -44,7 +85,8 @@ At that inspection, #61 (knowledge/reviewer work) had merged as `dcf7ccbb`.
 #63 remained an independently owned draft for financial monitoring/shutdown.
 Drafts #57 and #62 retained their own receipts. Unrelated import-checkout files,
 an original audit test tree, and monitoring-worker/API test edits were preserved.
-No installation is inferred from GitHub state. Only the existing operating
+No installation is inferred from GitHub state. At that initial inspection, only
+the existing operating
 storage-plan and cached status JSON were inspected; no operating SQLite database
 was opened, backed up, hashed, repaired or instantiated through `ResearchStorage`.
 
@@ -56,7 +98,8 @@ Their file-type/age distribution and currently eligible fraction are unknown.
 Its last maintenance reported zero reclaimed bytes. Detailed operating metadata
 stays private. No whole-archive scan was performed.
 
-No authorized, consistent, frozen real specimens were established. Operating
+No authorized, consistent, frozen real specimens were established in the initial
+publication. The reviewed follow-up above adds one specific private copy. Operating
 active segments, journals, protections, evaluation material and other projects
 were left alone. Repeated observations found foreign test activity and an
 unclassified resident model runtime. The quiet-window gate therefore defers
@@ -128,7 +171,9 @@ found accessible synthetic generation receipts and their original files, but no
 reviewed eligible real acquisition. Inaccessible historical test directories
 were not searched exhaustively. Cached operating totals do not establish a
 per-segment candidate frame, consistency, ownership, pins, pending outcomes or
-evaluation protections. No operating database is instantiated or opened.
+evaluation protections. No operating database was opened in that first
+continuation inspection; the follow-up above adds bounded reviewed read-only
+metadata/eligibility checks without an operating constructor.
 
 The real handoff must provide an already-frozen private SQLite file, exact
 length/SHA-256, and the digest/length of an independently reviewed acquisition
@@ -138,7 +183,9 @@ consistency method and journal disposition, transformations, exclusions and the
 independent review. The importer checks receipt/file identities, bounds, paths,
 single-link ownership, sidecar absence, schema, complete evidence and probes.
 It validates a reviewed handoff format; a populated JSON receipt cannot itself
-prove truthful original acquisition. No live acquisition route has been verified.
+prove truthful original acquisition. The follow-up verified a closed-container
+byte-copy route for one specific completed source, with separate independent
+acquisition review.
 A sealed label alone is insufficient, and no mutable input uses `immutable=1`.
 
 Compare three controls with identical reference selections and full evidence
@@ -487,5 +534,6 @@ owned environment. No new environment or framework is required:
 # If useful, repeat once or twice with --diagnose-capture trace in fresh private state.
 ```
 
-**Benchmark-only. Operating storage and settings are unchanged.
-No space has yet been reclaimed by this lane.**
+**Benchmark-only. No operating compression, replacement, deletion or activation
+was performed. Zero operating bytes were reclaimed. Initial metadata-reader SHM
+bookkeeping was not measured; see [VERIFICATION.md](VERIFICATION.md).**

@@ -1,5 +1,65 @@
 # Verification and retained attempts
 
+## Real-acquisition follow-up ledger
+
+The approved verification resumed clean published head
+`1961cc06fe95172c3e32455b7e23667de155e9dc` in the same branch/worktree and open
+draft PR #64. Product/benchmark source remains frozen at `dcf7ccbb`/`a167fe8`.
+All 18 recorded source hashes and the historical fixture artifact are unchanged.
+The follow-up adds documentation and sanitized aggregate receipts only; no
+benchmark, test, shared-owner, dependency, instruction or workflow source changed.
+
+| Follow-up attempt | Observed result | Meaning |
+| --- | --- | --- |
+| Initial broad metadata query | Five-second progress bound interrupted the query | No complete frame; failed private receipt retained. |
+| Narrow metadata reads | Earliest/latest 512 indexed rows recorded | Bounded partial frame, not a whole-tier scan or eligible-byte denominator. One older-frame operation completed its initial rows but failed a later kind query; it remains partial. |
+| First protection-source binding | Refused before registry read | Installed/frozen training-workflow hashes differ. Actual registry/protection/producer owners were checked independently; no installed upgrade or source substitution occurred. |
+| Read-only WAL acquisition-route proofs | In-process proof was limited; one stale-SHM expected-refusal assertion failed | The correct stale-SHM behavior can be a read through SQLite's private heap index. Failed receipt retained; normal locking/change detection was preserved. |
+| Fresh-process pinned SQLite 3.49.1 proof | Passed on disposable files | Valid WAL read/backup preserved source bytes; absent SHM refused without creation; stale SHM fallback returned correct records with unchanged source files. The disposable backup changes some header counters, so it was not selected for byte-exact real acquisition. |
+| Eight-candidate pre-codec draw/projections | 89,935,872 unique logical bytes, 147 records; seven known protected overlaps | Age/size seeded draw, not content-balanced. No real copy or codec outcome existed when drawn; rejected candidates were not replaced. |
+| Independent eligibility review | Material omitted-clock/unknown-shape findings | First/last packet timestamps and the initial parser were insufficient. Candidate admission was held; no copy ran on that proof. |
+| Stricter same-candidate shape attempts | Initial whitelist refused a legitimate queue field; a later invalid launch had a syntax error; strict clock pass held 43 unresolved paths | All failed/incomplete private receipts retained. No payload values were returned or specimen copied. |
+| Repaired candidate-specific clock/source projection | Passed, unchanged source SHA/stat | Source-verified UTC, millisecond, duration and monotonic/scheduling fields; no unknown top keys/clocks; ten recorded producer hashes match. This sparse packet has empty market-context collections, not a generic complete-shape guarantee. |
+| Prepared-handoff metadata attempts | Two bounded attempts incomplete, final check complete | One narrow directory-name assumption and one unpaired-receipt size bound were corrected by following the existing exposure owner. Final check covers 42 immediate entries and seven paired prepared manifests without dataset/target/bundle/model reads. |
+| Prepared review-presence check | Six present correspondences, one legacy absent review metadata | All seven completion/source-corpus/member identities pass; all cases are training windows disjoint from the candidate. Two configured legacy manifests still lack source mappings. A preliminary console label incorrectly counted nonempty windows as review bindings; the independent review and saved presence receipt are authoritative. |
+| Reviewed closed-container copy | Passed; one real file, 860,160 bytes, one record | Refreshed ownership/index/pins/expiry/reclaimed/protections before and after; short shared read-only source handles; exact source/frozen SHA; private integrity/tuples/references passed. One IDLE 512-MiB/60-second supervised child; G-only temporary storage. |
+| Independent actual-acquisition review | Specific copy admission supported | Reviewer checked saved source and receipt bindings without opening specimen or operating files. Sparse coverage and historical Lab limits retained. |
+| Private receipt-format publication | First launch invalid before receipt/selection write, then corrected | Missing placeholder replacement produced NameError. Existing post-copy review and specimen were preserved; failed launch recorded; reviewed final handoff created. |
+| Existing frozen importer | Passed, 0.078 s uncontrolled checking interval | One independently reviewed real input admitted; source identities unchanged. No codec, restore or controlled sample. |
+| Specific original/retained allocation | Metadata-only observation passed | Original 860,160 bytes; existing retained archive 136,500 logical/139,264 allocated bytes. No archive payload opened or representation denominator mixed. |
+| Fresh existing five-repetition gate | Deferred, nonzero wrapper status | Four foreign test processes, four model-work classifications and one unclassified resident runtime. Zero preparations or measured children; no completed five-repeat result. |
+| First public gate export | Invalid import before export, then corrected | Assumed sanitizer function name was absent. Existing `access_aggregate` exported the deferred numeric receipt; its generic boundary wording is qualified by the unmeasured initial SHM bookkeeping. Numeric evidence is unchanged; no benchmark rerun or source edit. |
+| Public aggregate validation | Passed | Eight-source totals/strata, one-real-file admission, zero codec/measurement counts and the runner's early return agree with private receipts; all 18 source hashes match; the private-field/hash screen and unchanged historical fixture check pass. |
+| Independent publication review | No material finding | Read-only review confirms sampling, denominators, exactness versus restoration, resources/overlap, privacy, reader limitations and separation of benchmark/hosted/installed evidence. No reviewer operating or specimen reads. |
+
+The first operating metadata attempts used ordinary `mode=ro`. Their possible
+shared-memory bookkeeping was not measured, so they cannot support a claim that
+operating DB/WAL/SHM bytes were unchanged. After review, later source DB checks
+used a fresh process with pinned `mode=ro&readonly_shm=1`, normal locking/change
+detection and query-only, bounded reads. No mutable source was labeled immutable.
+Operating `ResearchStorage` construction, writes, recovery, checkpoint/VACUUM,
+pins, ownership locks, sidecar removal and service interruption were not requested.
+The real source container itself matched its exact pre/post acquisition identity.
+
+Acquisition resources and limits are recorded in
+[real-acquisition-summary.json](real-acquisition-summary.json); the unchanged
+runner's early gate return is in
+[real-access-measure-deferred.json](real-access-measure-deferred.json). Its null
+real-specimen count reflects deferral before packet loading; the independently
+reviewed private acquisition/importer record establishes one frozen real file.
+No compression ratio, restore cost, repeated distribution or device-traffic
+claim follows from these acquisition receipts. Private real identities, clock
+values, manifests and all failed outputs remain outside Git.
+
+No earlier tests were rerun to orient this follow-up. The 92-case focused run,
+Ruff/types and synthetic fault/recovery coverage below remain evidence at the
+same unchanged source. The two historical capture failures and incomplete
+broader run remain separate unresolved receipts. Six normal hosted checks passed
+for published head `1961cc06`; hosted checks for the new publication must be
+identified by their own exact head and do not establish representative or
+installed acceptance. The draft and worktree remain needed for active review;
+other owners' worktrees and operating services are preserved.
+
 ## Approved continuation ledger
 
 The resumed lane began clean at study head
@@ -14,7 +74,9 @@ The historical fixture result retains SHA-256
 Independent sampling review found no established real acquisition among the
 bounded accessible private study receipts. Cached operating metadata lacks
 per-segment eligibility/consistency proof. Inaccessible historical test trees
-were not treated as an exhaustive inventory. No operating DB was opened.
+were not treated as an exhaustive inventory. No operating DB was opened in that
+first continuation phase; the later bounded read-only acquisition follow-up is
+recorded separately above.
 
 | Continuation attempt | Observed result | Meaning |
 | --- | --- | --- |
@@ -230,5 +292,6 @@ local suite, shared PostgreSQL service or frontend build was launched for this
 lane. Hosted CI, installation, runtime acceptance, representative real samples,
 quiet-window read latency and power-loss durability remain separate proof stages.
 
-Benchmark-only. Operating storage and settings are unchanged.
-No space has yet been reclaimed by this lane.
+Benchmark-only. No operating compression, replacement, deletion or activation
+was performed. Zero operating bytes were reclaimed. Initial metadata-reader SHM
+bookkeeping was not measured, as recorded in the follow-up ledger above.
