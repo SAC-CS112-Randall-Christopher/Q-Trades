@@ -1,4 +1,20 @@
-# Current direction — October 5, 2026, financial monitoring audit repairs
+# Current direction — October 5, 2026, operational research (#66)
+
+Use issue #66 and `docs/reviews/OPERATIONAL_RESEARCH_66.md` for this lane's
+current outcome, original-attempt identity, installed/source distinction and
+checkpoint evidence. Reuse #48/#28/#59's workers, registry, storage and review
+owners. The original trained-v2 development attempt remains authorized and
+unused under its unchanged packet/profile/full guard; new RAG inputs,
+qualification, external review/spending and activation require their separate
+authority. Source fixes, isolated QA, commits/push, issue coordination and an
+unmerged draft are authorized. Operating update/restart approval is pending;
+this chat is the proposed single rollout owner shared with #65. Desktop
+packaging, #64 compression, GIS, True to Plan and private Lab remain separate.
+Preserve all original evidence, accounts/history, decisions, twenty slots,
+storage policy and resource safeguards. Distinguish procedural UI/source
+verification from installed, actual-model and mature-feedback acceptance.
+
+# Existing owner direction — October 5, 2026, financial monitoring audit repairs
 
 The current source follow-up implements C60-1/2/3 from Chris's #60 audit. Read
 `docs/reviews/FINANCIAL_MONITORING_REPAIRS.md` for the ordered checklist, actual

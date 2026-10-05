@@ -241,12 +241,16 @@ class LocalRoles:
             return result
 
     @staticmethod
+    def check_retrieval_contract(
+        retrieval_contract: str | None, profile: dict[str, Any]
+    ) -> None:
+        if retrieval_contract and profile.get("rag_contract") != retrieval_contract:
+            raise ValueError("RAG packet requires its declared, separately qualified model profile")
+
+    @staticmethod
     def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, int]:
         """Size the actual system/schema and serialized packet, without runtime access."""
-        if packet.get("retrieval_contract") and (
-            profile.get("rag_contract") != packet["retrieval_contract"]
-        ):
-            raise ValueError("RAG packet requires its declared, separately qualified model profile")
+        LocalRoles.check_retrieval_contract(packet.get("retrieval_contract"), profile)
         measured = {
             "system_schema_bytes": len(prompt(role).encode()),
             "packet_bytes": len(packet_json(packet).encode()),

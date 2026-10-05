@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string] $LogDirectory = 'C:\Projects\Q-Trades\logs',
+    [string] $ExpectedCommit = '',
     [ValidateSet('', 'default', 'pglz', 'lz4')]
     [string] $PaperProjectionCompression = '',
     [ValidateSet('', 'default', 'pglz', 'lz4')]
@@ -86,6 +87,12 @@ try {
     Write-Host "Update log: $logPath"
     Write-Host "Source checkout: $source"
     Write-Host 'Local diagnostic log. Review before sharing; dependency output may contain private details.'
+    if ($PSBoundParameters.ContainsKey('ExpectedCommit')) {
+        if ($ExpectedCommit -notmatch '\A[0-9a-f]{40}\z') {
+            throw 'ExpectedCommit must be the full 40-hex approved target commit.'
+        }
+        Write-Host "Approved target commit: $ExpectedCommit"
+    }
     if (([bool] $PaperProjectionCompression) -ne ([bool] $ExpectedPaperProjectionCompression)) {
         throw 'Compression changes require both the reviewed target and expected previous setting.'
     }
@@ -131,6 +138,9 @@ try {
     $commit = Git-Read rev-parse FETCH_HEAD
     if ($commit -notmatch '^[0-9a-f]{40}$') { throw 'Main did not resolve to a commit.' }
     Write-Host "Target main commit: $commit"
+    if ($ExpectedCommit -and $commit -ne $ExpectedCommit) {
+        throw 'Fetched main differs from the approved target commit. No checkout or application update applied.'
+    }
     Git-Read cat-file -e "${commit}:src/trading/api.py" | Out-Host
     Git-Read merge --ff-only $commit | Out-Host
     if ((Git-Read rev-parse HEAD) -ne $commit) { throw 'Checkout is ahead of main; no development branch will be installed.' }

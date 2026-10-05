@@ -18,6 +18,18 @@ from trading.peft_profile import PROFILE, digest, metadata, read, regular
 from trading.training_bridge import TrainingBridge
 
 
+class DevelopmentTransportFailure(ValueError):
+    """Measured failed dispatch; private diagnostics stay in the owned job directory."""
+
+    def __init__(self, receipt: dict[str, Any], response: dict[str, Any] | None = None):
+        self.receipt = receipt
+        self.response = response
+        super().__init__(
+            f"Development job {receipt['private_job'] or 'unassigned'}: "
+            f"transport failed ({receipt['status']}); no invisible retry"
+        )
+
+
 class PeftDevelopmentRoles:
     def __init__(self, directory: Path):
         self.directory = regular(directory.resolve())
@@ -63,17 +75,22 @@ class PeftDevelopmentRoles:
         LocalRoles(self.directory).paper_guard()  # The entire existing operating guard.
         return profile
 
-    def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+    @staticmethod
+    def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> None:
+        """Refuse incompatible inputs before reserving an actual development attempt."""
         if packet.get("retrieval_contract") and (
             profile.get("rag_contract") != packet["retrieval_contract"]
         ):
             raise ValueError("RAG development packet requires its separately reviewed profile")
+        if len(packet_json(packet).encode()) + len(prompt(role).encode()) > 32768:
+            raise ValueError("Role packet exceeds the development transport allowance")
+
+    def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+        self.preflight(role, packet, profile)
         cfg, selected, current = self.declaration()
         if current != profile or role not in {"researcher", "reviewer"}:
             raise ValueError("Frozen development profile changed before dispatch")
         serialized = packet_json(packet)
-        if len(serialized.encode()) + len(prompt(role).encode()) > 32768:
-            raise ValueError("Role packet exceeds the development transport allowance")
         guard = LocalRoles(self.directory)
         guard.paper_guard()
         if self._cancelled.is_set():
@@ -86,8 +103,13 @@ class PeftDevelopmentRoles:
         owned: ChildOwner | None = None
         started = time.perf_counter()
         peak = 0
+        rss_observations = 0
         job: Path | None = None
-        reason = "Development child did not return a complete receipt"
+        category = "dispatch"
+        failure: Exception | None = None
+        answer: dict[str, Any] | None = None
+        cleanup_errors: list[str] = []
+        cleanup_reasons: list[str] = []
         last_guard = started
         try:
             root = regular(Path(cfg["private_root"]) / "qtrades-development-inference")
@@ -156,36 +178,54 @@ class PeftDevelopmentRoles:
                 (job / "owner-ready").write_text("owned", encoding="ascii")
                 while child.poll() is None:
                     if self._cancelled.is_set():
+                        category = "cancelled"
                         raise ValueError("Development inference was cancelled")
                     if time.perf_counter() - started >= profile["timeout_seconds"]:
+                        category = "timeout"
                         raise TimeoutError("Development inference exhausted its frozen wall budget")
-                    peak = max(peak, child_rss(child.pid))
+                    category = "resource_observation"
+                    observed = child_rss(child.pid)
+                    if observed > 0:
+                        peak = max(peak, observed)
+                        rss_observations += 1
                     if peak > profile["max_rss_bytes"]:
+                        category = "memory_budget"
                         raise ValueError("Development inference exceeded its memory budget")
                     if available_memory() < profile["minimum_available_bytes"]:
+                        category = "memory_reserve"
                         raise ValueError(
                             "Available memory reserve interrupted development inference"
                         )
                     if stdout.tell() + stderr.tell() > 262144:
+                        category = "logging_budget"
                         raise ValueError("Development child logging exceeded its private bound")
                     if time.perf_counter() - last_guard >= 1:
+                        category = "paper_guard"
                         guard.paper_guard()
                         last_guard = time.perf_counter()
+                    category = "child_wait"
                     try:
                         child.wait(timeout=0.25)
                     except subprocess.TimeoutExpired:
                         pass
+                if child.returncode:
+                    category = "child_exit"
+                    raise ValueError("Development child exited without a successful response")
+                category = "response_receipt"
                 result = read(job / "response.json")
-            if child.returncode or result.get("request_sha256") != digest(request):
+            if result.get("request_sha256") != digest(request):
+                category = "request_identity"
                 raise ValueError(
                     "Development response is missing or belongs to a different request"
                 )
             if "error" in result:
+                category = "child_error"
                 raise ValueError("Private model execution failed; inspect the retained job receipt")
             response = result["response"]
             if response.get("identity") != profile["identity"] or (
                 response.get("settings_sha256") != digest(PROFILE)
             ):
+                category = "model_identity"
                 raise ValueError(
                     "Actual model/adapter/loader identity differs from the frozen request"
                 )
@@ -201,6 +241,7 @@ class PeftDevelopmentRoles:
                     "trainable_params": 0,
                 }.items()
             ):
+                category = "placement"
                 raise ValueError("Actual model placement or active frozen adapter differs")
             # Record final health, but preserve the answer even if the guard closed
             # as generation ended. Development gives it no dispatch authority.
@@ -208,8 +249,7 @@ class PeftDevelopmentRoles:
                 after_guard: dict[str, Any] = guard.paper_guard()
             except Exception:
                 after_guard = {"admitted": False, "reason": "Protected guard closed after response"}
-            reason = "answered"
-            return dict(response) | {
+            answer = dict(response) | {
                 "profile_sha256": digest(profile),
                 "private_job": job.name,
                 "peak_rss_bytes": max(peak, response.get("peak_rss_bytes", 0)),
@@ -218,32 +258,76 @@ class PeftDevelopmentRoles:
                 "scope": "Unqualified development answer; no financial or operating authority",
             }
         except Exception as exc:
-            reason = type(exc).__name__ + ": " + str(exc)[:250]
-            if job:
-                raise ValueError(f"Development job {job.name}: {reason}") from exc
-            raise
+            failure = exc
         finally:
+            # Try every original-handle cleanup step even if a preceding one fails.
+            # Only then freeze the measured receipt, including the actual exit code.
             try:
-                try:
-                    if child and child.poll() is None:
-                        child.terminate()  # Original Popen process handle on Windows.
-                finally:
-                    if owned:
-                        owned.close()  # Also kills owned children on parent exit/failure.
-                    if child:
-                        child.wait(timeout=10)
-                if job:
-                    (job / "dispatch.json").write_text(
-                        packet_json(
-                            {
-                                "status": reason,
-                                "wall_seconds": time.perf_counter() - started,
-                                "peak_rss_bytes": peak,
-                                "exit_code": child.returncode if child else None,
-                                "profile_sha256": digest(profile),
-                            }
-                        ),
-                        encoding="utf-8",
-                    )
-            finally:
+                if child and child.poll() is None:
+                    child.terminate()
+            except Exception as exc:
+                cleanup_errors.append(type(exc).__name__[:64])
+                cleanup_reasons.append(type(exc).__name__ + ": " + str(exc)[:250])
+            try:
+                if owned:
+                    owned.close()
+            except Exception as exc:
+                cleanup_errors.append(type(exc).__name__[:64])
+                cleanup_reasons.append(type(exc).__name__ + ": " + str(exc)[:250])
+            try:
+                if child:
+                    child.wait(timeout=10)
+            except Exception as exc:
+                cleanup_errors.append(type(exc).__name__[:64])
+                cleanup_reasons.append(type(exc).__name__ + ": " + str(exc)[:250])
+            try:
                 lock.release()
+            except Exception as exc:
+                cleanup_errors.append(type(exc).__name__[:64])
+                cleanup_reasons.append(type(exc).__name__ + ": " + str(exc)[:250])
+        receipt = {
+            "kind": "development_transport_failure"
+            if failure or cleanup_errors
+            else "development_dispatch",
+            "complete": not (failure or cleanup_errors),
+            "status": category if failure else ("cleanup" if cleanup_errors else "answered"),
+            "exception_type": type(failure).__name__[:64] if failure else None,
+            "private_job": job.name if job else None,
+            "wall_seconds": time.perf_counter() - started,
+            "peak_rss_bytes": peak if rss_observations else None,
+            "rss_observations": rss_observations,
+            "exit_code": child.returncode if child else None,
+            "child_terminated": child.poll() is not None if child else None,
+            "cleanup_complete": not cleanup_errors,
+            "cleanup_error_types": cleanup_errors,
+            "profile_sha256": digest(profile),
+            "private_dispatch_retained": False,
+            "scope": "Unqualified development attempt; no financial or operating authority",
+        }
+        if job:
+            try:
+                (job / "dispatch.json").write_text(
+                    packet_json(
+                        receipt
+                        | {
+                            "private_dispatch_retained": True,
+                            "reason": type(failure).__name__ + ": " + str(failure)[:250]
+                            if failure
+                            else None,
+                            "cleanup_reasons": cleanup_reasons,
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+                receipt["private_dispatch_retained"] = True
+            except Exception as exc:
+                if not failure and not cleanup_errors:
+                    receipt["kind"] = "development_transport_failure"
+                    receipt["complete"] = False
+                    receipt["status"] = "dispatch_receipt"
+                    receipt["exception_type"] = type(exc).__name__[:64]
+                failure = failure or exc
+        if failure or cleanup_errors:
+            raise DevelopmentTransportFailure(receipt, answer) from failure
+        assert answer is not None
+        return answer

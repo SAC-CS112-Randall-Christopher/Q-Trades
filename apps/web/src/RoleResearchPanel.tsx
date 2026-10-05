@@ -38,6 +38,7 @@ type Task = {
 };
 type Question = { question: string; horizon: string; parent: string | null; request_id: string };
 type SavedRequest = { body: Question; phase: "unknown" | "rejected"; message?: string };
+type ActionError = { kind: "question"; message: string } | { kind: "task-detail" | "task-retry"; task: string; message: string };
 const stamp = (seconds: number) => new Date(seconds * 1000).toLocaleString();
 const stages: Record<string, string> = { idea: "Model investigation", evaluate: "Compute method check", archive_evaluation: "Save exact inputs", review: "Independent review", submit: "Ordinary paper admission", outcome: "Await comparison outcome", followup: "Supported follow-up", data_wait: "Await required data", complete: "Research complete" };
 
@@ -51,7 +52,10 @@ export function RoleResearchPanel() {
   const [beforeId, setBeforeId] = useState("");
   const [search, setSearch] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ActionError | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [taskError, setTaskError] = useState<string | null>(null);
+  const [statusObservedAt, setStatusObservedAt] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [question, setQuestion] = useState("Does the reviewed range mechanism differ from its matched breakout reference after costs?");
@@ -71,24 +75,35 @@ export function RoleResearchPanel() {
     let timer: ReturnType<typeof setTimeout>;
     const poll = async () => {
       try {
-        const response = await fetch(`/api/lab/roles?before=${before}&before_id=${encodeURIComponent(beforeId)}&search=${encodeURIComponent(search)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) });
-        if (!response.ok) throw new Error("Role status disconnected. Saved questions and paper operation remain separate.");
-        const value = await response.json() as RoleState;
-        if (live) { setState(value); setError(null); }
-        if (selected) {
-          const detail = await fetch(`/api/lab/roles/tasks/${encodeURIComponent(selected)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]) });
-          if (!detail.ok) throw new Error("Saved task detail is unavailable; retry when connected.");
-          const saved = await detail.json() as Task;
-          if (live) setTask(saved);
+        try {
+          const response = await fetch(`/api/lab/roles?before=${before}&before_id=${encodeURIComponent(beforeId)}&search=${encodeURIComponent(search)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(15000)]) });
+          if (!response.ok) throw new Error("Role status disconnected. Saved questions and paper operation remain separate.");
+          const value = await response.json() as RoleState;
+          if (live) { setState(value); setStatusError(null); setStatusObservedAt(Date.now() / 1000); }
+        } catch (cause) {
+          if (live) setStatusError(cause instanceof Error ? cause.message : "Role status unavailable");
+          return;
         }
-      } catch (cause) { if (live) setError(cause instanceof Error ? cause.message : "Role status unavailable"); }
-      finally { if (live) timer = setTimeout(() => void poll(), 10000); }
+        if (selected) {
+          try {
+            const detail = await fetch(`/api/lab/roles/tasks/${encodeURIComponent(selected)}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(6000)]) });
+            if (!detail.ok) throw new Error("Saved task detail is unavailable; retry when connected.");
+            const saved = await detail.json() as Task;
+            if (live) {
+              setTask(saved); setTaskError(null);
+              setError(current => current?.kind === "task-detail" && current.task === saved.id ? null : current);
+            }
+          } catch (cause) {
+            if (live) setTaskError(cause instanceof Error ? cause.message : "Saved task detail unavailable");
+          }
+        }
+      } finally { if (live) timer = setTimeout(() => void poll(), 10000); }
     };
     void poll();
     return () => { live = false; controller.abort(); clearTimeout(timer); };
   }, [selected, before, beforeId, search, refresh]);
   const open = (id: string) => {
-    if (id !== selected) setTask(null);
+    if (id !== selected) { setTask(null); setTaskError(null); }
     setSelected(id);
     localStorage.setItem("qtrades-role-task", id);
     setRefresh(r => r + 1);
@@ -96,7 +111,7 @@ export function RoleResearchPanel() {
     location.hash = `role-research?${params}`;
   };
   useEffect(() => {
-    const restore = () => { const id = linkedTask(); if (id !== null) { setTask(null); setSelected(id); } };
+    const restore = () => { const id = linkedTask(); if (id !== null) { setTask(null); setTaskError(null); setSelected(id); } };
     window.addEventListener("hashchange", restore);
     return () => window.removeEventListener("hashchange", restore);
   }, []);
@@ -120,14 +135,14 @@ export function RoleResearchPanel() {
         }
         if (sameIntent && receipt.outcome === "created" && typeof receipt.task === "string") {
           open(receipt.task); forget(); setRefresh(r => r + 1);
-          setError("Your question was saved. Its detail is temporarily unavailable; reopen the saved question when connected.");
+          setError({ kind: "task-detail", task: receipt.task, message: "Your question was saved. Its detail is temporarily unavailable; reopen the saved question when connected." });
           return;
         }
         throw new Error(typeof receipt === "string" ? receipt : receipt?.message ?? "Question acknowledgment is unknown; reconcile the saved request.");
       }
       if (typeof value.id !== "string") throw new Error("Question acknowledgment is incomplete; reconcile the saved request.");
       open((value as Task).id); setTask(value as Task); forget(); setRefresh(r => r + 1);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Question acknowledgment unknown; retry the same saved request."); }
+    } catch (cause) { setError({ kind: "question", message: cause instanceof Error ? cause.message : "Question acknowledgment unknown; retry the same saved request." }); }
     finally { setBusy(false); }
   };
   const enqueue = (event: FormEvent) => {
@@ -142,21 +157,25 @@ export function RoleResearchPanel() {
       const value = await response.json();
       if (!response.ok) throw new Error(value.detail ?? "This completed verdict cannot be retried.");
       setTask(value as Task); setRefresh(r => r + 1);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Retry acknowledgment unavailable; inspect the retained task."); }
+      setError(current => current?.kind === "task-retry" && current.task === task.id ? null : current);
+    } catch (cause) { setError({ kind: "task-retry", task: task.id, message: cause instanceof Error ? cause.message : "Retry acknowledgment unavailable; inspect the retained task." }); }
     finally { setBusy(false); }
   };
   return <section id="role-research" className="panel role-research" aria-labelledby="role-title">
     <h2 id="role-title">Local model research</h2>
     <p>Investigate a permitted question, compare reviewed rules, and follow the recorded paper outcome. Numerical calculation and paper admission retain their existing authority.</p>
-    <p role="status">{state ? `Research policy ${state.enabled ? "enabled" : "disabled"} · current role qualification ${state.readiness.qualification_valid ? "verified" : "unverified"} · runtime ${state.readiness.stages?.runtime?.state ?? "unverified"} · ${state.readiness.ready ? "ready for bounded dispatch" : "waiting for prerequisites"}` : "Loading actual role status…"}</p>
-    {state?.readiness.model && <p>Model {state.readiness.model}</p>}
-    {state?.readiness.reason && <p>{state.readiness.reason}</p>}
-    {state?.readiness.stages && <div aria-label="Research readiness and recovery"><h3>Readiness and next actions</h3><ul>{Object.entries(state.readiness.stages).map(([name, stage]) => <li key={name}><strong>{name}: {stage.state}</strong> · {stage.next_action}</li>)}</ul></div>}
-    {state?.readiness.operating_admission && <p>Operating admission: <strong>{state.readiness.operating_admission.state}</strong> · checked {stamp(state.readiness.operating_admission.checked_at)}.<br />{state.readiness.operating_admission.next_action}<br />{state.readiness.operating_admission.meaning}</p>}
-    {state?.readiness.roles && <ul>{Object.entries(state.readiness.roles).map(([role, value]) => <li key={role}>{role}: {value.qualified ? "Qualified for this contract" : value.reason}</li>)}</ul>}
-    {state?.readiness.profile != null && <details><summary>Exact current model profile and digest</summary><pre>{JSON.stringify(state.readiness.profile, null, 2)}</pre></details>}
-    <p>{state?.reason}</p>
-    {error && <p role="alert">{error} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
+    <p role="status">{statusError ? "Research status unavailable · current runtime and dispatch readiness are unverified" : state ? `Research policy ${state.enabled ? "enabled" : "disabled"} · declared profile qualification ${state.readiness.qualification_valid ? "verified" : "unverified"} · runtime ${state.readiness.stages?.runtime?.state ?? "unverified"} · ${state.readiness.ready ? "ready for bounded dispatch" : "waiting for prerequisites"}` : "Loading actual role status…"}</p>
+    {statusError && state && statusObservedAt !== null && <p>Retained observation from {stamp(statusObservedAt)}: research policy {state.enabled ? "enabled" : "disabled"} · declared profile qualification {state.readiness.qualification_valid ? "verified" : "unverified"}. Reconnect before treating these observations as current.</p>}
+    {state?.readiness.model && <p>{statusError ? "Last observed model" : "Model"} {state.readiness.model}</p>}
+    {state?.readiness.reason && <p>{statusError ? "Last observed reason: " : ""}{state.readiness.reason}</p>}
+    {state?.readiness.stages && <div aria-label="Research readiness and recovery"><h3>{statusError ? "Last observed readiness and next actions" : "Readiness and next actions"}</h3><ul>{Object.entries(state.readiness.stages).map(([name, stage]) => <li key={name}><strong>{statusError ? "Last observed " : ""}{name}: {stage.state}</strong> · {stage.next_action}</li>)}</ul></div>}
+    {state?.readiness.operating_admission && <p>{statusError ? "Last observed operating admission" : "Operating admission"}: <strong>{state.readiness.operating_admission.state}</strong> · checked {stamp(state.readiness.operating_admission.checked_at)}.<br />{state.readiness.operating_admission.next_action}<br />{state.readiness.operating_admission.meaning}</p>}
+    {state?.readiness.roles && <ul>{Object.entries(state.readiness.roles).map(([role, value]) => <li key={role}>{statusError ? "Last observed " : ""}{role}: {value.qualified ? "Qualified for the declared profile" : value.reason}</li>)}</ul>}
+    {state?.readiness.profile != null && <details><summary>{statusError ? "Last observed model profile and digest" : "Exact current model profile and digest"}</summary><pre>{JSON.stringify(state.readiness.profile, null, 2)}</pre></details>}
+    <p>{statusError ? "Last observed policy: " : ""}{state?.reason}</p>
+    {statusError && <p role="alert">{statusError} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
+    {taskError && <p role="alert">{taskError} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry task detail</button></p>}
+    {error && <p role="alert">{error.message} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
     <form onSubmit={enqueue}>
       <label>Research question <textarea disabled={busy || !!retry} required minLength={12} maxLength={500} value={retry?.body.question ?? question} onChange={e => setQuestion(e.target.value)} /></label>
       <label>Holding horizon <select disabled={busy || !!retry} value={retry?.body.horizon ?? horizon} onChange={e => setHorizon(e.target.value)}><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select></label>
@@ -185,7 +204,7 @@ export function RoleResearchPanel() {
     {state?.next_before && <button type="button" onClick={() => { setBefore(state.next_before!); setBeforeId(state.next_before_id ?? ""); }}>Older questions</button>}
     {task && <article aria-label="Saved research task">
       <h3>{task.context.question.question}</h3><p>{task.context.question.horizon} horizon · {stages[task.stage] ?? task.stage} · {task.status} · progress {stamp(task.updated)}</p>
-      <p>Current ownership: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
+      <p>{statusError || taskError ? "Last observed ownership" : "Current ownership"}: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
       {task.reason && <p>{task.reason}</p>}
       {task.status === "failed" && task.attempts.length > 0 && !task.attempts.at(-1)?.response && <button disabled={busy} type="button" onClick={() => void retryTransport()}>Authorize one recorded transport retry</button>}
       <h4>Captured causal evidence</h4><p>{task.context.tool_evidence.security} · {task.context.tool_evidence.closed_bar_count} closed bars · captured {stamp(task.context.tool_evidence.observed_at)} · {task.context.tool_evidence.source_basis}</p>
@@ -199,7 +218,13 @@ export function RoleResearchPanel() {
       {task.proposal?.strategy.entry_filter && <p>Entry component: frozen historical memory · {task.proposal.strategy.entry_filter.horizon_seconds / 60} minutes · artifact {task.proposal.strategy.entry_filter.artifact.sha256} · marginal ${task.proposal.strategy.entry_filter.marginal_daily_usd}/day · fallback {task.proposal.strategy.entry_filter.fallback}. Baseline exits and financial risk remain authoritative.</p>}
       {task.result?.outcome && <section><h4>Recorded comparison: {task.result.outcome.body.outcome}</h4><p>{task.result.outcome.body.reason}</p><p>Window {stamp(task.result.outcome.body.window_start)} to {stamp(task.result.outcome.body.window_end)} · outcome available {stamp(task.result.outcome.body.available_at)}.</p><p>Whole-account result after declared operating costs: candidate ${task.result.outcome.body.net_after_operating_usd?.candidate ?? "unknown"}; reference ${task.result.outcome.body.net_after_operating_usd?.reference ?? "unknown"}; difference ${task.result.outcome.body.delta_usd ?? "unknown"}. Execution fees remain counted once.</p><p>{task.result.outcome.body.qualification}</p><details><summary>Recorded comparison outcome</summary><pre>{JSON.stringify(task.result.outcome, null, 2)}</pre></details></section>}
       {task.result?.followup && <p>Supported follow-up: {task.result.followup.action} · {task.result.followup.rationale} {task.result.followup.dependency}</p>}
-      <details><summary>Model attempts, final answers and resource receipts</summary>{task.attempts.map((a, i) => <div key={i}><h4>{a.stage} · {a.status}</h4><p>{stamp(a.started)} {a.finished ? `to ${stamp(a.finished)}` : "completion pending or unknown"} {a.reason}</p><pre>{JSON.stringify({ profile: a.profile, final_response: a.response }, null, 2)}</pre><TrainingCandidateExport key={`${task.id}-${a.stage}-${a.attempt}`} task={task.id} stage={a.stage} attempt={a.attempt} completed={a.finished !== null && a.response !== null} /></div>)}</details>
+      <details><summary>Model attempts, final answers and resource receipts</summary>{task.attempts.map((a, i) => <div key={i}>
+        <h4>{a.stage} · {a.status}</h4>
+        <p>{stamp(a.started)} {a.finished ? `to ${stamp(a.finished)}` : "completion pending or unknown"} {a.reason}</p>
+        {a.stage.startsWith("development_") && <p>Development-only attempt. Any retained answer is unqualified and has no financial or operating authority.</p>}
+        <pre>{JSON.stringify({ profile: a.profile, final_response: a.response }, null, 2)}</pre>
+        {["idea", "review", "followup"].includes(a.stage) && <TrainingCandidateExport key={`${task.id}-${a.stage}-${a.attempt}`} task={task.id} stage={a.stage} attempt={a.attempt} completed={a.finished !== null && a.response !== null} />}
+      </div>)}</details>
     </article>}
     <LessonPanel openTask={open} />
     <StockResearchPanel />

@@ -113,6 +113,18 @@ Set-Item -LiteralPath ('Function:\'+$python) -Value {
     }
 }
 $updateOptions=@{LogDirectory=(Join-Path $Source 'logs')}
+if($Scenario -in @('expected_match','expected_uppercase')){
+    $updateOptions.ExpectedCommit=git -C $Source rev-parse main
+    if($Scenario -eq 'expected_uppercase'){
+        $updateOptions.ExpectedCommit=$updateOptions.ExpectedCommit.ToUpperInvariant()
+    }
+}elseif($Scenario -eq 'expected_mismatch'){
+    $updateOptions.ExpectedCommit=git -C $Source rev-parse HEAD
+}elseif($Scenario -eq 'expected_malformed'){
+    $updateOptions.ExpectedCommit='not-a-commit'
+}elseif($Scenario -eq 'expected_empty'){
+    $updateOptions.ExpectedCommit=''
+}
 if($Scenario.StartsWith('compression_')){
     $updateOptions.PaperProjectionCompression='lz4'
     if($Scenario -ne 'compression_missing_expected'){
@@ -136,6 +148,11 @@ $code=$LASTEXITCODE
     [
         "success",
         "known_previous",
+        "expected_match",
+        "expected_uppercase",
+        "expected_mismatch",
+        "expected_malformed",
+        "expected_empty",
         "log_failure",
         "copy_failure",
         "dirty",
@@ -246,6 +263,9 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     if scenario == "known_previous":
         (runtime / "data/installed-commit.txt").write_text(old)
     before = git(source, "rev-parse", "HEAD")
+    runtime_before = {
+        str(p.relative_to(runtime)): p.read_bytes() for p in runtime.rglob("*") if p.is_file()
+    }
     driver, report = tmp_path / "driver.ps1", tmp_path / "result.json"
     driver.write_text(DRIVER)
     result = subprocess.run(
@@ -267,7 +287,14 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
     outcome = json.loads(report.read_text(encoding="utf-8-sig"))
     ops = outcome["operations"]
     assert all((runtime / p).read_bytes() == b for p, b in protected.items())
-    success = scenario in {"success", "known_previous", "compression_success", "storage_success"}
+    success = scenario in {
+        "success",
+        "known_previous",
+        "expected_match",
+        "expected_uppercase",
+        "compression_success",
+        "storage_success",
+    }
     if scenario == "log_failure":
         assert logs.read_text() == "do not overwrite this existing file"
         assert not ops, outcome
@@ -355,3 +382,19 @@ def test_manual_main_update_preserves_data_and_handles_failures(tmp_path, scenar
         if scenario == "dependency_failure":
             assert not outcome["running"] and not outcome["enabled"]
             assert "start" not in ops
+    if scenario in {"expected_mismatch", "expected_malformed", "expected_empty"}:
+        assert not ops and outcome["running"] and outcome["enabled"]
+        assert git(source, "rev-parse", "HEAD") == before
+        assert not git(source, "status", "--porcelain")
+        assert {
+            str(p.relative_to(runtime)): p.read_bytes() for p in runtime.rglob("*") if p.is_file()
+        } == runtime_before
+        assert not (runtime / "data/update-backups").exists()
+        assert not (source / "apps/web/dist").exists()
+        if scenario == "expected_mismatch":
+            assert git(source, "rev-parse", "FETCH_HEAD") == target and target != before
+            assert "Fetched main differs from the approved target commit" in transcript
+            assert f"Approved target commit: {before}" in transcript
+        else:
+            assert not (source / ".git/FETCH_HEAD").exists()
+            assert "ExpectedCommit must be the full 40-hex approved target commit" in transcript

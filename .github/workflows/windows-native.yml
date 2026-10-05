@@ -44,7 +44,7 @@ jobs:
           $PSVersionTable.PSVersion.ToString()
           if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Requires Windows PowerShell 5.1' }
           python -B -m pytest -q -p no:cacheprovider --tb=long `
-            tests/test_simple_update.py tests/test_simple_health.py tests/test_paper_update_shutdown.py `
+            tests/test_simple_health.py tests/test_paper_update_shutdown.py `
             tests/test_windows_supervision.py tests/test_paper_engine.py `
             tests/test_paper_risk.py tests/test_paper_risk_store.py `
             tests/test_paper_economics.py tests/test_economics_store.py `
@@ -69,6 +69,7 @@ jobs:
             tests/test_llm_training.py tests/test_training_workflow.py `
             tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
             tests/test_role_readiness.py tests/test_peft_development.py tests/test_peft_loader_contract.py `
+            tests/test_development_failure_receipts.py `
             tests/test_strategy_diagnosis.py `
             tests/test_request_counts.py `
             tests/test_research_notices.py tests/test_notice_contention.py `
@@ -97,9 +98,8 @@ jobs:
         run: npm run build
 
   runtime-ownership:
-    # The combined audit selection completed all tests but exhausted the native
-    # job's eight-minute budget before its dashboard build. Keep every case and
-    # the same limit, running the independent mocked ownership cases separately.
+    # Independent ownership and updater checks share this existing Windows job.
+    # Preserve every selector and both eight-minute lifecycle budgets.
     runs-on: windows-2025
     timeout-minutes: 8
     defaults:
@@ -118,11 +118,11 @@ jobs:
           python-version: '3.12'
       - name: Install pinned test requirements
         run: python -m pip install --no-input -r requirements-lock.txt
-      - name: Verify owned disposable runtime shutdown and recovery
+      - name: Verify owned runtime recovery and disposable approved updates
         run: |
           $PSVersionTable.PSVersion.ToString()
           if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Requires Windows PowerShell 5.1' }
-          python -B -m pytest -q -p no:cacheprovider --tb=long tests/test_model_runtime_task_ownership.py
+          python -B -m pytest -q -p no:cacheprovider --tb=long tests/test_model_runtime_task_ownership.py tests/test_simple_update.py
 
   postgres-integration:
     # Full portable suite with real password authentication, independent of
