@@ -835,8 +835,9 @@ export function KnowledgeWorkspace() {
                     />
                   </label>
                   <p>
-                    Native text only. Scanned, encrypted or unreadable pages
-                    remain unavailable; original PDF bytes are retained.
+                    Native text only. Scanned, encrypted or unreadable files
+                    are refused; no source is added. Successful imports retain
+                    the exact original PDF.
                   </p>
                 </>
               )}

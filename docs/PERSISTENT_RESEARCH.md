@@ -188,9 +188,14 @@ records, credential, model path or protected evaluation inputs are published.
   private training fixtures. These are retained failures, not a green full run.
   The outside-Git rerun was stopped after the recovery fixes changed source after
   collection; it remains incomplete and is not final-revision acceptance. A fresh
-  complete run uses a frozen committed implementation, ordinary fixtures outside
-  Git, the same selective G: placement and unchanged guards. Incomplete intermediate
-  runs remain incomplete. Its result is recorded in the owning PR/issue ledger.
+  complete run on frozen implementation `4870590` has **1,086 passed / 1 skipped**
+  in **1,852.55 seconds**. Ordinary fixtures are outside Git, with the same selective
+  G: placement and unchanged guards. The skip requires Windows Developer Mode to
+  create a symlink; machine policy is unchanged. Incomplete intermediate runs remain
+  incomplete. Python source and pinned requirements are unchanged after that run;
+  the final interface wording distinguishes rejected PDF uploads from accepted
+  originals. Final-head dashboard/browser and hosted checks are recorded in the
+  owning PR/issue ledger.
 - The read-only installed before/final snapshots remain `fa3accd`, running paper,
   fresh processing and balanced journal. They are bounded observations and do not
   prove sustained uptime or authorize this branch's installation.
