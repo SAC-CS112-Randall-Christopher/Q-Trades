@@ -1,4 +1,36 @@
-# Current direction — October 4, 2026, capture recovery and trained-v2 serving
+# Current direction — October 5, 2026, persistent research (#58 / #59)
+
+Use issue #59 as the implementation/acceptance ledger and preserve #58's mapped
+PM requirements, including evidence-driven questions and the optional System 1
+experiment. Read [PERSISTENT_RESEARCH.md](docs/PERSISTENT_RESEARCH.md) and the
+current issue before continuing. Reuse the Windows supervisor, CP18 role worker,
+CP22 scoped authorization, registry, lessons, owned research storage and Training
+Lab. Keep canonical references separate from the financial database and capped
+experiment tables. Model changes must preserve original sources and answers.
+
+The inspected source and installed baseline is main
+`fa3accde7667404a7751f75a8d1b1cc6978a7808`. PRs #54–56 are merged/installed; do not
+repeat their rollout from historical draft headings. Documentation draft #57 and
+paper/model coexistence draft #60 have separate owners. Preserve their receipts,
+original runtime/resource guard and the separately authorized development attempt;
+new RAG packets are not covered by an old serving-profile authorization.
+
+This assignment authorizes source edits, isolated procedural/native/PostgreSQL/UI
+verification, commits/push, issue updates and an unmerged draft PR. Keep external
+access, spending and app-schedule activation disabled until the actual provider,
+model/profile, credential ownership, data rights, budgets and single schedule owner
+are explicitly configured/approved. Keep the existing ChatGPT Learning Review
+unchanged. No new merge/install/restart, operating activation, model calls,
+qualification/holdout consumption, training/conversion/downloads or financial/data
+policy changes follow from source implementation. Installed inspection is read-only.
+
+Keep private artifacts, GIS and unrelated work separate. Preserve originals,
+account history, frozen rules, journal/sole-writer authority, twenty slots,
+400/100 decimal-GB storage, guards and honest unavailable intervals. Distinguish
+software fixture evidence, actual external/local-model evidence, installed/recovery
+acceptance and market/qualification outcomes. Older sections below are historical.
+
+# Historical direction — October 4, 2026, capture recovery and trained-v2 serving
 
 The human has now authorized one actual development attempt with the reviewed
 CPU float32/two-processor/600-second profile. That same unused attempt needs no

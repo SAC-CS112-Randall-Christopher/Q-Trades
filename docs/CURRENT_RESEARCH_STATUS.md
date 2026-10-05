@@ -1,4 +1,31 @@
-# Current research status — October 4, 2026, issue #48
+# Current research status — October 5, 2026, issues #58 and #59
+
+The new persistent knowledge/RAG/MCP/app-owned reviewer work is on
+`codex/persistent-research-workspace`. Its compact owner/verification/limitation
+ledger is [PERSISTENT_RESEARCH.md](PERSISTENT_RESEARCH.md). Source verification
+does not complete the issues' actual external/local-model or installed finish line.
+New reviewer configuration and spending default disabled.
+
+The current source/installed baseline remains
+`fa3accde7667404a7751f75a8d1b1cc6978a7808`. PRs #54–56 are merged/installed.
+The read-only final observation during this source task reports running paper,
+fresh processing, a balanced journal and no paper error. This branch has not been
+installed, activated or used to call a model. The existing ChatGPT Learning Review,
+Windows tasks/services, financial records, model profiles and G: policy are unchanged.
+
+Draft #57 retains the authorized RAM rollout's historical receipt. Draft #60 owns
+further measured paper/model coexistence work; this branch does not replace that
+owner or relax its guard. The old trained-v2 development authorization stays with
+its existing question/profile owner. RAG changes the model input contract and
+requires separately compatible qualification before actual local inference.
+
+App-local MCP execution is the selected source path. External tunnel/interactive
+account support remains unqualified. No task/product entitlement is inferred from
+ChatGPT access. Actual reviewer access, rights, budgets, schedule cutover and
+installed acceptance require their explicit decisions. Earlier headings below are
+historical receipts, including former draft states; do not repeat a completed rollout.
+
+# Historical research status — October 4, 2026, issue #48
 
 The six-PR release (#40 and #49–53) is merged and installed at
 `7b062a0222674d62697f88e1f99d67278298a441`. Both merged-main CI jobs passed.

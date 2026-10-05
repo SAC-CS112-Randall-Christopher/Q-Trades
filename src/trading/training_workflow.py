@@ -16,6 +16,7 @@ from trading.llm_training import (
     Checked,
     Example,
     candidate_from_episode,
+    candidate_from_instruction,
     candidate_from_market,
     prepare,
 )
@@ -26,13 +27,14 @@ from trading.training_bridge import TrainingBridge
 
 
 class SourceSelection(Checked):
-    kind: Literal["model_attempt", "observed_episode", "market_observation"]
+    kind: Literal["model_attempt", "observed_episode", "market_observation", "review_annotation"]
     identity: str = Field(min_length=1, max_length=100)
     stage: Literal["idea", "review", "followup"] = "idea"
     attempt: int = Field(default=1, ge=1, le=100)
     question: str | None = Field(default=None, min_length=12, max_length=1000)
     author: str | None = Field(default=None, min_length=3, max_length=120)
     role: Literal["researcher", "reviewer"] = "researcher"
+    rights_reason: str | None = Field(default=None, min_length=20, max_length=1000)
 
 
 class ReviewSave(Checked):
@@ -199,7 +201,57 @@ class TrainingWorkflow:
         }
 
     def select(self, source: SourceSelection) -> dict[str, Any]:
-        if source.kind == "model_attempt":
+        if source.kind == "review_annotation":
+            if self.roles is None or self.roles.reviews is None or source.rights_reason is None:
+                raise ValueError("Retained review and explicit teaching rights are required")
+            review = self.roles.reviews.get(source.identity)
+            if (
+                review["state"] != "completed"
+                or not review["decisions"]
+                or review["decisions"][-1]["body"]["disposition"] != "accept_annotation"
+            ):
+                raise ValueError("An independently accepted annotation is required")
+            passages = self.roles.reviews.delivered_passages(review["id"])
+            for passage in passages:
+                original = self.roles.reviews.knowledge.read(
+                    passage["source"], passage["revision"], cutoff=time.time()
+                )
+                if not original["metadata"]["training_allowed"] or not (
+                    self.roles.reviews.knowledge.teaching_permitted(
+                        passage["source"], passage["revision"]
+                    )
+                ):
+                    raise ValueError(
+                        "Source teaching rights are unapproved; original review retained"
+                    )
+            packet = {
+                "question": review["packet"]["question"],
+                "capabilities": {"instructional_only": True, "financial_authority": False},
+                "evidence": review["packet"]["evidence"]
+                | {p["citation"]: p for p in passages}
+                | {
+                    "review-annotation": {
+                        "review": review["id"],
+                        "packet_sha256": review["packet_sha"],
+                        "model": review["policy"]["model"],
+                        "findings": review["result"],
+                        "disposition": review["decisions"][-1],
+                        "basis": "model-assisted nonempirical instructional draft",
+                    }
+                },
+            }
+            candidate = candidate_from_instruction(
+                identity=review["id"],
+                role=source.role,
+                packet=packet,
+                authored_at=review["decisions"][-1]["created"],
+                author="Model-assisted / " + review["policy"]["model"],
+                rights_basis=source.rights_reason,
+                draft_sha256=fingerprint(review["response"]),
+                family_ids=["research:" + review["task"]]
+                + ["knowledge:" + p["source"] for p in passages],
+            )
+        elif source.kind == "model_attempt":
             if self.roles is None:
                 raise ValueError("Original model attempt registry is unavailable")
             candidate = self.roles.training_candidate(
