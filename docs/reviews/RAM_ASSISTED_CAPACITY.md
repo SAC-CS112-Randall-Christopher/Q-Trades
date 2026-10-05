@@ -1,5 +1,13 @@
 # RAM-assisted paper capacity — issue #48 / operational CP18 under #28
 
+The reviewed cache is now merged and installed at main
+`fa3accde7667404a7751f75a8d1b1cc6978a7808`. The authorized preservation/UI and
+actual admission observations are recorded in
+[RAM_ROLLOUT_20261005.md](RAM_ROLLOUT_20261005.md). Available memory covers the
+declared model budget, but the installed full guard still refuses through
+engine-work cooldown. The actual model attempt remains unused. The isolated
+source benchmark below remains separate from that installed result.
+
 The human requested spare RAM to let the trained model run alongside paper
 processing. The existing owned inference child already performs advisory work
 outside financial locks, using CPU float32, two logical processors at IDLE,
