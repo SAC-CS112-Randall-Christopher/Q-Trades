@@ -71,6 +71,14 @@ validated private packet. No other owner was stopped. Representative savings,
 full access/resource costs and an approved product latency tradeoff remain
 unmeasured; the recommendation continues to **defer production integration**.
 
+The later bounded [measurement-gate handoff](MEASUREMENT_GATE_HANDOFF.md)
+identifies the four model-work matches as non-model helper/API invocations and
+records observed idle residency. Shared-runtime request activity and GPU
+observation remain incomplete; the gate was not bypassed or changed. The handoff
+declares a narrow benchmark-only proposal and regression cases, separates
+measurement prerequisites from later production acceptance, and preserves every
+earlier draw, exclusion, result and failed receipt.
+
 ## Source, ownership and sampling boundary
 
 Main was refreshed once from the prompt's `fca588586f9b72e9506caef6384ee8e65edea738`
