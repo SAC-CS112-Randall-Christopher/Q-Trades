@@ -126,7 +126,12 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install pinned source and verification requirements
-        run: python -m pip install --no-input -r requirements-lock.txt
+        run: |
+          python -m pip install --no-input -r requirements-lock.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Owned child interpreters need the application package, not pytest's
+          # parent-only pythonpath injection. Match the declared installed setup.
+          python -m pip install --no-input --no-deps -e .
       - name: Static checks and native reference/reviewer recovery
         run: |
           python -m ruff check src tests

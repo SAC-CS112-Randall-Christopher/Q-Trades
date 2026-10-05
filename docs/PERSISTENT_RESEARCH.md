@@ -156,6 +156,10 @@ records, credential, model path or protected evaluation inputs are published.
 - Ruff passes; strict Windows-targeted mypy passes **105 source files**. Dashboard
   TypeScript/Vite build passes **1,932 modules**. A separate Windows CI job retains
   the new reference/reviewer/native background checks without raising job limits.
+  Its first hosted run has **53 passed / 2 failed**: dependencies were installed,
+  but its owned child interpreters could not import the application package.
+  The corrected job explicitly installs the source package, matching the declared
+  local setup, instead of relying on pytest's parent-only path injection.
 - Actual isolated API/UI checks pass through a new disposable headless browser:
   normal navigation, import, support/contrary search, source drill-down, reload,
   review disposition, connection blockers and scoped test, Back, 390-pixel layout
