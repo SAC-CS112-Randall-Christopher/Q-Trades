@@ -1,4 +1,33 @@
-# Current research status — October 4, 2026, issue #48
+# Current research status — October 5, 2026, installed coexistence repair
+
+Main and the installation are now
+`fca588586f9b72e9506caef6384ee8e65edea738`: PR #60 is merged, all three
+merged-main CI jobs passed, and the explicitly approved updater/restart completed.
+The fresh native suite passed 1,040 tests with one Windows symlink skip. Original
+financial history, account identity/funding, protected files and all 220 installed
+release files were verified. See
+[the installed receipt](reviews/PAPER_MODEL_COEXISTENCE_ROLLOUT.md).
+The completed #54–56 and #60 rollouts should not be repeated. Draft #57 retains
+its separate historical record.
+
+The monitoring reader is healthy and capture is recording, but the normal guard
+still refuses optional research. The 20-minute installed observation retained
+1,951 distinct work samples, median 56.139 ms/p95 111.855 ms, 163 above 100 ms,
+and two severe stalls. None of 238 polls admitted research; one poll failed with
+a connection protocol error. There were no reported stale/error paper states or
+failed financial readbacks in successful polls. All observed portfolios were flat;
+this is not active-position protection or actual model-coexecution evidence.
+
+The original development question remains queued with zero attempts. Its one
+expressly authorized float32/two-physical-core/600-second actual attempt is unused
+and still requires the complete guard. Operating roles remain disabled/unqualified.
+Neither a slower partial SQL update nor a slower binary RAM copy was installed.
+The next capacity work must diagnose the measured waiting/stalls or establish a
+tested, explicit resource-policy decision; adding RAM or silently raising a limit
+is not supported by this receipt. Qualification, genuine paper feedback and CP23
+usefulness/sustained operation remain separate acceptance stages.
+
+## Historical current status — October 4, 2026, issue #48
 
 The six-PR release (#40 and #49–53) is merged and installed at
 `7b062a0222674d62697f88e1f99d67278298a441`. Both merged-main CI jobs passed.
