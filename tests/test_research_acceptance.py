@@ -243,9 +243,19 @@ def test_stale_contract_followup_keeps_mature_history_without_new_inference(
             (json.dumps(context), task["id"]),
         )
     before = pg_store[0].read()
+    retained = worker.get(task["id"])
+    allowances = [
+        tuple(row) for row in lab.registry.db.execute("SELECT * FROM role_attempt_allowances")
+    ]
     assert not asyncio.run(worker.step(START))
     saved = worker.view(task["id"])
-    assert "contract changed" in saved["reason"] and saved["attempts"] == []
+    assert "contract changed" in saved["contract_applicability"]["reason"]
+    assert saved["contract_applicability"]["state"] == "different"
+    assert saved["reason"] is None and saved["attempts"] == []
+    assert worker.get(task["id"]) == retained
+    assert [
+        tuple(row) for row in lab.registry.db.execute("SELECT * FROM role_attempt_allowances")
+    ] == allowances
     assert pg_store[0].read() == before
     lab.registry.close()
 

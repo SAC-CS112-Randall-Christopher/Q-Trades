@@ -14,6 +14,15 @@ type RoleState = {
   experimental?: boolean;
   execution_mode?: string;
   current_task?: { id: string; question: string; stage: string; status: string; updated: number; reason: string | null } | null;
+  activity?: {
+    state: "running" | "waiting" | "queued" | "idle" | "paused" | "unavailable";
+    reason: string;
+    checked_at: number;
+    pending_tools: number;
+    pending_data: number;
+    pending_outcomes: number;
+    queued: number;
+  };
   supervision?: { phase: string; status: string; reason: string | null; retry_at: number; updated: number }[];
   readiness: {
     qualification_valid?: boolean; runtime_available?: boolean; ready?: boolean;
@@ -33,13 +42,26 @@ type RoleState = {
   next_before_id: string | null;
   history: { retained: number; archived: number; active: number; hot_limit: number };
 };
+type ToolRequest = {
+  kind: "strategy_family" | "feature" | "analysis_tool";
+  identifier: string;
+  purpose: string;
+  required_inputs: string[];
+  acceptance_checks: string[];
+};
 type Task = {
   id: string; stage: string; status: string; updated: number; reason: string | null;
+  contract_applicability?: {
+    state: "matching" | "different" | "unavailable";
+    reason: string;
+    recorded_contract: string;
+    selected_contract: string | null;
+  };
   execution: {kind: string; actor?: string; lease_until: number | null};
   context: { execution_mode?: string; experimental?: boolean; question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
   proposal: { request_id: string; kind: string; strategy: {family: string; lookback: number; entry_filter?: {kind: string; horizon_seconds: number; marginal_daily_usd: string; fallback: string; artifact: {sha256: string}}}; reference: { family: string; lookback: number } } | null;
   evaluation: { input_count: number; evaluated_at: number; feature: { eligible?: boolean; reason?: string }; replay: string; detail_reference?: string } | null;
-  result: { proposal_id?: string; trial_id?: string; review?: { action: string; rationale: string }; outcome?: {body: {outcome: string; reason: string; window_start: number; window_end: number; available_at: number; delta_usd: string | null; net_after_operating_usd: {candidate: string; reference: string}; qualification: string}}; followup?: { action: string; rationale: string; dependency: string | null } } | null;
+  result: { action?: string; tool_request?: ToolRequest | null; evidence_ids?: string[]; rationale?: string; falsification?: string; proposal_id?: string; trial_id?: string; review?: { action: string; rationale: string }; outcome?: {body: {outcome: string; reason: string; window_start: number; window_end: number; available_at: number; delta_usd: string | null; net_after_operating_usd: {candidate: string; reference: string}; qualification: string}}; followup?: { action: string; rationale: string; dependency: string | null } } | null;
   attempts: { attempt: number; stage: string; status: string; started: number; finished: number | null; profile: unknown; response: { answer?: unknown; tokens?: unknown; wall_seconds?: number } | null; reason: string | null }[];
 };
 type Question = { question: string; horizon: string; parent: string | null; request_id: string };
@@ -56,7 +78,14 @@ const controlConfirmed = (value: RoleState, action: PilotControl) => value.paper
   && (action === "pause" || value.readiness.enabled === true);
 type ActionError = { kind: "question"; message: string } | { kind: "task-detail" | "task-retry"; task: string; message: string };
 const stamp = (seconds: number) => new Date(seconds * 1000).toLocaleString();
-const stages: Record<string, string> = { idea: "Model investigation", evaluate: "Compute method check", archive_evaluation: "Save exact inputs", review: "Independent review", submit: "Ordinary paper admission", outcome: "Await comparison outcome", followup: "Supported follow-up", data_wait: "Await required data", complete: "Research complete" };
+const stages: Record<string, string> = { idea: "Model investigation", evaluate: "Compute method check", archive_evaluation: "Save exact inputs", review: "Independent review", submit: "Ordinary paper admission", outcome: "Await comparison outcome", followup: "Supported follow-up", data_wait: "Await required data", tool_wait: "Await tool implementation review", complete: "Research complete" };
+const activityLabels: Record<NonNullable<RoleState["activity"]>["state"], string> = {
+  running: "Working on a saved question", waiting: "Waiting", queued: "Work queued",
+  idle: "Idle", paused: "Paused", unavailable: "Unavailable",
+};
+const toolKinds: Record<ToolRequest["kind"], string> = {
+  strategy_family: "Strategy method", feature: "Feature", analysis_tool: "Analysis tool",
+};
 
 const linkedTask = () => new URLSearchParams(location.hash.split("?")[1] ?? "").get("task");
 
@@ -231,6 +260,12 @@ export function RoleResearchPanel() {
       {state?.current_task && <p>{statusError ? "Last observed task" : "Current task"}: <button type="button" onClick={() => open(state.current_task!.id)}>{state.current_task.question}</button> · {stageLabel(state.current_task.stage)} · {state.current_task.status}. {state.current_task.reason}</p>}
     </section>}
     <p role="status">{statusError ? "Research status unavailable · current runtime and dispatch readiness are unverified" : state ? pilot ? `Experimental paper pilot · worker ${state.enabled ? "enabled" : "disabled"} · model setup ${state.readiness.stages?.runtime?.state ?? "unverified"} · ${state.readiness.ready ? "ready for bounded paper research" : "waiting for prerequisites"}` : `Research policy ${state.enabled ? "enabled" : "disabled"} · declared profile qualification ${state.readiness.qualification_valid ? "verified" : "unverified"} · runtime ${state.readiness.stages?.runtime?.state ?? "unverified"} · ${state.readiness.ready ? "ready for bounded dispatch" : "waiting for prerequisites"}` : "Loading actual role status…"}</p>
+    <section aria-label="Research activity">
+      {state?.activity ? <>
+        <p role="status">{statusError ? "Last observed activity" : "Current activity"}: <strong>{activityLabels[state.activity.state]}</strong> · {state.activity.reason}</p>
+        <p>{statusError ? "Last observed pending work" : "Pending work"}: {state.activity.pending_tools} tool requests · {state.activity.pending_data} data dependencies · {state.activity.pending_outcomes} comparison outcomes · {state.activity.queued} queued questions. Checked {stamp(state.activity.checked_at)}.</p>
+      </> : <p role="status">{!state && !statusError ? "Loading actual research activity…" : "Current research activity is unavailable."}</p>}
+    </section>
     {statusError && state && statusObservedAt !== null && <p>Retained observation from {stamp(statusObservedAt)}: research policy {state.enabled ? "enabled" : "disabled"} · declared profile qualification {state.readiness.qualification_valid ? "verified" : "unverified"}. Reconnect before treating these observations as current.</p>}
     {state?.readiness.model && <p>{statusError ? "Last observed model" : "Model"} {state.readiness.model}</p>}
     {state?.readiness.reason && <p>{statusError ? "Last observed reason: " : ""}{state.readiness.reason}</p>}
@@ -273,6 +308,20 @@ export function RoleResearchPanel() {
       <h3>{task.context.question.question}</h3><p>{task.context.question.horizon} horizon · {stageLabel(task.stage)} · {task.status} · progress {stamp(task.updated)}</p>
       <p>{statusError || taskError ? "Last observed ownership" : "Current ownership"}: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
       {task.reason && <p>{task.reason}</p>}
+      {task.contract_applicability && task.contract_applicability.state !== "matching" && <p role="status" aria-label="Saved question format applicability">{statusError || taskError ? "Last observed research format" : "Current research format"}: <strong>{task.contract_applicability.state === "different" ? "Saved question inactive for the selected format" : "Current format unknown"}</strong>. {task.contract_applicability.reason}</p>}
+      {task.result?.action === "request_tool" && task.result.tool_request && <section aria-label="Requested research tool">
+        <h4>Tool requested · pending implementation review</h4>
+        <p><strong>{toolKinds[task.result.tool_request.kind]}:</strong> {task.result.tool_request.identifier}</p>
+        <p><strong>Purpose:</strong> {task.result.tool_request.purpose}</p>
+        <p>The saved request remains attached to this question while implementation review is pending.</p>
+        <h5>Needed inputs</h5>
+        <ul>{task.result.tool_request.required_inputs.map((input, index) => <li key={index}>{input}</li>)}</ul>
+        <h5>Acceptance checks</h5>
+        <ul>{task.result.tool_request.acceptance_checks.map((check, index) => <li key={index}>{check}</li>)}</ul>
+        <p><strong>Supporting evidence from the saved question:</strong> {task.result.evidence_ids?.join(", ") ?? "References unavailable"}</p>
+        {task.result.rationale && <p><strong>Reason for the request:</strong> {task.result.rationale}</p>}
+        {task.result.falsification && <p><strong>What would disprove the idea:</strong> {task.result.falsification}</p>}
+      </section>}
       {task.status === "failed" && task.attempts.length > 0 && !task.attempts.at(-1)?.response && (!pilot || task.context.execution_mode === "paper_research_pilot") && <button disabled={busy} type="button" onClick={() => void retryTransport()}>Authorize one recorded transport retry</button>}
       <h4>Captured causal evidence</h4><p>{task.context.tool_evidence.security} · {task.context.tool_evidence.closed_bar_count} closed bars · captured {stamp(task.context.tool_evidence.observed_at)} · {task.context.tool_evidence.source_basis}</p>
       <FrozenComponentPanel task={task.id} catalog={task.context.catalog} />

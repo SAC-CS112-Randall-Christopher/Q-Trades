@@ -12,7 +12,7 @@ from test_paper_store import pg_store as pg_store
 from test_research_storage import plan_at
 
 from trading.evidence_runtime import EvidenceRecorder
-from trading.lab_role_contract import validate
+from trading.lab_role_contract import TOOL_REQUEST_VERSION, VERSION, validate
 from trading.research_storage import save_plan
 from trading.role_worker import Question, RoleWorker
 
@@ -67,10 +67,33 @@ class ModelStub:
                 "rationale": "This is one uncertain comparison and cannot qualify an incumbent.",
                 "dependency": None,
             }
+            if getattr(self, "role_contract", VERSION) == TOOL_REQUEST_VERSION:
+                answer.update(unsupported_basis=None, tool_request=None)
+                if followup and getattr(self, "request_tool_after_outcome", False):
+                    answer.update(
+                        action="request_tool",
+                        tool_request={
+                            "kind": "analysis_tool",
+                            "identifier": "matched_regime_comparison",
+                            "purpose": (
+                                "Compare the retained negative result across causal regimes."
+                            ),
+                            "required_inputs": ["The original matched comparison outcome"],
+                            "acceptance_checks": [
+                                "Retain contrary and inconclusive after-cost results."
+                            ],
+                        },
+                    )
         return {"answer": answer, "scope": "Synthetic software stub; no actual model inference"}
 
 
-def test_worker_ordinary_inbox_outcome_and_supported_followup(pg_store, tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "contract_version,request_tool_after_outcome",
+    [(VERSION, False), (TOOL_REQUEST_VERSION, False), (TOOL_REQUEST_VERSION, True)],
+)
+def test_worker_ordinary_inbox_outcome_and_supported_followup(
+    pg_store, tmp_path, monkeypatch, contract_version, request_tool_after_outcome
+):
     store, _ = pg_store
     monkeypatch.setattr("trading.role_worker.time.time", lambda: START)
     lab = make_lab(store, tmp_path, horizon_seconds=3600)
@@ -79,6 +102,8 @@ def test_worker_ordinary_inbox_outcome_and_supported_followup(pg_store, tmp_path
     recorder.enqueue({"kind": "wire", "at": START, "source": "synthetic-role-lifecycle"})
     asyncio.run(recorder.flush())
     model = ModelStub()
+    model.role_contract = contract_version
+    model.request_tool_after_outcome = request_tool_after_outcome
     worker = RoleWorker(lab.registry, lab, model)
     worker.enabled = True
     original = copy.deepcopy(lab.paper.state["accounts"]["primary"])
@@ -113,12 +138,25 @@ def test_worker_ordinary_inbox_outcome_and_supported_followup(pg_store, tmp_path
     assert asyncio.run(worker.step(score["available_at"] + 1))
     assert asyncio.run(worker.step(score["available_at"] + 2))
     result = worker.get(task["id"])
-    assert result["status"] == "done" and result["result"]["outcome"]["body"] == score
-    assert result["result"]["followup"]["action"] == "no_change"
+    assert result["result"]["outcome"]["body"] == score
+    if request_tool_after_outcome:
+        assert result["stage"] == "tool_wait" and result["status"] == "waiting"
+        assert result["result"]["tool_request"]["identifier"] == "matched_regime_comparison"
+        assert not asyncio.run(worker.step(score["available_at"] + 3))
+        assert worker.get(task["id"])["result"]["outcome"]["body"] == score
+    else:
+        assert result["status"] == "done"
+        assert result["result"]["followup"]["action"] == "no_change"
     assert model.calls == ["researcher", "reviewer", "researcher"]
     assert len(result["attempts"]) == 3 and store.reconcile()["balanced"]
     # Training export uses the actual retained input/answer, not a regenerated packet.
     before_export = copy.deepcopy(store.read())
+    if contract_version == TOOL_REQUEST_VERSION:
+        with pytest.raises(ValueError, match="different role contract"):
+            worker.training_candidate(task["id"], "followup", 1)
+        assert store.read() == before_export and len(model.calls) == 3
+        lab.registry.close()
+        return  # New research inputs do not silently change teaching/dataset eligibility.
     candidate = worker.training_candidate(task["id"], "followup", 1)
     assert candidate["review"] is None and candidate["target"] is None
     assert candidate["candidate"]["original_answer"]["action"] == "no_change"

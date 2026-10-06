@@ -10,7 +10,14 @@ from typing import Any
 import httpx
 
 from trading.experiment_registry import fingerprint
-from trading.lab_role_contract import contract_hash, packet_json, prompt, schema
+from trading.lab_role_contract import (
+    TOOL_REQUEST_VERSION,
+    VERSION,
+    contract_hash,
+    packet_json,
+    prompt,
+    schema,
+)
 from trading.ownership import CollectorLock
 from trading.research_inference import cpu_placement_valid
 from trading.research_resources import (
@@ -124,10 +131,31 @@ def development_latency_observation(status: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def check_role_contract(packet: dict[str, Any], profile: dict[str, Any]) -> str:
+    """Select only the contract explicitly bound to the admitted profile."""
+    version = profile.get("role_contract", VERSION)
+    if version not in (VERSION, TOOL_REQUEST_VERSION):
+        raise ValueError("Unknown declared role contract; reviewed profile required")
+    if packet.get("contract", VERSION) != version:
+        raise ValueError("Packet role contract differs from the approved profile")
+    if version == TOOL_REQUEST_VERSION and (
+        profile.get("role_contract") != TOOL_REQUEST_VERSION
+        or profile.get("contract_sha256") != contract_hash(TOOL_REQUEST_VERSION)
+    ):
+        raise ValueError("Tool-request contract requires its separately reviewed profile")
+    if version == VERSION and profile.get("contract_sha256") not in (None, contract_hash()):
+        raise ValueError("Declared role contract hash differs from the reviewed profile")
+    return str(version)
+
+
 class LocalRoles:
     def __init__(self, directory: Path):
         self.directory = directory
         self.path = directory / "role-policy.json"
+
+    @property
+    def role_contract(self) -> str:
+        return str(self.policy().get("role_contract", VERSION))
 
     def policy(self) -> dict[str, Any]:
         if not self.path.is_file():
@@ -153,7 +181,10 @@ class LocalRoles:
         ):
             raise ValueError("Separate role allowance must be explicitly declared and bounded")
         value["token_allowance"] = options["num_ctx"]
-        value["contract_sha256"] = contract_hash()
+        version = value.get("role_contract", VERSION)
+        if version not in (VERSION, TOOL_REQUEST_VERSION):
+            raise ValueError("Unknown declared role contract; reviewed profile required")
+        value["contract_sha256"] = contract_hash(version)
         return value
 
     def observe(self, profile: dict[str, Any]) -> dict[str, Any]:
@@ -224,7 +255,7 @@ class LocalRoles:
         cases = {r["case"] for r in rows}
         if (
             report.get("split") != "holdout"
-            or report.get("contract_sha256") != contract_hash()
+            or report.get("contract_sha256") != contract_hash(profile.get("role_contract", VERSION))
             or len(cases) != 12
             or {(r["case"], r["seed"]) for r in rows} != {(c, s) for c in cases for s in seeds}
         ):
@@ -359,9 +390,10 @@ class LocalRoles:
     @staticmethod
     def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, int]:
         """Size the actual system/schema and serialized packet, without runtime access."""
+        version = check_role_contract(packet, profile)
         LocalRoles.check_retrieval_contract(packet.get("retrieval_contract"), profile)
         measured = {
-            "system_schema_bytes": len(prompt(role).encode()),
+            "system_schema_bytes": len(prompt(role, version).encode()),
             "packet_bytes": len(packet_json(packet).encode()),
             "output_reserve": profile["options"]["num_predict"],
             "template_reserve": 512,
@@ -386,6 +418,7 @@ class LocalRoles:
         dispatched = False
         try:
             self.preflight(role, packet, profile)
+            version = check_role_contract(packet, profile)
             before = self.observe(profile)
             before["paper_guard"] = self.paper_guard()
             with httpx.Client(trust_env=False, timeout=profile["timeout_seconds"]) as client:
@@ -394,9 +427,9 @@ class LocalRoles:
                     ORIGIN + "/api/generate",
                     json={
                         "model": profile["model"],
-                        "system": prompt(role),
+                        "system": prompt(role, version),
                         "prompt": packet_json(packet),
-                        "format": schema(role),
+                        "format": schema(role, version),
                         "think": profile["thinking"],
                         "stream": False,
                         "keep_alive": "60s",

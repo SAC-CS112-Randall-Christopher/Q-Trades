@@ -5,6 +5,7 @@ import copy
 import json
 import sys
 import time
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -379,22 +380,57 @@ def test_cli_invalid_or_expired_deadline_refuses_before_registry(tmp_path, monke
     assert error.value.code == 2 and not created
 
 
-def test_deadline_waits_for_existing_async_owner_cleanup():
+def test_deadline_waits_for_existing_async_owner_cleanup(monkeypatch):
     retained = []
+    # Control admission time without changing asyncio's scheduling clock.
+    monkeypatch.setattr(route, "time", SimpleNamespace(monotonic=lambda: 1000.0))
+
+    async def execute():
+        entered = asyncio.Event()
+        cleanup_started = asyncio.Event()
+        release_cleanup = asyncio.Event()
+
+        class Owner:
+            async def development_answer(self, task, transport):
+                try:
+                    entered.set()
+                    await asyncio.Event().wait()
+                finally:
+                    cleanup_started.set()
+                    await release_cleanup.wait()
+                    retained.append((task, transport))
+
+        pending = asyncio.create_task(
+            route.answer_with_deadline(Owner(), "original", "transport", 1000.01)
+        )
+        try:
+            await asyncio.wait_for(entered.wait(), timeout=5)
+            await asyncio.wait_for(cleanup_started.wait(), timeout=5)
+            assert not pending.done()  # Check before asyncio.run can perform shutdown cleanup.
+            release_cleanup.set()
+            with pytest.raises(TimeoutError):
+                await pending
+            assert retained == [("original", "transport")]
+        finally:
+            release_cleanup.set()
+            if not pending.done():
+                pending.cancel()
+            await asyncio.wait_for(asyncio.gather(pending, return_exceptions=True), timeout=5)
+
+    asyncio.run(execute())
+
+
+def test_expired_deadline_refuses_before_async_owner_dispatch(monkeypatch):
+    calls = []
+    monkeypatch.setattr(route, "time", SimpleNamespace(monotonic=lambda: 1000.0))
 
     class Owner:
         async def development_answer(self, task, transport):
-            try:
-                await asyncio.Event().wait()
-            finally:
-                await asyncio.sleep(0.01)
-                retained.append((task, transport))
+            calls.append((task, transport))
 
-    with pytest.raises(TimeoutError):
-        asyncio.run(
-            route.answer_with_deadline(Owner(), "original", "transport", time.monotonic() + 0.01)
-        )
-    assert retained == [("original", "transport")]
+    with pytest.raises(TimeoutError, match="expired before dispatch"):
+        asyncio.run(route.answer_with_deadline(Owner(), "original", "transport", 1000.0))
+    assert not calls
 
 
 def test_normal_return_without_experiment_deadline_is_unchanged():

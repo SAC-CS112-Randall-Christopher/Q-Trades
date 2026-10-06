@@ -1,4 +1,31 @@
-# Current direction — October 6, 2026, autonomous paper research pilot (#66)
+# Current source follow-up — October 6, 2026, research tool requests (#66)
+
+Chris asked that the researcher request tools to be implemented when they would
+help a strategy. Use the successor research-evidence-continuation lane to deliver
+a versioned typed request, its evidence/purpose/inputs/acceptance checks, durable
+waiting state and ordinary dashboard display in the existing worker/registry.
+Distinguish unavailable capability from an implemented mechanism with missing
+data or current ineligible entry. Keep activity separate from readiness.
+
+The operating pilot is enabled at `9b6fe7011f2ddf739a000d8708ed685c2b3783e5`.
+Its first actual completed answer misread offered range_reversion support and
+created no experiment or continuation. Preserve that original adverse answer,
+all consumed attempts and the exact v5 packet/profile/grant. Prior installed
+receipts, first-startup failure/natural recovery and false strict lifecycle/NAT
+mapping checks remain retained. Do not repeat completed operating acceptance.
+
+This follow-up permits source, isolated QA, independent review, commits/push,
+checkpoint updates and an owning draft PR. Tool requests are proposals, not code
+execution or installation. New v6 inputs need their explicit reviewed profile
+and grant; no existing v5 qualification/attempt permission transfers silently.
+Do not install/restart or dispatch a replacement preferred answer in this source
+follow-up. No model/strategy promotion, holdouts, RAG, training/downloads,
+paid/external review, financial-rule change or new scheduler/backend follows.
+Preserve existing accounting, eligibility, CPU/RSS/time/token/recording/storage
+protections, twenty slots and the 400/100-GB policy. Explicitly select disposable
+QA database settings; never use an operating database as the test fallback.
+
+# Previous direction — October 6, 2026, autonomous paper research pilot (#66)
 
 Chris explicitly authorized: "yes lets enable the research worker and get him
 connected and see how that works out". The current Goal is autonomous,

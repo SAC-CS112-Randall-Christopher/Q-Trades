@@ -12,8 +12,14 @@ from typing import Any
 
 import httpx
 
-from trading.lab_role_contract import contract_hash, packet_json, prompt
-from trading.local_role_model import LocalRoles
+from trading.lab_role_contract import (
+    TOOL_REQUEST_VERSION,
+    VERSION,
+    contract_hash,
+    packet_json,
+    prompt,
+)
+from trading.local_role_model import LocalRoles, check_role_contract
 from trading.numerical_resources import constrain_child
 from trading.ownership import CollectorLock
 from trading.peft_child_owner import ChildOwner, available_memory
@@ -47,6 +53,10 @@ class PeftDevelopmentRoles:
         self._latency_lock = Lock()
         self._guard_observations: list[dict[str, Any]] = []
         self._guard_log: Path | None = None
+
+    @property
+    def role_contract(self) -> str:
+        return VERSION
 
     def authorize_latency_measurement(
         self,
@@ -182,16 +192,18 @@ class PeftDevelopmentRoles:
     @staticmethod
     def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> None:
         """Refuse incompatible inputs before reserving an actual development attempt."""
+        version = check_role_contract(packet, profile)
         if packet.get("retrieval_contract") and (
             profile.get("rag_contract") != packet["retrieval_contract"]
         ):
             raise ValueError("RAG development packet requires its separately reviewed profile")
-        if len(packet_json(packet).encode()) + len(prompt(role).encode()) > 32768:
+        if len(packet_json(packet).encode()) + len(prompt(role, version).encode()) > 32768:
             raise ValueError("Role packet exceeds the development transport allowance")
 
     def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
-        self._consume_latency_authorization(role, packet)
         self.preflight(role, packet, profile)
+        self._consume_latency_authorization(role, packet)
+        version = check_role_contract(packet, profile)
         cfg, selected, current = self.declaration()
         if current != profile or role not in {"researcher", "reviewer"}:
             raise ValueError("Frozen development profile changed before dispatch")
@@ -232,7 +244,7 @@ class PeftDevelopmentRoles:
                 "lab_source_sha256": cfg["lab_source_sha256"],
                 "runner_sha256": profile["runner_sha256"],
                 "role": role,
-                "system": prompt(role),
+                "system": prompt(role, version),
                 "packet_json": serialized,
             }
             with (job / "request.json").open("x", encoding="utf-8") as out:
@@ -493,6 +505,7 @@ class PeftDevelopmentRoles:
 
 
 PAPER_PILOT_FORMAT = "qtrades-peft-paper-pilot-v1"
+PAPER_PILOT_TOOL_FORMAT = "qtrades-peft-paper-pilot-v2"
 
 
 def _role_policy(path: Path) -> dict[str, Any]:
@@ -520,7 +533,7 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
 
     def _grant(self) -> dict[str, Any]:
         grant = _role_policy(self.policy_path)
-        if set(grant) != {
+        expected = {
             "format",
             "enabled",
             "grant_id",
@@ -529,8 +542,15 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             "roles",
             "latency_admission",
             "scope",
-        } or (
-            grant.get("format") != PAPER_PILOT_FORMAT
+        }
+        if grant.get("format") == PAPER_PILOT_TOOL_FORMAT:
+            expected.add("role_contract")
+        if set(grant) != expected or (
+            grant.get("format") not in (PAPER_PILOT_FORMAT, PAPER_PILOT_TOOL_FORMAT)
+            or (
+                grant.get("format") == PAPER_PILOT_TOOL_FORMAT
+                and grant.get("role_contract") != TOOL_REQUEST_VERSION
+            )
             or type(grant.get("enabled")) is not bool
             or grant.get("scope") != "prospective-paper-only"
             or grant.get("latency_admission") != "advisory"
@@ -545,6 +565,11 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             raise ValueError("Declare the explicit bounded trained-v2 paper-pilot grant")
         return grant
 
+    @property
+    def role_contract(self) -> str:
+        with self._policy_lock:
+            return str(self._grant().get("role_contract", VERSION))
+
     def declaration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
         with self._policy_lock:
             grant = self._grant()
@@ -556,6 +581,16 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             self.directory = private
             try:
                 result = super().declaration()
+                if grant.get("role_contract") == TOOL_REQUEST_VERSION:
+                    result = (
+                        result[0],
+                        result[1],
+                        result[2]
+                        | {
+                            "role_contract": TOOL_REQUEST_VERSION,
+                            "contract_sha256": contract_hash(TOOL_REQUEST_VERSION),
+                        },
+                    )
                 if digest(result[2]) != grant["profile_sha256"]:
                     raise ValueError("Paper-pilot grant does not match the frozen model/profile")
             except Exception:
