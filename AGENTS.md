@@ -1,4 +1,26 @@
-# Current direction — October 6, 2026, model child resource repair (#66)
+# Current direction — October 6, 2026, explicit development retest source (#66)
+
+PR #69's independently reviewed child-owner repair is merged and installed at
+`38836fcf335261c9a96b9b68aef1237227ff2aaa` through one authorized guarded
+update. Reuse its bounded preservation/lifetime/recording receipt; do not repeat
+the rollout. The strict collector, direct NAT mapping and early native observer
+keep their documented false results. Historical UI reuse is byte bound; actual
+model coexistence and populated Library/Review acceptance remain unproven.
+
+Chris requested postmerge review and continuation. This successor is source and
+disposable QA only: prepare one explicit append-only retest in the existing
+development worker/CLI, preserving the original failed attempt and allowance.
+Default refusal remains. A separately recorded human grant must bind the exact
+prior failed response, unchanged task/packet/profile, repaired source and finite
+deadline before one new attempt can be reserved atomically. Keep the full guard,
+hourly budgets, frozen profile, disabled operating roles and no teaching export.
+No new question, schema, scheduler, registry or reset is needed. Source checks,
+independent review, commit/push and one draft are authorized; a new merge/update
+and actual model retest require their applicable explicit authority. Do not create
+an operating grant or consume any attempt during source QA. Keep desktop #65,
+compression #64, private Lab, GIS and True to Plan separate.
+
+# Historical direction — October 6, 2026, model child resource repair (#66)
 
 PR #68 is merged and the single authorized policy update is installed at
 `44354feab630caffa188d1e5839407c8f5c838de`. Its bounded preservation receipt
