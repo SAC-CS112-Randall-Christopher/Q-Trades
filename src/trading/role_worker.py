@@ -1842,6 +1842,8 @@ class RoleWorker:
                 "SELECT task AS id FROM role_followups f JOIN role_tasks t ON t.id=f.task "
                 "WHERE f.state='pending' AND f.retry_at<=? "
                 "AND coalesce(json_extract(t.context,'$.execution_mode'),'qualified_roles')=? "
+                "AND (t.archive_reference IS NULL "
+                "OR json_extract(t.context,'$.contract') IS NOT NULL) "
                 "AND coalesce(json_extract(t.context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(t.context,'$.pilot_grant_id')=?) "
                 "AND NOT EXISTS "

@@ -90,6 +90,35 @@ No tokenizer, model weights, private profile or operating endpoint was loaded
 by this comparison. Exact token fit, compatible output and research usefulness
 remain unproved.
 
+## Archived continuation identity — source follow-up
+
+New role-history projections retain the contract explicitly recorded in the
+original task, alongside the existing execution mode and pilot grant. The full
+verified archive still preserves the original context, answers, outcome and
+charged attempts. A matching worker can find an archived v6/v7 comparison and
+queue its existing supported successor once; a different contract or grant
+cannot adopt that comparison.
+
+Older cold projections without a recorded contract remain unresolved and
+ineligible for automatic follow-up. No additional archive read infers their
+contract, assigns a v5 default, migrates their metadata or rewrites their
+original answers. The existing bounded eight-record legacy discovery may still
+verify and reopen an old archive to discover its outcome; it does not restore
+the missing contract or make that task eligible. Ordinary explicit history
+reopening remains available. Existing implicit-v5 hot records retain their
+prior compatibility.
+
+Nine isolated archive/selection cases pass with synthetic callbacks and saved
+synthetic outcomes. They check v6/v7 archive reopening, contract/grant isolation,
+one queued successor across worker restart, unchanged attempt charges and paper
+state, missing cold-contract refusal under v5/v6/v7 with fresh or pending legacy
+discovery, and legacy hot-v5 behavior. The earlier affected source selection
+passed 42 cases and skipped 29 PostgreSQL cases with the database configuration
+explicitly absent; the final expanded task-request selection passed 21 cases
+without skips. These overlapping results do not claim a mature market
+comparison, installed recovery, model usefulness or new investigation
+production. No model or operating database was used.
+
 ## Remaining operator result and authorization
 
 Installed Q-Trades remains at the accepted PR #72 target, with its selected v6

@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 from test_paper_pilot_worker import PilotFixture, question
 from test_paper_pilot_worker import workspace as workspace
+from test_research_storage import plan_at
 
 from trading.api import create_app
 from trading.config import Settings
@@ -19,6 +20,7 @@ from trading.lab_role_contract import (
     VERSION,
     contract_hash,
 )
+from trading.research_storage import save_plan
 from trading.role_worker import RoleWorker
 
 
@@ -275,18 +277,24 @@ def test_v6_adverse_result_and_consumed_allowance_stay_frozen_during_v7_selectio
     assert retained["result"] == catalog_denial() | {"wait_requirement": None}
     old_packet = worker._packet(retained)
     assert all("fixed_comparison" not in value for value in old_packet[1]["capabilities"].values())
-    allowances = [tuple(row) for row in worker.registry.db.execute(
-        "SELECT * FROM role_attempt_allowances ORDER BY task,stage,attempt"
-    ).fetchall()]
+    allowances = [
+        tuple(row)
+        for row in worker.registry.db.execute(
+            "SELECT * FROM role_attempt_allowances ORDER BY task,stage,attempt"
+        ).fetchall()
+    ]
     worker.transport = CapabilityFixture()
     assert worker.enqueue(question("old-v6-adverse"), clock[0])["id"] == original["id"]
     assert worker._packet(worker.get(original["id"])) == old_packet
     assert worker.get(original["id"]) == retained
     assert worker.view(original["id"])["contract_applicability"]["state"] == "different"
     assert not asyncio.run(worker.step(clock[0])) and not worker.transport.calls
-    assert [tuple(row) for row in worker.registry.db.execute(
-        "SELECT * FROM role_attempt_allowances ORDER BY task,stage,attempt"
-    ).fetchall()] == allowances
+    assert [
+        tuple(row)
+        for row in worker.registry.db.execute(
+            "SELECT * FROM role_attempt_allowances ORDER BY task,stage,attempt"
+        ).fetchall()
+    ] == allowances
 
 
 def test_v7_invalid_catalog_denial_is_retained_without_experiment_tool_or_retry(workspace):
@@ -332,3 +340,189 @@ def test_v7_legitimate_tool_request_remains_pending_review_without_automatic_cal
     assert worker.select_followups()["selected"] == 0
     assert not asyncio.run(worker.step(clock[0] + 120))
     assert len(worker.transport.calls) == 1 and worker.controller.paper.state == before
+
+
+def completed_archive_fixture(worker, clock, directory, model):
+    """Saved synthetic outcome exercises continuation; no paper comparison or model runs."""
+    worker.transport = model
+    save_plan(directory, plan_at(directory))
+    task = worker.enqueue(question("archive-contract-followup"), clock[0])
+    assert asyncio.run(worker.step(clock[0]))
+    original = worker.get(task["id"])
+    method = original["context"]["catalog"]["r0"]
+    proposal = {
+        "request_id": "synthetic-archive-proposal",
+        "parent_trial": None,
+        "mechanism": "Synthetic archive continuation, not measured strategy benefit.",
+        "strategy": method["strategy"],
+        "reference": method["reference"],
+    }
+    score = {
+        "proposal_id": proposal["request_id"],
+        "outcome": "inconclusive",
+        "reason": "Synthetic saved comparison; no economic evidence.",
+        "available_at": clock[0],
+        "window_start": clock[0] - 3600,
+        "net_after_operating_usd": "0",
+        "delta_usd": "0",
+        "passive_usd": "0",
+        "cash_usd": "100",
+        "operating_each_usd": "0",
+        "fees_treatment": "Synthetic values; no financial authority",
+        "coverage_seconds": 3600,
+    }
+    worker._update(
+        original,
+        "complete",
+        "done",
+        proposal=proposal,
+        result={
+            "outcome": {"body": score, "sha256": fingerprint(score)},
+            "followup": {
+                "action": "propose_experiment",
+                "capability": "r1",
+                "falsification": "Can a supported different synthetic method falsify this lesson?",
+                "dependency": None,
+            },
+        },
+        reason="Synthetic archived comparison fixture only",
+    )
+    return worker.get(task["id"])
+
+
+@pytest.mark.parametrize("model_type", [ToolFixture, CapabilityFixture], ids=["v6", "v7"])
+def test_archived_contract_preserves_once_only_followup_eligibility(
+    workspace, monkeypatch, model_type
+):
+    worker, clock, directory = workspace
+    original_state = copy.deepcopy(worker.controller.paper.state)
+    model = model_type()
+    before = completed_archive_fixture(worker, clock, directory, model)
+    allowances = [
+        tuple(row)
+        for row in worker.registry.db.execute(
+            "SELECT * FROM role_attempt_allowances ORDER BY task,stage,attempt"
+        )
+    ]
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    worker.history.rollover()
+    row = worker.registry.db.execute(
+        "SELECT * FROM role_tasks WHERE id=?", (before["id"],)
+    ).fetchone()
+    compact = json.loads(row["context"])
+    assert compact["contract"] == before["context"]["contract"] == model.role_contract
+    assert compact["execution_mode"] == before["context"]["execution_mode"]
+    assert compact["pilot_grant_id"] == before["context"]["pilot_grant_id"]
+    assert row["archive_reference"] and row["archive_sha256"]
+    reopened = RoleWorker(worker.registry, worker.controller, model)
+    retained = reopened.get(before["id"])
+    for key in ("context", "proposal", "result", "attempts"):
+        assert retained[key] == before[key]
+    model.role_contract = VERSION
+    assert reopened.select_followups() == {"selected": 0, "waiting": 0}
+    model.role_contract = before["context"]["contract"]
+    model.grant_id = "replacement-pilot-grant"
+    assert reopened.select_followups() == {"selected": 0, "waiting": 0}
+    model.grant_id = before["context"]["pilot_grant_id"]
+    assert reopened.select_followups() == {"selected": 1, "waiting": 0}
+    selection = worker.registry.db.execute("SELECT * FROM research_selection").fetchone()
+    next_task = reopened.get(selection["next_task"])
+    assert next_task["context"]["contract"] == model.role_contract
+    assert next_task["context"]["pilot_grant_id"] == before["context"]["pilot_grant_id"]
+    assert next_task["attempts"] == [] and next_task["status"] == "queued"
+    restarted = RoleWorker(worker.registry, worker.controller, model)
+    assert restarted.select_followups() == {"selected": 0, "waiting": 0}
+    assert worker.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 2
+    assert [
+        tuple(row)
+        for row in worker.registry.db.execute(
+            "SELECT * FROM role_attempt_allowances ORDER BY task,stage,attempt"
+        )
+    ] == allowances
+    assert restarted.get(before["id"]) == retained
+    assert len(model.calls) == 1 and worker.controller.paper.state == original_state
+
+
+def test_archived_contract_gate_preserves_implicit_legacy_hot_v5_followup(workspace):
+    worker, clock, directory = workspace
+    original_state = copy.deepcopy(worker.controller.paper.state)
+    model = worker.transport  # Existing default-v5 synthetic callback.
+    before = completed_archive_fixture(worker, clock, directory, model)
+    assert before["context"]["contract"] == VERSION and before["archive_reference"] is None
+    context = copy.deepcopy(before["context"])
+    context.pop("contract")
+    with worker.registry.transaction():
+        worker.registry.db.execute(
+            "UPDATE role_tasks SET context=? WHERE id=?", (json.dumps(context), before["id"])
+        )
+    assert worker.select_followups() == {"selected": 1, "waiting": 0}
+    assert worker.select_followups() == {"selected": 0, "waiting": 0}
+    assert worker.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 2
+    assert worker.get(before["id"])["context"] == context
+    assert len(model.calls) == 1 and worker.controller.paper.state == original_state
+
+
+@pytest.mark.parametrize("selected", [VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION])
+@pytest.mark.parametrize("pending_backfill", [False, True], ids=["fresh", "legacy-backfill"])
+def test_archived_contract_missing_from_old_projection_is_not_inferred_or_selected(
+    workspace, monkeypatch, selected, pending_backfill
+):
+    worker, clock, directory = workspace
+    original_state = copy.deepcopy(worker.controller.paper.state)
+    model = ToolFixture()
+    before = completed_archive_fixture(worker, clock, directory, model)
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    worker.history.rollover()
+    row = worker.registry.db.execute(
+        "SELECT * FROM role_tasks WHERE id=?", (before["id"],)
+    ).fetchone()
+    compact = json.loads(row["context"])
+    compact.pop("contract", None)  # Represent only an older disposable compact projection.
+    with worker.registry.transaction():
+        worker.registry.db.execute(
+            "UPDATE role_tasks SET context=? WHERE id=?",
+            (json.dumps(compact), before["id"]),
+        )
+        if pending_backfill:
+            worker.registry.db.execute(
+                "UPDATE role_followup_backfill SET "
+                "through=(SELECT max(rowid) FROM role_tasks),cursor=0,retry_at=0,reason=NULL "
+                "WHERE id=1"
+            )
+    retained_row = dict(
+        worker.registry.db.execute(
+            "SELECT * FROM role_tasks WHERE id=?", (before["id"],)
+        ).fetchone()
+    )
+    model.role_contract = selected
+    reopened = RoleWorker(worker.registry, worker.controller, model)
+    archive_reads = []
+    read = reopened.history.read
+
+    def verified_legacy_read(row):
+        assert pending_backfill, "Missing contract cannot cause an additional archive read"
+        archive_reads.append(row["id"])
+        return read(row)
+
+    monkeypatch.setattr(reopened.history, "read", verified_legacy_read)
+    assert reopened.select_followups() == {"selected": 0, "waiting": 0}
+    assert archive_reads == ([before["id"]] if pending_backfill else [])
+    assert reopened.select_followups() == {"selected": 0, "waiting": 0}
+    assert archive_reads == ([before["id"]] if pending_backfill else [])
+    if pending_backfill:
+        migration = worker.registry.db.execute("SELECT * FROM role_followup_backfill").fetchone()
+        assert migration["cursor"] == migration["through"]
+    assert (
+        dict(
+            worker.registry.db.execute(
+                "SELECT * FROM role_tasks WHERE id=?", (before["id"],)
+            ).fetchone()
+        )
+        == retained_row
+    )
+    assert worker.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 1
+    assert worker.registry.db.execute("SELECT count(*) FROM research_lessons").fetchone()[0] == 0
+    assert worker.registry.db.execute("SELECT state FROM role_followups").fetchone()[0] == "pending"
+    assert worker.get(before["id"])["context"] == before["context"]
+    assert worker.get(before["id"])["attempts"] == before["attempts"]
+    assert len(model.calls) == 1 and worker.controller.paper.state == original_state
