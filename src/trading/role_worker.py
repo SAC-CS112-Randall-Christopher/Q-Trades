@@ -1,6 +1,7 @@
 """Optional sequential local roles in the existing registry, outside financial locks."""
 
 import asyncio
+import hashlib
 import json
 import math
 import secrets
@@ -8,6 +9,7 @@ import sqlite3
 import time
 from collections.abc import Callable
 from contextlib import nullcontext
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import psycopg
@@ -20,6 +22,7 @@ from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import VERSION, Idea, Review, validate
 from trading.local_role_model import LocalRoles
+from trading.peft_profile import PROFILE, digest
 from trading.peft_role_model import DevelopmentTransportFailure
 from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
 
@@ -40,6 +43,25 @@ from trading.rule_components import reviewed_feature
 from trading.scoped_tools import reader
 
 RETRIEVAL_CONTRACT = "source-rag-v1"
+RESOURCE_RETEST_FAILURE_FIELDS = frozenset(
+    {
+        "kind",
+        "complete",
+        "status",
+        "exception_type",
+        "private_job",
+        "wall_seconds",
+        "peak_rss_bytes",
+        "rss_observations",
+        "exit_code",
+        "child_terminated",
+        "cleanup_complete",
+        "cleanup_error_types",
+        "profile_sha256",
+        "private_dispatch_retained",
+        "scope",
+    }
+)
 
 
 class Question(BaseModel):
@@ -49,6 +71,92 @@ class Question(BaseModel):
     parent: str | None = Field(default=None, max_length=100)
     request_id: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{8,64}$")
     lesson: str | None = Field(default=None, pattern=r"^lesson-[a-f0-9]{32}$")
+
+
+class ResourceRetestAuthorization(BaseModel):
+    """Bounded caller evidence for one resource-repair retest, not a human grant."""
+
+    model_config = ConfigDict(
+        extra="forbid", strict=True, frozen=True, revalidate_instances="always"
+    )
+    format: Literal["qtrades-development-resource-retest-v1"]
+    grant_id: str = Field(pattern=r"^[A-Za-z0-9_-]{8,64}$")
+    task: str = Field(pattern=r"^role-[a-f0-9]{32}$")
+    stage: Literal["development_idea", "development_review", "development_followup"]
+    task_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    prior_attempt_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    packet_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    profile_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    owner_source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    transport_source_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    expires_at: float = Field(gt=0, allow_inf_nan=False)
+
+    def remaining(self, deadline: float | None) -> float:
+        if (
+            isinstance(deadline, bool)
+            or not isinstance(deadline, (int, float))
+            or not math.isfinite(deadline)
+        ):
+            raise ValueError("Resource-repair retest requires a finite cancellation deadline")
+        remaining = deadline - time.monotonic()
+        if not 0 < remaining <= PROFILE["timeout_seconds"]:
+            raise ValueError("Resource-repair retest deadline expired or exceeds the frozen limit")
+        if not time.time() < self.expires_at:
+            raise ValueError("Resource-repair retest authorization expired")
+        return remaining
+
+    def check(
+        self,
+        task: dict[str, Any],
+        prior: dict[str, Any] | None,
+        packet: dict[str, Any],
+        deadline: float | None,
+        profile: dict[str, Any] | None = None,
+    ) -> None:
+        self.remaining(deadline)
+        if not prior or prior["attempt"] != 1 or prior["status"] != "failed":
+            raise ValueError("Resource-repair retest requires only the original failed attempt one")
+        response = json.loads(prior["response"]) if prior["response"] else None
+        if (
+            not isinstance(response, dict)
+            or set(response) != RESOURCE_RETEST_FAILURE_FIELDS
+            or response.get("kind") != "development_transport_failure"
+            or response.get("status") != "cancelled"
+            or response.get("complete") is not False
+            or response.get("child_terminated") is not True
+            or response.get("cleanup_complete") is not True
+            or response.get("cleanup_error_types") != []
+            or response.get("private_dispatch_retained") is not True
+            or isinstance(response.get("exit_code"), bool)
+            or not isinstance(response.get("exit_code"), int)
+            or any(key in response for key in ("answer", "raw_answer", "transport_failure"))
+            or prior["finished"] is None
+            or not math.isfinite(prior["finished"])
+            or prior["finished"] < prior["started"]
+        ):
+            raise ValueError(
+                "Resource-repair retest needs known cancelled cleanup without an answer"
+            )
+        frozen_profile = json.loads(prior["profile"])
+        source = Path(__file__).parent
+        if (
+            task["id"] != self.task
+            or "development_" + task["stage"] != self.stage
+            or prior["task"] != self.task
+            or prior["stage"] != self.stage
+            or fingerprint(task) != self.task_sha256
+            or fingerprint(prior) != self.prior_attempt_sha256
+            or fingerprint(packet) != self.packet_sha256
+            or fingerprint(json.loads(prior["packet"])) != self.packet_sha256
+            or digest(frozen_profile) != self.profile_sha256
+            or response.get("profile_sha256") != self.profile_sha256
+            or (profile is not None and profile != frozen_profile)
+            or hashlib.sha256((source / "peft_child_owner.py").read_bytes()).hexdigest()
+            != self.owner_source_sha256
+            or hashlib.sha256((source / "peft_role_model.py").read_bytes()).hexdigest()
+            != self.transport_source_sha256
+        ):
+            raise ValueError("Resource-repair retest authorization does not match frozen bindings")
 
 
 class RoleWorker:
@@ -948,7 +1056,14 @@ class RoleWorker:
             )
         return result
 
-    async def development_answer(self, identity: str, transport: Any) -> Idea | Review:
+    async def development_answer(
+        self,
+        identity: str,
+        transport: Any,
+        *,
+        resource_retest_authorization: ResourceRetestAuthorization | None = None,
+        cancel_at_monotonic: float | None = None,
+    ) -> Idea | Review:
         """Answer one normal frozen packet, without advancing its operating stage."""
         if self.enabled or (self.activation and self.activation()):
             raise ValueError("Development answers require operating research disabled")
@@ -963,17 +1078,39 @@ class RoleWorker:
         # Development is retained by ordinary history/cost accounting, but cannot
         # become _answer's qualified operating answer for this task/stage.
         stage = "development_" + task["stage"]
+        authorization = (
+            ResourceRetestAuthorization.model_validate(resource_retest_authorization)
+            if resource_retest_authorization is not None
+            else None
+        )
         with self.registry.lock:
-            previous = self.registry.db.execute(
+            retained = self.registry.db.execute(
                 "SELECT * FROM role_attempts WHERE task=? AND stage=? "
-                "ORDER BY attempt DESC LIMIT 1",
+                "ORDER BY attempt DESC LIMIT 2",
                 (identity, stage),
+            ).fetchall()
+            previous = retained[0] if retained else None
+            original_task = self.registry.db.execute(
+                "SELECT * FROM role_tasks WHERE id=?", (identity,)
             ).fetchone()
-        if previous:
+        if authorization is not None:
+            if len(retained) != 1:
+                raise ValueError(
+                    "Resource-repair retest requires only the original failed attempt one"
+                )
+            authorization.check(
+                dict(original_task),
+                dict(previous) if previous else None,
+                packet,
+                cancel_at_monotonic,
+            )
+        elif previous:
             if fingerprint(json.loads(previous["packet"])) != fingerprint(packet):
                 raise ValueError(
                     "Completed development answer belongs to a different frozen packet"
                 )
+            if previous["attempt"] == 2 and previous["status"] != "answered":
+                raise ValueError("Retained resource-repair retest failed; no invisible retry")
             if not previous["response"]:
                 raise ValueError("Previous development completion unknown; no invisible retry")
             response = json.loads(previous["response"])
@@ -984,13 +1121,22 @@ class RoleWorker:
             if not response.get("complete"):
                 raise ValueError("Retained development response is incomplete")
             return validate(role, response["answer"], packet)
-        profile = await asyncio.to_thread(transport.development_admit, role)
+        admission_remaining = (
+            authorization.remaining(cancel_at_monotonic) if authorization is not None else None
+        )
+        admission = asyncio.to_thread(transport.development_admit, role)
+        profile = (
+            await asyncio.wait_for(admission, timeout=admission_remaining)
+            if authorization is not None
+            else await admission
+        )
         if profile.get("development_only") is not True:
             raise ValueError("Development needs its explicitly frozen separate profile")
         preflight = getattr(transport, "preflight", None)
         if callable(preflight):
             preflight(role, packet, profile)
         started = time.time()
+        attempt = 2 if authorization is not None else 1
         with self.registry.transaction():
             current = self.registry.db.execute(
                 "SELECT * FROM role_tasks WHERE id=?", (identity,)
@@ -1006,6 +1152,25 @@ class RoleWorker:
                 )
             ):
                 raise ValueError("Role question changed before development admission")
+            if authorization is not None:
+                retained = self.registry.db.execute(
+                    "SELECT * FROM role_attempts WHERE task=? AND stage=? "
+                    "ORDER BY attempt DESC LIMIT 2",
+                    (identity, stage),
+                ).fetchall()
+                if len(retained) != 1:
+                    raise ValueError(
+                        "Resource-repair retest requires only the original failed attempt one"
+                    )
+                authorization.check(
+                    dict(current),
+                    dict(retained[0]),
+                    packet,
+                    cancel_at_monotonic,
+                    profile,
+                )
+                if self.enabled or (self.activation and self.activation()):
+                    raise ValueError("Development answers require operating research disabled")
             used = self.registry.db.execute(
                 "SELECT coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
                 "FROM role_attempt_allowances WHERE started>=? AND actor IS NULL",
@@ -1017,10 +1182,11 @@ class RoleWorker:
                 raise InputWait("Existing role allowance constrains this development attempt")
             self.registry.db.execute(
                 "INSERT INTO role_attempts(task,stage,attempt,started,status,profile,packet,"
-                "wall_reserved,tokens_reserved) VALUES(?,?,1,?,'running',?,?,?,?)",
+                "wall_reserved,tokens_reserved) VALUES(?,?,?,?,'running',?,?,?,?)",
                 (
                     identity,
                     stage,
+                    attempt,
                     started,
                     json.dumps(profile),
                     json.dumps(packet),
@@ -1028,18 +1194,49 @@ class RoleWorker:
                     profile["token_allowance"],
                 ),
             )
+            if authorization is not None:
+                evidence = authorization.model_dump()
+                self.registry.event(
+                    identity,
+                    "development_resource_retest_reserved",
+                    {
+                        "attempt": attempt,
+                        "prior_attempt": 1,
+                        "authorization": evidence,
+                        "authorization_sha256": fingerprint(evidence),
+                        "scope": "Caller evidence for separate human grant; no operating authority",
+                    },
+                )
         try:
+            remaining = (
+                authorization.remaining(cancel_at_monotonic) if authorization is not None else None
+            )
             work = asyncio.create_task(asyncio.to_thread(transport.infer, role, packet, profile))
             cancelled = None
             try:
-                response = await asyncio.shield(work)
-            except asyncio.CancelledError as interrupted:
+                response = (
+                    await asyncio.wait_for(asyncio.shield(work), timeout=remaining)
+                    if authorization is not None
+                    else await asyncio.shield(work)
+                )
+            except (asyncio.CancelledError, TimeoutError) as interrupted:
+                if isinstance(interrupted, TimeoutError) and authorization is None:
+                    raise
                 cancelled = interrupted
                 if hasattr(transport, "cancel"):
                     transport.cancel()
                 # Retain a response that won the race with cancellation, or wait
                 # for owned termination before releasing this attempt's costs.
-                response = await work
+                # Further cancellation must not cancel the to-thread task or
+                # discard its eventual original response/cleanup receipt.
+                while True:
+                    try:
+                        response = await asyncio.shield(work)
+                        break
+                    except asyncio.CancelledError:
+                        if work.done():
+                            response = work.result()
+                            break
             body = json.dumps(response, sort_keys=True, allow_nan=False)
             if len(body.encode()) > 32768:
                 raise ValueError("Development final output exceeds the retained answer bound")
@@ -1047,8 +1244,8 @@ class RoleWorker:
                 saved = self.registry.db.execute(
                     "UPDATE role_attempts SET response=?,finished=?,status='answered',"
                     "wall_reserved=max(wall_reserved,?-started) "
-                    "WHERE task=? AND stage=? AND attempt=1",
-                    (body, time.time(), time.time(), identity, stage),
+                    "WHERE task=? AND stage=? AND attempt=?",
+                    (body, time.time(), time.time(), identity, stage, attempt),
                 )
                 if saved.rowcount != 1:
                     raise ValueError("Development answer has no retained attempt; repair required")
@@ -1078,7 +1275,7 @@ class RoleWorker:
                 self.registry.db.execute(
                     "UPDATE role_attempts SET finished=?,status='failed',reason=?,"
                     "wall_reserved=max(wall_reserved,?-started),response=coalesce(response,?) "
-                    "WHERE task=? AND stage=? AND attempt=1",
+                    "WHERE task=? AND stage=? AND attempt=?",
                     (
                         time.time(),
                         type(exc).__name__ + ": " + str(exc)[:400],
@@ -1086,6 +1283,7 @@ class RoleWorker:
                         failure_body,
                         identity,
                         stage,
+                        attempt,
                     ),
                 )
             raise

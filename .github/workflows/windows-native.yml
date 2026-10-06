@@ -73,6 +73,7 @@ jobs:
             tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
             tests/test_role_readiness.py tests/test_peft_development.py tests/test_peft_loader_contract.py `
             tests/test_development_failure_receipts.py `
+            tests/test_development_resource_retest.py `
             tests/test_peft_child_owner.py tests/test_peft_child_resource_integration.py `
             tests/test_strategy_diagnosis.py `
             tests/test_request_counts.py `
