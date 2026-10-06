@@ -6,8 +6,10 @@ from copy import deepcopy
 from decimal import Decimal as D
 from typing import Any
 
+from trading.account_purpose import event_research_eligible, research_account
 from trading.execution_profiles import execution, floor_step
 from trading.execution_replay import hydrated_frames, ordered_state, run_replay, source_hashes
+from trading.execution_window import diagnostic_admission
 from trading.paper_economics import sample
 from trading.paper_engine import PaperEngine
 from trading.research_evidence import digest
@@ -55,6 +57,8 @@ class ComponentEngine(PaperEngine):
         frame: dict[str, Any],
         feature: dict[str, Any],
     ) -> str:
+        if not research_account(a, name):
+            return super().enter(name, a, symbol, frame, feature)
         if (name, symbol, self.now) not in self.entry_schedule:
             return "Matched-entry replay: no recorded baseline entry at this point"
         if self.mode != "component_size":
@@ -94,6 +98,9 @@ class ComponentEngine(PaperEngine):
         frame: dict[str, Any],
         feature: dict[str, Any],
     ) -> None:
+        if not research_account(a, name):
+            super().exit_position(name, a, symbol, frame, feature)
+            return
         super().exit_position(
             name, a, symbol, frame, feature
         )  # Stops/failure management remain first.
@@ -260,13 +267,17 @@ def component_replay(records: list[dict[str, Any]], mode: str, plan: Any) -> dic
         (e["account"], e["body"]["symbol"], p["at"])
         for p in packets
         for e in p["events"]
-        if e["kind"] == "order_intent" and e["body"].get("side") == "buy"
+        if e["kind"] == "order_intent"
+        and e["body"].get("side") == "buy"
+        and event_research_eligible(e)
     }
     original_entries = [
         (e["account"], e["body"]["symbol"], p["at"], e["body"]["quantity"])
         for p in packets
         for e in p["events"]
-        if e["kind"] == "order_intent" and e["body"].get("side") == "buy"
+        if e["kind"] == "order_intent"
+        and e["body"].get("side") == "buy"
+        and event_research_eligible(e)
     ]
     state = ordered_state(packets[0])
     beginning = {name: sample(a, packets[0]["at"]) for name, a in state["accounts"].items()}
@@ -277,13 +288,19 @@ def component_replay(records: list[dict[str, Any]], mode: str, plan: Any) -> dic
             if key in packet["state_before"]:
                 state[key] = deepcopy(packet["state_before"][key])
         engine = ComponentEngine(state, packet["at"], mode, schedule)
-        engine.tick(hydrated_frames(packet), deepcopy(packet["study"]))
+        engine.tick(
+            hydrated_frames(packet),
+            deepcopy(packet["study"]),
+            diagnostic_allowed=diagnostic_admission(packet),
+        )
         engine.assert_invariants()
         events.extend(engine.events)
         buys.extend(
             (e["account"], e["body"]["symbol"], packet["at"], e["body"]["quantity"])
             for e in engine.events
-            if e["kind"] == "order_intent" and e["body"].get("side") == "buy"
+            if e["kind"] == "order_intent"
+            and e["body"].get("side") == "buy"
+            and event_research_eligible(e)
         )
     matched = (
         buys == original_entries
@@ -295,12 +312,12 @@ def component_replay(records: list[dict[str, Any]], mode: str, plan: Any) -> dic
         (e["account"], e["body"].get("symbol"), e["at"], e["body"].get("quantity"))
         for p in packets
         for e in p["events"]
-        if e["kind"] == "fill" and e["body"].get("side") == "sell"
+        if e["kind"] == "fill" and e["body"].get("side") == "sell" and event_research_eligible(e)
     }
     changed_sells = {
         (e["account"], e["body"].get("symbol"), e["at"], e["body"].get("quantity"))
         for e in events
-        if e["kind"] == "fill" and e["body"].get("side") == "sell"
+        if e["kind"] == "fill" and e["body"].get("side") == "sell" and event_research_eligible(e)
     }
     original_sizes = {b[:3]: b[3] for b in original_entries}
     changed_sizes = {b[:3]: b[3] for b in buys}
@@ -320,6 +337,8 @@ def component_replay(records: list[dict[str, Any]], mode: str, plan: Any) -> dic
     }
     accounts = []
     for name, a in state["accounts"].items():
+        if not research_account(a, name):
+            continue
         final = sample(a, packets[-1]["at"])
         start = beginning[name]
         pnl = (
@@ -350,7 +369,7 @@ def component_replay(records: list[dict[str, Any]], mode: str, plan: Any) -> dic
         reason="Finite modeled slice; no continuous horizon or prospective advantage",
         accounts=accounts,
         matched_entries=matched,
-        events=events,
+        events=[event for event in events if event_research_eligible(event)],
         baseline_reconciled=True,
         boundary=base["coverage"],
         observed_post_entry_paths=base["scenarios"][0]["observed_paths"],

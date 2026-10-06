@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from trading.account_purpose import is_performance_diagnostic
 from trading.paper_engine import PaperEngine
 
 
@@ -215,7 +216,7 @@ class ExecutionWindow:
 
 def tick_preamble(engine: PaperEngine, command: dict[str, Any]) -> None:
     """The original runtime operations, replayed from recorded typed inputs only."""
-    if set(command) != {
+    required = {
         "feed_model",
         "status_changed",
         "errors",
@@ -224,8 +225,11 @@ def tick_preamble(engine: PaperEngine, command: dict[str, Any]) -> None:
         "universe_plan",
         "bars_added",
         "book_sequences",
-    }:
+    }
+    if set(command) not in (required, required | {"diagnostic_allowed"}):
         raise ValueError("Unsupported pre-tick command")
+    if "diagnostic_allowed" in command and type(command["diagnostic_allowed"]) is not bool:
+        raise ValueError("Invalid diagnostic admission observation")
     if not isinstance(command["feed_model"], str) or type(command["status_changed"]) is not bool:
         raise ValueError("Invalid pre-tick feed status")
     if type(command["bars_added"]) is not int or command["bars_added"] < 0:
@@ -274,8 +278,26 @@ def replay_preamble(engine: PaperEngine, packet: dict[str, Any]) -> None:
         tick_preamble(engine, packet["pre_tick"])
 
 
+def diagnostic_admission(packet: dict[str, Any]) -> bool:
+    value = packet.get("diagnostic_allowed", packet.get("pre_tick", {}).get("diagnostic_allowed"))
+    if value is None:
+        if any(
+            is_performance_diagnostic(a, name)
+            for name, a in packet.get("state_before", {}).get("accounts", {}).items()
+        ):
+            raise ValueError("Diagnostic admission observation was not recorded")
+        return True  # Historical packets without a diagnostic account need no such input.
+    if type(value) is not bool:
+        raise ValueError("Invalid recorded diagnostic admission observation")
+    return value
+
+
 def replay_tick(engine: PaperEngine, packet: dict[str, Any], frames: dict[str, Any]) -> None:
     from copy import deepcopy
 
     replay_preamble(engine, packet)
-    engine.tick(frames, deepcopy(packet["study"]))
+    engine.tick(
+        frames,
+        deepcopy(packet["study"]),
+        diagnostic_allowed=diagnostic_admission(packet),
+    )

@@ -242,6 +242,9 @@ def evaluate_families(
 def validate_artifact(artifact: dict[str, Any]) -> None:
     if not isinstance(artifact, dict):
         raise ValueError("Frozen artifact is unavailable")
+    from trading.account_purpose import require_research_provenance
+
+    require_research_provenance(artifact)
     if artifact.get("version") == "memory-entry-v1":
         from trading.memory_quality import validate_artifact as validate_memory
 

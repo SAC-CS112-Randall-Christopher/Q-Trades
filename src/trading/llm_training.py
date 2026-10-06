@@ -73,6 +73,11 @@ class Candidate(Checked):
 
     @model_validator(mode="after")
     def intact(self) -> Self:
+        from trading.account_purpose import require_research_provenance
+
+        require_research_provenance(self.packet)
+        if self.observed_source is not None:
+            require_research_provenance(self.observed_source.original_record)
         if self.source_kind == "instructional":
             if (
                 self.authorship is None
@@ -238,6 +243,9 @@ def candidate_from_instruction(
 
 def candidate_from_task(task: dict[str, Any], stage: str, attempt: int) -> dict[str, Any]:
     """Use the retained request, never regenerate today's packet for an old answer."""
+    from trading.account_purpose import require_research_provenance
+
+    require_research_provenance(task.get("context"))
     if stage not in {"idea", "review", "followup"}:
         raise ValueError("Select an actual model-attempt stage")
     if task["context"]["contract"] != VERSION:
@@ -292,6 +300,9 @@ def candidate_from_episode(
     record: dict[str, Any], *, question: str, role: str, author: str, authored_at: float
 ) -> dict[str, Any]:
     """Teach interpretation of an original result, without inventing historical intent."""
+    from trading.account_purpose import require_research_provenance
+
+    require_research_provenance(record)
     if record["status"] not in {"completed", "failed", "rejected", "cancelled"}:
         raise ValueError("Episode is not a retained terminal observation")
     finished = record.get("finished")

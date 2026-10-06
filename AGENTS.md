@@ -1,4 +1,32 @@
-# Current direction — October 6, 2026, model child resource repair (#66)
+# Current direction — October 6, 2026, Performance Diagnostic account (#66)
+
+Chris authorized one Performance Diagnostic paper account with much more fake
+capital and varied random trading to test application performance. This lane
+uses $1,000,000 fake capital, the existing paper engine, exclusive financial
+writer, twenty-slot capacity, accounting and recording owners. Diagnostic trades
+remain in the shared truthful financial/research archives, clearly marked as
+random performance activity. Their returns do not automatically establish
+strategy value, promotion or training eligibility. No separate database or
+serving backend is part of the product.
+
+Implement and verify the normal Accounts create/start/stop/history/Journal flow
+in isolated native QA. Retain actual fills, incomplete/failed attempts, lost
+acknowledgments and bounded recovery. Preserve original accounts, funding,
+history, evidence, decisions, financial/resource protections and storage policy.
+Source commits/push, a draft PR and checkpoint publication are authorized. This
+source proposal does not itself authorize a new operating code rollout or service
+restart. Chris subsequently said "ok run that now with the language model":
+this separately authorizes one new finite performance-only trained-v2 request
+alongside disposable native paper/SQL/capture QA, using the same private registry,
+model owner, unchanged guard and frozen profile. Preserve the original question's
+two consumed attempts and allowances; do not retry it or activate research.
+Retain and reopen the new request's actual outcome and owned-child cleanup.
+Reuse the accepted installation at
+`38836fcf335261c9a96b9b68aef1237227ff2aaa` and its prior receipts; do not repeat
+completed installation acceptance. See `docs/reviews/PERFORMANCE_DIAGNOSTICS.md`
+for the fixed finite workload, verified scopes and remaining installed gap.
+
+# Historical direction — October 6, 2026, model child resource repair (#66)
 
 PR #68 is merged and the single authorized policy update is installed at
 `44354feab630caffa188d1e5839407c8f5c838de`. Its bounded preservation receipt

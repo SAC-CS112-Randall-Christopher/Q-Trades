@@ -10,6 +10,7 @@ from typing import Any
 import psycopg
 
 from trading import autonomous_finance as finance
+from trading.account_purpose import research_account
 from trading.autonomous_spec import ORIGINALS, LabPolicy, LabProposal, RuleSpec
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_proposals import LabProposals
@@ -37,15 +38,13 @@ class AutonomousLab:
     def start(self, policy: LabPolicy) -> dict[str, Any]:
         self.paper.require_healthy_control()
         result: dict[str, Any] = {}
-        self.paper.state = self.paper.store.transact(
-            time.time(), lambda e: result.update(finance.start(e, policy))
-        )
+        self.paper._transact_state(time.time(), lambda e: result.update(finance.start(e, policy)))
         return result
 
     def control(self, action: str, target: str | None) -> dict[str, Any]:
         self.paper.require_healthy_control()
         result: dict[str, Any] = {}
-        self.paper.state = self.paper.store.transact(
+        self.paper._transact_state(
             time.time(), lambda e: result.update(finance.control(e, action, target))
         )
         return result
@@ -103,9 +102,11 @@ class AutonomousLab:
                         "training_only": True,
                     }
                 )
-        recent = self.paper.store.connection.execute(
-            "SELECT body FROM paper_events WHERE kind='lab_trial_scored' ORDER BY id DESC LIMIT 12"
-        ).fetchall()
+        with self.paper.store.transaction_lock:
+            recent = self.paper.store.connection.execute(
+                "SELECT body FROM paper_events "
+                "WHERE kind='lab_trial_scored' ORDER BY id DESC LIMIT 12"
+            ).fetchall()
         keys = (
             "trial_id",
             "proposal_id",
@@ -246,6 +247,7 @@ class AutonomousLab:
             parent_account = self.paper.state["accounts"].get(parent["candidate"], {})
             if (
                 not parent_account
+                or not research_account(parent_account, parent["candidate"])
                 or parent_account.get("risk_stop_id")
                 or parent_account.get("fault")
                 or parent_account.get("lab_retiring")
@@ -581,6 +583,7 @@ class AutonomousLab:
                     "entries_paused": a.get("entries_paused", False),
                 }
                 for n, a in self.paper.state["accounts"].items()
+                if research_account(a, n)
             },
             "inbox": self.inbox.page(),
             "last_error": self.last_error,

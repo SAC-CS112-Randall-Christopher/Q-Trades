@@ -115,12 +115,16 @@ class TieredPaperRuntime(PaperRuntime):
 
     def constrained(self, observed_mono: float | None = None) -> bool:
         observed_mono = time.monotonic() if observed_mono is None else observed_mono
-        return (
-            not self._work_pressure.evaluate(observed_mono).pressure_allows
-            or self.disk_free < 5 * 1024**3
-            or self._capture_failure is not None
-            or self.readback_unavailable(observed_mono)
-        )
+        with self._work_pressure.lock:
+            return (
+                not self._work_pressure.evaluate(observed_mono).pressure_allows
+                or self.disk_free < 5 * 1024**3
+                or self._capture_failure is not None
+                or self.readback_unavailable(observed_mono)
+            )
+
+    def diagnostic_entries_allowed(self) -> bool:
+        return super().diagnostic_entries_allowed() and not self.constrained()
 
     def readback_unavailable(self, observed_mono: float | None = None) -> bool:
         return bool(self.journal_status(observed_mono)["status"] != "balanced")
@@ -128,27 +132,42 @@ class TieredPaperRuntime(PaperRuntime):
     def journal_status(self, observed_mono: float | None = None) -> dict[str, Any]:
         error = self._readback_error or (
             "Financial history or storage refresh unavailable"
-            if self._readback_sample and self._readback_sample["refresh_errors"] else None
+            if self._readback_sample and self._readback_sample["refresh_errors"]
+            else None
         )
         age = (
-            max(0, (observed_mono if observed_mono is not None else time.monotonic())
-                - self._readback_audit_mono)
-            if self._readback_audit_mono is not None else None
+            max(
+                0,
+                (observed_mono if observed_mono is not None else time.monotonic())
+                - self._readback_audit_mono,
+            )
+            if self._readback_audit_mono is not None
+            else None
         )
         current = (
-            error is None and age is not None and age < 120
+            error is None
+            and age is not None
+            and age < 120
             and isinstance(self.receipts.get("balanced"), bool)
         )
         status = (
-            "imbalanced" if self.receipts.get("balanced") is False
-            else "unavailable" if error is not None
-            else "pending" if age is None or self.receipts.get("balanced") is not True
-            else "expired" if not current
+            "imbalanced"
+            if self.receipts.get("balanced") is False
+            else "unavailable"
+            if error is not None
+            else "pending"
+            if age is None or self.receipts.get("balanced") is not True
+            else "expired"
+            if not current
             else "balanced"
         )
-        return {**self.receipts, "status": status, "available": current,
-                "error": error, "audit_age_seconds":
-                round(age, 3) if age is not None else None}
+        return {
+            **self.receipts,
+            "status": status,
+            "available": current,
+            "error": error,
+            "audit_age_seconds": round(age, 3) if age is not None else None,
+        }
 
     def _accept_financial_audit(self, result: dict[str, Any]) -> None:
         reconciliation = result.get("reconciliation")
@@ -158,8 +177,7 @@ class TieredPaperRuntime(PaperRuntime):
             or type(reconciliation.get("revision")) is not int
             or reconciliation["revision"] < 0
             or any(
-                type(result.get(key)) not in (float, int)
-                or not math.isfinite(result[key])
+                type(result.get(key)) not in (float, int) or not math.isfinite(result[key])
                 for key in ("observed_at", "observed_mono")
             )
         ):
@@ -182,8 +200,7 @@ class TieredPaperRuntime(PaperRuntime):
                 refresh_errors.pop(name, None)
         refresh_errors.update(result["refresh_errors"])
         self._readback_sample = {
-            k: result[k]
-            for k in ("observed_at", "completed_at", "elapsed_ms", "stages_ms")
+            k: result[k] for k in ("observed_at", "completed_at", "elapsed_ms", "stages_ms")
         }
         self._readback_sample["refresh_errors"] = refresh_errors
         if "recent" in result:
@@ -225,7 +242,8 @@ class TieredPaperRuntime(PaperRuntime):
             finally:
                 self._readback_shutdown = view.last_shutdown
                 if self._readback_shutdown and self._readback_shutdown["status"] in {
-                    "terminated_owned_reader", "termination_failed"
+                    "terminated_owned_reader",
+                    "termination_failed",
                 }:
                     logger.warning(
                         "Financial reader shutdown: %s", self._readback_shutdown["status"]
@@ -234,17 +252,18 @@ class TieredPaperRuntime(PaperRuntime):
     def observe_engine_work(
         self, elapsed_ms: float, now_mono: float, details: dict[str, Any] | None = None
     ) -> None:
-        self._loop_ms.append(elapsed_ms)
-        self._work_pressure.observe(elapsed_ms, now_mono)
-        pressure = self._work_pressure.evaluate(now_mono)
-        notice = self._work_diagnostics.record(
-            {"at": time.time(), **(details or {}), "elapsed_ms": elapsed_ms},
-            now_mono,
-            repeated=pressure.observed_repeated,
-            severe=pressure.observed_severe,
-        )
-        if notice is not None:
-            self._notice_queue.append({"kind": "engine_resource_guard", "body": notice})
+        with self._work_pressure.lock:
+            self._loop_ms.append(elapsed_ms)
+            self._work_pressure.observe(elapsed_ms, now_mono)
+            pressure = self._work_pressure.evaluate(now_mono)
+            notice = self._work_diagnostics.record(
+                {"at": time.time(), **(details or {}), "elapsed_ms": elapsed_ms},
+                now_mono,
+                repeated=pressure.observed_repeated,
+                severe=pressure.observed_severe,
+            )
+            if notice is not None:
+                self._notice_queue.append({"kind": "engine_resource_guard", "body": notice})
 
     def update_features(self, symbol: str, now: float) -> None:
         bars = self.history.get(symbol, [])
@@ -602,6 +621,17 @@ class TieredPaperRuntime(PaperRuntime):
                     feature.update(eligible=False, reason="Closed candle is stale")
                 if symbol in self._candle_errors:
                     feature.update(eligible=False, reason=self._candle_errors[symbol])
+            risk_input = study[symbol].get("breakout-v1", {})
+            bar_open = risk_input.get("bar_open_ms")
+            frame["diagnostic_risk_input_valid"] = (
+                isinstance(bar_open, (int, float))
+                and not isinstance(bar_open, bool)
+                and math.isfinite(bar_open)
+                and 0 < now * 1000 - bar_open - 59999 <= 90000
+                and bar_open + 60000 >= self.ready_at * 1000
+                and symbol not in self._candle_errors
+                and risk_input.get("closed_bars", 0) >= 305
+            )
         self._input_eligibility = {
             "observed_at": now,
             "observed_mono": mono,
@@ -824,7 +854,7 @@ class TieredPaperRuntime(PaperRuntime):
                     study_key: str = study_key,
                     stage_ms: dict[str, float] = stage_ms,
                 ) -> None:
-                    pre_tick = {
+                    pre_tick: dict[str, Any] = {
                         "feed_model": FEED_MODEL,
                         "status_changed": status_key != self._last_status_key,
                         "errors": current_error,
@@ -833,6 +863,7 @@ class TieredPaperRuntime(PaperRuntime):
                         "universe_plan": list(self.stream.plan),
                         "bars_added": added,
                         "book_sequences": self._previous_books,
+                        "diagnostic_allowed": self.diagnostic_entries_allowed(),
                     }
                     complete_window = bool(evidence_tick.get("packet", {}).get("execution_window"))
                     if complete_window:
@@ -849,6 +880,9 @@ class TieredPaperRuntime(PaperRuntime):
                             evidence_tick.pop("packet", None)
                     tick_preamble(engine, pre_tick)
                     if "packet" in evidence_tick:
+                        evidence_tick["packet"]["diagnostic_allowed"] = pre_tick[
+                            "diagnostic_allowed"
+                        ]
                         state_capture_started = time.perf_counter()
                         try:
                             if not complete_window:
@@ -865,7 +899,7 @@ class TieredPaperRuntime(PaperRuntime):
                             time.perf_counter() - state_capture_started
                         ) * 1000
                     financial_tick_started = time.perf_counter()
-                    engine.tick(frames, study)
+                    engine.tick(frames, study, diagnostic_allowed=pre_tick["diagnostic_allowed"])
                     stage_ms["financial_tick"] = (
                         time.perf_counter() - financial_tick_started
                     ) * 1000
@@ -878,16 +912,20 @@ class TieredPaperRuntime(PaperRuntime):
                 measured_commit = time.perf_counter()
                 stage_ms["prepare"] = (measured_commit - measured_start) * 1000
                 try:
-                    self.state, commit_receipt = self.store.transact_with_receipt(
-                        now, apply, capture_projection="packet" in evidence_tick
-                    )
+                    with self.store.transaction_lock:
+                        self.state, commit_receipt = self.store.transact_with_receipt(
+                            now, apply, capture_projection="packet" in evidence_tick
+                        )
+                        transaction_diagnostics = dict(
+                            self.store.last_transaction_diagnostics or {}
+                        )
                 except Exception:
                     self.evidence.execution_window.fail("Financial transaction did not commit")
                     raise
                 committed = time.perf_counter()
                 self._commit_ms.append((committed - measured_commit) * 1000)
                 stage_ms["transaction"] = (committed - measured_commit) * 1000
-                for name, duration in (self.store.last_transaction_diagnostics or {}).items():
+                for name, duration in transaction_diagnostics.items():
                     stage_ms["transaction_" + name] = duration
                 try:
                     linked = linked_events(evidence_tick.get("compact_events", []), commit_receipt)
@@ -967,8 +1005,9 @@ class TieredPaperRuntime(PaperRuntime):
         observed_mono = time.monotonic()
         journal = self.journal_status(observed_mono)
         result["journal"] = journal
-        pressure = self._work_pressure.evaluate(observed_mono)
-        resource_guard = self._work_diagnostics.snapshot(pressure)
+        with self._work_pressure.lock:
+            pressure = self._work_pressure.evaluate(observed_mono)
+            resource_guard = self._work_diagnostics.snapshot(pressure)
         resource_guard["latency_policy"] = {
             "version": PRESSURE_POLICY_VERSION,
             "advisory_ms": 100,
@@ -992,9 +1031,10 @@ class TieredPaperRuntime(PaperRuntime):
                 ("engine_work_recovery", not pressure.pressure_allows),
                 ("local_capture_disk_space", self.disk_free < 5 * 1024**3),
                 ("raw_capture_failure", self._capture_failure is not None),
-                ("financial_readback_unavailable", journal["status"] not in {
-                    "balanced", "imbalanced"
-                }),
+                (
+                    "financial_readback_unavailable",
+                    journal["status"] not in {"balanced", "imbalanced"},
+                ),
                 ("financial_reconciliation_failed", journal["status"] == "imbalanced"),
             )
             if active
