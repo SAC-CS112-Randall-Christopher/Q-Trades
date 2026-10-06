@@ -2,7 +2,7 @@
 
 Requires an explicit disposable PostgreSQL config, QA directory and access token.
 R63-1 transitions run the actual producer, owned child and runtime loop. Optional
-query controls and presentation liveness are synthetic. The original seven-state
+query controls, presentation liveness and calm work coverage are synthetic. The original seven-state
 compatibility fixture additionally injects explicit failure/expiry presentation.
 """
 
@@ -32,7 +32,7 @@ from trading.research_notices import operational_conditions
 
 def main():
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from financial_monitoring_fixture import FinancialMonitoringFixture
+    from financial_monitoring_fixture import FinancialMonitoringFixture, monitoring_constrained
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--directory", type=Path, required=True)
@@ -80,18 +80,29 @@ def main():
 
     app.router.lifespan_context = qa_lifespan
 
+    @app.middleware("http")
+    async def synthetic_work_coverage(request, call_next):
+        # This reader-only fixture never completes financial engine work. Supply
+        # explicit synthetic calm coverage at normal read checkpoints, so a UI
+        # delay cannot expire it. The actual audit/disk/capture guards still run.
+        if request.method == "GET" and request.url.path.startswith("/api/"):
+            monitoring_constrained(app.state.paper)
+        return await call_next(request)
+
     def authorize(x_qa_token):
         if x_qa_token != token:
             raise HTTPException(403)
 
     def present():
         # Isolate the monitoring prerequisite from synthetic paper/feed liveness
-        # and workstation capture reserve. No financial work or model is run.
+        # and workstation capture reserve. Work coverage is explicitly synthetic;
+        # the unchanged financial monitoring guard still owns readiness.
         paper = app.state.paper
         paper.running = True
         paper.disk_free = 10 * 1024**3
         paper.state["last_tick"] = time.time()
         paper.state["evidence_kind"] = "synthetic_browser_fixture"
+        monitoring_constrained(paper)
 
     def observe_notices():
         present()
@@ -222,6 +233,7 @@ def main():
         paper.running = mode != "imbalanced"
         paper.state["last_tick"] = time.time()
         paper.state["evidence_kind"] = "synthetic_browser_fixture"
+        monitoring_constrained(paper)
         return paper.snapshot()["journal"]
 
     try:

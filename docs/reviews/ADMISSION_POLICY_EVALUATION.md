@@ -199,3 +199,15 @@ establish a performance repair or win-rate effect. Preserve legitimate appends.
 Direct NAT association remains unresolved. Populated Library/Review acceptance
 remains unperformed. Neither becomes true or requires a repeat of 626 acceptance.
 Compression, desktop packaging, another backend or scheduler is not a prerequisite.
+
+The first integrated head `15d1482` passed five hosted jobs, including native
+743 passed/221 skipped/1 warning and the configured full PostgreSQL suite
+1193 passed/89 skipped/1 warning (including the real worker cancellation case).
+Its browser monitoring job failed: a balanced current audit remained blocked by
+startup work coverage because the reader-only fixture did not run financial
+engine work. This is retained as failed final-head evidence. The repaired browser
+fixture reuses explicit synthetic twenty-pass calm coverage at QA transitions
+and normal reads. Eight offline real-runtime guard cases passed; pending/error/
+expired/imbalanced audits, disk and capture failures remain closed with evidence
+unchanged. That fixture does not measure protected latency or model coexistence.
+All six existing jobs must pass at the repaired final head before merge.
