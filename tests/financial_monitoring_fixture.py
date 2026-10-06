@@ -17,6 +17,7 @@ import psycopg
 
 import trading.financial_readback_worker as worker_module
 import trading.tiered_runtime as runtime_module
+from trading.engine_diagnostics import EngineWorkPressurePolicy
 from trading.financial_readback import FinancialReadback
 from trading.financial_readback_worker import ReadbackWorker, readback_child
 from trading.paper_store import PaperStore
@@ -24,6 +25,21 @@ from trading.tiered_runtime import TieredPaperRuntime
 
 QUERY_NAMES = ("recent", "storage_usage")
 HOLD_SECONDS = 20.0  # The unchanged 15s operation deadline still owns continuation.
+
+
+def monitoring_constrained(runtime: TieredPaperRuntime) -> bool:
+    """Isolate monitor/disk/capture gates with synthetic healthy work coverage.
+
+    Reader-only tests do not run the financial loop. The explicit fresh policy
+    fixture is not a measured work sequence or evidence of model coexecution.
+    The real runtime still evaluates every independent guard at the same point.
+    """
+    now = time.monotonic()
+    runtime._work_pressure = EngineWorkPressurePolicy()
+    for offset in range(20):
+        runtime._work_pressure.observe(20, now - (19 - offset) * 0.55)
+    assert runtime._work_pressure.evaluate(now).pressure_allows
+    return runtime.constrained(now)
 
 
 @dataclass

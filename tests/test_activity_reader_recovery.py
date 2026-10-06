@@ -175,7 +175,7 @@ def test_transaction_diagnostics_separate_work_serialization_and_commit(pg_store
 
 @pytest.mark.parametrize(
     ("coarse_ms", "precise_ms", "prior_slow", "constrained"),
-    [(109, 99, 3, False), (94, 101, 3, True), (1000, 999, 0, False), (999, 1001, 0, True)],
+    [(509, 499, 3, False), (494, 501, 3, True), (1000, 999, 0, False), (999, 1001, 0, True)],
 )
 def test_normal_financial_loop_uses_precise_complete_work_for_existing_guard(
     pg_store, tmp_path, monkeypatch, coarse_ms, precise_ms, prior_slow, constrained
@@ -184,7 +184,14 @@ def test_normal_financial_loop_uses_precise_complete_work_for_existing_guard(
 
     store, _ = pg_store
     runtime = TieredPaperRuntime(store, None, tmp_path / "raw.sqlite")
-    runtime._loop_ms = deque([20] * (19 - prior_slow) + [101] * prior_slow, maxlen=1000)
+    durations = [20] * (19 - prior_slow) + [501] * prior_slow
+    runtime._loop_ms = deque(durations, maxlen=1000)
+    # Establish prior calm coverage, then the declared latest nineteen samples
+    # continuously on the same monotonic clock. These times are procedural.
+    for offset in range(20):
+        runtime._work_pressure.observe(20, 978.55 + offset * 0.55)
+    for offset, duration in enumerate(durations):
+        runtime._work_pressure.observe(duration, 989.55 + offset * 0.55)
     runtime._last_audit = runtime._last_receipts = START
     clocks = {"coarse": 1000.0, "precise": 2000.0}
     monkeypatch.setattr(
@@ -235,7 +242,7 @@ def test_normal_financial_loop_uses_precise_complete_work_for_existing_guard(
             await runtime.run()
 
     asyncio.run(run_one())
-    assert (runtime._constrained_until > clocks["coarse"]) is constrained
+    assert (not runtime._work_pressure.evaluate(clocks["coarse"]).pressure_allows) is constrained
     assert runtime._loop_ms[-1] == pytest.approx(precise_ms)
     latest = runtime._work_diagnostics.samples[-1]
     assert latest["coarse_elapsed_ms"] == coarse_ms

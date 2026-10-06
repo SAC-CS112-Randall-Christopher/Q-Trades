@@ -19,7 +19,11 @@ from typing import Any
 import psycopg
 
 from trading.compact_memory import linked_events
-from trading.engine_diagnostics import EngineWorkDiagnostics
+from trading.engine_diagnostics import (
+    PRESSURE_POLICY_VERSION,
+    EngineWorkDiagnostics,
+    EngineWorkPressurePolicy,
+)
 from trading.evidence_runtime import EvidenceRecorder, compact_prefix, state_snapshot
 from trading.execution_window import tick_preamble
 from trading.financial_readback import FinancialReadback
@@ -70,10 +74,10 @@ class TieredPaperRuntime(PaperRuntime):
         self._last_study_key = ""
         self._last_status_key = ""
         self._next_research_scan = 0.0
-        self._constrained_until = 0.0
+        self._work_pressure = EngineWorkPressurePolicy()
         self._loop_ms: deque[float] = deque(maxlen=1000)
         self._commit_ms: deque[float] = deque(maxlen=1000)
-        self._work_diagnostics = EngineWorkDiagnostics()
+        self._work_diagnostics = EngineWorkDiagnostics(self._fallback_count_epoch)
         self._captured_bytes = 0
         self._started_mono = time.monotonic()
         self._started_cpu = time.process_time()
@@ -109,16 +113,17 @@ class TieredPaperRuntime(PaperRuntime):
             return fallback
         return None
 
-    def constrained(self) -> bool:
+    def constrained(self, observed_mono: float | None = None) -> bool:
+        observed_mono = time.monotonic() if observed_mono is None else observed_mono
         return (
-            time.monotonic() < self._constrained_until
+            not self._work_pressure.evaluate(observed_mono).pressure_allows
             or self.disk_free < 5 * 1024**3
             or self._capture_failure is not None
-            or self.readback_unavailable()
+            or self.readback_unavailable(observed_mono)
         )
 
-    def readback_unavailable(self) -> bool:
-        return bool(self.journal_status()["status"] != "balanced")
+    def readback_unavailable(self, observed_mono: float | None = None) -> bool:
+        return bool(self.journal_status(observed_mono)["status"] != "balanced")
 
     def journal_status(self, observed_mono: float | None = None) -> dict[str, Any]:
         error = self._readback_error or (
@@ -230,21 +235,13 @@ class TieredPaperRuntime(PaperRuntime):
         self, elapsed_ms: float, now_mono: float, details: dict[str, Any] | None = None
     ) -> None:
         self._loop_ms.append(elapsed_ms)
-        recent = list(self._loop_ms)[-20:]
-        # A single Windows disk/scheduling outlier is not sustained saturation.
-        # Demote research after repeated slow work, or one severe one-second stall.
-        # Old slow entries cannot renew recovery on a newly fast pass. A new
-        # slow pass within sustained pressure still extends the full cooldown.
-        repeated = (
-            elapsed_ms > 100 and len(recent) == 20 and sum(value > 100 for value in recent) >= 4
-        )
-        if repeated or elapsed_ms >= 1000:
-            self._constrained_until = now_mono + 300
+        self._work_pressure.observe(elapsed_ms, now_mono)
+        pressure = self._work_pressure.evaluate(now_mono)
         notice = self._work_diagnostics.record(
-            {"at": time.time(), "elapsed_ms": elapsed_ms, **(details or {})},
+            {"at": time.time(), **(details or {}), "elapsed_ms": elapsed_ms},
             now_mono,
-            repeated=repeated,
-            severe=elapsed_ms >= 1000,
+            repeated=pressure.observed_repeated,
+            severe=pressure.observed_severe,
         )
         if notice is not None:
             self._notice_queue.append({"kind": "engine_resource_guard", "body": notice})
@@ -970,20 +967,29 @@ class TieredPaperRuntime(PaperRuntime):
         observed_mono = time.monotonic()
         journal = self.journal_status(observed_mono)
         result["journal"] = journal
-        resource_guard = self._work_diagnostics.snapshot(observed_mono, self._constrained_until)
+        pressure = self._work_pressure.evaluate(observed_mono)
+        resource_guard = self._work_diagnostics.snapshot(pressure)
         resource_guard["latency_policy"] = {
-            "version": "engine-work-recovery-v2",
-            "slow_ms": 100,
+            "version": PRESSURE_POLICY_VERSION,
+            "advisory_ms": 100,
+            "slow_ms": 500,
+            "slow_comparison": ">=",
             "slow_samples": 4,
             "window_samples": 20,
             "severe_ms": 1000,
             "cooldown_seconds": 300,
-            "renewal": "New slow work under repeated pressure, or a severe stall",
+            "cooldown_scope": "Severe hold only",
+            "recovery_samples": 20,
+            "recovery_span_seconds": 10,
+            "recovery_below_ms": 500,
+            "maximum_observation_gap_seconds": 2,
+            "renewal": "Severe work, or new repeated >=500ms work during an active severe hold",
+            "clock": "Process monotonic time of completed whole work",
         }
         resource_guard["blocking_conditions"] = [
             name
             for name, active in (
-                ("engine_work_cooldown", observed_mono < self._constrained_until),
+                ("engine_work_recovery", not pressure.pressure_allows),
                 ("local_capture_disk_space", self.disk_free < 5 * 1024**3),
                 ("raw_capture_failure", self._capture_failure is not None),
                 ("financial_readback_unavailable", journal["status"] not in {
@@ -1011,7 +1017,7 @@ class TieredPaperRuntime(PaperRuntime):
                 "futures_context": self.futures.snapshot(),
                 "universe": self.universe.snapshot(),
                 "sampling": "100ms fast / 1s watch WebSocket target; explicit capped REST fallback",
-                "research_constrained": self.constrained(),
+                "research_constrained": self.constrained(observed_mono),
                 "research_evidence": self.evidence.snapshot(),
                 "performance": {
                     "public_requests": self.public_request_counts(),

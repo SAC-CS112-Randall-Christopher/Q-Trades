@@ -8,7 +8,11 @@ from decimal import Decimal
 import pytest
 from test_paper_runtime import ReadOnlyStub, instrument
 
-from trading.engine_diagnostics import EngineWorkDiagnostics
+from trading.engine_diagnostics import (
+    PRESSURE_POLICY_VERSION,
+    EngineWorkDiagnostics,
+    EngineWorkPressurePolicy,
+)
 from trading.stream_book import DepthBook, StreamGap
 from trading.stream_capture import StreamCapture
 from trading.stream_feed import ExchangeClock, StreamFeed
@@ -19,40 +23,202 @@ from trading.universe import Universe
 def test_resource_guard_ignores_isolated_jitter_but_demotes_sustained_or_severe_stalls():
     runtime = object.__new__(TieredPaperRuntime)
     runtime._loop_ms = deque(maxlen=1000)
-    runtime._constrained_until = 0
+    runtime._work_pressure = EngineWorkPressurePolicy()
     runtime._work_diagnostics = EngineWorkDiagnostics()
     runtime._notice_queue = []
-    for duration in [20] * 19 + [150]:
-        runtime.observe_engine_work(duration, 1000)
-    assert runtime._constrained_until == 0
-    for duration in [150] * 3:
-        runtime.observe_engine_work(duration, 1001)
-    assert runtime._constrained_until == 1301
-    runtime._loop_ms.clear()
+    for i, duration in enumerate([150] * 20):
+        runtime.observe_engine_work(duration, 1000 + i * 0.55)
+    assert runtime._work_pressure.evaluate(1010.45).pressure_allows
+    assert runtime._work_diagnostics.triggers == 0
+    for i, duration in enumerate([500] * 4):
+        runtime.observe_engine_work(duration, 1011 + i * 0.55)
+    pressure = runtime._work_pressure.evaluate(1012.65)
+    assert not pressure.pressure_allows and pressure.observed_repeated
+    assert pressure.severe_remaining_seconds == 0
     runtime.observe_engine_work(1000, 2000)
-    assert runtime._constrained_until == 2300
+    assert runtime._work_pressure.evaluate(2000).severe_remaining_seconds == 300
 
 
 def test_fast_work_cannot_renew_recovery_from_old_slow_samples():
     runtime = object.__new__(TieredPaperRuntime)
-    runtime._loop_ms = deque([20] * 16 + [150] * 3, maxlen=1000)
-    runtime._constrained_until = 0
+    runtime._loop_ms = deque(maxlen=1000)
+    runtime._work_pressure = EngineWorkPressurePolicy()
     runtime._work_diagnostics = EngineWorkDiagnostics()
     runtime._notice_queue = []
-    runtime.observe_engine_work(150, 1000)
-    assert runtime._constrained_until == 1300
+    for offset, duration in enumerate([20] * 16 + [500] * 4):
+        runtime.observe_engine_work(duration, 1000 + offset * 0.55)
     first = runtime._work_diagnostics.triggers
+    assert first == 1
     for offset in range(1, 11):
-        runtime.observe_engine_work(20, 1000 + offset)
-        assert runtime._constrained_until == 1300
+        runtime.observe_engine_work(150, 1010.45 + offset * 0.55)
     assert runtime._work_diagnostics.triggers == first
-    assert sum(value > 100 for value in list(runtime._loop_ms)[-20:]) == 4
-    # New sustained slow work and a severe stall retain their existing authority.
-    for offset in range(11, 15):
-        runtime.observe_engine_work(150, 1000 + offset)
-    assert runtime._constrained_until == 1314
-    runtime.observe_engine_work(1000, 1020)
-    assert runtime._constrained_until == 1320
+    assert sum(value >= 500 for value in list(runtime._loop_ms)[-20:]) == 4
+    runtime.observe_engine_work(1000, 1016.5)
+    assert runtime._work_pressure.evaluate(1016.5).severe_remaining_seconds == 300
+    runtime.observe_engine_work(150, 1017.05)
+    assert runtime._work_pressure.evaluate(1017.05).severe_remaining_seconds == pytest.approx(
+        299.45
+    )
+    # A newly qualifying repeated blocker retains full severe renewal authority.
+    runtime.observe_engine_work(500, 1017.6)
+    assert runtime._work_pressure.evaluate(1017.6).severe_remaining_seconds == pytest.approx(300)
+
+
+def healthy_pressure_runtime(tmp_path, monkeypatch):
+    import trading.tiered_runtime as tiered_module
+
+    runtime = TieredPaperRuntime(ReadOnlyStub(), None, tmp_path / "pressure-raw.sqlite")
+    clock = {"now": 1000.0}
+    monkeypatch.setattr(tiered_module.time, "monotonic", lambda: clock["now"])
+    runtime.disk_free = 10 * 1024**3
+    runtime._readback_audit_mono = 1000
+    runtime.receipts = {"balanced": True}
+    return runtime, clock
+
+
+def warm_pressure(runtime, clock):
+    for offset in range(20):
+        clock["now"] = 1000 + offset * 0.55
+        runtime.observe_engine_work(150, clock["now"])
+
+
+def test_actual_runtime_starts_closed_and_recovers_from_observed_advisory_work(
+    tmp_path, monkeypatch
+):
+    runtime, clock = healthy_pressure_runtime(tmp_path, monkeypatch)
+    assert runtime.constrained()
+    startup = runtime.snapshot()["performance"]["resource_guard"]
+    assert startup["blocking_conditions"] == ["engine_work_recovery"]
+    assert startup["pressure_recovery"]["last_observed_mono"] is None
+    warm_pressure(runtime, clock)
+    assert not runtime.constrained()
+    snapshot = runtime.snapshot()
+    guard = snapshot["performance"]["resource_guard"]
+    assert snapshot["research_constrained"] is False and guard["blocking_conditions"] == []
+    assert guard["policy_version"] == guard["latency_policy"]["version"] == PRESSURE_POLICY_VERSION
+    assert guard["pressure_recovery"]["target_exceedances"] == 20
+    assert guard["pressure_recovery"]["blocking_exceedances"] == 0
+    assert guard["work_observations"] == 20
+    assert guard["observation_epoch"] == runtime._fallback_count_epoch
+    assert guard["pressure_recovery"]["clean_span_seconds"] == pytest.approx(10.45)
+    assert guard["latest_work"]["observed_mono"] == clock["now"]
+    assert runtime._notice_queue == []
+
+
+def test_actual_runtime_uses_inclusive_four_of_twenty_and_evidence_recovery(tmp_path, monkeypatch):
+    runtime, clock = healthy_pressure_runtime(tmp_path, monkeypatch)
+    warm_pressure(runtime, clock)
+    for _offset in range(3):
+        clock["now"] += 0.55
+        runtime.observe_engine_work(500, clock["now"])
+        assert not runtime.constrained()
+    clock["now"] += 0.55
+    runtime.observe_engine_work(500, clock["now"], {"observed_mono": -1, "work_number": -1})
+    assert runtime.constrained()
+    snapshot = runtime.snapshot()
+    guard = snapshot["performance"]["resource_guard"]
+    assert snapshot["research_constrained"] is True
+    assert guard["blocking_conditions"] == ["engine_work_recovery"]
+    assert guard["cooldown_remaining_seconds"] == 0
+    assert len(guard["last_trigger"]["slow_window"]) == 20
+    assert len(guard["last_trigger"]["blocking_window"]) == 4
+    assert guard["latest_work"]["observed_mono"] == clock["now"]
+    assert guard["latest_work"]["work_number"] == 24
+    for offset in range(20):
+        clock["now"] += 0.55
+        runtime.observe_engine_work(499.999, clock["now"])
+        assert runtime.constrained() is (offset < 19)
+    assert runtime._work_diagnostics.triggers == 1
+    assert len(runtime._notice_queue) == 1
+
+
+def test_actual_runtime_missing_work_closes_recovery_and_requires_new_coverage(
+    tmp_path, monkeypatch
+):
+    runtime, clock = healthy_pressure_runtime(tmp_path, monkeypatch)
+    warm_pressure(runtime, clock)
+    clock["now"] += 2.001
+    assert runtime.constrained()
+    guard = runtime.snapshot()["performance"]["resource_guard"]
+    assert "missing_or_stale_work" in guard["pressure_recovery"]["reasons"]
+    for offset in range(20):
+        clock["now"] += 0.55
+        runtime.observe_engine_work(150, clock["now"])
+        assert runtime.constrained() is (offset < 19)
+    assert runtime._work_diagnostics.triggers == 0
+
+
+def test_actual_runtime_equal_completed_work_times_preserve_recovery_and_sequence(
+    tmp_path, monkeypatch
+):
+    runtime, clock = healthy_pressure_runtime(tmp_path, monkeypatch)
+    warm_pressure(runtime, clock)
+    assert not runtime.constrained()
+    # CPython 3.12's Windows monotonic clock can assign the same coarse tick to
+    # separate short completed passes. The runtime, not an API poll, records them.
+    for _offset in range(2):
+        runtime.observe_engine_work(2, clock["now"])
+        assert not runtime.constrained()
+    guard = runtime.snapshot()["performance"]["resource_guard"]
+    assert guard["work_observations"] == 22
+    assert [row["work_number"] for row in guard["current_window"][-3:]] == [20, 21, 22]
+    assert all(row["observed_mono"] == clock["now"] for row in guard["current_window"][-3:])
+    assert guard["pressure_recovery"]["clean_span_seconds"] == pytest.approx(10.45)
+    assert guard["trigger_count"] == 0
+
+
+def test_actual_runtime_equal_times_count_work_without_inventing_coverage(tmp_path, monkeypatch):
+    runtime, clock = healthy_pressure_runtime(tmp_path, monkeypatch)
+    for _offset in range(20):
+        runtime.observe_engine_work(2, clock["now"])
+    guard = runtime.snapshot()["performance"]["resource_guard"]
+    assert runtime.constrained()
+    assert guard["work_observations"] == guard["pressure_recovery"]["clean_samples"] == 20
+    assert guard["pressure_recovery"]["clean_span_seconds"] == 0
+    for _offset in range(19):
+        clock["now"] += 0.55
+        runtime.observe_engine_work(2, clock["now"])
+    assert not runtime.constrained()
+
+
+def test_actual_runtime_severe_work_anchors_full_hold_on_an_equal_clock_tick(tmp_path, monkeypatch):
+    runtime, clock = healthy_pressure_runtime(tmp_path, monkeypatch)
+    warm_pressure(runtime, clock)
+    runtime.observe_engine_work(1000, clock["now"])
+    pressure = runtime._work_pressure.evaluate(clock["now"])
+    assert runtime.constrained()
+    assert pressure.observed_severe and pressure.severe_remaining_seconds == pytest.approx(300)
+    assert "unanchored_severe_work" not in pressure.reasons
+    assert runtime._work_diagnostics.last_trigger["severe_stall"]
+
+
+@pytest.mark.parametrize("fault", ["disk", "capture", "pending", "expired", "error", "imbalanced"])
+def test_pressure_recovery_keeps_independent_runtime_guards_closed(tmp_path, monkeypatch, fault):
+    runtime, clock = healthy_pressure_runtime(tmp_path, monkeypatch)
+    warm_pressure(runtime, clock)
+    assert not runtime.constrained()
+    if fault == "disk":
+        runtime.disk_free = 5 * 1024**3 - 1
+        blocker = "local_capture_disk_space"
+    elif fault == "capture":
+        runtime._capture_failure = "Procedural capture failure"
+        blocker = "raw_capture_failure"
+    else:
+        blocker = "financial_readback_unavailable"
+        if fault == "pending":
+            runtime._readback_audit_mono = None
+        elif fault == "expired":
+            runtime._readback_audit_mono = clock["now"] - 120
+        elif fault == "error":
+            runtime._readback_error = "Procedural reader failure"
+        else:
+            runtime.receipts = {"balanced": False}
+            blocker = "financial_reconciliation_failed"
+    assert runtime._work_pressure.evaluate(clock["now"]).pressure_allows
+    assert runtime.constrained()
+    snapshot = runtime.snapshot()
+    assert snapshot["research_constrained"] is True
+    assert snapshot["performance"]["resource_guard"]["blocking_conditions"] == [blocker]
 
 
 def snapshot(sequence=100, levels=30):

@@ -18,6 +18,7 @@ from test_station import runtime as runtime
 
 from trading.api import create_app
 from trading.config import Settings
+from trading.engine_diagnostics import EngineWorkPressurePolicy
 from trading.experiment_lab import ExperimentLab
 from trading.experiment_registry import ExperimentRegistry
 from trading.research_notices import ResearchNotices, operational_conditions
@@ -39,6 +40,28 @@ def condition(at, state="active", severity="warning", key="research_resource"):
         "link": "#role-research",
         "facts": {"fixture": True},
     }
+
+
+def test_resource_notice_reports_actual_pressure_recovery_without_legacy_deadline(monkeypatch):
+    policy = EngineWorkPressurePolicy()
+    for index in range(21):
+        policy.observe(150, 1000 + index * 0.5)
+    monkeypatch.setattr("trading.research_notices.time.monotonic", lambda: 1010)
+    paper = SimpleNamespace(
+        running=True,
+        error=None,
+        state={"last_tick": 2000},
+        _work_pressure=policy,
+        constrained=lambda: not policy.evaluate(1010).pressure_allows,
+    )
+    row = next(
+        item for item in operational_conditions(paper, 2000) if item["key"] == "research_resource"
+    )
+    assert row["condition"] == "clear"
+    assert row["facts"]["pressure_recovery"]["pressure_allows"] is True
+    assert row["facts"]["pressure_recovery"]["target_exceedances"] == 20
+    assert row["facts"]["pressure_recovery"]["blocking_exceedances"] == 0
+    assert "cooldown_until_mono" not in row["facts"]
 
 
 @pytest.fixture
@@ -361,10 +384,15 @@ def test_full_notice_batch_retains_audit_states_and_recovery_in_the_api(
                     runtime._accept_financial_audit(result)
                     # Complete this explicitly synthetic sample as well as its
                     # audit; the audit callback alone cannot recover an outage.
-                    runtime._accept_financial_sample({
-                        **result, "completed_at": clock[0], "elapsed_ms": 0,
-                        "stages_ms": {}, "refresh_errors": {},
-                    })
+                    runtime._accept_financial_sample(
+                        {
+                            **result,
+                            "completed_at": clock[0],
+                            "elapsed_ms": 0,
+                            "stages_ms": {},
+                            "refresh_errors": {},
+                        }
+                    )
             elif mode == "unavailable":
                 runtime._readback_error = "Explicit synthetic monitoring outage"
             elif mode == "expired":
@@ -408,6 +436,7 @@ def test_supervisor_persists_the_complete_producer_batch_without_research(tmp_pa
     async def scenario():
         task = asyncio.create_task(lab.run())
         try:
+
             async def observed():
                 while lab.notices.last_checked_at is None and lab.notice_error is None:
                     await asyncio.sleep(0.01)
