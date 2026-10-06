@@ -74,6 +74,8 @@ jobs:
             tests/test_cpu_topology.py `
             tests/test_llm_training.py tests/test_training_workflow.py `
             tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
+            tests/test_paper_pilot_worker.py tests/test_paper_pilot_api.py tests/test_peft_paper_pilot.py `
+            tests/test_paper_pilot_lifecycle.py `
             tests/test_role_readiness.py tests/test_peft_development.py tests/test_peft_loader_contract.py `
             tests/test_development_failure_receipts.py tests/test_development_latency_measurement.py `
             tests/test_peft_child_owner.py tests/test_peft_child_resource_integration.py `
@@ -276,7 +278,7 @@ jobs:
           python -m pip install --no-input --no-deps -e .
       - name: Static checks and native reference/reviewer recovery
         run: |
-          python -m ruff check src tests scripts/evaluate_admission_recovery.py scripts/answer_development_role.py scripts/observe_model_coexistence.py scripts/verify_performance_diagnostics.py scripts/verify_performance_coexistence.py scripts/preview_performance_diagnostic_ui.py
+          python -m ruff check src tests scripts/evaluate_admission_recovery.py scripts/answer_development_role.py scripts/observe_model_coexistence.py scripts/verify_performance_diagnostics.py scripts/verify_performance_coexistence.py scripts/preview_performance_diagnostic_ui.py scripts/preview_paper_pilot_ui.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m mypy --platform win32 src
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

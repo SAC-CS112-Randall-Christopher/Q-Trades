@@ -1,4 +1,4 @@
-"""Bounded development transport to the private Lab loader; operating admit is refused."""
+"""Owned trained-v2 requests; explicit paper pilot and development remain distinct."""
 
 import hashlib
 import os
@@ -7,15 +7,17 @@ import time
 import uuid
 from copy import deepcopy
 from pathlib import Path
-from threading import Event, Lock
+from threading import Event, Lock, RLock
 from typing import Any
+
+import httpx
 
 from trading.lab_role_contract import contract_hash, packet_json, prompt
 from trading.local_role_model import LocalRoles
 from trading.numerical_resources import constrain_child
 from trading.ownership import CollectorLock
 from trading.peft_child_owner import ChildOwner, available_memory
-from trading.peft_profile import PROFILE, digest, metadata, read, regular
+from trading.peft_profile import NAME, PROFILE, digest, metadata, read, regular
 from trading.training_bridge import TrainingBridge
 
 
@@ -32,6 +34,8 @@ class DevelopmentTransportFailure(ValueError):
 
 
 class PeftDevelopmentRoles:
+    paper_pilot = False
+
     def __init__(self, directory: Path, *, development_latency_override: bool = False):
         if type(development_latency_override) is not bool:
             raise ValueError("Development latency override must be explicit")
@@ -79,6 +83,9 @@ class PeftDevelopmentRoles:
     def guard_observations(self) -> list[dict[str, Any]]:
         with self._latency_lock:
             return deepcopy(self._guard_observations)
+
+    def _guard_authority(self) -> dict[str, Any]:
+        return {"development_latency_authorization": self._latency_authorization}
 
     def _paper_guard(self, phase: str) -> dict[str, Any]:
         if not self._latency_mode:
@@ -213,7 +220,7 @@ class PeftDevelopmentRoles:
             root.mkdir(exist_ok=True)
             job = root / uuid.uuid4().hex
             job.mkdir()
-            if self._latency_mode:
+            if self._latency_mode or self.paper_pilot:
                 with self._latency_lock:
                     self._guard_log = job / "latency-guard.jsonl"
                     for observed_guard in self._guard_observations:
@@ -365,7 +372,7 @@ class PeftDevelopmentRoles:
                 "peak_rss_bytes": max(peak, response.get("peak_rss_bytes", 0)),
                 "transport_wall_seconds": time.perf_counter() - started,
                 "paper_guard_after": after_guard
-                if not self._latency_mode
+                if not (self._latency_mode or self.paper_pilot)
                 else {
                     key: after_guard.get(key)
                     for key in (
@@ -378,7 +385,11 @@ class PeftDevelopmentRoles:
                         "phase",
                     )
                 },
-                "scope": "Unqualified development answer; no financial or operating authority",
+                "scope": (
+                    "Experimental paper research pilot; unqualified, no direct financial authority"
+                    if self.paper_pilot
+                    else "Unqualified development answer; no financial or operating authority"
+                ),
             }
             # The existing runner retains its own peak, which can exceed the
             # sampled owner peak. Keep that answer with the failed-budget receipt.
@@ -437,11 +448,14 @@ class PeftDevelopmentRoles:
             "cleanup_error_types": cleanup_errors,
             "profile_sha256": digest(profile),
             "private_dispatch_retained": False,
-            "scope": "Unqualified development attempt; no financial or operating authority",
+            "scope": (
+                "Experimental paper research pilot; unqualified, no direct financial authority"
+                if self.paper_pilot
+                else "Unqualified development attempt; no financial or operating authority"
+            ),
         }
-        if self._latency_mode:
-            evidence = {
-                "development_latency_authorization": self._latency_authorization,
+        if self._latency_mode or self.paper_pilot:
+            evidence = self._guard_authority() | {
                 "guard_observations": len(self._guard_observations),
                 "guard_observations_sha256": digest(self._guard_observations),
                 "guard_log": "latency-guard.jsonl" if self._guard_log is not None else None,
@@ -476,3 +490,334 @@ class PeftDevelopmentRoles:
             raise DevelopmentTransportFailure(receipt, answer) from failure
         assert answer is not None
         return answer
+
+
+PAPER_PILOT_FORMAT = "qtrades-peft-paper-pilot-v1"
+
+
+def _role_policy(path: Path) -> dict[str, Any]:
+    regular(path)
+    if path.stat().st_size > 16384:
+        raise ValueError("Role policy exceeds its bounded metadata limit")
+    return read(path)
+
+
+class PeftPaperPilotRoles(PeftDevelopmentRoles):
+    """Explicit unqualified paper grant in the existing policy and inference owners."""
+
+    paper_pilot = True
+
+    def __init__(self, policy_directory: Path):
+        # Startup must remain independent of optional private-volume availability.
+        super().__init__(policy_directory)
+        self.policy_path = policy_directory.resolve() / "role-policy.json"
+        self._policy_lock = RLock()
+        self._request_lock = Lock()
+        self._model_directory: Path | None = None
+        self._pilot_active = False
+        self._pending_admission: dict[str, Any] | None = None
+        self._dispatch_grant: dict[str, Any] | None = None
+
+    def _grant(self) -> dict[str, Any]:
+        grant = _role_policy(self.policy_path)
+        if set(grant) != {
+            "format",
+            "enabled",
+            "grant_id",
+            "development_directory",
+            "profile_sha256",
+            "roles",
+            "latency_admission",
+            "scope",
+        } or (
+            grant.get("format") != PAPER_PILOT_FORMAT
+            or type(grant.get("enabled")) is not bool
+            or grant.get("scope") != "prospective-paper-only"
+            or grant.get("latency_admission") != "advisory"
+            or grant.get("roles") != ["researcher", "reviewer"]
+            or not isinstance(grant.get("grant_id"), str)
+            or not 8 <= len(grant["grant_id"]) <= 64
+            or not all(c.isascii() and (c.isalnum() or c in "-_") for c in grant["grant_id"])
+            or not isinstance(grant.get("profile_sha256"), str)
+            or len(grant["profile_sha256"]) != 64
+            or not isinstance(grant.get("development_directory"), str)
+        ):
+            raise ValueError("Declare the explicit bounded trained-v2 paper-pilot grant")
+        return grant
+
+    def declaration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+        with self._policy_lock:
+            grant = self._grant()
+            private = regular(Path(grant["development_directory"]))
+            private = regular(private.resolve())
+            if self._model_directory is not None and private != self._model_directory:
+                raise ValueError("Paper-pilot private owner changed; stop before reconnecting")
+            original = self.directory
+            self.directory = private
+            try:
+                result = super().declaration()
+                if digest(result[2]) != grant["profile_sha256"]:
+                    raise ValueError("Paper-pilot grant does not match the frozen model/profile")
+            except Exception:
+                self.directory = original
+                raise
+            self._model_directory = private
+            return result
+
+    def policy(self) -> dict[str, Any]:
+        with self._policy_lock:
+            grant = self._grant()
+            self.declaration()
+            return grant | {
+                "configured_enabled": grant["enabled"],
+                "enabled": grant["enabled"] and not self._cancelled.is_set(),
+                "paper_pilot": True,
+                "experimental": True,
+                "qualified": False,
+                "qualification_valid": False,
+                "model": NAME,
+            }
+
+    def _observation(self) -> dict[str, Any]:
+        try:
+            return LocalRoles(self.directory).development_latency_guard()
+        except (ValueError, OSError, KeyError, httpx.HTTPError) as exc:
+            return {
+                "admitted": False,
+                "reasons": ["paper_pilot_observation_unavailable"],
+                "observation_error_type": type(exc).__name__,
+                "research_constrained": None,
+                "effective_latency_block_removed": False,
+            }
+
+    def _protected(self) -> dict[str, Any]:
+        observed = self._observation()
+        if available_memory() < PROFILE["max_rss_bytes"] + PROFILE["minimum_available_bytes"]:
+            observed = observed | {
+                "admitted": False,
+                "reasons": [*observed["reasons"], "pilot_prelaunch_memory_reserve"],
+            }
+        return observed
+
+    def can_research(self) -> bool:
+        try:
+            return self.policy()["enabled"] is True and self._protected()["admitted"] is True
+        except (ValueError, OSError, KeyError):
+            return False
+
+    def readiness(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
+            "paper_pilot": True,
+            "experimental": True,
+            "qualified": False,
+            "qualification_valid": False,
+            "ready": False,
+            "enabled": False,
+            "runtime_available": False,
+            "mode": "paper_research_pilot",
+            "stages": {
+                "qualification": {
+                    "state": "unqualified",
+                    "next_action": "Explicit paper pilot; no qualification or promotion is claimed",
+                }
+            },
+        }
+        try:
+            policy = self.policy()
+            profile = self.declaration()[2]
+            result.update(
+                profile=profile,
+                enabled=policy["enabled"],
+                runtime_available=True,
+                configured_enabled=policy["configured_enabled"],
+                grant_id=policy["grant_id"],
+            )
+            result["ready"] = self.can_research()
+            result["stages"].update(
+                policy={"state": "declared", "next_action": "Existing explicit paper-pilot grant"},
+                runtime={
+                    "state": "declaration_verified",
+                    "next_action": "Cold requests use the existing owned loader",
+                },
+                activation={
+                    "state": "enabled" if policy["enabled"] else "disabled",
+                    "next_action": "Pause/resume only this explicit paper pilot",
+                },
+            )
+            if not result["ready"]:
+                result["reason"] = "Paper pilot paused or protected admission unavailable"
+        except (ValueError, OSError, KeyError) as exc:
+            result["reason"] = str(exc)[:500]
+            result["stages"]["policy"] = {"state": "unavailable", "next_action": result["reason"]}
+        return result
+
+    def cancel(self) -> None:
+        with self._policy_lock:
+            # Latched until explicit resume: a scheduled request cannot erase shutdown/pause.
+            super().cancel()
+
+    def set_enabled(self, enabled: bool) -> dict[str, Any]:
+        if type(enabled) is not bool:
+            raise ValueError("Paper-pilot activation must be explicit")
+        if not enabled:
+            self.cancel()
+        if enabled and not self._request_lock.acquire(blocking=False):
+            raise ValueError("Owned paper-pilot request is still stopping; reopen its receipt")
+        try:
+            with self._policy_lock:
+                grant = self._grant()
+                if enabled:
+                    self.declaration()
+                    if self._protected()["admitted"] is not True:
+                        raise ValueError("Protected paper-pilot admission refuses resume")
+                changed = grant | {"enabled": enabled}
+                temporary = self.policy_path.with_name("role-policy-" + uuid.uuid4().hex + ".tmp")
+                try:
+                    with temporary.open("x", encoding="utf-8") as stream:
+                        stream.write(packet_json(changed))
+                        stream.flush()
+                        os.fsync(stream.fileno())
+                    temporary.replace(self.policy_path)
+                    try:
+                        if self._grant() != changed:
+                            raise ValueError("Paper-pilot activation receipt differs")
+                    except (ValueError, OSError) as exc:
+                        raise OSError(
+                            "Paper-pilot control acknowledgment unknown; reopen policy"
+                        ) from exc
+                finally:
+                    temporary.unlink(missing_ok=True)
+                if enabled:
+                    self._cancelled.clear()
+                return changed
+        finally:
+            if enabled:
+                self._request_lock.release()
+
+    def development_admit(self, role: str) -> dict[str, Any]:
+        raise ValueError("Paper pilot cannot reinterpret retained development requests")
+
+    def _paper_guard(self, phase: str) -> dict[str, Any]:
+        try:
+            policy = self.policy()
+            current_grant = self._grant()
+            observed = (
+                self._protected()
+                if phase in {"admission", "before_dispatch"}
+                else self._observation()
+            ) | {
+                "grant_id": policy["grant_id"],
+                "grant_sha256": digest(current_grant),
+                "grant_enabled": policy["enabled"],
+            }
+            if policy["enabled"] is not True:
+                observed = observed | {
+                    "admitted": False,
+                    "reasons": [*observed["reasons"], "paper_pilot_paused"],
+                }
+            if self._pilot_active and current_grant != self._dispatch_grant:
+                observed = observed | {
+                    "admitted": False,
+                    "reasons": [*observed["reasons"], "paper_pilot_grant_changed"],
+                }
+        except (ValueError, OSError, KeyError, httpx.HTTPError) as exc:
+            observed = {
+                "admitted": False,
+                "reasons": ["paper_pilot_authority_unavailable"],
+                "observation_error_type": type(exc).__name__,
+                "research_constrained": None,
+                "effective_latency_block_removed": False,
+            }
+        observed |= {
+            "phase": phase,
+            "paper_pilot": True,
+            "experimental": True,
+            "qualified": False,
+        }
+        with self._latency_lock:
+            if phase == "admission" and not self._pilot_active:
+                self._pending_admission = deepcopy(observed)
+            else:
+                if len(self._guard_observations) >= 640:
+                    raise ValueError("Finite paper-pilot guard observation budget exhausted")
+                self._guard_observations.append(observed)
+                if self._guard_log is not None:
+                    self._append_guard_log(observed)
+        if observed["admitted"] is not True:
+            raise ValueError(
+                "Protected paper-pilot guard refuses: " + ", ".join(observed["reasons"])
+            )
+        return observed
+
+    def _guard_authority(self) -> dict[str, Any]:
+        grant = self._dispatch_grant
+        return {
+            "paper_pilot_grant": (
+                {key: grant[key] for key in ("grant_id", "profile_sha256", "scope")}
+                | {"sha256": digest(grant)}
+                if grant
+                else None
+            ),
+            "paper_pilot": True,
+            "experimental": True,
+            "qualified": False,
+        }
+
+    def admit(self, role: str) -> dict[str, Any]:
+        if role not in {"researcher", "reviewer"}:
+            raise ValueError("Unsupported paper-pilot role")
+        self._paper_guard("admission")
+        return self.declaration()[2]
+
+    @staticmethod
+    def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> None:
+        if "retrieval_contract" in packet or "knowledge" in packet:
+            raise ValueError("Paper-pilot profile does not authorize retrieval input")
+        if packet.get("evidence", {}).get("e2", {}).get("purpose") == "performance_diagnostic":
+            raise ValueError("Performance diagnostic request is outside paper research")
+        PeftDevelopmentRoles.preflight(role, packet, profile)
+
+    def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+        if not self._request_lock.acquire(blocking=False):
+            raise ValueError("Existing paper-pilot request already owns this transport")
+        try:
+            if self._cancelled.is_set():
+                raise ValueError(
+                    "Paper-pilot cancellation remains latched; explicit resume required"
+                )
+            policy = self.policy()
+            if policy["enabled"] is not True:
+                raise ValueError("Paper-pilot grant is paused")
+            current_grant = self._grant()
+            with self._latency_lock:
+                if self._pending_admission is not None and self._pending_admission.get(
+                    "grant_sha256"
+                ) != digest(current_grant):
+                    raise ValueError("Paper-pilot grant changed between admission and dispatch")
+                self._guard_log = None
+                self._guard_observations = (
+                    [deepcopy(self._pending_admission)] if self._pending_admission else []
+                )
+                self._pending_admission = None
+                self._dispatch_grant = current_grant
+                self._pilot_active = True
+            return super().infer(role, packet, profile)
+        finally:
+            with self._latency_lock:
+                self._pilot_active = False
+                self._guard_log = None
+            self._request_lock.release()
+
+
+def local_role_transport(directory: Path) -> LocalRoles | PeftPaperPilotRoles:
+    """Select the existing configured owner; optional unreadiness cannot stop paper startup."""
+    policy_path = directory.resolve() / "role-policy.json"
+    try:
+        if not policy_path.exists():
+            return LocalRoles(directory)
+        policy = _role_policy(policy_path)
+    except (ValueError, OSError):
+        return PeftPaperPilotRoles(directory)
+    if "format" in policy:
+        return PeftPaperPilotRoles(directory)
+    return LocalRoles(directory)

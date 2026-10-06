@@ -31,7 +31,6 @@ from trading.evidence_runtime import feature_reproduction
 from trading.experiment_lab import ExperimentLab
 from trading.experiment_registry import ExperimentPlan
 from trading.knowledge_acquisition import URLImport, acquire
-from trading.local_role_model import LocalRoles
 from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
@@ -39,6 +38,7 @@ from trading.ownership import CollectorLock
 from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
+from trading.peft_role_model import PeftPaperPilotRoles, local_role_transport
 from trading.prospective_review import ProspectiveSpec
 from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
@@ -315,9 +315,11 @@ def create_app(
                         lab.autonomous = AutonomousLab(
                             lab.registry, app.state.paper, lambda: lab.can_research()
                         )
-                    local_roles = LocalRoles(database.parent)
+                    local_roles = local_role_transport(database.parent)
                     lab.roles = RoleWorker(lab.registry, lab.autonomous, local_roles)
                     lab.roles.activation = lambda: bool(local_roles.policy().get("enabled", False))
+                    if isinstance(local_roles, PeftPaperPilotRoles):
+                        lab.roles.paper_admission = local_roles.can_research
                     plan = load_plan(database.parent)
                     if plan is not None:
                         try:
@@ -1071,6 +1073,30 @@ def create_app(
                 question, "Question saved; detail is temporarily unavailable"
             )
             raise HTTPException(503, receipt) from exc
+
+    @app.post("/api/lab/roles/control")
+    def role_pilot_control(request: Request, control: Control) -> dict[str, Any]:
+        lab = lab_operator(request)
+        roles = lab.roles
+        if roles is None:
+            raise HTTPException(503, "Local role registry unavailable")
+        transport = roles.transport
+        if getattr(transport, "paper_pilot", False) is not True:
+            raise HTTPException(409, "An existing approved paper pilot is required")
+        try:
+            transport.set_enabled(control.action == "resume")
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(
+                503, "Pilot control acknowledgment unavailable; refresh its current status"
+            ) from exc
+        try:
+            return dict(roles.page())
+        except (OSError, sqlite3.Error, LookupError) as exc:
+            raise HTTPException(
+                503, "Pilot control saved; current status unavailable. Refresh before retrying"
+            ) from exc
 
     @app.get("/api/lab/roles/tasks/{identity}")
     def role_detail(request: Request, identity: str) -> dict[str, Any]:
