@@ -18,7 +18,15 @@ from trading.autonomous_lab import AutonomousLab, InputWait
 from trading.autonomous_spec import LabProposal, MemoryFilter, RuleSpec
 from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
-from trading.lab_role_contract import TOOL_REQUEST_VERSION, VERSION, Idea, IdeaV6, Review, validate
+from trading.lab_role_contract import (
+    CAPABILITY_VERSION,
+    TOOL_REQUEST_VERSION,
+    VERSION,
+    Idea,
+    IdeaV6,
+    Review,
+    validate,
+)
 from trading.local_role_model import LocalRoles
 from trading.peft_role_model import DevelopmentTransportFailure
 from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
@@ -119,7 +127,7 @@ class RoleWorker:
 
     def _contract_version(self) -> str:
         version = getattr(self.transport, "role_contract", VERSION)
-        if version not in (VERSION, TOOL_REQUEST_VERSION):
+        if version not in (VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION):
             raise ValueError("Role contract needs an explicitly reviewed supported profile")
         return str(version)
 
@@ -1019,8 +1027,9 @@ class RoleWorker:
 
     def _packet(self, task: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         role, packet = self._base_packet(task)
-        if task["context"].get("contract", VERSION) == TOOL_REQUEST_VERSION:
-            packet["contract"] = TOOL_REQUEST_VERSION
+        version = task["context"].get("contract", VERSION)
+        if version in (TOOL_REQUEST_VERSION, CAPABILITY_VERSION):
+            packet["contract"] = version
             if role == "researcher":
                 packet["tool_inventory"] = {
                     "strategy_family": sorted(
@@ -1130,6 +1139,25 @@ class RoleWorker:
             )
             for key, value in context["catalog"].items()
         }
+        if context.get("contract", VERSION) == CAPABILITY_VERSION:
+            # These are the already issued method's fixed controls, not new
+            # model-selectable parameters. Old v5/v6 wire packets stay unchanged.
+            controls = (
+                "volume_multiple",
+                "holding_horizon",
+                "exit_seconds",
+                "progress_seconds",
+                "stop_atr",
+                "input_version",
+            )
+            for key, value in context["catalog"].items():
+                capabilities[key]["fixed_comparison"] = {
+                    "strategy": {field: value["strategy"][field] for field in controls},
+                    "reference": {field: value["reference"][field] for field in controls},
+                    "strategy_sha256": value["strategy_sha256"],
+                    "reference_sha256": value["reference_sha256"],
+                    "parameter_selection": "server_frozen_only",
+                }
         return "researcher", {
             "question": context["question"]["question"],
             "capabilities": capabilities,

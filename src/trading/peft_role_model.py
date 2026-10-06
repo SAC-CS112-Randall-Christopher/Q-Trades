@@ -13,6 +13,7 @@ from typing import Any
 import httpx
 
 from trading.lab_role_contract import (
+    CAPABILITY_VERSION,
     TOOL_REQUEST_VERSION,
     VERSION,
     contract_hash,
@@ -506,6 +507,7 @@ class PeftDevelopmentRoles:
 
 PAPER_PILOT_FORMAT = "qtrades-peft-paper-pilot-v1"
 PAPER_PILOT_TOOL_FORMAT = "qtrades-peft-paper-pilot-v2"
+PAPER_PILOT_CAPABILITY_FORMAT = "qtrades-peft-paper-pilot-v3"
 
 
 def _role_policy(path: Path) -> dict[str, Any]:
@@ -543,13 +545,18 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             "latency_admission",
             "scope",
         }
-        if grant.get("format") == PAPER_PILOT_TOOL_FORMAT:
+        if grant.get("format") in (PAPER_PILOT_TOOL_FORMAT, PAPER_PILOT_CAPABILITY_FORMAT):
             expected.add("role_contract")
         if set(grant) != expected or (
-            grant.get("format") not in (PAPER_PILOT_FORMAT, PAPER_PILOT_TOOL_FORMAT)
+            grant.get("format")
+            not in (PAPER_PILOT_FORMAT, PAPER_PILOT_TOOL_FORMAT, PAPER_PILOT_CAPABILITY_FORMAT)
             or (
                 grant.get("format") == PAPER_PILOT_TOOL_FORMAT
                 and grant.get("role_contract") != TOOL_REQUEST_VERSION
+            )
+            or (
+                grant.get("format") == PAPER_PILOT_CAPABILITY_FORMAT
+                and grant.get("role_contract") != CAPABILITY_VERSION
             )
             or type(grant.get("enabled")) is not bool
             or grant.get("scope") != "prospective-paper-only"
@@ -581,14 +588,14 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             self.directory = private
             try:
                 result = super().declaration()
-                if grant.get("role_contract") == TOOL_REQUEST_VERSION:
+                if grant.get("role_contract") in (TOOL_REQUEST_VERSION, CAPABILITY_VERSION):
                     result = (
                         result[0],
                         result[1],
                         result[2]
                         | {
-                            "role_contract": TOOL_REQUEST_VERSION,
-                            "contract_sha256": contract_hash(TOOL_REQUEST_VERSION),
+                            "role_contract": grant["role_contract"],
+                            "contract_sha256": contract_hash(grant["role_contract"]),
                         },
                     )
                 if digest(result[2]) != grant["profile_sha256"]:

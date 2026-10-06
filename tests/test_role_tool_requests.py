@@ -12,7 +12,13 @@ from test_paper_pilot_worker import workspace as workspace
 
 from trading.api import create_app
 from trading.config import Settings
-from trading.lab_role_contract import TOOL_REQUEST_VERSION, VERSION, contract_hash
+from trading.experiment_registry import fingerprint
+from trading.lab_role_contract import (
+    CAPABILITY_VERSION,
+    TOOL_REQUEST_VERSION,
+    VERSION,
+    contract_hash,
+)
 from trading.role_worker import RoleWorker
 
 
@@ -205,3 +211,124 @@ def test_version_switch_preserves_old_task_request_identity_and_current_selectio
     assert worker.get(newer["id"])["stage"] == "tool_wait"
     assert worker.get(old["id"])["status"] == "queued"
     assert len(worker.transport.calls) == 1
+
+
+class CapabilityFixture(ToolFixture):
+    role_contract = CAPABILITY_VERSION
+
+    def admit(self, role):
+        return super().admit(role) | {
+            "role_contract": CAPABILITY_VERSION,
+            "contract_sha256": contract_hash(CAPABILITY_VERSION),
+        }
+
+    def preflight(self, role, packet, profile):
+        assert packet["contract"] == profile["role_contract"] == CAPABILITY_VERSION
+
+
+def catalog_denial():
+    # Scientific shape of the retained adverse answer; no operating packet/data.
+    return {
+        "action": "unsupported_capability",
+        "capability": None,
+        "evidence_ids": ["e0", "e2"],
+        "mechanism": "The declared capability is a feature, not a strategy family.",
+        "falsification": "A later closed bar with confirmed volume could enable the comparison.",
+        "rationale": "The requested comparison is not supported by the declared capability.",
+        "dependency": None,
+        "unsupported_basis": {"identifier": "r0", "kind": "feature"},
+        "tool_request": None,
+    }
+
+
+def test_v7_packet_discloses_identical_frozen_controls_without_new_financial_parameters(workspace):
+    worker, clock, _ = workspace
+    worker.transport = CapabilityFixture()
+    before = copy.deepcopy(worker.controller.paper.state)
+    task = worker.enqueue(question("v7-frozen-comparison"), clock[0])
+    role, packet = worker._packet(task)
+    assert role == "researcher" and packet["contract"] == CAPABILITY_VERSION
+    assert "knowledge" not in packet and "retrieval_contract" not in packet
+    for handle, offered in packet["capabilities"].items():
+        saved = task["context"]["catalog"][handle]
+        comparison = offered["fixed_comparison"]
+        assert comparison["parameter_selection"] == "server_frozen_only"
+        assert comparison["strategy"]["volume_multiple"] == "2"
+        assert comparison["reference"]["volume_multiple"] == "2"
+        assert comparison["strategy"]["exit_seconds"] == 2700
+        assert comparison["reference"]["input_version"] == "closed-minute-bars-v1"
+        assert comparison["strategy_sha256"] == saved["strategy_sha256"]
+        assert comparison["reference_sha256"] == saved["reference_sha256"]
+        assert comparison["strategy_sha256"] == fingerprint(saved["strategy"])
+        assert "risk_envelope" not in comparison["strategy"]
+    assert worker.controller.paper.state == before
+    assert worker.get(task["id"])["attempts"] == [] and not worker.transport.calls
+
+
+def test_v6_adverse_result_and_consumed_allowance_stay_frozen_during_v7_selection(workspace):
+    worker, clock, _ = workspace
+    worker.transport = ToolFixture(catalog_denial())
+    original = worker.enqueue(question("old-v6-adverse"), clock[0])
+    assert asyncio.run(worker.step(clock[0]))
+    retained = copy.deepcopy(worker.get(original["id"]))
+    assert retained["status"] == "done"
+    assert retained["result"] == catalog_denial() | {"wait_requirement": None}
+    old_packet = worker._packet(retained)
+    assert all("fixed_comparison" not in value for value in old_packet[1]["capabilities"].values())
+    allowances = [tuple(row) for row in worker.registry.db.execute(
+        "SELECT * FROM role_attempt_allowances ORDER BY task,stage,attempt"
+    ).fetchall()]
+    worker.transport = CapabilityFixture()
+    assert worker.enqueue(question("old-v6-adverse"), clock[0])["id"] == original["id"]
+    assert worker._packet(worker.get(original["id"])) == old_packet
+    assert worker.get(original["id"]) == retained
+    assert worker.view(original["id"])["contract_applicability"]["state"] == "different"
+    assert not asyncio.run(worker.step(clock[0])) and not worker.transport.calls
+    assert [tuple(row) for row in worker.registry.db.execute(
+        "SELECT * FROM role_attempt_allowances ORDER BY task,stage,attempt"
+    ).fetchall()] == allowances
+
+
+def test_v7_invalid_catalog_denial_is_retained_without_experiment_tool_or_retry(workspace):
+    worker, clock, directory = workspace
+    model = CapabilityFixture(catalog_denial())
+    worker.transport = model
+    original = copy.deepcopy(worker.controller.paper.state)
+    task = worker.enqueue(question("v7-adverse-namespace"), clock[0])
+    assert not asyncio.run(worker.step(clock[0]))
+    saved = worker.get(task["id"])
+    assert saved["status"] == "failed" and saved["result"] is None
+    assert saved["proposal"] is None and saved["evaluation"] is None
+    assert len(saved["attempts"]) == 1
+    assert json.loads(saved["attempts"][0]["response"])["answer"] == catalog_denial()
+    assert not asyncio.run(worker.step(clock[0] + 1))
+    reopened = RoleWorker(worker.registry, worker.controller, model)
+    reopened.enabled = True
+    reopened.paper_admission = lambda: True
+    assert reopened.get(task["id"])["attempts"] == saved["attempts"]
+    assert not asyncio.run(reopened.step(clock[0] + 2))
+    assert len(model.calls) == 1 and worker.controller.paper.state == original
+    app = create_app(Settings(), directory / "v7-api-monitor.sqlite", background=False)
+    app.state.lab = SimpleNamespace(roles=reopened)
+    client = TestClient(app)
+    try:
+        detail = client.get("/api/lab/roles/tasks/" + task["id"])
+        assert detail.status_code == 200
+        assert detail.json()["attempts"][0]["response"]["answer"] == catalog_denial()
+    finally:
+        client.close()
+
+
+def test_v7_legitimate_tool_request_remains_pending_review_without_automatic_calls(workspace):
+    worker, clock, _ = workspace
+    worker.transport = CapabilityFixture()
+    before = copy.deepcopy(worker.controller.paper.state)
+    task = worker.enqueue(question("v7-absent-analysis-tool"), clock[0])
+    assert asyncio.run(worker.step(clock[0]))
+    saved = worker.get(task["id"])
+    assert saved["stage"] == "tool_wait" and saved["status"] == "waiting"
+    assert saved["result"] == worker.transport.answer
+    assert worker.resume_sources(clock[0] + 120) == 0
+    assert worker.select_followups()["selected"] == 0
+    assert not asyncio.run(worker.step(clock[0] + 120))
+    assert len(worker.transport.calls) == 1 and worker.controller.paper.state == before
