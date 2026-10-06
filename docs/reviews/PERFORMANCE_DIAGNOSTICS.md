@@ -275,8 +275,10 @@ attempts/allowances retain their exact before-run digest. No second answer or
 preferred-answer retry was dispatched.
 
 The runner recorded 521.719 seconds total, 43.405 seconds for its measured model
-load phase and 428.219 seconds of generation, with 1,300 prompt tokens and 72
-generated tokens. Those phases do not include all verification/preparation;
+load phase and 428.219 seconds for its measured generation phase, with 1,300
+prompt tokens and 72 generated tokens. That latter measurement includes
+`model.generate` and immediate decoding, parsing and result preparation; it
+does not split prefill from token decoding. Those phases do not include all verification/preparation;
 they are not summed to manufacture a total. The transport took 550.535 seconds,
 and the invocation-to-reopened-result bracket was 553.047 seconds. Its actual
 CPU/float32 adapter identity and fixed two-processor placement match the frozen
@@ -296,6 +298,24 @@ workload completed and drained about 251.5 seconds after it started, before the
 model finished; the remaining model
 interval continued native financial processing and recording without an active
 diagnostic position/order workload.
+
+Restricting records to the actual root invocation-to-reopened-result bracket
+gives **1,105 model-pending ticks**, **206 intents**, **164 fills** including 13
+partial fills, 44 cancellations and 78 closes, with **400 ticks holding
+inventory/orders** and **436 ticks with the finite workload running**. The
+helper's broader 1,108-tick model phase includes two ticks before invocation
+(one additional intent) and one event-free tick after the result. The table
+below describes that broader phase rather than relabeling it as exact overlap.
+
+Exact generation start/end markers were not recorded. A separate read-only
+derivation intersects every possible placement of the contiguous 428.219-second
+measured generation phase inside the 553.047-second invocation bracket. Its
+conservative interior contains 69 synthetic QA fills and derives about
+93.25 seconds of overlap with running work and 95.27 seconds with managed
+inventory/order processing before the workload becomes flat. These are derived
+conservative phase bounds, not observed generation timestamps or proof that
+each fill occurred during token decoding alone. The complete packet/financial
+links remain independently verified.
 
 | Observed complete native work | Before model | Model phase | Recovery |
 | --- | ---: | ---: | ---: |
@@ -329,9 +349,11 @@ retained transport observation. Deduplicating retained windows yields 1,521
 installed work samples within the invocation bracket, p95 178.88 ms and a
 1,029.75-ms maximum, with one >=500-ms/severe sample. There are five absent work
 numbers across four gaps and a maximum 3.125-second poll gap. The installed
-`active_portfolios` flag is true in 875 retained work samples; that sampled flag
-does not resolve the existing direct NAT writer identity or verify complete
-installed market/financial/capture behavior.
+`active_portfolios` flag is true in 875 retained work samples. Its source checks
+for current positions or pending orders before work; it is actual inventory/order
+state rather than account configuration, but it does not prove a fill event.
+Those sampled flags do not resolve the existing direct NAT writer identity or
+verify complete installed market/financial/capture behavior.
 
 Installed full/compact capture omission counters increased by **792/102**
 between sampled boundaries, despite the recording-state checks passing. Those
@@ -388,3 +410,7 @@ Its actual outcome and cleanup are `model-result-reopened.json` and
 documents sampled installed gaps/omission deltas. No receipt from the earlier
 refused run is
 replaced by this later, separately authorized result.
+Exact invocation overlap is `read-only-overlap-analysis.json`;
+`generation-phase-clarification.json` and
+`read-only-analysis-summary-corrected.json` retain the corrected measured-phase
+scope without rewriting earlier receipts.
