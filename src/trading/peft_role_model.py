@@ -11,7 +11,7 @@ from typing import Any
 
 from trading.lab_role_contract import contract_hash, packet_json, prompt
 from trading.local_role_model import LocalRoles
-from trading.numerical_resources import child_rss
+from trading.numerical_resources import constrain_child
 from trading.ownership import CollectorLock
 from trading.peft_child_owner import ChildOwner, available_memory
 from trading.peft_profile import PROFILE, digest, metadata, read, regular
@@ -155,7 +155,7 @@ class PeftDevelopmentRoles:
                 }
             )
             flags = (
-                subprocess.CREATE_NO_WINDOW | subprocess.IDLE_PRIORITY_CLASS
+                subprocess.CREATE_NO_WINDOW | subprocess.IDLE_PRIORITY_CLASS | 0x4
                 if os.name == "nt"
                 else 0
             )
@@ -173,9 +173,17 @@ class PeftDevelopmentRoles:
                     stderr=stderr,
                     creationflags=flags,
                 )
-                owned = ChildOwner(child)
-                # The child cannot touch weights until the parent pins its lifetime.
+                # CREATE_SUSPENDED keeps the Windows venv launcher from spawning
+                # its interpreter before the existing owner attaches the Job.
+                category = "child_ownership"
+                owned = ChildOwner(
+                    child, memory_limit=profile["max_rss_bytes"], suspended=os.name == "nt"
+                )
+                category = "child_placement"
+                if os.name == "nt":
+                    constrain_child(child.pid, distinct_cores=True)
                 (job / "owner-ready").write_text("owned", encoding="ascii")
+                owned.resume()
                 while child.poll() is None:
                     if self._cancelled.is_set():
                         category = "cancelled"
@@ -184,7 +192,7 @@ class PeftDevelopmentRoles:
                         category = "timeout"
                         raise TimeoutError("Development inference exhausted its frozen wall budget")
                     category = "resource_observation"
-                    observed = child_rss(child.pid)
+                    observed = owned.rss()
                     if observed > 0:
                         peak = max(peak, observed)
                         rss_observations += 1
@@ -257,8 +265,20 @@ class PeftDevelopmentRoles:
                 "paper_guard_after": after_guard,
                 "scope": "Unqualified development answer; no financial or operating authority",
             }
+            # The existing runner retains its own peak, which can exceed the
+            # sampled owner peak. Keep that answer with the failed-budget receipt.
+            if answer["peak_rss_bytes"] > profile["max_rss_bytes"]:
+                category = "memory_budget"
+                raise ValueError("Development inference exceeded its memory budget")
         except Exception as exc:
             failure = exc
+            if category == "child_ownership" and owned is None:
+                # Constructor-owned handles are unavailable when acquisition
+                # raises. Refusing release does not prove their cleanup.
+                cleanup_errors.append("OwnerCleanupUnverified")
+                cleanup_reasons.append(
+                    "Child owner construction did not return; cleanup unverified"
+                )
         finally:
             # Try every original-handle cleanup step even if a preceding one fails.
             # Only then freeze the measured receipt, including the actual exit code.
