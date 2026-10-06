@@ -5,9 +5,10 @@ import json
 import time
 from collections.abc import Callable
 from decimal import Decimal
+from functools import wraps
 from pathlib import Path
 from threading import RLock
-from typing import Any
+from typing import Any, Concatenate
 
 import psycopg
 from psycopg.pq import TransactionStatus
@@ -16,6 +17,20 @@ from psycopg.types.json import Jsonb
 
 from trading.execution_profiles import LEGACY_EXECUTION
 from trading.paper_engine import PaperEngine, initial_state
+
+
+def _locked[**P, R](
+    method: Callable[Concatenate["PaperStore", P], R],
+) -> Callable[Concatenate["PaperStore", P], R]:
+    """Keep complete reader scopes outside another thread's writer transaction."""
+
+    @wraps(method)
+    def call(store: "PaperStore", /, *args: P.args, **kwargs: P.kwargs) -> R:
+        with store.transaction_lock:
+            return method(store, *args, **kwargs)
+
+    return call
+
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS paper_state (
@@ -116,6 +131,7 @@ class PaperStore:
         if not self.owner:
             raise RuntimeError("Financial mutation requires the exclusive engine writer lock")
 
+    @_locked
     def close(self) -> None:
         self._projection_cache = None
         self.connection.close()
@@ -130,6 +146,7 @@ class PaperStore:
                 "misses": self._projection_cache_misses,
             }
 
+    @_locked
     def initialize(
         self, now: float, starting_cash: str = "100", execution_profile: str = LEGACY_EXECUTION
     ) -> None:
@@ -355,6 +372,7 @@ class PaperStore:
             self.last_commit_receipt["projection_sha256"] = projection_sha256
         return engine.state
 
+    @_locked
     def read(self) -> dict[str, Any]:
         row = self.connection.execute(
             "SELECT body, revision FROM paper_state WHERE id=1"
@@ -384,6 +402,7 @@ class PaperStore:
         self.transact(now, apply)
         return result
 
+    @_locked
     def lab_history(self, before: int = 0, limit: int = 20) -> dict[str, Any]:
         rows = self.connection.execute(
             "SELECT id,at,body FROM paper_events WHERE kind='lab_trial_reserved' "
@@ -405,12 +424,14 @@ class PaperStore:
             "next_before": page[-1]["id"] if page else before,
         }
 
+    @_locked
     def archived_account(self, name: str) -> dict[str, Any] | None:
         row = self.connection.execute(
             "SELECT * FROM paper_lab_archives WHERE account=%s", (name,)
         ).fetchone()
         return dict(row) if row else None
 
+    @_locked
     def learning_report(self, request_id: str, sha256: str) -> dict[str, Any] | None:
         from trading.paper_learning import verify_report
 
@@ -458,6 +479,7 @@ class PaperStore:
                         raise ValueError("Stored closed candle differs from newly received data")
         return inserted
 
+    @_locked
     def recent(self, limit: int = 50) -> list[dict[str, Any]]:
         return list(
             self.connection.execute(
@@ -467,6 +489,7 @@ class PaperStore:
             ).fetchall()
         )
 
+    @_locked
     def numerical_inputs(self, as_of: float) -> list[dict[str, Any]]:
         rows = self.connection.execute(
             "SELECT id,at,body FROM paper_events WHERE kind='market_minute' "
@@ -475,6 +498,7 @@ class PaperStore:
         ).fetchall()
         return sorted(rows, key=lambda r: (r["at"], r["id"]))
 
+    @_locked
     def forward_windows(self, now: float) -> dict[str, Any]:
         rows = self.connection.execute(
             "SELECT id,body FROM paper_events WHERE kind='economics_window' AND at<=%s "
@@ -487,6 +511,7 @@ class PaperStore:
             "event_ids": [r["id"] for r in rows[:512]],
         }
 
+    @_locked
     def export(self, after: int, limit: int, account: str | None = None) -> dict[str, Any]:
         rows = list(
             self.connection.execute(
@@ -506,6 +531,7 @@ class PaperStore:
             "next_after": page[-1]["id"] if page else after,
         }
 
+    @_locked
     def trade_history(
         self,
         *,
@@ -573,8 +599,11 @@ class PaperStore:
             "closed_count": len(closed),
         }
 
+    @_locked
     def research_account(self, account: str, cutoff: float | None = None) -> dict[str, Any]:
         """Select one durable identity without loading all account/history projections."""
+        from trading.account_purpose import require_research_account
+
         row = self.connection.execute(
             "SELECT revision,(body->'accounts'->%s)-'recent_trades'-'economics_windows' AS account,"
             "(body->>'last_tick')::double precision AS state_at FROM paper_state WHERE id=1",
@@ -601,6 +630,7 @@ class PaperStore:
                 for k, v in archive["state"].items()
                 if k not in {"recent_trades", "economics_windows"}
             }
+        require_research_account(saved, account)
         maximum = self.connection.execute(
             "SELECT coalesce(max(id),0) AS id FROM paper_events WHERE at<=%s",
             (cutoff,),
@@ -616,6 +646,7 @@ class PaperStore:
             "trial_id": saved.get("lab_trial", archive["trial_id"] if archive else None),
         }
 
+    @_locked
     def research_events(
         self,
         account: str,
@@ -639,10 +670,14 @@ class PaperStore:
             "next_before": rows[19]["id"] if len(rows) > 20 else None,
         }
 
+    @_locked
     def research_cost_groups(
         self, snapshot: dict[str, Any], symbol: str, *, start: float
     ) -> dict[str, Any]:
         """Bounded identical-cohort costs; absent historical policies stay unknown."""
+        from trading.account_purpose import require_research_account
+
+        require_research_account(snapshot["state"], snapshot["account"])
         rows = self.connection.execute(
             "SELECT body->>'version' AS version,body->>'execution_profile' AS execution_profile,"
             "body->>'holding_horizon' AS holding_horizon,count(*) AS trades,"
@@ -655,10 +690,14 @@ class PaperStore:
         ).fetchall()
         return {"groups": rows[:16], "more_groups": len(rows) > 16, "maximum_groups": 16}
 
+    @_locked
     def research_outcomes(
         self, snapshot: dict[str, Any], symbol: str, *, start: float = 0
     ) -> dict[str, Any]:
+        from trading.account_purpose import require_research_account
         from trading.paper_economics import sample
+
+        require_research_account(snapshot["state"], snapshot["account"])
 
         account, cutoff, maximum = (snapshot[k] for k in ("account", "cutoff", "maximum_event_id"))
         totals = self.connection.execute(
@@ -713,6 +752,7 @@ class PaperStore:
             "snapshot": {k: v for k, v in snapshot.items() if k != "state"},
         }
 
+    @_locked
     def reconcile(self) -> dict[str, Any]:
         state = self.read()
         imbalanced = self.connection.execute(
@@ -767,6 +807,7 @@ class PaperStore:
             "revision": state["revision"],
         }
 
+    @_locked
     def storage_usage(self) -> dict[str, int]:
         row = self.connection.execute(
             "SELECT pg_database_size(current_database()) AS database_bytes, "

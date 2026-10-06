@@ -6,6 +6,7 @@ import statistics
 from decimal import Decimal as D
 from typing import TYPE_CHECKING, Any
 
+from trading.account_purpose import RESEARCH_EXCLUSION, require_research_account, research_account
 from trading.experiment_registry import fingerprint
 from trading.numerical_candidates import validate_artifact
 
@@ -47,12 +48,15 @@ def config(a: dict[str, Any]) -> dict[str, Any]:
             "economics_settings_version",
             "symbols",
             "benchmark_symbols",
+            *(("purpose",) if "purpose" in a else ()),
         )
     }
 
 
 def drift(a: dict[str, Any]) -> list[str]:
     reasons = []
+    if not research_account(a):
+        reasons.append(RESEARCH_EXCLUSION)
     artifact = a.get("numerical_artifact")
     if artifact:
         try:
@@ -74,16 +78,21 @@ def matched_control(engine: "PaperEngine", candidate: str) -> dict[str, Any]:
     from trading.paper_engine import account
 
     a = engine.state["accounts"][candidate]
+    require_research_account(a, candidate)
     if not a.get("numerical_artifact"):
         raise ValueError("Select a frozen exploratory numerical account")
     controls = engine.state.setdefault("forward_controls", {})
     if candidate in controls:
+        require_research_account(engine.state["accounts"][controls[candidate]], controls[candidate])
         return {"status": "already_applied", "account": controls[candidate]}
     if len(set(engine.state["accounts"]) | {"universe-wide-v1", "universe-control-v1"}) >= 20:
         raise ValueError("Twenty-account limit reached; cannot discard history to fund a control")
     incumbent = engine.state["accounts"][
         engine.state.get("learning", {}).get("incumbent", "primary")
     ]
+    require_research_account(
+        incumbent, engine.state.get("learning", {}).get("incumbent", "primary")
+    )
     if incumbent.get("numerical_artifact"):
         validate_artifact(incumbent["numerical_artifact"])
     name = "control-" + a["numerical_artifact"]["sha256"][:24]
@@ -143,7 +152,10 @@ def comparison(
     truncated: bool = False,
 ) -> dict[str, Any]:
     a = state["accounts"][candidate]
+    require_research_account(a, candidate)
     control = state.get("forward_controls", {}).get(candidate)
+    if control in state["accounts"]:
+        require_research_account(state["accounts"][control], control)
     reasons = drift(a)
     if not a.get("numerical_artifact"):
         reasons.append("Only explicitly frozen numerical candidates enter this forward policy")
@@ -341,6 +353,9 @@ def designate(
     learning = engine.state["learning"]
     command = {"report_id": report_id, "sha256": sha256, "expected_version": expected_version}
     if learning.get("last_designation") == command:
+        require_research_account(
+            engine.state["accounts"][learning["incumbent"]], learning["incumbent"]
+        )
         return {"status": "already_applied", "incumbent": learning["incumbent"]}
     if learning["role_version"] != expected_version:
         raise ValueError("Paper role changed; refresh before approval")
@@ -369,6 +384,9 @@ def designate(
     if engine.now - report["created_at"] > 86400:
         raise ValueError("Report expired; a subsequent protected comparison is required")
     a = engine.state["accounts"][report["candidate"]]
+    require_research_account(a, report["candidate"])
+    if report.get("control") in engine.state["accounts"]:
+        require_research_account(engine.state["accounts"][report["control"]], report["control"])
     if fingerprint(config(a)) != report["configuration_sha256"] or drift(a):
         raise ValueError("Frozen configuration, data or risk changed after the report")
     if len(learning["promotions"]) >= 8:
@@ -393,12 +411,18 @@ def designate(
 def rollback(engine: "PaperEngine", expected_version: int) -> dict[str, Any]:
     learning = engine.state["learning"]
     if learning.get("last_rollback") == expected_version:
+        require_research_account(
+            engine.state["accounts"][learning["incumbent"]], learning["incumbent"]
+        )
         return {"status": "already_applied", "incumbent": learning["incumbent"]}
     if learning["role_version"] != expected_version or not learning["promotions"]:
         raise ValueError("Paper role changed or has no designation to roll back")
     record = learning["promotions"][-1]
     if record["rolled_back"]:
         raise ValueError("The latest designation is already rolled back")
+    require_research_account(
+        engine.state["accounts"][record["prior_incumbent"]], record["prior_incumbent"]
+    )
     learning.update(
         incumbent=record["prior_incumbent"],
         role_version=expected_version + 1,
@@ -436,7 +460,9 @@ def snapshot(state: dict[str, Any]) -> dict[str, Any]:
                 "latest_decisions": a.get("last_decision", {}),
             }
             for n, a in state["accounts"].items()
-            if a.get("numerical_artifact") and a.get("campaign_id") == "forward-research"
+            if research_account(a, n)
+            and a.get("numerical_artifact")
+            and a.get("campaign_id") == "forward-research"
         ],
         "changes": POLICY["changes"],
         "live_execution": False,

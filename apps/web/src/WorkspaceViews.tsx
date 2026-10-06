@@ -19,6 +19,7 @@ import type { Account, PaperSnapshot } from "./PaperPanel";
 import { PaperCampaignPanel } from "./PaperCampaignPanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
 import { TradeHistory } from "./TradeHistory";
+import { PerformanceDiagnosticPanel } from "./PerformanceDiagnosticPanel";
 
 const money = (value: string | number | null | undefined) =>
   value == null || !Number.isFinite(Number(value))
@@ -863,6 +864,8 @@ function AccountInspector({
         <div>
           <p className="eyebrow">SELECTED PAPER ACCOUNT</p>
           <h2>{a.label ?? name}</h2>
+          {a.purpose === "performance_diagnostic" && <p className="fine-print">Random performance activity in shared history.
+            Returns do not count toward strategy rankings or promotions.</p>}
         </div>
         <button
           className="icon-button"
@@ -878,8 +881,9 @@ function AccountInspector({
       </p>
       <p>
         {a.fault?.reason ??
-          a.risk?.reason ??
-          "Waiting for retained risk evidence."}
+          (a.purpose === "performance_diagnostic" && !a.risk?.blocked
+            ? "Use the performance controls below to start or stop test activity."
+            : a.risk?.reason ?? "Waiting for retained risk evidence.")}
       </p>
       <dl className="summary-values">
         <div>
@@ -912,6 +916,7 @@ function AccountInspector({
         </div>
       </dl>
       <div className="heading-actions">
+        {a.purpose !== "performance_diagnostic" && <>
         <button
           className="button secondary"
           disabled={pending || waiting || unavailable}
@@ -933,6 +938,7 @@ function AccountInspector({
             Retry account processing
           </button>
         )}
+        </>}
         <a href="#risk" className="button secondary">
           <ShieldCheck size={15} /> Review loss controls
         </a>
@@ -978,6 +984,7 @@ export function AccountsView({
   const research = accounts.filter(([, a]) =>
     a.campaign_id?.startsWith("forward-"),
   ).length;
+  const diagnostics = accounts.filter(([, a]) => a.purpose === "performance_diagnostic").length;
   const matching = accounts.filter(
     ([name, a]) =>
       `${a.label ?? name} ${a.version}`
@@ -985,6 +992,7 @@ export function AccountsView({
         .includes(query.toLowerCase()) &&
       (filter === "all" ||
         (filter === "research" && a.campaign_id?.startsWith("forward-")) ||
+        (filter === "diagnostic" && a.purpose === "performance_diagnostic") ||
         accountState(a, paper, unavailable).key === filter),
   );
   matching.sort((a, b) =>
@@ -1044,6 +1052,7 @@ export function AccountsView({
                 ["active", "Scanning", t.active],
                 ["paused", "Paused", t.paused],
                 ["research", "Research", research],
+                ["diagnostic", "Performance", diagnostics],
                 ["attention", "Attention", t.attention],
               ].map(([id, label, count]) => (
                 <button
@@ -1126,6 +1135,7 @@ export function AccountsView({
                               {a.label ?? name}
                             </button>
                             <small>{a.version}</small>
+                            {a.purpose === "performance_diagnostic" && <small>Performance only · shared history</small>}
                           </td>
                           <td>
                             {!unavailable && a.valuation_fresh
@@ -1326,6 +1336,7 @@ export function AccountsView({
           close={() => setSelected("")}
         />
       )}
+      <PerformanceDiagnosticPanel unavailable={unavailable} />
       {campaignOpen && (
         <div className="campaign-workspace">
           <PaperCampaignPanel data={paper} unavailable={unavailable} />

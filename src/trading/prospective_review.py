@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from trading.account_purpose import require_research_account, research_account
 from trading.execution_replay import source_hashes
 from trading.experiment_registry import ExperimentRegistry
 from trading.experiment_worker import code_fingerprint
@@ -85,6 +86,11 @@ class ProspectiveReview:
             ).fetchone():
                 raise ValueError("Prospective comparison overlaps an earlier frozen plan")
             candidate = state["accounts"].get(spec.candidate or "")
+            if candidate is not None:
+                require_research_account(candidate, spec.candidate)
+            control = state.get("forward_controls", {}).get(spec.candidate or "")
+            if control in state["accounts"]:
+                require_research_account(state["accounts"][control], control)
             exploratory = spec.purpose == "exploratory_memory"
             if exploratory and (
                 not candidate
@@ -140,7 +146,11 @@ class ProspectiveReview:
                 "frozen_at": now,
                 "source_sha256": review_fingerprint(),
                 "components": components,
-                "configurations": {name: config(a) for name, a in state["accounts"].items()},
+                "configurations": {
+                    name: config(a)
+                    for name, a in state["accounts"].items()
+                    if research_account(a, name)
+                },
                 "policy": POLICY,
                 "controls": ["unchanged_baseline", "cash", "simple_exposure"],
                 "candidate_control": state.get("forward_controls", {}).get(spec.candidate or ""),
@@ -161,9 +171,12 @@ class ProspectiveReview:
         for name, candidate in state.get("accounts", {}).items():
             control = state.get("forward_controls", {}).get(name)
             if (
-                candidate.get("memory_entry_contract") != "memory-entry-v1"
+                not research_account(candidate, name)
+                or candidate.get("memory_entry_contract") != "memory-entry-v1"
                 or control not in state["accounts"]
             ):
+                continue
+            if not research_account(state["accounts"][control], control):
                 continue
             job = self.registry.get(candidate.get("experiment_id", ""))
             receipt = job.get("result") if job else None
@@ -209,7 +222,9 @@ class ProspectiveReview:
         drift = [
             name
             for name, frozen in plan["configurations"].items()
-            if name not in state["accounts"] or config(state["accounts"][name]) != frozen
+            if name not in state["accounts"]
+            or not research_account(state["accounts"][name], name)
+            or config(state["accounts"][name]) != frozen
         ]
         if plan["source_sha256"] != review_fingerprint():
             drift.append("Evaluator source changed")

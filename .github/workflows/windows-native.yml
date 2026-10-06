@@ -50,6 +50,9 @@ jobs:
             tests/test_paper_economics.py tests/test_economics_store.py `
             tests/test_paper_runtime.py tests/test_api.py tests/test_station.py tests/test_paper_store.py `
             tests/test_paper_campaigns.py tests/test_campaign_store.py `
+            tests/test_paper_diagnostics.py tests/test_performance_diagnostic_api.py `
+            tests/test_performance_diagnostic_inputs.py tests/test_performance_diagnostic_replay.py `
+            tests/test_performance_diagnostic_threads.py tests/test_performance_research_exclusion.py `
             tests/test_experiment_registry.py tests/test_numerical_candidates.py `
             tests/test_research_campaigns.py tests/test_paper_learning.py `
             tests/test_lab_resilience.py tests/test_live_readiness.py tests/test_efficiency_contracts.py `
@@ -71,8 +74,10 @@ jobs:
             tests/test_cpu_topology.py `
             tests/test_llm_training.py tests/test_training_workflow.py `
             tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
+            tests/test_paper_pilot_worker.py tests/test_paper_pilot_api.py tests/test_peft_paper_pilot.py `
+            tests/test_paper_pilot_lifecycle.py `
             tests/test_role_readiness.py tests/test_peft_development.py tests/test_peft_loader_contract.py `
-            tests/test_development_failure_receipts.py `
+            tests/test_development_failure_receipts.py tests/test_development_latency_measurement.py `
             tests/test_peft_child_owner.py tests/test_peft_child_resource_integration.py `
             tests/test_strategy_diagnosis.py `
             tests/test_request_counts.py `
@@ -273,7 +278,7 @@ jobs:
           python -m pip install --no-input --no-deps -e .
       - name: Static checks and native reference/reviewer recovery
         run: |
-          python -m ruff check src tests scripts/evaluate_admission_recovery.py scripts/answer_development_role.py scripts/observe_model_coexistence.py
+          python -m ruff check src tests scripts/evaluate_admission_recovery.py scripts/answer_development_role.py scripts/observe_model_coexistence.py scripts/verify_performance_diagnostics.py scripts/verify_performance_coexistence.py scripts/preview_performance_diagnostic_ui.py scripts/preview_paper_pilot_ui.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m mypy --platform win32 src
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

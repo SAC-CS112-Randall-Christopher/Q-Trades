@@ -25,6 +25,7 @@ type Position = {
 type Decision = { symbol: string; at: number; reason: string; version: string };
 export type Account = {
   label?: string;
+  purpose?: string;
   campaign_id?: string;
   entries_paused?: boolean;
   control_version?: number;
@@ -450,7 +451,7 @@ export function PaperPanel({
               </thead>
               <tbody>
                 {Object.entries(data.accounts)
-                  .filter(([name]) => name !== "primary")
+                  .filter(([name, account]) => name !== "primary" && account.purpose !== "performance_diagnostic")
                   .map(([name, s]) => (
                     <tr key={name}>
                       <td>{name}</td>

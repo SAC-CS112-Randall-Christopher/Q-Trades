@@ -7,6 +7,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from trading.account_purpose import event_research_eligible, research_account
 from trading.execution_replay import (
     balanced,
     checked_packet,
@@ -14,6 +15,7 @@ from trading.execution_replay import (
     ordered_state,
     source_hashes,
 )
+from trading.execution_window import replay_tick
 from trading.paper_engine import PaperEngine
 from trading.research_evidence import digest
 
@@ -50,7 +52,7 @@ def executable_label(
                 return dict(unavailable, reason="Source inputs cannot be reproduced")
             try:
                 engine = PaperEngine(ordered_state(packet), packet["at"])
-                engine.tick(hydrated_frames(packet), packet["study"])
+                replay_tick(engine, packet, hydrated_frames(packet))
             except (ValueError, KeyError, TypeError, ArithmeticError):
                 return dict(unavailable, reason="Isolated source state cannot be reproduced")
             if (
@@ -68,6 +70,9 @@ def executable_label(
             continue
         latest_available = max(latest_available, committed)
         for event in packet["events"]:
+            saved = packet["state_before"].get("accounts", {}).get(event["account"], {})
+            if not event_research_eligible(event) or not research_account(saved, event["account"]):
+                continue
             b = event["body"]
             if (
                 event["kind"] == "order_intent"

@@ -4,6 +4,7 @@ from copy import deepcopy
 from decimal import Decimal as D
 from typing import TYPE_CHECKING, Any
 
+from trading.account_purpose import RESEARCH_EXCLUSION, require_research_account, research_account
 from trading.autonomous_spec import ORIGINALS, LabPolicy, LabProposal, RuleSpec, contract
 from trading.experiment_registry import fingerprint
 from trading.paper_economics import benchmark_tick, new_benchmark, sample
@@ -102,6 +103,8 @@ def validate_parent(state: dict[str, Any], proposal: LabProposal) -> None:
     if not parent or parent["status"] != "preserved":
         raise InvalidProposal("Only a preserved promising trial can be an automatic parent")
     account_state = state["accounts"].get(parent["candidate"])
+    if account_state is not None and not research_account(account_state, parent["candidate"]):
+        raise InvalidProposal(RESEARCH_EXCLUSION)
     if (
         not account_state
         or account_state.get("risk_stop_id")
@@ -262,7 +265,9 @@ def observe(engine: "PaperEngine", frames: dict[str, Any]) -> None:
         a, r = (engine.state["accounts"][t[key]] for key in ("candidate", "reference"))
         frame = frames.get("BTCUSD")
         good = (
-            fresh_frame(frame, engine.now)
+            research_account(a, t["candidate"])
+            and research_account(r, t["reference"])
+            and fresh_frame(frame, engine.now)
             and frame is not None
             and frame.get("entry_allowed", True)
             and sample(a, engine.now)["fresh"]
@@ -308,6 +313,12 @@ def observe(engine: "PaperEngine", frames: dict[str, Any]) -> None:
 def review(engine: "PaperEngine", trial_id: str) -> dict[str, Any]:
     lab = engine.state["autonomous_lab"]
     t = lab["trials"][trial_id]
+    for role in ("candidate", "reference"):
+        saved = engine.state["accounts"].get(t[role])
+        if saved is not None:
+            require_research_account(saved, t[role])
+        if t.get("sealed"):
+            require_research_account(t["sealed"][role], t[role])
     if t.get("score"):
         return dict(t["score"])
     if not t.get("sealed"):
@@ -434,6 +445,7 @@ def retire_account(engine: "PaperEngine", name: str, reason: str) -> None:
     a = engine.state["accounts"].get(name)
     if a is None:
         return
+    require_research_account(a, name)
     if name in ORIGINALS or not a.get("lab_trial") or a.get("lab_protected"):
         raise ValueError("Protected/original accounts cannot be retired by this lab")
     if a.get("lab_retiring"):
@@ -462,7 +474,7 @@ def advance_retirement(engine: "PaperEngine") -> None:
     if not lab:
         return
     for name, a in list(engine.state["accounts"].items()):
-        if not a.get("lab_retiring"):
+        if not research_account(a, name) or not a.get("lab_retiring"):
             continue
         # No tolerance: even dust and uncertain/incomplete financial state keep capacity.
         if a["positions"] or a["pending"] or a.get("fault") or a.get("execution_uncertain"):
@@ -504,11 +516,13 @@ def control(engine: "PaperEngine", action: str, target: str | None = None) -> di
         lab["proposals_paused"] = action == "pause_proposals"
     elif action in {"pause_entries", "resume_entries"}:
         lab["entries_paused"] = action == "pause_entries"
-        for a in engine.state["accounts"].values():
-            if a.get("lab_trial"):
+        for name, a in engine.state["accounts"].items():
+            if research_account(a, name) and a.get("lab_trial"):
                 a["entries_paused"] = lab["entries_paused"] or bool(a.get("lab_retiring"))
     elif action in {"protect", "unprotect"}:
         a = engine.state["accounts"].get(target or "")
+        if a is not None:
+            require_research_account(a, target)
         if not a or not a.get("lab_trial") or a.get("lab_retiring"):
             raise ValueError("Select an active experimental account; retirement is irreversible")
         a["lab_protected"] = action == "protect"

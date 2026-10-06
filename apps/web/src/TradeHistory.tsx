@@ -6,6 +6,7 @@ type Trade = {
   id: string; event_id: number | null; account: string; label: string; archived: boolean;
   symbol: string; status: "open" | "closed"; opened_at: number; closed_at: number | null;
   version: string | null; reason: string | null; quantity: string | null;
+  purpose?: string;
   entry_price: string | null; close_price: string | null; mark_price: string | null;
   mark_at: number | null; pnl: string | null; return_fraction: string | null;
   cost: string | null; proceeds: string | null; fees: string | null;
@@ -153,11 +154,15 @@ function TradeRows({ trade, tone, state, pnl, markOld, visible, toggle }: {
   visible: boolean; toggle: () => void;
 }) {
   const open = trade.status === "open";
+  const performanceOnly = trade.purpose === "performance_diagnostic" ||
+    trade.account === "performance-diagnostic" || trade.version === "performance-diagnostic-v1";
   const note = [trade.reason, markOld ? "Fresh executable mark unavailable; the position remains open."
     : trade.price_reason].filter(Boolean).join(" · ");
   return <>
     <tr className={tone}>
-      <td className="trade-account" title={trade.account}>{trade.label}{trade.archived && <span className="trade-archived">Retired</span>}</td>
+      <td className="trade-account" title={trade.account}>{trade.label}
+        {performanceOnly && <span className="trade-estimate">Performance only</span>}
+        {trade.archived && <span className="trade-archived">Retired</span>}</td>
       <td>{trade.symbol.replace(/USD$/, " / USD")}</td>
       <td><span className="trade-status">{state}</span></td>
       <td title={trade.entry_price ?? trade.price_reason ?? "Unavailable"}>{amount(trade.entry_price, false, true)}</td>
@@ -177,7 +182,7 @@ function TradeRows({ trade, tone, state, pnl, markOld, visible, toggle }: {
     {visible && <tr className="trade-detail-row"><td colSpan={9} id={`detail-${trade.id}`}>
       <dl className="trade-breakdown">
         <div><dt>Account identity</dt><dd>{trade.account}</dd></div>
-        <div><dt>Frozen strategy</dt><dd>{trade.version ?? "Unavailable"}</dd></div>
+        <div><dt>{performanceOnly ? "Performance workload version" : "Frozen strategy"}</dt><dd>{trade.version ?? "Unavailable"}</dd></div>
         <div><dt>{open ? "Remaining quantity" : "Entry quantity"}</dt><dd>{trade.quantity ?? "Unavailable"}</dd></div>
         <div><dt>Original entry cost</dt><dd>{amount(trade.cost)}</dd></div>
         <div><dt>Received exit proceeds</dt><dd>{amount(trade.proceeds)}</dd></div>

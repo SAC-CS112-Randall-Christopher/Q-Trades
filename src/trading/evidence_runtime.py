@@ -227,6 +227,8 @@ class EvidenceRecorder:
             name: hashlib.sha256((Path(__file__).parent / name).read_bytes()).hexdigest()
             for name in (
                 "paper_engine.py",
+                "paper_diagnostics.py",
+                "account_purpose.py",
                 "paper_strategy.py",
                 "research_evidence.py",
                 "pattern_memory.py",

@@ -8,6 +8,7 @@ from typing import Any
 
 from psycopg.conninfo import make_conninfo
 
+from trading.account_purpose import require_research_account
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.paper_runtime import PaperRuntime
 from trading.paper_store import PaperStore
@@ -72,6 +73,7 @@ def run(
         }
     if saved is None:
         raise ValueError("Selected account is unavailable; no primary fallback")
+    require_research_account(saved, account)
     if tool == "input_diagnosis":
         result = {
             "tool": tool,

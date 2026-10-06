@@ -5,6 +5,7 @@ import math
 from decimal import Decimal as D
 from typing import Any
 
+from trading.account_purpose import RESEARCH_EXCLUSION, account_purpose, research_account
 from trading.execution_profiles import LEGACY_EXECUTION, execution, floor_step, walk_book
 
 VERSION = "whole-account-v1"
@@ -70,6 +71,8 @@ def sample(a: dict[str, Any], now: float, *, final_at: float | None = None) -> d
         "wins": a["wins"],
         "valuation_issues": dict(a.get("valuation_issues", {})),
     }
+    if "purpose" in a or not research_account(a):
+        result["purpose"] = account_purpose(a)
     if final_at is not None:
         result.update(
             final=final,
@@ -208,7 +211,7 @@ def begin(state: dict[str, Any], now: float) -> dict[str, Any]:
         symbols = tuple(a.get("benchmark_symbols", BENCHMARK_SYMBOLS))
         if symbols != BENCHMARK_SYMBOLS:
             key += ":" + ",".join(symbols)
-        if s["fresh"] and D(s["equity"]) > 0:
+        if research_account(a, name) and s["fresh"] and D(s["equity"]) > 0:
             window["benchmarks"].setdefault(
                 key, new_benchmark(s["equity"], s["execution_profile"], now, symbols)
             )
@@ -269,6 +272,8 @@ def scores(window: dict[str, Any], end: float, *, complete: bool) -> dict[str, A
             else None
         )
         reasons = []
+        if not research_account(first, name) or not research_account(last, name):
+            reasons.append(RESEARCH_EXCLUSION)
         if operating is None:
             reasons.append(
                 "Operating allocation is unspecified or changed; total economics are unknown"
@@ -329,6 +334,8 @@ def scores(window: dict[str, Any], end: float, *, complete: bool) -> dict[str, A
             ),
             "rank": None,
         }
+        if "purpose" in first:
+            rows[name]["purpose"] = first["purpose"]
     groups: dict[str, list[dict[str, Any]]] = {}
     for result in rows.values():
         if result["eligible"]:
@@ -376,6 +383,9 @@ def observe(state: dict[str, Any], frames: dict[str, Any], now: float) -> list[d
                 "operating_daily_usd",
                 "strategy_version",
             )
+        )
+        row["changed_settings"] |= s.get("purpose", "research") != row["first"].get(
+            "purpose", "research"
         )
         if (
             s["nav"] is not None

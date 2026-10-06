@@ -9,9 +9,10 @@ from decimal import Decimal as D
 from pathlib import Path
 from typing import Any, cast
 
+from trading.account_purpose import event_research_eligible, research_account
 from trading.evidence_runtime import feature_reproduction
 from trading.execution_profiles import PROFILES
-from trading.execution_window import replay_preamble, replay_tick
+from trading.execution_window import diagnostic_admission, replay_preamble, replay_tick
 from trading.market import parse_book
 from trading.paper_economics import sample
 from trading.paper_engine import PaperEngine
@@ -53,6 +54,8 @@ def source_hashes() -> dict[str, str]:
         name: hashlib.sha256((Path(__file__).parent / name).read_bytes()).hexdigest()
         for name in (
             "paper_engine.py",
+            "paper_diagnostics.py",
+            "account_purpose.py",
             "paper_strategy.py",
             "execution_profiles.py",
             "numerical_candidates.py",
@@ -129,7 +132,10 @@ def checked_packet(record: dict[str, Any], current: dict[str, str]) -> dict[str,
         raise ValueError("Input hash differs; replay cannot substitute evidence")
     if packet.get("schema") != EVIDENCE_VERSION or packet.get("kind") != "decision":
         raise ValueError("A recorded decision bundle is required")
+    diagnostic_admission(packet)
     required = {"paper_engine.py", "paper_strategy.py", "execution_profiles.py"}
+    if any(not research_account(a, name) for name, a in packet["state_before"]["accounts"].items()):
+        required.update({"paper_diagnostics.py", "account_purpose.py"})
     if any(a.get("numerical_artifact") for a in packet["state_before"]["accounts"].values()):
         required.add("numerical_candidates.py")
     if any(a.get("memory_entry_contract") for a in packet["state_before"]["accounts"].values()):
@@ -291,10 +297,16 @@ def run_replay(records: list[dict[str, Any]], frozen_source: dict[str, str]) -> 
                 before_positions = {
                     name: deepcopy(a["positions"]) for name, a in state["accounts"].items()
                 }
-                engine.tick(frames, deepcopy(packet["study"]))
+                engine.tick(
+                    frames,
+                    deepcopy(packet["study"]),
+                    diagnostic_allowed=diagnostic_admission(packet),
+                )
                 all_balanced = all_balanced and balanced(engine.events)
                 for index, event in enumerate(engine.events):
                     body, name, kind = event["body"], event["account"], event["kind"]
+                    if not event_research_eligible(event):
+                        continue
                     if kind in {
                         "decision",
                         "order_intent",
@@ -347,6 +359,8 @@ def run_replay(records: list[dict[str, Any]], frozen_source: dict[str, str]) -> 
                         )
                 # Observed bid marks only. OHLC extrema cannot decide a stop/target order.
                 for name, a in state["accounts"].items():
+                    if not research_account(a, name):
+                        continue
                     observed_positions = {**before_positions[name], **a["positions"]}
                     for symbol, pos in observed_positions.items():
                         if symbol not in frames or at - frames[symbol]["observed"] > 5:
@@ -378,6 +392,8 @@ def run_replay(records: list[dict[str, Any]], frozen_source: dict[str, str]) -> 
             end = {n: sample(a, accepted[-1]["at"]) for n, a in state["accounts"].items()}
             accounts = []
             for name, final in end.items():
+                if not research_account(state["accounts"][name], name):
+                    continue
                 start = beginning[name]
                 accounts.append(
                     {

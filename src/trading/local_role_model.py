@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import time
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,108 @@ from trading.research_resources import (
 )
 
 ORIGIN = "http://127.0.0.1:11435"
+
+
+def development_latency_observation(status: dict[str, Any]) -> dict[str, Any]:
+    """Remove only the named latency veto; retain and verify all other protections."""
+    paper = status.get("paper", {})
+    performance = paper.get("performance", {})
+    guard = performance.get("resource_guard", {})
+    pressure = guard.get("pressure_recovery", {})
+    journal = paper.get("journal", {})
+    readback = performance.get("financial_readback", {})
+    raw = paper.get("storage", {})
+    evidence = paper.get("research_evidence", {})
+    storage = evidence.get("storage", {})
+    plan = storage.get("plan", {})
+    reasons: list[str] = []
+
+    def number(value: Any) -> bool:
+        return type(value) in (int, float) and math.isfinite(value) and value >= 0
+
+    blocks = guard.get("blocking_conditions")
+    if not isinstance(blocks, list) or any(type(value) is not str for value in blocks):
+        reasons.append("missing_or_invalid_blocking_conditions")
+        blocks = []
+    if any(value != "engine_work_recovery" for value in blocks):
+        reasons.append("nonlatency_or_unknown_blocker")
+    if (
+        guard.get("policy_version") != "engine-work-pressure-v3"
+        or type(pressure.get("pressure_allows")) is not bool
+        or type(paper.get("research_constrained")) is not bool
+        or paper.get("research_constrained") != bool(blocks)
+        or ("engine_work_recovery" in blocks) == pressure.get("pressure_allows")
+    ):
+        reasons.append("incomplete_or_inconsistent_guard")
+    if paper.get("running") is not True or paper.get("stale") is not False:
+        reasons.append("paper_unavailable_or_stale")
+    if "error" not in paper or paper["error"] is not None:
+        reasons.append("paper_error")
+    for name, observed in (("journal", journal), ("financial_readback", readback)):
+        if (
+            observed.get("available") is not True
+            or observed.get("status") != "balanced"
+            or "error" not in observed
+            or observed["error"] is not None
+            or not number(observed.get("audit_age_seconds"))
+            or observed["audit_age_seconds"] >= 120
+        ):
+            reasons.append(name + "_unavailable_or_unbalanced")
+    if (
+        journal.get("balanced") is not True
+        or journal.get("imbalanced_events") != 0
+        or journal.get("projection_errors") != []
+        or type(journal.get("revision")) is not int
+        or journal["revision"] < 0
+    ):
+        reasons.append("financial_reconciliation_failed")
+    if (
+        "capture_error" not in raw
+        or raw["capture_error"] is not None
+        or not number(raw.get("disk_free_gib"))
+        or raw["disk_free_gib"] < 5
+    ):
+        reasons.append("raw_recording_or_local_reserve")
+    if evidence.get("state") != "recording" or storage.get("state") != "recording":
+        reasons.append("research_recording_unavailable")
+    expected_plan = {
+        "temporary_bytes": 400_000_000_000,
+        "research_bytes": 100_000_000_000,
+        "free_reserve_bytes": 5 * 1024**3,
+        "scratch_bytes": 128 * 1024**2,
+    }
+    if plan.get("version") != "research-tiers-v2" or any(
+        type(plan.get(key)) is not int or plan[key] != value for key, value in expected_plan.items()
+    ):
+        reasons.append("storage_policy_unavailable_or_changed")
+    elif (
+        not number(storage.get("free_bytes"))
+        or storage["free_bytes"] < plan["free_reserve_bytes"] + plan["scratch_bytes"]
+        or any(
+            not number(storage.get(key)) or storage[key] + plan["scratch_bytes"] > plan[key]
+            for key in ("temporary_bytes", "research_bytes")
+        )
+    ):
+        reasons.append("research_storage_reserve")
+    return {
+        "observed_at": time.time(),
+        "observed_mono": time.monotonic(),
+        "generated_at": status.get("generated_at"),
+        "running": paper.get("running"),
+        "error": paper.get("error"),
+        "stale": paper.get("stale"),
+        "research_constrained": paper.get("research_constrained"),
+        "resource_guard": guard,
+        "journal": journal,
+        "financial_readback": readback,
+        "raw_storage": raw,
+        "research_recording": evidence,
+        "latency_blockers_removed": [value for value in blocks if value == "engine_work_recovery"],
+        "effective_latency_block_removed": "engine_work_recovery" in blocks,
+        "admitted": not reasons,
+        "reasons": reasons,
+        "scope": "Authorized development latency measurement only; no operating admission",
+    }
 
 
 class LocalRoles:
@@ -93,6 +196,14 @@ class LocalRoles:
         ):
             raise ValueError("Operating paper health/resource guard constrains optional inference")
         return sample
+
+    def development_latency_guard(self) -> dict[str, Any]:
+        """Observe the real guard without changing qualified operating admission."""
+        with httpx.Client(trust_env=False, timeout=8) as client:
+            response = client.get("http://127.0.0.1:8780/api/status")
+            response.raise_for_status()
+            status = response.json()
+        return development_latency_observation(status)
 
     def qualification(self, role: str, profile: dict[str, Any]) -> None:
         path = self.directory / "role-qualification.json"
@@ -241,9 +352,7 @@ class LocalRoles:
             return result
 
     @staticmethod
-    def check_retrieval_contract(
-        retrieval_contract: str | None, profile: dict[str, Any]
-    ) -> None:
+    def check_retrieval_contract(retrieval_contract: str | None, profile: dict[str, Any]) -> None:
         if retrieval_contract and profile.get("rag_contract") != retrieval_contract:
             raise ValueError("RAG packet requires its declared, separately qualified model profile")
 

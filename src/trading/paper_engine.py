@@ -8,6 +8,7 @@ from copy import deepcopy
 from decimal import Decimal
 from typing import Any
 
+from trading.account_purpose import PERFORMANCE_DIAGNOSTIC_PURPOSE, is_performance_diagnostic
 from trading.execution_profiles import LEGACY_EXECUTION, PROFILES, execution
 from trading.execution_profiles import floor_step as floor_step
 from trading.execution_profiles import walk_book as walk_book
@@ -238,6 +239,7 @@ class PaperEngine:
         self.state = state
         self.now = now
         self.events: list[dict[str, Any]] = []
+        self.diagnostic_allowed = True
         self.evidence_trace: list[dict[str, Any]] | None = None
 
     def emit(
@@ -249,9 +251,20 @@ class PaperEngine:
                 totals[row["asset"]] = totals.get(row["asset"], D(0)) + D(row["amount"])
             if any(v != 0 for v in totals.values()):
                 raise ValueError("Unbalanced asset journal")
-        self.events.append(
-            {"at": self.now, "kind": kind, "account": owner, "body": body, "lines": lines or []}
-        )
+        event = {"at": self.now, "kind": kind, "account": owner, "body": body, "lines": lines or []}
+        a = self.state["accounts"].get(owner)
+        if a is not None and is_performance_diagnostic(a, owner):
+            # The SQL journal persists body; in-memory/full capture also preserves
+            # the explicit top-level purpose. Baseline event shapes stay unchanged.
+            event["purpose"] = PERFORMANCE_DIAGNOSTIC_PURPOSE
+            event["body"] = {**body, "purpose": PERFORMANCE_DIAGNOSTIC_PURPOSE}
+            diagnostic = a.get("diagnostic", {})
+            run = diagnostic.get("runs", {}).get(diagnostic.get("active_request_id"))
+            counter = {"order_intent": "intents", "fill": "fills", "order_cancelled": "cancels",
+                       "account_fault": "errors", "trade_closed": "completed"}.get(kind)
+            if run and counter:
+                run[counter] += 1
+        self.events.append(event)
         if self.evidence_trace is not None:
             self.evidence_trace.append(
                 {
@@ -571,7 +584,12 @@ class PaperEngine:
                 a["wins"] += int(pnl > 0)
                 a["recent_trades"] = (a["recent_trades"] + [trade])[-1000:]
                 a["last_exit"] = trade
-                a["cooldowns"][symbol] = self.now + 600
+                cooldown = 600
+                if is_performance_diagnostic(a, name):
+                    from trading.paper_diagnostics import CONTRACT
+
+                    cooldown = CONTRACT["symbol_cooldown_seconds"]
+                a["cooldowns"][symbol] = self.now + cooldown
                 self.emit("trade_closed", name, trade)
                 del a["positions"][symbol]
             lines = [
@@ -620,6 +638,11 @@ class PaperEngine:
         frame: dict[str, Any],
         feature: dict[str, Any],
     ) -> str:
+        if (
+            is_performance_diagnostic(a, name)
+            and frame.get("diagnostic_risk_input_valid") is not True
+        ):
+            return "Protected current diagnostic market/risk inputs unavailable"
         if not frame.get("entry_allowed", True):
             return "Market metadata is stale; entries paused"
         reason = entry_reason(a, self.state["paused"], self.now)
@@ -671,6 +694,13 @@ class PaperEngine:
             equity * D("0.9") - exposure - reserved,
             D(a["day_start"]) * 30 - D(a["day_turnover"]) - reserved,
         )
+        if is_performance_diagnostic(a, name):
+            from trading.paper_diagnostics import NOTIONAL_CAP
+
+            requested = D(feature["diagnostic_notional_usd"])
+            if not requested.is_finite() or requested <= 0:
+                return "Invalid diagnostic notional; no order created"
+            budget = min(budget, requested, NOTIONAL_CAP)
         risk = min(equity * D("0.025"), equity * D("0.05") - existing_risk - pending_risk)
         if budget <= 0 or risk <= 0 or distance <= 0:
             return "Cash, turnover, exposure, or risk capacity exhausted"
@@ -702,6 +732,8 @@ class PaperEngine:
                 if a.get("numerical_artifact")
                 else "Reviewed range excursion"
                 if a.get("rule_spec", {}).get("family") == "range_reversion"
+                else "Seeded performance-only entry"
+                if is_performance_diagnostic(a, name)
                 else "Closed-bar breakout"
             ),
             "risk_policy": policy(a),
@@ -729,6 +761,9 @@ class PaperEngine:
         feature: dict[str, Any],
     ) -> None:
         pos = a["positions"][symbol]
+        if is_performance_diagnostic(a, name) and a.get("execution_uncertain"):
+            pos["exit_blocked"] = "Diagnostic execution uncertain; no new order created"
+            return
         if symbol in a["pending"]:
             return
         bid = frame["book"].bids[0][0]
@@ -766,6 +801,16 @@ class PaperEngine:
             reason = "Lab retirement: reduce remaining owned inventory"
         elif bid <= D(pos["stop"]):
             reason = "ATR stop" if not pos["one_r"] else "Trailing stop"
+        elif is_performance_diagnostic(a, name):
+            from trading.paper_diagnostics import current_run
+
+            run = current_run(a)
+            if not run or run["status"] != "running":
+                reason = "Performance Diagnostic drain"
+            elif pos.get("diagnostic_exit_requested"):
+                reason = "Seeded Performance Diagnostic exit"
+            elif elapsed >= pos["entry_features"]["diagnostic_hold_seconds"]:
+                reason = "Frozen Performance Diagnostic brief hold"
         elif invalid_artifact:
             reason = "Invalid frozen numerical artifact; risk reduction"
         elif elapsed >= maximum_hold:
@@ -1060,6 +1105,11 @@ class PaperEngine:
     def tick_account(
         self, name: str, a: dict[str, Any], frames: dict[str, dict[str, Any]], study: dict[str, Any]
     ) -> None:
+        diagnostic = is_performance_diagnostic(a, name)
+        if diagnostic:
+            from trading.paper_diagnostics import prepare_tick
+
+            prepare_tick(self, a)
         stop_before = a.get("risk_stop_id", 0)
         self.value(a, frames)
         for symbol in list(a["pending"]):
@@ -1080,7 +1130,10 @@ class PaperEngine:
             for symbol, order in list(a["pending"].items()):
                 if order["side"] == "buy":
                     self.cancel(name, a, symbol, "Account failure; entry cancelled")
-        if fresh and D(a["equity"]) >= 1000 and a["attempt"]["outcome"] == "open":
+        if (
+            not diagnostic and fresh and D(a["equity"]) >= 1000
+            and a["attempt"]["outcome"] == "open"
+        ):
             a["attempt"]["outcome"] = "won"
             a["attempt"]["ended_at"] = self.now
             a["attempt_wins"] += 1
@@ -1092,7 +1145,7 @@ class PaperEngine:
             if frame and fresh_frame(frame, self.now):
                 feature = study.get(symbol, {}).get(a["positions"][symbol]["version"], {})
                 self.exit_position(name, a, symbol, frame, feature)
-        if a["failure_pending"]:
+        if a["failure_pending"] and not diagnostic:
             self.failure_review(name, a)
         if a.get("risk_stop_id", 0) != stop_before:
             self.emit(
@@ -1105,6 +1158,11 @@ class PaperEngine:
                     "risk_reference": a["risk_stopped_reference"],
                 },
             )
+        if diagnostic:
+            from trading.paper_diagnostics import tick_diagnostic
+
+            tick_diagnostic(self, a, frames, study)
+            return
         if not fresh:
             return
         for symbol in a.get("symbols", SYMBOLS):
@@ -1137,7 +1195,11 @@ class PaperEngine:
             a["last_decision"][symbol] = decision
             self.emit("decision", name, decision)
 
-    def tick(self, frames: dict[str, dict[str, Any]], study: dict[str, Any]) -> None:
+    def tick(
+        self, frames: dict[str, dict[str, Any]], study: dict[str, Any], *,
+        diagnostic_allowed: bool = True,
+    ) -> None:
+        self.diagnostic_allowed = diagnostic_allowed
         if self.now < self.state["last_tick"]:
             return  # A delayed dispatcher cannot rewind the durable financial clock.
         if self.state.get("campaigns"):
@@ -1153,7 +1215,7 @@ class PaperEngine:
         self.state["last_tick"] = self.now
         self.state["features"] = study
         for name, a in self.state["accounts"].items():
-            if not a.get("campaign_id"):
+            if not a.get("campaign_id") and not is_performance_diagnostic(a, name):
                 self.tick_account(name, a, frames, study)
                 continue
             # Existing financial corruption must still stop the writer. Only the
@@ -1175,6 +1237,13 @@ class PaperEngine:
                 saved["valuation_fresh"] = False
                 saved["control_version"] = saved.get("control_version", 0) + 1
                 saved.pop("last_control", None)
+                if is_performance_diagnostic(saved, name):
+                    diagnostic = saved.get("diagnostic", {})
+                    run = diagnostic.get("runs", {}).get(diagnostic.get("active_request_id"))
+                    if run:
+                        run.update(
+                            status="faulted", reason="Diagnostic step rolled back; inspect recovery"
+                        )
                 self.state["accounts"][name] = saved
                 self.emit("account_fault", name, dict(saved["fault"]))
         for observation in observe_economics(self.state, frames, self.now):

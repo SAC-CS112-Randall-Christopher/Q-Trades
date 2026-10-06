@@ -6,6 +6,7 @@ import json
 import logging
 import time
 import uuid
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
 
@@ -62,14 +63,15 @@ class PaperRuntime:
         stamp = int(now // 60)
         cache = getattr(self, "_lab_history_cache", None)
         if cache is None or cache[0] != stamp:
-            rows = self.store.connection.execute(
-                (
-                    "SELECT body FROM paper_bars WHERE symbol='BTCUSD' AND observ"
-                    "ed_at<=%s AND open_ms+60000<=%s ORDER BY open_ms DESC LIMIT "
-                    "9000"
-                ),
-                (now, now * 1000),
-            ).fetchall()
+            with self.store.transaction_lock:
+                rows = self.store.connection.execute(
+                    (
+                        "SELECT body FROM paper_bars WHERE symbol='BTCUSD' AND observ"
+                        "ed_at<=%s AND open_ms+60000<=%s ORDER BY open_ms DESC LIMIT "
+                        "9000"
+                    ),
+                    (now, now * 1000),
+                ).fetchall()
             result = (
                 parse_bars([r["body"] for r in reversed(rows[:1000])], now)
                 if len(rows) <= 1000
@@ -193,7 +195,7 @@ class PaperRuntime:
     ) -> dict[str, Any]:
         self.require_healthy_control()
         result: dict[str, Any] = {}
-        self.state = self.store.transact(
+        self._transact_state(
             time.time(), lambda e: result.update(admit(e, experiment, artifact, cash, daily))
         )
         return result
@@ -285,6 +287,16 @@ class PaperRuntime:
                         )
                     if symbol in self._candle_errors:
                         feature.update(eligible=False, reason=self._candle_errors[symbol])
+                risk_input = study[symbol].get("breakout-v1", {})
+                bar_open = risk_input.get("bar_open_ms")
+                frame["diagnostic_risk_input_valid"] = (
+                    isinstance(bar_open, (int, float))
+                    and not isinstance(bar_open, bool)
+                    and 0 < received * 1000 - bar_open - 59999 <= 90000
+                    and bar_open + 60000 >= self.ready_at * 1000
+                    and symbol not in self._candle_errors
+                    and risk_input.get("closed_bars", 0) >= 305
+                )
                 self.feed_errors.pop(symbol, None)
             except FeedError as exc:
                 if exc.retry_after:
@@ -333,9 +345,9 @@ class PaperRuntime:
                     engine.state["last_error"] = current_error
                     engine.state["study_bars"] += added
                     engine.state["book_sequences"] = self._previous_books
-                    engine.tick(frames, study)
+                    engine.tick(frames, study, diagnostic_allowed=self.diagnostic_entries_allowed())
 
-                self.state = self.store.transact(now, apply)
+                self._transact_state(now, apply)
                 if now - self._last_audit >= 60:
                     self.receipts = self.store.reconcile()
                     self._last_audit = now
@@ -356,11 +368,12 @@ class PaperRuntime:
             self.running = False
 
     def snapshot(self) -> dict[str, Any]:
-        primary = self.state["accounts"]["primary"]
+        state = self.state
+        primary = state["accounts"]["primary"]
         now = time.time()
-        stale = now - self.state["last_tick"] > 10 or not self.running
+        stale = now - state["last_tick"] > 10 or not self.running
         accounts = {}
-        for name, a in self.state["accounts"].items():
+        for name, a in state["accounts"].items():
             accounts[name] = {k: v for k, v in a.items() if k != "recent_trades"}
             accounts[name]["net_pnl"] = str(Decimal(a["equity"]) - Decimal(a["funding"]))
             accounts[name]["valuation_fresh"] = (
@@ -368,7 +381,7 @@ class PaperRuntime:
                 and not stale
                 and fresh_frame({"observed": a.get("valuation_at")}, now)
             )
-            risk = risk_summary(a, self.state["paused"], now)
+            risk = risk_summary(a, state["paused"], now)
             if stale or self.error:
                 risk.update(
                     blocked=True,
@@ -380,7 +393,7 @@ class PaperRuntime:
         return {
             "enabled": True,
             "mode": "paper",
-            "evidence_kind": self.state.get("evidence_kind", "observed_public_market"),
+            "evidence_kind": state.get("evidence_kind", "observed_public_market"),
             "tier": 3,
             "running": self.running,
             "error": self.error,
@@ -389,25 +402,26 @@ class PaperRuntime:
                 **{symbol + " candles": error for symbol, error in self._candle_errors.items()},
             },
             "stale": stale,
-            "paused": self.state["paused"],
-            "started_at": self.state["started_at"],
-            "last_tick": self.state["last_tick"],
-            "next_review": self.state["next_review"],
-            "review_count": self.state["review_count"],
-            "reviews": self.state["review_history"],
-            "promotions": self.state["promotion_count"],
-            "features": self.state["features"],
+            "paused": state["paused"],
+            "started_at": state["started_at"],
+            "last_tick": state["last_tick"],
+            "next_review": state["next_review"],
+            "review_count": state["review_count"],
+            "reviews": state["review_history"],
+            "promotions": state["promotion_count"],
+            "features": state["features"],
             "accounts": accounts,
-            "campaigns": list(self.state.get("campaigns", {}).values()),
-            "learning": self.learning_snapshot(),
+            "campaigns": list(state.get("campaigns", {}).values()),
+            "diagnostics": self.diagnostic_snapshot(state=state),
+            "learning": self.learning_snapshot(state=state),
             "economics": economics_report(
-                self.state, now, self.running and not stale and self.error is None
+                state, now, self.running and not stale and self.error is None
             ),
             "execution_profiles": [p.describe() for p in PROFILES.values()],
             "events": self.recent,
             "journal": self.receipts,
-            "bars_studied": self.state["study_bars"],
-            "gaps": self.state["gaps"],
+            "bars_studied": state["study_bars"],
+            "gaps": state["gaps"],
             "target": "1000",
             "replenish_below": "5",
             "replenish_to": "100",
@@ -438,7 +452,7 @@ class PaperRuntime:
                         if order["side"] == "buy":
                             engine.cancel(name, a, symbol, "Operator paused entries")
 
-        self.state = self.store.transact(time.time(), apply)
+        self._transact_state(time.time(), apply)
 
     def control_frames(self) -> dict[str, dict[str, Any]]:
         return self.books
@@ -446,7 +460,7 @@ class PaperRuntime:
     def campaign_create(self, spec: CampaignSpec) -> dict[str, Any]:
         self.require_healthy_control()
         result: dict[str, Any] = {}
-        self.state = self.store.transact(
+        self._transact_state(
             time.time(), lambda engine: result.update(create_campaign(engine, spec))
         )
         return result
@@ -455,19 +469,109 @@ class PaperRuntime:
         if not self.running or self.error or not 0 <= time.time() - self.state["last_tick"] <= 10:
             raise ValueError("Paper worker unavailable or stale; wait for fresh status")
 
-    def learning_snapshot(self) -> dict[str, Any]:
+    def diagnostic_entries_allowed(self) -> bool:
+        return (
+            self.running and self.error is None and 0 <= time.time() - self.state["last_tick"] <= 10
+        )
+
+    def diagnostic_snapshot(self, *, state: dict[str, Any] | None = None) -> dict[str, Any]:
+        from trading.paper_diagnostics import diagnostic_snapshot
+
+        # The status loop uses one cached committed projection; only the dedicated
+        # synchronous GET reconciles an uncertain acknowledgment through SQL.
+        if state is None and getattr(self, "_diagnostic_outcome_unknown", False):
+            if not self.store.transaction_lock.acquire(timeout=2):
+                raise psycopg.OperationalError("Diagnostic receipt refresh is busy")
+            try:
+                with self.store.connection.transaction():
+                    self.store.connection.execute("SET LOCAL statement_timeout = '2000ms'")
+                    self.state = self.store.read()
+                self._diagnostic_outcome_unknown = False
+            finally:
+                self.store.transaction_lock.release()
+        state = self.state if state is None else state
+        result = diagnostic_snapshot(state)
+        if result.get("account"):
+            a = result["account"]
+            a["valuation_fresh"] = (
+                a["valuation_fresh"]
+                and self.running
+                and self.error is None
+                and 0 <= time.time() - state["last_tick"] <= 10
+                and fresh_frame({"observed": a.get("valuation_at")}, time.time())
+            )
+            a["net_pnl"] = str(Decimal(a["equity"]) - Decimal(a["funding"]))
+        return {
+            **result,
+            "entries_allowed": self.diagnostic_entries_allowed(),
+            "running": self.running,
+            "error": self.error,
+            "stale": not 0 <= time.time() - state["last_tick"] <= 10 or not self.running,
+        }
+
+    def _transact_state(self, now: float, work: Callable[[PaperEngine], None]) -> None:
+        # Publish while retaining the writer lock: a later commit cannot be
+        # overwritten by an older diagnostic worker's delayed assignment.
+        with self.store.transaction_lock:
+            self.state = self.store.transact(now, work)
+
+    def _diagnostic_control(self, work: Callable[[PaperEngine], None]) -> None:
+        with self.store.transaction_lock:
+            try:
+                self._transact_state(time.time(), work)
+            except psycopg.Error:
+                # A missing acknowledgment is not evidence that the operation rolled
+                # back. GET reconciles once through the same owned state authority.
+                self._diagnostic_outcome_unknown = True
+                raise
+            self._diagnostic_outcome_unknown = False
+
+    def diagnostic_create(self, request_id: str) -> dict[str, Any]:
+        from trading.paper_diagnostics import create_diagnostic
+
+        self.require_healthy_control()
+        result: dict[str, Any] = {}
+        self._diagnostic_control(
+            lambda engine: result.update(create_diagnostic(engine, request_id))
+        )
+        return result
+
+    def diagnostic_start(
+        self, request_id: str, seed: int, max_actions: int = 1000, duration_seconds: int = 600
+    ) -> dict[str, Any]:
+        from trading.paper_diagnostics import start_diagnostic
+
+        self.require_healthy_control()
+        if not self.diagnostic_entries_allowed():
+            raise ValueError("Performance load is paused by the current financial/resource guard")
+        result: dict[str, Any] = {}
+        self._diagnostic_control(
+            lambda engine: result.update(
+                start_diagnostic(engine, request_id, seed, max_actions, duration_seconds)
+            ),
+        )
+        return result
+
+    def diagnostic_stop(self, request_id: str) -> dict[str, Any]:
+        from trading.paper_diagnostics import stop_diagnostic
+
+        # Stop creates no new load or guessed fill. The owned transaction still
+        # verifies financial invariants while fresh observations may be unavailable.
+        result: dict[str, Any] = {}
+        self._diagnostic_control(lambda engine: result.update(stop_diagnostic(engine, request_id)))
+        return result
+
+    def learning_snapshot(self, *, state: dict[str, Any] | None = None) -> dict[str, Any]:
         from trading.paper_learning import snapshot
 
-        return snapshot(self.state)
+        return snapshot(self.state if state is None else state)
 
     def forward_control(self, candidate: str) -> dict[str, Any]:
         from trading.paper_learning import matched_control
 
         self.require_healthy_control()
         result: dict[str, Any] = {}
-        self.state = self.store.transact(
-            time.time(), lambda e: result.update(matched_control(e, candidate))
-        )
+        self._transact_state(time.time(), lambda e: result.update(matched_control(e, candidate)))
         return result
 
     def learning_report(self, request_id: str, candidate: str, registry: Any) -> dict[str, Any]:
@@ -515,9 +619,7 @@ class PaperRuntime:
                 },
             )
         result: dict[str, Any] = {}
-        self.state = self.store.transact(
-            now, lambda e: result.update(retain_report(e, request_id, report))
-        )
+        self._transact_state(now, lambda e: result.update(retain_report(e, request_id, report)))
         return result
 
     def retained_learning_report(self, request_id: str) -> dict[str, Any] | None:
@@ -539,7 +641,7 @@ class PaperRuntime:
         self.require_healthy_control()
         result: dict[str, Any] = {}
         receipt = self.retained_learning_report(report_id) if action == "designate" else None
-        self.state = self.store.transact(
+        self._transact_state(
             time.time(),
             lambda e: result.update(
                 designate(e, report_id, sha, version, receipt)
@@ -553,7 +655,7 @@ class PaperRuntime:
         self.require_healthy_control()
         result: dict[str, Any] = {}
         frames = self.control_frames() if action == "recover" else {}
-        self.state = self.store.transact(
+        self._transact_state(
             time.time(),
             lambda engine: result.update(control_account(engine, name, action, version, frames)),
         )
@@ -572,7 +674,7 @@ class PaperRuntime:
             else:
                 raise ValueError("Unknown risk action.")
 
-        self.state = self.store.transact(time.time(), apply)
+        self._transact_state(time.time(), apply)
         return {
             **result,
             "account": name,
@@ -589,5 +691,5 @@ class PaperRuntime:
         def apply(engine: PaperEngine) -> None:
             result.update(engine.set_economics(name, profile, daily_usd, expected_version))
 
-        self.state = self.store.transact(time.time(), apply)
+        self._transact_state(time.time(), apply)
         return {**result, "account": name}

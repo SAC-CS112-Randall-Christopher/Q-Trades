@@ -8,6 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from trading.account_purpose import event_research_eligible
 from trading.pattern_memory import descriptor
 from trading.research_evidence import canonical, digest
 
@@ -51,15 +52,21 @@ def linked_events(
             continue
         if event["body"].get("symbol") != "BTCUSD" or i not in refs:
             continue
+        # Bind the original financial event index before research selection. The
+        # financial journal and all commit references remain complete and unchanged.
+        reference = refs[i]
+        if not event_research_eligible(event):
+            continue
         result.append(
             {
-                "reference": refs[i],
+                "reference": reference,
                 "at": event["at"],
                 "kind": event["kind"],
                 "account": event["account"],
                 "body": {k: event["body"][k] for k in fields if k in event["body"]},
                 "original_event_sha256": digest(event),
                 "committed_at": receipt["committed_at"],
+                **({"purpose": event["purpose"]} if "purpose" in event else {}),
             }
         )
     return result
@@ -120,6 +127,9 @@ class CompactMemory:
             self.state_table = "compact_v2_state"
 
     def append(self, packet: dict[str, Any], *, disk_available: bool = True) -> None:
+        # Defense for direct callers: only eligible links enter this research
+        # derivative. Their authoritative financial records are never removed.
+        packet = dict(packet, events=[e for e in packet["events"] if event_research_eligible(e)])
         with self.db:
             state = self.db.execute(f"SELECT state FROM {self.state_table}").fetchone()[0]
             if state == "capacity":
@@ -251,6 +261,8 @@ def journal_target(
         e = json.loads(row["body"])
         if digest(e) != row["sha256"]:
             raise ValueError("Linked event changed")
+        if not event_research_eligible(e):
+            continue
         b = e["body"]
         if (
             e["kind"] == "order_intent"

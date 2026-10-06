@@ -1,4 +1,78 @@
-# Current direction — October 6, 2026, model child resource repair (#66)
+# Current direction — October 6, 2026, autonomous paper research pilot (#66)
+
+Chris explicitly authorized: "yes lets enable the research worker and get him
+connected and see how that works out". The current Goal is autonomous,
+evidence-driven strategy research: develop, test and refine ideas over time while
+the independent execution engine manages accepted strategies. Judge research by
+experiment quality, learning and justified improvements, not response speed or
+model-call count.
+
+Connect the tested trained-v2 profile through the existing role worker, private
+Lab loader, resource owner, registry, supervisor and normal UI. Use an explicit
+experimental paper-pilot grant bound to its unchanged model/profile identity;
+display unqualified status truthfully. Latency observations are advisory within
+this pilot. Preserve accounting, monitoring, paper freshness, input eligibility,
+recording/storage reserves, ownership, CPU/RSS/time/token/hourly limits, accepted
+strategies, original evidence and all consumed attempts. New pilot questions are
+distinct from the completed development and performance requests.
+
+Use the existing owning draft PR #71 for source, isolated QA and independent
+review. Enabling the existing worker includes the necessary reviewed connection
+and operating setup under this direct authorization. Use the supported updater
+with the exact resulting approved merge SHA if source installation is required;
+reuse existing acceptance tooling and preserve historical rollout receipts.
+Do not invent qualification, consume holdouts, activate external/paid review or
+RAG, train/download/convert models, promote strategies/models, change financial
+rules or create another serving backend/scheduler. Retain actual adverse,
+invalid, interrupted and data-wait outcomes without preferred-answer retries.
+
+# Previous direction — October 6, 2026, measured latency override (#66)
+
+Chris explicitly instructed: "lets just get rid of the guards. run the model
+and see how it performs" to measure this computer's actual coexistence behavior.
+For one finite performance-only development request, disable latency/recovery
+admission and cancellation vetoes while recording their actual observations.
+Reuse the previously refused, still-unused performance task and immutable packet,
+existing private registry/allowances, trained-v2 model, fixed resource profile,
+child owner and answer_development_role route. Retain the actual response/failure,
+native financial/capture measurements and verified child cleanup. Do not enqueue
+another question, reset allowances or retry a dispatched/uncertain attempt.
+Keep process ownership, finite lifetime, memory reserves/budget, actual balanced
+accounting, paper freshness, input eligibility, recording and storage checks.
+This exception is explicit and development-only; normal operating defaults stay
+unchanged. No operating rollout/restart, research activation, training, download,
+qualification, paid call or promotion follows. Source/test changes remain in
+the existing owning draft PR #71; preserve historical receipts below.
+
+# Previous direction — October 6, 2026, Performance Diagnostic account (#66)
+
+Chris authorized one Performance Diagnostic paper account with much more fake
+capital and varied random trading to test application performance. This lane
+uses $1,000,000 fake capital, the existing paper engine, exclusive financial
+writer, twenty-slot capacity, accounting and recording owners. Diagnostic trades
+remain in the shared truthful financial/research archives, clearly marked as
+random performance activity. Their returns do not automatically establish
+strategy value, promotion or training eligibility. No separate database or
+serving backend is part of the product.
+
+Implement and verify the normal Accounts create/start/stop/history/Journal flow
+in isolated native QA. Retain actual fills, incomplete/failed attempts, lost
+acknowledgments and bounded recovery. Preserve original accounts, funding,
+history, evidence, decisions, financial/resource protections and storage policy.
+Source commits/push, a draft PR and checkpoint publication are authorized. This
+source proposal does not itself authorize a new operating code rollout or service
+restart. Chris subsequently said "ok run that now with the language model":
+this separately authorizes one new finite performance-only trained-v2 request
+alongside disposable native paper/SQL/capture QA, using the same private registry,
+model owner, unchanged guard and frozen profile. Preserve the original question's
+two consumed attempts and allowances; do not retry it or activate research.
+Retain and reopen the new request's actual outcome and owned-child cleanup.
+Reuse the accepted installation at
+`38836fcf335261c9a96b9b68aef1237227ff2aaa` and its prior receipts; do not repeat
+completed installation acceptance. See `docs/reviews/PERFORMANCE_DIAGNOSTICS.md`
+for the fixed finite workload, verified scopes and remaining installed gap.
+
+# Historical direction — October 6, 2026, model child resource repair (#66)
 
 PR #68 is merged and the single authorized policy update is installed at
 `44354feab630caffa188d1e5839407c8f5c838de`. Its bounded preservation receipt

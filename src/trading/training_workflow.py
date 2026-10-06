@@ -308,6 +308,12 @@ class TrainingWorkflow:
                 author=source.author,
                 authored_at=time.time(),
             )["candidate"]
+        # Selection cannot turn performance diagnostics into research teaching
+        # merely by attaching an operator review. Candidate validation repeats
+        # this check when importing/preparing the reviewed corpus.
+        from trading.account_purpose import require_research_provenance
+
+        require_research_provenance(candidate)
         Candidate.model_validate(candidate)
         identity = candidate["candidate_sha256"]
         with self.registry.transaction():

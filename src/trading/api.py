@@ -31,7 +31,6 @@ from trading.evidence_runtime import feature_reproduction
 from trading.experiment_lab import ExperimentLab
 from trading.experiment_registry import ExperimentPlan
 from trading.knowledge_acquisition import URLImport, acquire
-from trading.local_role_model import LocalRoles
 from trading.model_trials import ModelTrials
 from trading.options_runtime import OptionsRuntime
 from trading.options_store import OptionsStore
@@ -39,6 +38,7 @@ from trading.ownership import CollectorLock
 from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
+from trading.peft_role_model import PeftPaperPilotRoles, local_role_transport
 from trading.prospective_review import ProspectiveSpec
 from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
@@ -119,6 +119,17 @@ class AccountControl(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     action: Literal["pause", "resume", "recover"]
     expected_version: int = Field(ge=0)
+
+
+class DiagnosticRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,64}$")
+
+
+class DiagnosticStart(DiagnosticRequest):
+    seed: int = Field(ge=0, le=2**32 - 1)
+    max_actions: int = Field(default=1000, ge=1, le=1000)
+    duration_seconds: int = Field(default=600, ge=1, le=600)
 
 
 class ForwardAdmission(BaseModel):
@@ -304,9 +315,11 @@ def create_app(
                         lab.autonomous = AutonomousLab(
                             lab.registry, app.state.paper, lambda: lab.can_research()
                         )
-                    local_roles = LocalRoles(database.parent)
+                    local_roles = local_role_transport(database.parent)
                     lab.roles = RoleWorker(lab.registry, lab.autonomous, local_roles)
                     lab.roles.activation = lambda: bool(local_roles.policy().get("enabled", False))
+                    if isinstance(local_roles, PeftPaperPilotRoles):
+                        lab.roles.paper_admission = local_roles.can_research
                     plan = load_plan(database.parent)
                     if plan is not None:
                         try:
@@ -1060,6 +1073,30 @@ def create_app(
                 question, "Question saved; detail is temporarily unavailable"
             )
             raise HTTPException(503, receipt) from exc
+
+    @app.post("/api/lab/roles/control")
+    def role_pilot_control(request: Request, control: Control) -> dict[str, Any]:
+        lab = lab_operator(request)
+        roles = lab.roles
+        if roles is None:
+            raise HTTPException(503, "Local role registry unavailable")
+        transport = roles.transport
+        if getattr(transport, "paper_pilot", False) is not True:
+            raise HTTPException(409, "An existing approved paper pilot is required")
+        try:
+            transport.set_enabled(control.action == "resume")
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except OSError as exc:
+            raise HTTPException(
+                503, "Pilot control acknowledgment unavailable; refresh its current status"
+            ) from exc
+        try:
+            return dict(roles.page())
+        except (OSError, sqlite3.Error, LookupError) as exc:
+            raise HTTPException(
+                503, "Pilot control saved; current status unavailable. Refresh before retrying"
+            ) from exc
 
     @app.get("/api/lab/roles/tasks/{identity}")
     def role_detail(request: Request, identity: str) -> dict[str, Any]:
@@ -1948,6 +1985,50 @@ def create_app(
             raise HTTPException(409, str(exc)) from exc
         except psycopg.Error as exc:
             raise HTTPException(503, "Launch not confirmed; retry the same request") from exc
+
+    @app.get("/api/paper/diagnostics")
+    def paper_diagnostics(request: Request) -> dict[str, Any]:
+        paper: PaperRuntime | None = request.app.state.paper
+        if paper is None:
+            return {"enabled": False, "created": False, "account": None, "run": None}
+        try:
+            return {"enabled": True, **paper.diagnostic_snapshot()}
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Diagnostic outcome is unavailable; retain the request"
+            ) from exc
+
+    @app.post("/api/paper/diagnostics/create")
+    def paper_diagnostic_create(spec: DiagnosticRequest, request: Request) -> dict[str, Any]:
+        paper = campaign_operator(request)
+        try:
+            return paper.diagnostic_create(spec.request_id)
+        except (ValueError, ArithmeticError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(503, "Creation not confirmed; retry the same request") from exc
+
+    @app.post("/api/paper/diagnostics/start")
+    def paper_diagnostic_start(spec: DiagnosticStart, request: Request) -> dict[str, Any]:
+        paper = campaign_operator(request)
+        try:
+            return paper.diagnostic_start(
+                spec.request_id, spec.seed, spec.max_actions, spec.duration_seconds
+            )
+        except (ValueError, ArithmeticError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(503, "Start not confirmed; retry the same request") from exc
+
+    @app.post("/api/paper/diagnostics/stop")
+    def paper_diagnostic_stop(spec: DiagnosticRequest, request: Request) -> dict[str, Any]:
+        paper = campaign_operator(request)
+        try:
+            return paper.diagnostic_stop(spec.request_id)
+        except (ValueError, ArithmeticError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(503, "Stop not confirmed; retry the same request") from exc
 
     @app.post("/api/paper/accounts/{account}/control")
     async def paper_account_control(

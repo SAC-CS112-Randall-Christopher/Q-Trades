@@ -57,6 +57,9 @@ def vector(descriptor: dict[str, Any], arm: str) -> list[float]:
 def validate_artifact(artifact: dict[str, Any]) -> None:
     if not isinstance(artifact, dict):
         raise ValueError("Memory artifact is unavailable")
+    from trading.account_purpose import require_research_provenance
+
+    require_research_provenance(artifact)
     body = {k: v for k, v in artifact.items() if k != "sha256"}
     if digest(body) != artifact.get("sha256") or artifact.get("contract") != CONTRACT:
         raise ValueError("Frozen memory artifact fingerprint/contract mismatch")

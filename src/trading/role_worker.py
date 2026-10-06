@@ -40,6 +40,7 @@ from trading.rule_components import reviewed_feature
 from trading.scoped_tools import reader
 
 RETRIEVAL_CONTRACT = "source-rag-v1"
+PAPER_RESEARCH_PILOT = "paper_research_pilot"
 
 
 class Question(BaseModel):
@@ -60,8 +61,9 @@ class RoleWorker:
         self.knowledge: ResearchKnowledge | None = None
         self.reviews: ResearchReviews | None = None
         self.owner = secrets.token_hex(16)
-        self.enabled = False  # Only separately authorized, qualified policy enables inference.
+        self.enabled = False  # Explicit activation belongs to the selected transport policy.
         self.activation: Callable[[], bool] | None = None
+        self.paper_admission: Callable[[], bool] | None = None
         self.reason = "Optional role policy is disabled; operating paper work continues"
         with registry.lock:
             registry.db.executescript("""
@@ -104,6 +106,50 @@ class RoleWorker:
                 "CREATE TABLE IF NOT EXISTS role_supervision(phase TEXT PRIMARY KEY,"
                 "status TEXT NOT NULL,reason TEXT,retry_at REAL NOT NULL,updated REAL NOT NULL)"
             )
+
+    @property
+    def paper_pilot(self) -> bool:
+        return getattr(self.transport, "paper_pilot", False) is True
+
+    @property
+    def execution_mode(self) -> str:
+        return PAPER_RESEARCH_PILOT if self.paper_pilot else "qualified_roles"
+
+    def _same_mode(self, task: dict[str, Any]) -> bool:
+        if task["context"].get("execution_mode", "qualified_roles") != self.execution_mode:
+            return False
+        if self.paper_pilot:
+            try:
+                return bool(task["context"].get("pilot_grant_id") == self._pilot_grant_id())
+            except (ValueError, OSError, KeyError):
+                return False
+        return True
+
+    def _pilot_grant_id(self) -> str | None:
+        if not self.paper_pilot:
+            return None
+        try:
+            identity = self.transport.policy()["grant_id"]
+            if not isinstance(identity, str) or not 8 <= len(identity) <= 64:
+                raise ValueError("Pilot task needs the current explicit grant identity")
+        except (ValueError, OSError, KeyError) as exc:
+            raise InputWait(
+                "Current pilot grant unavailable; retained tasks are unchanged"
+            ) from exc
+        return identity
+
+    def _admitted(self) -> bool:
+        if self.paper_pilot:
+            return bool(self.paper_admission and self.paper_admission())
+        return bool(self.controller and self.controller.can_research())
+
+    def _activation_enabled(self) -> bool:
+        if self.paper_pilot and self.activation is not None:
+            try:
+                return bool(self.activation())
+            except (ValueError, OSError, KeyError):
+                return False
+        return self.enabled
 
     def _requested(self, question: Question) -> str | None:
         if not question.request_id:
@@ -174,6 +220,7 @@ class RoleWorker:
             requested = self._requested(question)
         if requested:
             return self.get(requested)
+        pilot_grant_id = self._pilot_grant_id()
         c = self.controller
         if c is None or not c.paper.state.get("autonomous_lab"):
             raise ValueError("Declare an ordinary paper lab policy before creating role research")
@@ -353,6 +400,11 @@ class RoleWorker:
             "predecessor_task": _resume_from["id"] if _resume_from else None,
             "dependency_evidence": _dependency_evidence,
         }
+        if self.paper_pilot:
+            context["execution_mode"] = PAPER_RESEARCH_PILOT
+            context["pilot_grant_id"] = pilot_grant_id
+            context["experimental"] = True
+            context["qualified"] = False
         identity = (
             "role-"
             + fingerprint(
@@ -364,10 +416,18 @@ class RoleWorker:
                     "source": causal_inputs["closed_bar_sha256"],
                     "waits": waits,
                     "dependency_evidence": _dependency_evidence,
+                    **(
+                        {
+                            "execution_mode": PAPER_RESEARCH_PILOT,
+                            "pilot_grant_id": pilot_grant_id,
+                        }
+                        if self.paper_pilot
+                        else {}
+                    ),
                 }
             )[:32]
         )
-        if self.knowledge is not None:
+        if self.knowledge is not None and not self.paper_pilot:
             context["knowledge"] = self.knowledge.retrieve(
                 KnowledgeQuery(
                     text=question.question[:300],
@@ -430,7 +490,12 @@ class RoleWorker:
                     "VALUES(?,?,?,'idea','queued',?,?)",
                     (identity, now, now, encoded, question.question),
                 )
-                self.registry.event(identity, "role_question", {"question": question.question})
+                self.registry.event(
+                    identity,
+                    "role_question",
+                    {"question": question.question}
+                    | ({"execution_mode": PAPER_RESEARCH_PILOT} if self.paper_pilot else {}),
+                )
             if _resume_from:
                 self.registry.event(
                     _resume_from["id"],
@@ -502,7 +567,20 @@ class RoleWorker:
             if self.transport
             else {"qualified": False, "reason": "No qualified local role profile configured"}
         )
-        if self.knowledge is not None:
+        if self.paper_pilot:
+            result.update(
+                paper_pilot=True,
+                experimental=True,
+                qualified=False,
+                qualification_valid=False,
+            )
+            result.setdefault("stages", {})["retrieval"] = {
+                "state": "not_enabled",
+                "next_action": (
+                    "Paper pilot uses frozen numerical/market evidence; RAG is not enabled"
+                ),
+            }
+        elif self.knowledge is not None:
             # New investigations use this library even when retrieval has no match.
             # Keep valid declared-profile receipts independent of current packet compatibility.
             stage = {
@@ -526,13 +604,24 @@ class RoleWorker:
             elif not 0 <= time.time() - paper.state.get("last_tick", 0) <= 10:
                 state = "stale"
             else:
-                guard = getattr(paper, "constrained", None)
-                state = ("refused" if guard() else "available") if callable(guard) else "unverified"
+                if self.paper_pilot:
+                    state = "available" if self._admitted() else "refused"
+                else:
+                    guard = getattr(paper, "constrained", None)
+                    state = (
+                        ("refused" if guard() else "available") if callable(guard) else "unverified"
+                    )
         result["operating_admission"] = {
             "state": state,
             "checked_at": time.time(),
             "next_action": (
-                "Dispatch still rechecks the unchanged guard, qualified profile and activation"
+                (
+                    "Dispatch rechecks the experimental pilot profile, protected admission "
+                    "and activation"
+                    if self.paper_pilot
+                    else "Dispatch still rechecks the unchanged guard, qualified profile "
+                    "and activation"
+                )
                 if state == "available"
                 else (
                     "Resolve protected paper health/resource coverage in its existing owner; "
@@ -563,6 +652,12 @@ class RoleWorker:
         if clauses:
             query += "WHERE " + " AND ".join(clauses) + " "
         query += "ORDER BY t.created DESC,t.id DESC LIMIT 21"
+        try:
+            pilot_grant_id = self._pilot_grant_id()
+            current_authority = True
+        except (ValueError, OSError, KeyError):
+            pilot_grant_id = None
+            current_authority = False
         with self.registry.lock:
             rows = self.registry.db.execute(query, params).fetchall()
             counts = self.registry.db.execute(
@@ -575,11 +670,31 @@ class RoleWorker:
                     "SELECT * FROM role_supervision WHERE reason IS NOT NULL ORDER BY phase LIMIT 3"
                 )
             ]
+            current = self.registry.db.execute(
+                "SELECT id,question_text AS question,stage,status,reason,updated,lease_until "
+                "FROM role_tasks WHERE owner=? AND lease_until>=? AND ? "
+                "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
+                "ORDER BY updated DESC,id LIMIT 1",
+                (
+                    self.owner,
+                    time.time(),
+                    current_authority,
+                    self.execution_mode,
+                    pilot_grant_id,
+                    pilot_grant_id,
+                ),
+            ).fetchone()
+        enabled = self._activation_enabled()
         return {
-            "enabled": self.enabled,
+            "enabled": enabled,
+            "paper_pilot": self.paper_pilot,
+            "experimental": self.paper_pilot,
+            "execution_mode": self.execution_mode,
+            "current_task": dict(current) if current else None,
             "contract": VERSION,
             "reason": self.reason
-            if not self.enabled
+            if not enabled
             else "Separate sequential role worker; task receipts show actual progress",
             "tasks": [dict(r) for r in rows[:20]],
             "next_before": rows[19]["created"] if len(rows) > 20 else None,
@@ -625,6 +740,7 @@ class RoleWorker:
             row = self.registry.db.execute(
                 "SELECT id,created,updated,stage,status,archive_reference,archive_sha256,"
                 "json_extract(context,'$.contract') AS contract,"
+                "json_extract(context,'$.execution_mode') AS execution_mode,"
                 "json_extract(context,'$.question') AS question,"
                 "json_extract(context,'$.issued.sha256') AS bundle_sha256,"
                 "json_extract(result,'$.outcome') AS outcome "
@@ -636,6 +752,19 @@ class RoleWorker:
             if row["archive_reference"]:
                 saved = self.history.read(row)
                 context = json.loads(saved["context"])
+            else:
+                context = {
+                    "contract": row["contract"],
+                    "execution_mode": row["execution_mode"],
+                    "question": json.loads(row["question"]),
+                    "issued": {"sha256": row["bundle_sha256"]},
+                }
+            if context.get("execution_mode") == PAPER_RESEARCH_PILOT:
+                raise ValueError(
+                    "Experimental pilot answers are retained; training export needs "
+                    "separate authorization"
+                )
+            if row["archive_reference"]:
                 selected = [
                     a for a in saved["attempts"] if a["stage"] == stage and a["attempt"] == attempt
                 ]
@@ -654,17 +783,15 @@ class RoleWorker:
                         (identity, stage, attempt),
                     )
                 ]
-                context = {
-                    "contract": row["contract"],
-                    "question": json.loads(row["question"]),
-                    "issued": {"sha256": row["bundle_sha256"]},
-                }
                 result = {"outcome": json.loads(row["outcome"])} if row["outcome"] else None
             if len(selected) != 1:
                 raise ValueError("Selected retained attempt is unavailable")
             a = selected[0]
             if a["packet"] is None or (
-                a.get("packet_bytes", 0) > 131072 or a.get("response_bytes", 0) > 131072
+                a.get("packet_bytes", 0) > 131072
+                or a.get("response_bytes", 0) > 131072
+                or len(a["packet"].encode("utf-8")) > 131072
+                or len((a["response"] or "").encode("utf-8")) > 131072
             ):
                 raise ValueError("Selected retained attempt exceeds its export allowance")
             task = {"id": identity, "context": context, "attempts": selected}
@@ -685,6 +812,8 @@ class RoleWorker:
     def retry(self, identity: str) -> dict[str, Any]:
         """One explicit operational retry; never request a preferred verdict."""
         task = self.get(identity)
+        if not self._same_mode(task):
+            raise ValueError("Retained task belongs to a different role execution mode")
         if task["stage"] not in {"idea", "review", "followup"} or task["status"] != "failed":
             raise ValueError("Only a failed model transport attempt can be explicitly retried")
         self.history.restore(identity)
@@ -765,6 +894,8 @@ class RoleWorker:
             )
 
     def _current(self, task: dict[str, Any]) -> AutonomousLab:
+        if not self._same_mode(task):
+            raise InputWait("Retained task belongs to a different role execution mode")
         if task.get("_claimed_owner"):
             with self.registry.lock:
                 owned = self.registry.db.execute(
@@ -784,6 +915,10 @@ class RoleWorker:
         ):
             raise ValueError("Frozen role contract changed; replan before new inference")
         lab = c.paper.state.get("autonomous_lab")
+        if self.paper_pilot and (
+            c.paper.state.get("paused") or (lab and lab.get("proposals_paused"))
+        ):
+            raise InputWait("Operator pause prevents experimental pilot advancement")
         if task["stage"] in {"outcome", "followup", "complete"}:
             # Historical results remain researchable after policy/parent changes.
             return c
@@ -798,6 +933,8 @@ class RoleWorker:
     def _packet(self, task: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         role, packet = self._base_packet(task)
         knowledge = task["context"].get("knowledge")
+        if task["context"].get("execution_mode") == PAPER_RESEARCH_PILOT and knowledge is not None:
+            raise ValueError("Paper pilot packet cannot include separately authorized RAG inputs")
         if knowledge is not None:
             if self.knowledge is None:
                 raise ValueError("RAG source owner unavailable; retained packet is not regenerated")
@@ -1091,6 +1228,8 @@ class RoleWorker:
             raise
 
     async def _answer(self, task: dict[str, Any]) -> Idea | Review:
+        if not self._same_mode(task):
+            raise ValueError("Retained task belongs to a different role execution mode")
         role, packet = self._packet(task)
         with self.registry.lock:
             previous = self.registry.db.execute(
@@ -1099,6 +1238,8 @@ class RoleWorker:
                 (task["id"], task["stage"]),
             ).fetchone()
         if previous and previous["response"]:
+            if self.paper_pilot and previous["status"] != "answered":
+                raise ValueError("Retained failed pilot answer cannot authorize stage advancement")
             if fingerprint(json.loads(previous["packet"])) != fingerprint(packet):
                 raise ValueError("Completed answer belongs to a different frozen packet")
             return validate(role, json.loads(previous["response"])["answer"], packet)
@@ -1108,14 +1249,16 @@ class RoleWorker:
                 "Previous inference completion unknown; review retained attempt before "
                 "explicit retry"
             )
-        if not self.enabled or self.transport is None:
+        if not self._activation_enabled() or self.transport is None:
             raise InputWait(
-                "Role inference disabled; qualified policy and explicit activation required"
+                "Role inference disabled; selected policy and explicit activation required"
             )
         try:
             profile = await asyncio.to_thread(self.transport.admit, role)
         except Exception as exc:
             raise InputWait("Required role is unavailable: " + str(exc)[:300]) from exc
+        if self.paper_pilot:
+            self._current(task)  # A replacement grant cannot adopt an earlier task.
         started = time.time()
         timeout = profile["timeout_seconds"]
         attempt_number = previous["attempt"] + 1 if previous else 1
@@ -1158,7 +1301,19 @@ class RoleWorker:
                 (started + timeout + 30, task["id"], self.owner),
             )
         try:
-            response = await asyncio.to_thread(self.transport.infer, role, packet, profile)
+            cancelled = None
+            if self.paper_pilot:
+                work = asyncio.create_task(
+                    asyncio.to_thread(self.transport.infer, role, packet, profile)
+                )
+                try:
+                    response = await asyncio.shield(work)
+                except asyncio.CancelledError as interrupted:
+                    cancelled = interrupted
+                    self.transport.cancel()
+                    response = await work  # The transport owns bounded child termination.
+            else:
+                response = await asyncio.to_thread(self.transport.infer, role, packet, profile)
             body = json.dumps(response, sort_keys=True, allow_nan=False)
             if len(body.encode()) > 32768:
                 raise ValueError("Model final output exceeds the recorded answer bound")
@@ -1183,17 +1338,38 @@ class RoleWorker:
                     "AND stage=? AND attempt>?)",
                     (task["id"], task["stage"], task["id"], task["stage"], attempt_number),
                 )
+            if self.paper_pilot and not response.get("complete", True):
+                raise ValueError("Original pilot response is incomplete")
+            if cancelled:
+                raise cancelled
             return validate(role, response["answer"], packet)
-        except Exception as exc:
+        except BaseException as exc:
+            if not isinstance(exc, Exception) and not (
+                self.paper_pilot and isinstance(exc, asyncio.CancelledError)
+            ):
+                raise  # Default transport cancellation retains unknown completion.
+            failure_body = None
+            if isinstance(exc, DevelopmentTransportFailure):
+                failure_body = json.dumps(exc.receipt, sort_keys=True, allow_nan=False)
+                if exc.response is not None:
+                    original = json.dumps(exc.response, sort_keys=True, allow_nan=False)
+                    if len(original.encode()) <= 32768:
+                        failure_body = json.dumps(
+                            exc.response | {"transport_failure": exc.receipt},
+                            sort_keys=True,
+                            allow_nan=False,
+                        )
             with self.registry.transaction():
                 self.registry.db.execute(
                     "UPDATE role_attempts SET finished=?,status='failed',reason=?, "
-                    "wall_reserved=max(wall_reserved,?-started) WHERE "
+                    "wall_reserved=max(wall_reserved,?-started),response=coalesce(response,?) "
+                    "WHERE "
                     "task=? AND stage=? AND attempt=?",
                     (
                         time.time(),
                         str(exc)[:500],
                         time.time(),
+                        failure_body,
                         task["id"],
                         task["stage"],
                         attempt_number,
@@ -1203,12 +1379,15 @@ class RoleWorker:
 
     async def step(self, now: float | None = None) -> bool:
         now = time.time() if now is None else now
+        pilot_grant_id = await asyncio.to_thread(self._pilot_grant_id)
         with self.registry.transaction():
             row = self.registry.db.execute(
                 "SELECT id FROM role_tasks WHERE status NOT IN ('done','failed') AND "
                 "stage<>'data_wait' "
+                "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
                 "AND retry_at<=? AND (owner IS NULL OR lease_until<?) ORDER BY updated LIMIT 1",
-                (now, now),
+                (self.execution_mode, pilot_grant_id, pilot_grant_id, now, now),
             ).fetchone()
             if row:
                 self.registry.db.execute(
@@ -1221,7 +1400,10 @@ class RoleWorker:
         task["_claimed_owner"] = self.owner
         try:
             c = self._current(task)
-            if not c.can_research():
+            admitted = (
+                await asyncio.to_thread(self._admitted) if self.paper_pilot else self._admitted()
+            )
+            if not admitted:
                 raise InputWait("Optional role work yields to financial processing/resource guard")
             stage = task["stage"]
             if stage == "data_wait":
@@ -1229,6 +1411,12 @@ class RoleWorker:
             if stage in {"idea", "review", "followup"}:
                 answer = await self._answer(task)
                 self._current(task)  # Revalidate after long inference against unchanged context.
+                if self.paper_pilot and (
+                    not self._activation_enabled() or not await asyncio.to_thread(self._admitted)
+                ):
+                    raise InputWait(
+                        "Paper pilot admission or activation changed; completed answer retained"
+                    )
                 if isinstance(answer, Review):
                     if answer.action != "exploratory_paper_only":
                         self._update(
@@ -1464,6 +1652,7 @@ class RoleWorker:
             sqlite3.OperationalError,
             OSError,
             HistoryUnavailable,
+            InputWait,
         ) as exc:
             self.reason = f"Research {phase} unavailable ({type(exc).__name__}); bounded retry"
             self._maintenance_due[phase] = now + 30
@@ -1486,13 +1675,17 @@ class RoleWorker:
             self.history.discover_followups()
         except HistoryUnavailable:
             self.reason = "Older follow-up storage unavailable; bounded migration retry recorded"
+        pilot_grant_id = self._pilot_grant_id()
         with self.registry.lock:
             rows = self.registry.db.execute(
-                "SELECT task AS id FROM role_followups f WHERE state='pending' AND retry_at<=? "
+                "SELECT task AS id FROM role_followups f JOIN role_tasks t ON t.id=f.task "
+                "WHERE f.state='pending' AND f.retry_at<=? "
+                "AND coalesce(json_extract(t.context,'$.execution_mode'),'qualified_roles')=? "
+                "AND (? IS NULL OR json_extract(t.context,'$.pilot_grant_id')=?) "
                 "AND NOT EXISTS "
                 "(SELECT 1 FROM research_selection s JOIN research_lessons l ON l.id=s.lesson "
-                "WHERE l.task=f.task AND s.retry_at>?) ORDER BY retry_at,task LIMIT 20",
-                (time.time(), time.time()),
+                "WHERE l.task=f.task AND s.retry_at>?) ORDER BY f.retry_at,task LIMIT 20",
+                (time.time(), self.execution_mode, pilot_grant_id, pilot_grant_id, time.time()),
             ).fetchall()
         selected = waiting = 0
         for row in rows:
@@ -1571,11 +1764,14 @@ class RoleWorker:
         if self.controller is None:
             return 0
         now = time.time() if now is None else now
+        pilot_grant_id = self._pilot_grant_id()
         with self.registry.lock:
             rows = self.registry.db.execute(
                 "SELECT id FROM role_tasks WHERE stage='data_wait' AND status='waiting' "
+                "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
                 "AND retry_at<=? AND owner IS NULL ORDER BY updated,id LIMIT 20",
-                (now,),
+                (self.execution_mode, pilot_grant_id, pilot_grant_id, now),
             ).fetchall()
         resumed = 0
         for row in rows:
@@ -1602,6 +1798,8 @@ class RoleWorker:
 
     def _resume_source(self, identity: str, now: float) -> int:
         task = self.get(identity)
+        if not self._same_mode(task):
+            return 0
         question = Question.model_validate(task["context"]["question"])
         requirement = (task["result"] or {}).get("wait_requirement")
         if not requirement:

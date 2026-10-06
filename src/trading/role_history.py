@@ -193,7 +193,18 @@ class RoleHistory:
                                 "UPDATE role_tasks SET context=?,proposal=NULL,evaluation=NULL,"
                                 "result=NULL,archive_reference=?,archive_sha256=? WHERE id=?",
                                 (
-                                    json.dumps({"question": context["question"]}),
+                                    json.dumps(
+                                        {"question": context["question"]}
+                                        | (
+                                            {
+                                                key: context[key]
+                                                for key in ("execution_mode", "pilot_grant_id")
+                                                if key in context
+                                            }
+                                            if "execution_mode" in context
+                                            else {}
+                                        )
+                                    ),
                                     reference,
                                     fingerprint(packet),
                                     row["id"],
@@ -300,13 +311,17 @@ class RoleHistory:
                 eligible = eligible and bool(result.get("outcome"))
                 with self.registry.transaction():
                     if eligible:
-                        if self.registry.db.execute(
-                            "SELECT 1 FROM sqlite_master WHERE name='research_selection'"
-                        ).fetchone() and self.registry.db.execute(
-                            "SELECT 1 FROM research_selection s JOIN research_lessons l "
-                            "ON l.id=s.lesson WHERE l.task=? AND s.state IN ('selected','waiting')",
-                            (row["id"],),
-                        ).fetchone():
+                        if (
+                            self.registry.db.execute(
+                                "SELECT 1 FROM sqlite_master WHERE name='research_selection'"
+                            ).fetchone()
+                            and self.registry.db.execute(
+                                "SELECT 1 FROM research_selection s JOIN research_lessons l "
+                                "ON l.id=s.lesson WHERE l.task=? "
+                                "AND s.state IN ('selected','waiting')",
+                                (row["id"],),
+                            ).fetchone()
+                        ):
                             state = "consumed"
                         found += self.registry.db.execute(
                             "INSERT OR IGNORE INTO role_followups(task,state) VALUES(?,?)",
