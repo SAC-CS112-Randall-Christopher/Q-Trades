@@ -28,6 +28,7 @@ from trading.lab_role_contract import (
     validate,
 )
 from trading.local_role_model import LocalRoles
+from trading.paper_engine import fresh_frame
 from trading.peft_role_model import DevelopmentTransportFailure
 from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
 
@@ -49,6 +50,7 @@ from trading.scoped_tools import reader
 
 RETRIEVAL_CONTRACT = "source-rag-v1"
 PAPER_RESEARCH_PILOT = "paper_research_pilot"
+QUESTION_POLICY = "evidence-question-selection-v1"
 
 
 class Question(BaseModel):
@@ -108,6 +110,19 @@ class RoleWorker:
                   BEGIN SELECT RAISE(ABORT,'Completed model answer is immutable'); END;
                 CREATE INDEX IF NOT EXISTS role_pending_work ON role_tasks(stage,status)
                   WHERE status NOT IN ('done','failed');
+                CREATE TABLE IF NOT EXISTS role_question_selections(
+                    selection_sha TEXT PRIMARY KEY,scope_sha TEXT NOT NULL,horizon TEXT NOT NULL,
+                    source_end REAL NOT NULL,created REAL NOT NULL,task TEXT UNIQUE NOT NULL,
+                    body TEXT NOT NULL);
+                CREATE INDEX IF NOT EXISTS role_question_scope
+                  ON role_question_selections(scope_sha,horizon,source_end DESC);
+                CREATE INDEX IF NOT EXISTS role_question_rate ON role_question_selections(created);
+                CREATE TRIGGER IF NOT EXISTS role_question_selection_frozen
+                  BEFORE UPDATE ON role_question_selections
+                  BEGIN SELECT RAISE(ABORT,'Question selection is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS role_question_selection_retained
+                  BEFORE DELETE ON role_question_selections
+                  BEGIN SELECT RAISE(ABORT,'Question selection is permanent'); END;
             """)
         self.history = RoleHistory(registry)
         self._maintenance_due: dict[str, float] = {}
@@ -116,6 +131,9 @@ class RoleWorker:
                 "CREATE TABLE IF NOT EXISTS role_supervision(phase TEXT PRIMARY KEY,"
                 "status TEXT NOT NULL,reason TEXT,retry_at REAL NOT NULL,updated REAL NOT NULL)"
             )
+            columns = {r[1] for r in registry.db.execute("PRAGMA table_info(role_supervision)")}
+            if "scope_sha" not in columns:
+                registry.db.execute("ALTER TABLE role_supervision ADD COLUMN scope_sha TEXT")
 
     @property
     def paper_pilot(self) -> bool:
@@ -136,6 +154,15 @@ class RoleWorker:
             return False
         if task["context"].get("contract", VERSION) != self._contract_version():
             return False
+        if "selection_authority" in task["context"]:
+            try:
+                if (
+                    not isinstance(task["context"]["selection_authority"], dict)
+                    or task["context"]["selection_authority"] != self._selection_authority()
+                ):
+                    return False
+            except (ValueError, OSError, KeyError):
+                return False
         if self.paper_pilot:
             try:
                 return bool(task["context"].get("pilot_grant_id") == self._pilot_grant_id())
@@ -230,6 +257,8 @@ class RoleWorker:
         *,
         _resume_from: dict[str, Any] | None = None,
         _dependency_evidence: dict[str, Any] | None = None,
+        _selection: dict[str, Any] | None = None,
+        _selection_authority: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         now = time.time() if now is None else now
         question_body = question.model_dump(exclude={"request_id"})
@@ -237,7 +266,9 @@ class RoleWorker:
         with self.registry.lock:
             requested = self._requested(question)
         if requested:
-            return self.get(requested)
+            return self.get(requested) | (
+                {"_selection_created": False} if _selection is not None else {}
+            )
         pilot_grant_id = self._pilot_grant_id()
         c = self.controller
         if c is None or not c.paper.state.get("autonomous_lab"):
@@ -418,6 +449,14 @@ class RoleWorker:
             "predecessor_task": _resume_from["id"] if _resume_from else None,
             "dependency_evidence": _dependency_evidence,
         }
+        if _selection is not None:
+            _selection_authority = _selection["authority"]
+            context["question_selection"] = _selection
+            self._check_selection(_selection, question, policy, causal_inputs, catalog, now)
+        if _selection_authority is not None:
+            if _selection_authority != self._selection_authority():
+                raise InputWait("Question selection authority changed; original scope retained")
+            context["selection_authority"] = _selection_authority
         if self.paper_pilot:
             context["execution_mode"] = PAPER_RESEARCH_PILOT
             context["pilot_grant_id"] = pilot_grant_id
@@ -434,6 +473,12 @@ class RoleWorker:
                     "source": causal_inputs["closed_bar_sha256"],
                     "waits": waits,
                     "dependency_evidence": _dependency_evidence,
+                    **(
+                        {"selection_authority": _selection_authority}
+                        if _selection_authority is not None
+                        else {}
+                    ),
+                    **({"question_selection": _selection} if _selection is not None else {}),
                     **({"contract": context["contract"]} if context["contract"] != VERSION else {}),
                     **(
                         {
@@ -463,7 +508,22 @@ class RoleWorker:
         with self.registry.transaction():
             requested = self._requested(question)
             if requested:
-                return self.get(requested)
+                return self.get(requested) | (
+                    {"_selection_created": False} if _selection is not None else {}
+                )
+            if _selection_authority is not None:
+                if _selection_authority != self._selection_authority():
+                    raise InputWait("Question selection grant changed before publication")
+            if _selection is not None:
+                self._check_selection(_selection, question, policy, causal_inputs, catalog, now)
+                self._selection_room(_selection["authority"], policy, now)
+                latest = self.registry.db.execute(
+                    "SELECT selection_sha FROM role_question_selections WHERE scope_sha=? "
+                    "AND horizon=? ORDER BY source_end DESC LIMIT 1",
+                    (_selection["scope_sha"], question.horizon),
+                ).fetchone()
+                if (latest["selection_sha"] if latest else None) != _selection["prior_selection"]:
+                    raise InputWait("Selection predecessor changed before atomic publication")
             for sha256, artifact in artifacts.items():
                 self.registry.db.execute(
                     "INSERT OR IGNORE INTO role_components VALUES(?,?)",
@@ -513,6 +573,7 @@ class RoleWorker:
                     identity,
                     "role_question",
                     {"question": question.question}
+                    | ({"question_selection": _selection} if _selection is not None else {})
                     | ({"execution_mode": PAPER_RESEARCH_PILOT} if self.paper_pilot else {}),
                 )
             if _resume_from:
@@ -540,7 +601,20 @@ class RoleWorker:
                     "INSERT INTO role_requests VALUES(?,?,?)",
                     (question.request_id, question_sha256, identity),
                 )
-        return self.get(identity)
+            if _selection is not None:
+                self.registry.db.execute(
+                    "INSERT INTO role_question_selections VALUES(?,?,?,?,?,?,?)",
+                    (
+                        _selection["selection_sha"],
+                        _selection["scope_sha"],
+                        question.horizon,
+                        _selection["source_end"],
+                        now,
+                        identity,
+                        json.dumps(_selection, sort_keys=True, allow_nan=False),
+                    ),
+                )
+        return self.get(identity) | ({"_selection_created": True} if _selection is not None else {})
 
     def get(self, identity: str) -> dict[str, Any]:
         with (
@@ -674,10 +748,12 @@ class RoleWorker:
         try:
             pilot_grant_id = self._pilot_grant_id()
             current_contract = self._contract_version()
+            selection_json = self._selection_json()
             current_authority = True
         except (ValueError, OSError, KeyError):
             pilot_grant_id = None
             current_contract = None
+            selection_json = "null"
             current_authority = False
         with self.registry.lock:
             rows = self.registry.db.execute(query, params).fetchall()
@@ -697,6 +773,8 @@ class RoleWorker:
                 "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
                 "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
+                "AND (json_type(context,'$.selection_authority') IS NULL "
+                "OR json_extract(context,'$.selection_authority')=json(?)) "
                 "ORDER BY updated DESC,id LIMIT 1",
                 (
                     self.owner,
@@ -706,6 +784,7 @@ class RoleWorker:
                     current_contract,
                     pilot_grant_id,
                     pilot_grant_id,
+                    selection_json,
                 ),
             ).fetchone()
             pending = self.registry.db.execute(
@@ -716,13 +795,16 @@ class RoleWorker:
                 "FROM role_tasks WHERE status NOT IN ('done','failed') AND ? "
                 "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
                 "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
-                "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?)",
+                "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
+                "AND (json_type(context,'$.selection_authority') IS NULL "
+                "OR json_extract(context,'$.selection_authority')=json(?))",
                 (
                     current_authority,
                     self.execution_mode,
                     current_contract,
                     pilot_grant_id,
                     pilot_grant_id,
+                    selection_json,
                 ),
             ).fetchone()
         enabled = self._activation_enabled()
@@ -765,6 +847,7 @@ class RoleWorker:
             "execution_mode": self.execution_mode,
             "current_task": dict(current) if current else None,
             "activity": activity,
+            "question_selection": self.question_selection_status(),
             "contract": current_contract,
             "reason": self.reason
             if not enabled
@@ -1055,6 +1138,10 @@ class RoleWorker:
             packet["knowledge"] = knowledge
             for passage in knowledge["passages"]:
                 packet["evidence"][passage["citation"]] = passage
+        if "selection_authority" in task["context"]:
+            packet["selection_authority"] = task["context"]["selection_authority"]
+        if "question_selection" in task["context"]:
+            packet["question_selection"] = task["context"]["question_selection"]
         return role, packet
 
     def _base_packet(self, task: dict[str, Any]) -> tuple[str, dict[str, Any]]:
@@ -1221,6 +1308,8 @@ class RoleWorker:
         if self.enabled or (self.activation and self.activation()):
             raise ValueError("Development answers require operating research disabled")
         task = self.get(identity)
+        if "selection_authority" in task["context"]:
+            raise ValueError("Autonomous selection cannot use a retained development authorization")
         if task["stage"] not in {"idea", "review", "followup"} or (
             task["status"] not in {"queued", "waiting"}
             or task.get("owner")
@@ -1259,7 +1348,7 @@ class RoleWorker:
             raise ValueError("Development needs its explicitly frozen separate profile")
         preflight = getattr(transport, "preflight", None)
         if callable(preflight):
-            preflight(role, packet, profile)
+            await asyncio.to_thread(preflight, role, packet, profile)
         started = time.time()
         with self.registry.transaction():
             current = self.registry.db.execute(
@@ -1363,7 +1452,7 @@ class RoleWorker:
             raise
 
     async def _answer(self, task: dict[str, Any]) -> Idea | Review:
-        if not self._same_mode(task):
+        if not await asyncio.to_thread(self._same_mode, task):
             raise ValueError("Retained task belongs to a different role execution mode")
         role, packet = self._packet(task)
         with self.registry.lock:
@@ -1398,10 +1487,12 @@ class RoleWorker:
         except Exception as exc:
             raise InputWait("Required role is unavailable: " + str(exc)[:300]) from exc
         if self.paper_pilot:
-            self._current(task)  # A replacement grant cannot adopt an earlier task.
-        preflight = getattr(self.transport, "preflight", None)
+            await asyncio.to_thread(self._current, task)
+        preflight = getattr(self.transport, "instance_preflight", None) or getattr(
+            self.transport, "preflight", None
+        )
         if callable(preflight):
-            preflight(role, packet, profile)
+            await asyncio.to_thread(preflight, role, packet, profile)
         started = time.time()
         timeout = profile["timeout_seconds"]
         attempt_number = previous["attempt"] + 1 if previous else 1
@@ -1525,6 +1616,7 @@ class RoleWorker:
     async def step(self, now: float | None = None) -> bool:
         now = time.time() if now is None else now
         pilot_grant_id = await asyncio.to_thread(self._pilot_grant_id)
+        selection_json = await asyncio.to_thread(self._selection_json)
         with self.registry.transaction():
             row = self.registry.db.execute(
                 "SELECT id FROM role_tasks WHERE status NOT IN ('done','failed') AND "
@@ -1532,12 +1624,15 @@ class RoleWorker:
                 "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
                 "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
+                "AND (json_type(context,'$.selection_authority') IS NULL "
+                "OR json_extract(context,'$.selection_authority')=json(?)) "
                 "AND retry_at<=? AND (owner IS NULL OR lease_until<?) ORDER BY updated LIMIT 1",
                 (
                     self.execution_mode,
                     self._contract_version(),
                     pilot_grant_id,
                     pilot_grant_id,
+                    selection_json,
                     now,
                     now,
                 ),
@@ -1552,7 +1647,7 @@ class RoleWorker:
         task = self.get(row["id"])
         task["_claimed_owner"] = self.owner
         try:
-            c = self._current(task)
+            c = await asyncio.to_thread(self._current, task)
             admitted = (
                 await asyncio.to_thread(self._admitted) if self.paper_pilot else self._admitted()
             )
@@ -1563,7 +1658,7 @@ class RoleWorker:
                 return False  # Only a new eligible source/event resumes this dependency.
             if stage in {"idea", "review", "followup"}:
                 answer = await self._answer(task)
-                self._current(task)  # Revalidate after long inference against unchanged context.
+                await asyncio.to_thread(self._current, task)
                 if self.paper_pilot and (
                     not self._activation_enabled() or not await asyncio.to_thread(self._admitted)
                 ):
@@ -1756,6 +1851,371 @@ class RoleWorker:
             self._update(task, task["stage"], "failed", reason=str(exc)[:500])
             return False
 
+    def _selection_authority(self) -> dict[str, Any] | None:
+        authority = getattr(self.transport, "selection_authority", None)
+        return authority() if self.paper_pilot and callable(authority) else None
+
+    def _selection_json(self) -> str:
+        return json.dumps(self._selection_authority(), sort_keys=True, allow_nan=False)
+
+    def _selection_room(
+        self, authority: dict[str, Any], policy: dict[str, Any], now: float
+    ) -> None:
+        c = self.controller
+        if (
+            c is None
+            or not self._activation_enabled()
+            or not self._admitted()
+            or not c.paper.running
+            or c.paper.error
+            or not 0 <= now - c.paper.state.get("last_tick", 0) <= 10
+        ):
+            raise InputWait(
+                "Fresh investigation waits for protected paper admission and activation"
+            )
+        lab = c.paper.state.get("autonomous_lab")
+        if (
+            not lab
+            or fingerprint(lab["policy"]) != fingerprint(policy)
+            or c.paper.state.get("paused")
+            or lab.get("proposals_paused")
+        ):
+            raise InputWait("Fresh investigation waits for its unchanged unpaused paper policy")
+        if authority != self._selection_authority():
+            raise InputWait("Fresh investigation selection authority changed")
+        pending = self.registry.db.execute(
+            "SELECT 1 FROM role_tasks WHERE status NOT IN ('done','failed') "
+            "AND json_extract(context,'$.execution_mode')=? "
+            "AND json_extract(context,'$.contract')=? "
+            "AND json_extract(context,'$.pilot_grant_id')=? "
+            "AND (json_type(context,'$.selection_authority') IS NULL "
+            "OR json_extract(context,'$.selection_authority')=json(?)) LIMIT 1",
+            (
+                PAPER_RESEARCH_PILOT,
+                authority["contract_version"],
+                authority["grant_id"],
+                json.dumps(authority, sort_keys=True, allow_nan=False),
+            ),
+        ).fetchone()
+        followup = self.registry.db.execute(
+            "SELECT 1 FROM role_followups f JOIN role_tasks t ON t.id=f.task "
+            "WHERE f.state='pending' AND json_extract(t.context,'$.execution_mode')=? "
+            "AND json_extract(t.context,'$.contract')=? "
+            "AND json_extract(t.context,'$.pilot_grant_id')=? "
+            "AND (json_type(t.context,'$.selection_authority') IS NULL "
+            "OR json_extract(t.context,'$.selection_authority')=json(?)) LIMIT 1",
+            (
+                PAPER_RESEARCH_PILOT,
+                authority["contract_version"],
+                authority["grant_id"],
+                json.dumps(authority, sort_keys=True, allow_nan=False),
+            ),
+        ).fetchone()
+        if pending or followup:
+            raise InputWait(
+                "Saved investigation, tool/data wait or mature follow-up takes priority"
+            )
+        if (
+            self.registry.db.execute(
+                "SELECT count(*) FROM role_question_selections WHERE created>=?", (now - 86400,)
+            ).fetchone()[0]
+            >= policy["daily_trials"]
+        ):
+            raise InputWait("Declared daily fresh-investigation ceiling reached; no new question")
+
+    def _selection_source(self, horizon: str, policy: dict[str, Any], now: float) -> dict[str, Any]:
+        assert self.controller is not None
+        paper = self.controller.paper
+        bars = paper.lab_history(now, horizon)
+        spec = RuleSpec.model_validate({"family": "range_reversion", "holding_horizon": horizon})
+        frame = paper.control_frames().get("BTCUSD")
+        book = frame.get("book") if frame else None
+        if (
+            not fresh_frame(frame, now)
+            or not book
+            or not book.bids
+            or not book.asks
+            or any(
+                not v.is_finite() or v <= 0 for pair in (book.bids[0], book.asks[0]) for v in pair
+            )
+            or book.bids[0][0] >= book.asks[0][0]
+            or (frame is not None and frame.get("diagnostic_risk_input_valid") is not True)
+            or (frame is not None and frame.get("entry_allowed") is not True)
+        ):
+            raise InputWait("Fresh investigation needs a current usable executable book")
+        if (
+            len(bars) < spec.timing["warmup_minutes"]
+            or bars[-1].close_ms >= now * 1000
+            or bars[-1].open_ms + 60000 < paper.ready_at * 1000
+            or "BTCUSD" in paper._candle_errors
+            or any(b.open_ms - a.open_ms != 60000 for a, b in zip(bars, bars[1:], strict=False))
+        ):
+            raise InputWait("Fresh investigation needs complete causal coverage after bootstrap")
+        feature = reviewed_feature(
+            bars, now, spec, policy["execution_profile"], paper.memory_book("BTCUSD")
+        )
+        excursion, hurdle = feature.get("excursion_bps"), feature.get("modeled_hurdle_bps")
+        if (
+            feature.get("eligible") is not True
+            or any(
+                isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
+                for v in (excursion, hurdle)
+            )
+            or float(excursion or 0) <= float(hurdle or 0)
+        ):
+            raise InputWait("No reviewed range excursion clears its modeled execution-cost hurdle")
+        return {
+            "method": "r1",
+            "horizon": horizon,
+            "source_sha": fingerprint([str(b) for b in bars]),
+            "source_start": bars[0].open_ms / 1000,
+            "source_end": bars[-1].close_ms / 1000,
+            "source_count": len(bars),
+            "source_basis": paper.state.get("evidence_kind", "observed_public_market"),
+            "strategy_sha": fingerprint(spec.model_dump()),
+            "reference_sha": fingerprint(
+                RuleSpec.model_validate({"holding_horizon": horizon}).model_dump()
+            ),
+            "excursion_bps": excursion,
+            "modeled_hurdle_bps": hurdle,
+        }
+
+    def _selection_lesson(
+        self, authority: dict[str, Any], policy: dict[str, Any], horizon: str
+    ) -> dict[str, Any] | None:
+        row = self.registry.db.execute(
+            "SELECT l.id,l.sha AS sha256 FROM research_lessons l JOIN role_tasks t ON t.id=l.task "
+            "WHERE l.horizon=? AND json_extract(t.context,'$.execution_mode')=? "
+            "AND json_extract(t.context,'$.contract')=? "
+            "AND json_extract(t.context,'$.pilot_grant_id')=? "
+            "AND json_extract(t.context,'$.policy_sha256')=? "
+            "AND json_extract(t.context,'$.selection_authority')=json(?) "
+            "ORDER BY l.seq DESC LIMIT 1",
+            (
+                horizon,
+                PAPER_RESEARCH_PILOT,
+                authority["contract_version"],
+                authority["grant_id"],
+                fingerprint(policy),
+                json.dumps(authority, sort_keys=True, allow_nan=False),
+            ),
+        ).fetchone()
+        return dict(row) if row else None
+
+    def _check_selection(
+        self,
+        selection: dict[str, Any],
+        question: Question,
+        policy: dict[str, Any],
+        inputs: dict[str, Any],
+        catalog: dict[str, Any],
+        now: float,
+    ) -> None:
+        authority = selection["authority"]
+        if (
+            question.parent is not None
+            or question.lesson is not None
+            or question.request_id != "auto-" + selection["selection_sha"][:32]
+            or selection["scope_sha"]
+            != fingerprint({"authority": authority, "policy_sha": fingerprint(policy)})
+            or selection["source_sha"] != inputs["closed_bar_sha256"]
+            or selection["source_count"] != inputs["closed_bar_count"]
+            or selection["strategy_sha"] != catalog["r1"]["strategy_sha256"]
+            or selection["reference_sha"] != catalog["r1"]["reference_sha256"]
+            or selection["horizon"] != question.horizon
+            or self._selection_source(question.horizon, policy, now)
+            != {key: selection[key] for key in self._selection_source_keys()}
+            or selection["lesson"] != self._selection_lesson(authority, policy, question.horizon)
+        ):
+            raise InputWait(
+                "Selection source, frozen comparison or lesson changed before publication"
+            )
+
+    @staticmethod
+    def _selection_source_keys() -> tuple[str, ...]:
+        return (
+            "method",
+            "horizon",
+            "source_sha",
+            "source_start",
+            "source_end",
+            "source_count",
+            "source_basis",
+            "strategy_sha",
+            "reference_sha",
+            "excursion_bps",
+            "modeled_hurdle_bps",
+        )
+
+    def select_fresh_question(self, now: float | None = None) -> int:
+        """At most one evidence-backed r1 investigation in the existing worker/registry."""
+        now = time.time() if now is None else now
+        authority = self._selection_authority()
+        if authority is None:
+            return 0  # Existing grants retain their exact manual/continuation behavior.
+        with self.registry.lock:
+            state = self.registry.db.execute(
+                "SELECT retry_at FROM role_supervision WHERE phase='questions'"
+            ).fetchone()
+            if state and state["retry_at"] > now:
+                return 0
+        scope: str | None = None
+        try:
+            if self.controller is None or not self.controller.paper.state.get("autonomous_lab"):
+                raise InputWait("Fresh investigation awaits a declared paper lab policy")
+            policy = self.controller.paper.state["autonomous_lab"]["policy"]
+            scope = fingerprint({"authority": authority, "policy_sha": fingerprint(policy)})
+            with self.registry.lock:
+                self._selection_room(authority, policy, now)
+            reasons = []
+            for horizon in policy["holding_horizons"]:
+                with self.registry.lock:
+                    previous = self.registry.db.execute(
+                        "SELECT task,source_end,selection_sha FROM role_question_selections "
+                        "WHERE scope_sha=? "
+                        "AND horizon=? ORDER BY source_end DESC LIMIT 1",
+                        (scope, horizon),
+                    ).fetchone()
+                if previous:
+                    task = self.get(previous["task"])
+                    result = task["result"] or {}
+                    verdict = result.get("followup", result).get("action")
+                    if (
+                        task["status"] != "done"
+                        or task["stage"] != "complete"
+                        or verdict != "no_change"
+                    ):
+                        reasons.append(
+                            horizon + ": retained adverse result needs reviewed capability or scope"
+                        )
+                        continue
+                try:
+                    source = self._selection_source(horizon, policy, now)
+                except InputWait as exc:
+                    reasons.append(horizon + ": " + str(exc))
+                    continue
+                if previous:
+                    block = max(
+                        policy["horizon_seconds"],
+                        RuleSpec(holding_horizon=horizon).timing["review"],
+                    )
+                    if (
+                        source["source_end"] - previous["source_end"] < block
+                        or source["source_start"] > previous["source_end"] + 60
+                        or source["source_count"] * 60 < block * policy["coverage_fraction"]
+                    ):
+                        reasons.append(
+                            horizon + ": later qualifying source block/coverage has not matured"
+                        )
+                        continue
+                with self.registry.lock:
+                    lesson = self._selection_lesson(authority, policy, horizon)
+                key = fingerprint({"scope_sha": scope, **source, "lesson": lesson})
+                selection = {
+                    **source,
+                    "authority": authority,
+                    "scope_sha": scope,
+                    "selection_sha": key,
+                    "lesson": lesson,
+                    "prior_selection": previous["selection_sha"] if previous else None,
+                    "reason": (
+                        f"Closed-source range excursion {source['excursion_bps']} bps exceeds "
+                        f"the modeled execution-cost hurdle {source['modeled_hurdle_bps']} bps "
+                        "for frozen r1."
+                    ),
+                    "falsification": (
+                        "Reject claimed benefit if the mature prospective matched net after-cost "
+                        "delta is nonpositive or declared coverage is inadequate."
+                    ),
+                    "limitations": [
+                        "A causal entry prerequisite is not observed profit or model usefulness.",
+                        "Warmup and later blocks may be correlated; no independent-sample claim.",
+                        "The signal hurdle covers modeled execution costs; "
+                        "operating/inference costs require the matched result.",
+                        "Source basis: " + source["source_basis"],
+                    ],
+                }
+                question = Question(
+                    question=(
+                        "Is the saved eligible range excursion sufficient to justify frozen r1 "
+                        "range reversion versus breakout prospectively? Refute benefit if mature "
+                        "matched net after-cost delta is nonpositive or coverage inadequate; "
+                        "choose no_change or a declared dependency if evidence is insufficient."
+                    ),
+                    horizon=horizon,
+                    request_id="auto-" + key[:32],
+                )
+                created = self.enqueue(question, now, _selection=selection)
+                self._supervision(
+                    "questions",
+                    "Selected " + created["id"] + "; experimental investigation, no quality claim",
+                    now + 60,
+                    "selected",
+                    scope_sha=scope,
+                )
+                return int(created["_selection_created"])
+            raise InputWait("; ".join(reasons)[:500] or "No eligible declared comparison source")
+        except InputWait as exc:
+            self._supervision("questions", str(exc)[:500], now + 60, "waiting", scope_sha=scope)
+            return 0
+
+    def question_selection_status(self) -> dict[str, Any]:
+        try:
+            authority = self._selection_authority()
+        except (ValueError, OSError, KeyError) as exc:
+            return {
+                "policy": None,
+                "state": "unavailable",
+                "reason": "Selection authority unavailable: " + type(exc).__name__,
+            }
+        if authority is None:
+            return {
+                "policy": None,
+                "state": "disabled",
+                "reason": (
+                    "Fresh investigations require a separately selected explicit question policy"
+                ),
+            }
+        if not self._activation_enabled():
+            return {
+                "policy": QUESTION_POLICY,
+                "state": "disabled",
+                "reason": "Fresh investigation selection is paused; saved provenance is unchanged",
+            }
+        with self.registry.lock:
+            state = self.registry.db.execute(
+                "SELECT * FROM role_supervision WHERE phase='questions'"
+            ).fetchone()
+            lab = self.controller.paper.state.get("autonomous_lab") if self.controller else None
+            scope = (
+                fingerprint({"authority": authority, "policy_sha": fingerprint(lab["policy"])})
+                if lab
+                else None
+            )
+            selected = self.registry.db.execute(
+                "SELECT task,body FROM role_question_selections WHERE scope_sha=? "
+                "ORDER BY created DESC LIMIT 1",
+                (scope,),
+            ).fetchone()
+        if state and state["scope_sha"] != scope and state["scope_sha"] is not None:
+            state = None
+        return {
+            "policy": QUESTION_POLICY,
+            "state": (
+                state["status"]
+                if state and state["status"] in {"selected", "waiting"}
+                else "unavailable"
+                if state
+                else "waiting"
+            ),
+            "reason": state["reason"]
+            if state
+            else "Awaiting evidence-backed selection; no model request or quality claim",
+            "experimental": True,
+            "task": selected["task"] if selected else None,
+            "evidence": json.loads(selected["body"]) if selected else None,
+        }
+
     async def run(self) -> None:
         while True:
             if self.activation is not None:
@@ -1766,10 +2226,19 @@ class RoleWorker:
             if self.enabled:
                 await self._maintain("dependencies", self.resume_sources)
                 await self._maintain("followups", self.select_followups)
+                await self._maintain("questions", self.select_fresh_question)
                 await self._maintain("dispatch", self.step, thread=False)
             await asyncio.sleep(1)
 
-    def _supervision(self, phase: str, reason: str | None, retry_at: float, status: str) -> None:
+    def _supervision(
+        self,
+        phase: str,
+        reason: str | None,
+        retry_at: float,
+        status: str,
+        *,
+        scope_sha: str | None = None,
+    ) -> None:
         with self.registry.transaction():
             old = self.registry.db.execute(
                 "SELECT * FROM role_supervision WHERE phase=?", (phase,)
@@ -1777,10 +2246,10 @@ class RoleWorker:
             if reason is None and (old is None or old["reason"] is None):
                 return
             self.registry.db.execute(
-                "INSERT INTO role_supervision VALUES(?,?,?,?,?) ON CONFLICT(phase) DO UPDATE "
+                "INSERT INTO role_supervision VALUES(?,?,?,?,?,?) ON CONFLICT(phase) DO UPDATE "
                 "SET status=excluded.status,reason=excluded.reason,retry_at=excluded.retry_at,"
-                "updated=excluded.updated",
-                (phase, status, reason, retry_at, time.time()),
+                "updated=excluded.updated,scope_sha=excluded.scope_sha",
+                (phase, status, reason, retry_at, time.time(), scope_sha),
             )
             if old is None or old["reason"] != reason or old["status"] != status:
                 self.registry.event(
@@ -1806,7 +2275,8 @@ class RoleWorker:
                 await asyncio.to_thread(operation)
             else:
                 await operation()
-            self._supervision(phase, None, 0, "recovered")
+            if phase != "questions":
+                self._supervision(phase, None, 0, "recovered")
         except (
             psycopg.OperationalError,
             psycopg.InterfaceError,
@@ -1837,6 +2307,7 @@ class RoleWorker:
         except HistoryUnavailable:
             self.reason = "Older follow-up storage unavailable; bounded migration retry recorded"
         pilot_grant_id = self._pilot_grant_id()
+        selection_json = self._selection_json()
         with self.registry.lock:
             rows = self.registry.db.execute(
                 "SELECT task AS id FROM role_followups f JOIN role_tasks t ON t.id=f.task "
@@ -1846,6 +2317,8 @@ class RoleWorker:
                 "OR json_extract(t.context,'$.contract') IS NOT NULL) "
                 "AND coalesce(json_extract(t.context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(t.context,'$.pilot_grant_id')=?) "
+                "AND (json_type(t.context,'$.selection_authority') IS NULL "
+                "OR json_extract(t.context,'$.selection_authority')=json(?)) "
                 "AND NOT EXISTS "
                 "(SELECT 1 FROM research_selection s JOIN research_lessons l ON l.id=s.lesson "
                 "WHERE l.task=f.task AND s.retry_at>?) ORDER BY f.retry_at,task LIMIT 20",
@@ -1855,6 +2328,7 @@ class RoleWorker:
                     self._contract_version(),
                     pilot_grant_id,
                     pilot_grant_id,
+                    selection_json,
                     time.time(),
                 ),
             ).fetchall()
@@ -1862,6 +2336,8 @@ class RoleWorker:
         for row in rows:
             try:
                 task = self.get(row["id"])
+                if not self._same_mode(task):
+                    continue
                 identity = self.lessons.record(task)
             except (HistoryUnavailable, OSError, sqlite3.OperationalError):
                 with self.registry.transaction():
@@ -1907,7 +2383,8 @@ class RoleWorker:
                         parent=task["context"]["question"]["parent"],
                         request_id="next-" + identity[7:],
                         lesson=identity,
-                    )
+                    ),
+                    _selection_authority=task["context"].get("selection_authority"),
                 )
                 # Reconciliation after a lost acknowledgment returns the exact same task.
                 self.lessons.selected(
@@ -1936,18 +2413,22 @@ class RoleWorker:
             return 0
         now = time.time() if now is None else now
         pilot_grant_id = self._pilot_grant_id()
+        selection_json = self._selection_json()
         with self.registry.lock:
             rows = self.registry.db.execute(
                 "SELECT id FROM role_tasks WHERE stage='data_wait' AND status='waiting' "
                 "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
                 "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
+                "AND (json_type(context,'$.selection_authority') IS NULL "
+                "OR json_extract(context,'$.selection_authority')=json(?)) "
                 "AND retry_at<=? AND owner IS NULL ORDER BY updated,id LIMIT 20",
                 (
                     self.execution_mode,
                     self._contract_version(),
                     pilot_grant_id,
                     pilot_grant_id,
+                    selection_json,
                     now,
                 ),
             ).fetchall()
@@ -2010,6 +2491,7 @@ class RoleWorker:
                 now,
                 _resume_from=task,
                 _dependency_evidence=dict(outcome) if outcome else None,
+                _selection_authority=task["context"].get("selection_authority"),
             )
         except HistoryUnavailable:
             raise

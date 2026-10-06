@@ -129,12 +129,12 @@ is a separate draft PR #74/runtime receipt; it does not activate the successor
 research contract. This source work does not repeat installation or acceptance.
 
 V7 does not implement a varying-volume experiment, review/install a requested
-tool, or establish useful model reasoning. It also does not select fresh
-investigations when the queue is empty. Existing worker continuations require
-specific source waits or mature outcomes; an unsupported answer has neither.
-The next source gap is bounded first/next investigation selection inside the
-existing worker, with immutable selection evidence, source/lesson watermarks,
-restart idempotence and an explicit future policy. No new scheduler is needed.
+tool, or establish useful model reasoning. Its contract-only v3 grant does not
+select fresh investigations. The separate source proposal described in
+[EVIDENCE_QUESTION_SELECTION.md](EVIDENCE_QUESTION_SELECTION.md) adds bounded
+first/next selection inside the existing worker under an explicit future v4
+grant. Existing continuations still require specific source waits or mature
+outcomes; an unsupported answer has neither. No new scheduler is needed.
 
 After independent review and exact-head checks, any operating v7 decision must
 name the reviewed merge/update target and full updater `ExpectedCommit`, select

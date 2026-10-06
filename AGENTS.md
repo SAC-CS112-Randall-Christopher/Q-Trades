@@ -1,4 +1,13 @@
-# Current source follow-up — October 6, 2026, explicit capability semantics (#66)
+# Current source follow-up — October 6, 2026, evidence-backed questions (#66)
+
+Continue the existing draft PR73 lane within source and isolated-QA permission.
+The explicit v4 paper-pilot selection policy is a source proposal only; existing
+v1/v2/v3 grants, selected v6 installation and consumed original attempts remain
+unchanged. Read `docs/reviews/EVIDENCE_QUESTION_SELECTION.md` for selection scope,
+immutable provenance, adverse-result retention and operating proof limits.
+No operating update, new profile/grant selection or model call follows.
+
+# Previous source follow-up — October 6, 2026, explicit capability semantics (#66)
 
 Continue the source/isolated-QA lane in draft PR #73. The single authorized
 PR #72 update is installed at `4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`;
