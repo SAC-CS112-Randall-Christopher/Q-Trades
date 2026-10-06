@@ -84,7 +84,6 @@ jobs:
             tests/test_peft_child_owner.py tests/test_peft_child_resource_integration.py `
             tests/test_strategy_diagnosis.py `
             tests/test_request_counts.py `
-            tests/test_research_notices.py tests/test_notice_contention.py `
             tests/test_question_recovery.py tests/test_research_lessons.py tests/test_role_supervisor.py `
             tests/test_rule_component.py tests/test_role_packet_preflight.py `
             tests/test_stock_research.py tests/test_research_actors.py `
@@ -256,7 +255,9 @@ jobs:
           retention-days: 14
 
   persistent-research:
-    # Keep the private-memory/reviewer cases independent of the existing eight-minute job.
+    # Keep the private-memory/reviewer and normally paced notice recovery cases
+    # in this existing Windows job. The notice pair includes six real ten-second
+    # checks; moving it preserves coverage and both eight-minute lifecycle limits.
     runs-on: windows-2025
     timeout-minutes: 8
     defaults:
@@ -279,10 +280,10 @@ jobs:
           # Owned child interpreters need the application package, not pytest's
           # parent-only pythonpath injection. Match the declared installed setup.
           python -m pip install --no-input --no-deps -e .
-      - name: Static checks and native reference/reviewer recovery
+      - name: Static checks and native reference/reviewer/notice recovery
         run: |
           python -m ruff check src tests scripts/evaluate_admission_recovery.py scripts/answer_development_role.py scripts/observe_model_coexistence.py scripts/verify_performance_diagnostics.py scripts/verify_performance_coexistence.py scripts/preview_performance_diagnostic_ui.py scripts/preview_paper_pilot_ui.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m mypy --platform win32 src
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -B -m pytest -q -p no:cacheprovider --tb=long tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py
+          python -B -m pytest -q -p no:cacheprovider --tb=long tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py tests/test_research_notices.py tests/test_notice_contention.py
