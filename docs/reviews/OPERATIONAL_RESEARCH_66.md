@@ -1,6 +1,19 @@
 # Operational research handoff — issue #66
 
-## Current baseline and authorization
+## October 6 bounded admission-policy successor
+
+The approved operating rollout is complete at
+`6265240d64a932d987a763d106726675a1a18019` within its documented scope; reuse
+[the existing #66 receipt](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/66#issuecomment-6005141750).
+The latest assignment produces a
+[tested offline recovery candidate](ADMISSION_POLICY_EVALUATION.md) and
+[source/evidence rationale](ADMISSION_POLICY_RATIONALE.md), with no operating
+check/wait, update/restart or inference. The original attempt remains unused
+under its unchanged complete guard. A changed-policy coexistence test needs the
+explicit additional decisions specified in the evaluation. Earlier handoff text
+below describes pre-rollout evidence and pending permissions at that time.
+
+## Historical baseline and authorization before the accepted rollout
 
 October 5, 2026 inspection refreshed GitHub main at
 `65fc680f1dff9aa7d08480e2c6b6c7bb17b49617`. Its tree
