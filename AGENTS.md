@@ -1,4 +1,22 @@
-# Current direction — October 6, 2026, Performance Diagnostic account (#66)
+# Current direction — October 6, 2026, measured latency override (#66)
+
+Chris explicitly instructed: "lets just get rid of the guards. run the model
+and see how it performs" to measure this computer's actual coexistence behavior.
+For one finite performance-only development request, disable latency/recovery
+admission and cancellation vetoes while recording their actual observations.
+Reuse the previously refused, still-unused performance task and immutable packet,
+existing private registry/allowances, trained-v2 model, fixed resource profile,
+child owner and answer_development_role route. Retain the actual response/failure,
+native financial/capture measurements and verified child cleanup. Do not enqueue
+another question, reset allowances or retry a dispatched/uncertain attempt.
+Keep process ownership, finite lifetime, memory reserves/budget, actual balanced
+accounting, paper freshness, input eligibility, recording and storage checks.
+This exception is explicit and development-only; normal operating defaults stay
+unchanged. No operating rollout/restart, research activation, training, download,
+qualification, paid call or promotion follows. Source/test changes remain in
+the existing owning draft PR #71; preserve historical receipts below.
+
+# Previous direction — October 6, 2026, Performance Diagnostic account (#66)
 
 Chris authorized one Performance Diagnostic paper account with much more fake
 capital and varied random trading to test application performance. This lane

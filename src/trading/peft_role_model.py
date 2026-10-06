@@ -5,8 +5,9 @@ import os
 import subprocess
 import time
 import uuid
+from copy import deepcopy
 from pathlib import Path
-from threading import Event
+from threading import Event, Lock
 from typing import Any
 
 from trading.lab_role_contract import contract_hash, packet_json, prompt
@@ -31,9 +32,95 @@ class DevelopmentTransportFailure(ValueError):
 
 
 class PeftDevelopmentRoles:
-    def __init__(self, directory: Path):
+    def __init__(self, directory: Path, *, development_latency_override: bool = False):
+        if type(development_latency_override) is not bool:
+            raise ValueError("Development latency override must be explicit")
         self.directory = regular(directory.resolve())
         self._cancelled = Event()
+        self._latency_mode = development_latency_override
+        self._latency_authorization: dict[str, Any] | None = None
+        self._latency_used = False
+        self._latency_lock = Lock()
+        self._guard_observations: list[dict[str, Any]] = []
+        self._guard_log: Path | None = None
+
+    def authorize_latency_measurement(
+        self,
+        role: str,
+        packet: dict[str, Any],
+        *,
+        request_id: str,
+        authorized: bool,
+    ) -> None:
+        """Bind one expressly authorized performance request, never an operating role."""
+        purpose = packet.get("evidence", {}).get("e2", {})
+        if (
+            not self._latency_mode
+            or authorized is not True
+            or role not in {"researcher", "reviewer"}
+            or purpose.get("purpose") != "performance_diagnostic"
+            or purpose.get("research_eligible") is not False
+            or not 8 <= len(request_id) <= 64
+            or not all(char.isascii() and (char.isalnum() or char == "-") for char in request_id)
+        ):
+            raise ValueError("Explicit single performance-request latency authorization required")
+        with self._latency_lock:
+            if self._latency_authorization is not None:
+                raise ValueError("Development latency authorization cannot be replaced or reset")
+            self._latency_authorization = {
+                "role": role,
+                "request_id": request_id,
+                "packet_sha256": digest(packet),
+                "authorized_at": time.time(),
+                "attempt_limit": 1,
+                "scope": "Development performance latency measurement; no operating qualification",
+            }
+
+    def guard_observations(self) -> list[dict[str, Any]]:
+        with self._latency_lock:
+            return deepcopy(self._guard_observations)
+
+    def _paper_guard(self, phase: str) -> dict[str, Any]:
+        if not self._latency_mode:
+            return LocalRoles(self.directory).paper_guard()
+        with self._latency_lock:
+            if self._latency_authorization is None:
+                raise ValueError("Development latency override has no per-request authorization")
+        observed = LocalRoles(self.directory).development_latency_guard() | {"phase": phase}
+        with self._latency_lock:
+            if len(self._guard_observations) >= 640:
+                raise ValueError("Finite development guard observation budget exhausted")
+            self._guard_observations.append(observed)
+            if self._guard_log is not None:
+                self._append_guard_log(observed)
+        if observed["admitted"] is not True:
+            raise ValueError(
+                "Protected development guard refuses: " + ", ".join(observed["reasons"])
+            )
+        return observed
+
+    def _append_guard_log(self, observed: dict[str, Any]) -> None:
+        assert self._guard_log is not None
+        encoded = packet_json(observed) + "\n"
+        size = self._guard_log.stat().st_size if self._guard_log.exists() else 0
+        if size + len(encoded.encode()) > 32 * 1024**2:
+            raise ValueError("Finite development guard evidence byte budget exhausted")
+        with self._guard_log.open("a", encoding="utf-8") as stream:
+            stream.write(encoded)
+
+    def _consume_latency_authorization(self, role: str, packet: dict[str, Any]) -> None:
+        if not self._latency_mode:
+            return
+        with self._latency_lock:
+            authorized = self._latency_authorization
+            if (
+                authorized is None
+                or self._latency_used
+                or role != authorized["role"]
+                or digest(packet) != authorized["packet_sha256"]
+            ):
+                raise ValueError("Development latency authorization is missing, used or mismatched")
+            self._latency_used = True
 
     def cancel(self) -> None:
         self._cancelled.set()
@@ -72,7 +159,17 @@ class PeftDevelopmentRoles:
         if role not in {"researcher", "reviewer"}:
             raise ValueError("Unsupported development role")
         _, _, profile = self.declaration()
-        LocalRoles(self.directory).paper_guard()  # The entire existing operating guard.
+        if self._latency_mode:
+            with self._latency_lock:
+                if (
+                    self._latency_authorization is None
+                    or self._latency_used
+                    or role != self._latency_authorization["role"]
+                ):
+                    raise ValueError(
+                        "Development latency admission requires its unused bound request"
+                    )
+        self._paper_guard("admission")
         return profile
 
     @staticmethod
@@ -86,13 +183,13 @@ class PeftDevelopmentRoles:
             raise ValueError("Role packet exceeds the development transport allowance")
 
     def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+        self._consume_latency_authorization(role, packet)
         self.preflight(role, packet, profile)
         cfg, selected, current = self.declaration()
         if current != profile or role not in {"researcher", "reviewer"}:
             raise ValueError("Frozen development profile changed before dispatch")
         serialized = packet_json(packet)
-        guard = LocalRoles(self.directory)
-        guard.paper_guard()
+        self._paper_guard("before_dispatch")
         if self._cancelled.is_set():
             raise ValueError("Development inference was cancelled before dispatch")
         if available_memory() < profile["max_rss_bytes"] + profile["minimum_available_bytes"]:
@@ -116,6 +213,11 @@ class PeftDevelopmentRoles:
             root.mkdir(exist_ok=True)
             job = root / uuid.uuid4().hex
             job.mkdir()
+            if self._latency_mode:
+                with self._latency_lock:
+                    self._guard_log = job / "latency-guard.jsonl"
+                    for observed_guard in self._guard_observations:
+                        self._append_guard_log(observed_guard)
             request = {
                 "config": selected,
                 "private_root": cfg["private_root"],
@@ -209,7 +311,7 @@ class PeftDevelopmentRoles:
                         raise ValueError("Development child logging exceeded its private bound")
                     if time.perf_counter() - last_guard >= 1:
                         category = "paper_guard"
-                        guard.paper_guard()
+                        self._paper_guard("during_inference")
                         last_guard = time.perf_counter()
                     category = "child_wait"
                     try:
@@ -254,7 +356,7 @@ class PeftDevelopmentRoles:
             # Record final health, but preserve the answer even if the guard closed
             # as generation ended. Development gives it no dispatch authority.
             try:
-                after_guard: dict[str, Any] = guard.paper_guard()
+                after_guard: dict[str, Any] = self._paper_guard("after_response")
             except Exception:
                 after_guard = {"admitted": False, "reason": "Protected guard closed after response"}
             answer = dict(response) | {
@@ -262,7 +364,20 @@ class PeftDevelopmentRoles:
                 "private_job": job.name,
                 "peak_rss_bytes": max(peak, response.get("peak_rss_bytes", 0)),
                 "transport_wall_seconds": time.perf_counter() - started,
-                "paper_guard_after": after_guard,
+                "paper_guard_after": after_guard
+                if not self._latency_mode
+                else {
+                    key: after_guard.get(key)
+                    for key in (
+                        "admitted",
+                        "reasons",
+                        "reason",
+                        "effective_latency_block_removed",
+                        "research_constrained",
+                        "observed_at",
+                        "phase",
+                    )
+                },
                 "scope": "Unqualified development answer; no financial or operating authority",
             }
             # The existing runner retains its own peak, which can exceed the
@@ -324,6 +439,16 @@ class PeftDevelopmentRoles:
             "private_dispatch_retained": False,
             "scope": "Unqualified development attempt; no financial or operating authority",
         }
+        if self._latency_mode:
+            evidence = {
+                "development_latency_authorization": self._latency_authorization,
+                "guard_observations": len(self._guard_observations),
+                "guard_observations_sha256": digest(self._guard_observations),
+                "guard_log": "latency-guard.jsonl" if self._guard_log is not None else None,
+            }
+            receipt.update(evidence)
+            if answer is not None:
+                answer.update(evidence)
         if job:
             try:
                 (job / "dispatch.json").write_text(

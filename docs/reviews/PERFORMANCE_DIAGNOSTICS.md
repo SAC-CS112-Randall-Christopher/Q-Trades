@@ -110,7 +110,7 @@ dashboard and corrected verifier. A different owner independently reviewed the
 research classification, derived consumers, training/artifact gates and shared
 archive preservation. Review scopes and source hashes remain in private receipts.
 
-## Newly authorized actual-model test and remaining operating scope
+## Original actual-model authorization and retained refusal
 
 The new permission authorizes one **new performance-only** request in the
 existing private development registry. It preserves the original question's two
@@ -119,10 +119,10 @@ budget, trained-v2 candidate and frozen profile. It does not retry an answer for
 a preferred research outcome. Operating roles, qualification, RAG, external
 review, paid calls, training and promotion remain disabled.
 
-The finite paced fixture uses real time, measured native work, current SQL
-balance/storage and actual capture observations. The unchanged model transport
-continues to guard the installed financial owner at port 8780. The disposable
-financial workload has its own additional measured guard and cooperative model
+The first finite paced fixture used real time, measured native work, current SQL
+balance/storage and actual capture observations. Its unchanged model transport
+guarded the installed financial owner at port 8780. The disposable financial
+workload had its own additional measured guard and cooperative model
 cancellation; those are distinct owners and are reported separately. Actual
 model overlap with synthetic-book financial processing cannot establish
 operating active-position/real-feed coexistence or an economic edge. The result,
@@ -177,6 +177,185 @@ full capture readback, preservation, final drain and schema retirement passed.
 Its callback is explicitly fake and `model_called=False`. This verifies the
 collector repair only.
 
+Read-only reconciliation of the failed run subsequently verified all 108 full
+capture hashes, SQL event and Decimal journal links, the last raw SQL body hash,
+balanced revision 111, original financial values and complete precreation
+prefixes. It retained the actual unfinished ETH position and pending sell;
+there were no financial mutations, additional fills or fabricated drain. An
+initial readback probe incorrectly included `PaperStore.read`'s added revision
+metadata in the SQL-body hash; that failed probe remains retained. The corrected
+readback does not claim complete causal-feature replay or repair the failed run.
+
+## Explicitly authorized latency-only measurement
+
+Chris then instructed: "lets just get rid of the guards. run the model and see
+how it performs". For one finite performance-only development request, this
+explicit exception disables latency/recovery admission and cancellation vetoes
+in both the disposable workload helper and the development transport. It reuses
+the previously refused, still-unused performance question and immutable packet;
+it does not consume or retry the original research question's two recorded
+attempts. Normal operating and default development callers retain their guard.
+
+The exception preserves actual fresh/balanced financial monitoring, paper
+freshness and error checks, input eligibility, recording, storage reserves and
+the 400/100-GB policy. Unknown or nonlatency resource blockers still refuse.
+Model/candidate identity, the frozen CPU profile, 24-GiB child memory ceiling,
+8-GiB available-memory reserve, exclusive inference owner, finite lifetime and
+original-handle cleanup remain unchanged. No operating installation/restart,
+role activation, RAG, qualification, external review, training or promotion is
+part of this measurement.
+
+Admission, dispatch, during-inference and final-response observations preserve
+the actual installed guard at port 8780, including any closed latency policy.
+They report the effective exception separately rather than replacing the
+observed `research_constrained` field with a healthy value. Full guard
+observations use a bounded private log; native work/capture measurements retain
+the raw policy decision alongside actual diagnostic admission. Required
+receipts remain strict, and optional status omissions remain recorded.
+Periodic transport status requests are health samples, not an uninterrupted
+installed work trace. Disposable per-tick captures cover their own measured
+fixture workload; missing installed intervals are not inferred from notices or
+trigger counts.
+
+The final Windows focused selection passed **41 tests with no skips**, covering
+the unchanged default veto, severe/moderate latency reasons, every transport
+phase, exact-packet once-only authorization, missing/nonlatency protections and
+financial/memory refusal before any child launch. Changed transport/guard sources
+passed Ruff and strict mypy. These are focused checks of the new exception;
+the earlier 1,379-test complete selection predates this change.
+Earlier exception QA receipts retain a sandbox temporary-directory ACL
+setup/cleanup failure and a fixture Mock-binding failure with 34 passing cases.
+The corrected 35-pass selection preceded the final additional dispatch-boundary
+and unchanged-default tests; it is not substituted for the final 41-case run.
+
+A separate fake-callback native procedure passed 19 ticks and 19 full captures,
+with nine intents, eight fills, one cancellation and four closes. Raw policy
+remained closed on all 19 ticks while effective admission was true; callback
+start and model-stop boundaries honored the exception. Balanced reopen,
+original financial preservation, normal drain and schema retirement passed.
+The raw policy was closed because complete clean startup coverage had not yet
+been established. This procedure injected no severe timings and ran no model;
+it verifies the shared closed-policy path, not capacity under actual model load.
+Independent helper/transport/private-driver reviews are clear at their retained
+source hashes.
+
+### Actual one-shot measurement: completed and reopened
+
+The sole private driver reuses request
+`performance-coexistence-20261006-0001` and task
+`role-b2293bb9b96d1f7e3c06b4123e76528e`. It checks zero prior attempts and zero
+allowances immediately before dispatch, preserves context hash
+`e57021c63911883d0e3384579732c8bd43bdbf830f00dadf08cb680abf458b7d`, packet hash
+`fa2b9f12c9e370c3acdf4763bd9f8fea4b21341d7187d2ad203da2ce55fea197` and profile
+hash `6958d383736af5cf105a79177948d7c800b0deeb9011917cec666b3a2eef7150`.
+The packet fingerprint above uses the registry's serialization; the transport's
+own canonical packet digest is
+`10bbda90af37c2ff288a7301f71909df1527a60cf52d4541f8ea25202ea02963`.
+These use different declared serializations for SHA-256 over the same preserved
+packet, not an identity mismatch.
+The existing `answer_development_role.answer_with_deadline` route is invoked at
+most once, with a 600-second upper bound and no preferred-answer retry. Source
+hashes and the original task/attempt/allowance rows are frozen for after-run
+comparison.
+
+The declared fixture has 30 seconds before the model callback, a maximum
+600-second model phase, 30 seconds of recovery and bounded final drain, paced
+at 0.5-second ticks with a 700-second overall limit. Its native books/risk bars
+remain explicitly synthetic. The finite trading workload can finish before
+the model; actual per-tick inventory, orders, fills and model-pending evidence
+determine the measured active overlap.
+
+The actual trained-v2 request completed with a valid, EOS-terminated response:
+`request_data` for `new_closed_bars`. The retained response asks for a later
+closed bar to complete its declared horizon; it grants no financial authority
+and does not establish a strategy or qualification outcome. Reopened registry
+evidence contains exactly **one answered attempt and one allowance**. The task
+remains `idea/queued`; the original research task and its two consumed
+attempts/allowances retain their exact before-run digest. No second answer or
+preferred-answer retry was dispatched.
+
+The runner recorded 521.719 seconds total, 43.405 seconds for its measured model
+load phase and 428.219 seconds of generation, with 1,300 prompt tokens and 72
+generated tokens. Those phases do not include all verification/preparation;
+they are not summed to manufacture a total. The transport took 550.535 seconds,
+and the invocation-to-reopened-result bracket was 553.047 seconds. Its actual
+CPU/float32 adapter identity and fixed two-processor placement match the frozen
+profile. The owned Job measured a peak **18,092,826,624 bytes (16.85 GiB)** from
+1,282 RSS observations, below its 24-GiB ceiling. The retained dispatch receipt
+reports child exit code zero, terminated child, complete cleanup and no cleanup
+errors; the final helper separately reopens that cleanup evidence.
+
+The final native financial/capture receipt passed after **623.266 seconds and
+1,232 ticks**. The diagnostic workload reached its 1,000-action cap, with 233
+intents, 187 fills including 13 partial fills, 46 cancellations, 89 closed trades
+and zero errors. These remain synthetic-book random performance activity.
+Model-phase records include 1,107 model-pending ticks, 438 ticks with the trading
+workload running and 402 ticks with positions or pending orders. The model phase
+issued 207 intents, filled 164 orders, cancelled 44 and closed 78 trades. The
+workload completed and drained about 251.5 seconds after it started, before the
+model finished; the remaining model
+interval continued native financial processing and recording without an active
+diagnostic position/order workload.
+
+| Observed complete native work | Before model | Model phase | Recovery |
+| --- | ---: | ---: | ---: |
+| Recorded ticks | 61 | 1,108 | 62 |
+| p50 | 131.81 ms | 172.92 ms | 151.65 ms |
+| p95 | 152.28 ms | 228.85 ms | 207.07 ms |
+| p99 | 164.44 ms | 285.89 ms | 446.62 ms |
+| Maximum | 164.44 ms | 457.91 ms | 446.62 ms |
+
+These are descriptive observations within this one paced run, not a repeated
+matched capacity benchmark. The retained history grows throughout the run, and
+its cost is not attributed solely to the model. Baseline ticks all had the
+finite workload running;
+the model phase includes its later inactive tail. Complete native work remains
+the declared fixture preparation/SQL/full-and-compact capture/readback scope,
+not exchange order response time. No disposable model-phase work exceeded
+500 ms.
+Model-phase scheduled-tick lateness reached 1,844 ms, while p95/p99 lateness was
+16 ms. Scheduled lateness and complete native work are separate measurements;
+neither establishes a real-feed order-response deadline.
+
+The transport retained 324 actual installed-guard observations. Of those,
+177 reported latency admission closed and remained effectively admitted under
+the explicit exception. They retain severe trigger 23 at
+**2026-10-06 14:52:39.430490 UTC**, work 66,626, **1,029.747 ms**, and its recovery
+hold. Those are repeated status samples of one retained trigger, not 177
+independent stalls or proof of a continuous installed trace. The observations
+retain their phase evidence and do not attribute that installed stall to the
+model. Financial, freshness, recording-state and storage checks passed in every
+retained transport observation. Deduplicating retained windows yields 1,521
+installed work samples within the invocation bracket, p95 178.88 ms and a
+1,029.75-ms maximum, with one >=500-ms/severe sample. There are five absent work
+numbers across four gaps and a maximum 3.125-second poll gap. The installed
+`active_portfolios` flag is true in 875 retained work samples; that sampled flag
+does not resolve the existing direct NAT writer identity or verify complete
+installed market/financial/capture behavior.
+
+Installed full/compact capture omission counters increased by **792/102**
+between sampled boundaries, despite the recording-state checks passing. Those
+are observed auxiliary capture omissions, not erased financial history. There
+is no matched no-model installed baseline, and the evidence does not attribute
+those omissions to this model or claim uninterrupted operating research capture.
+
+Reopened native financial state is balanced. The original financial values and
+complete precreation prefixes are preserved; final inventory/orders are drained.
+All 1,232 full decision packets reopened with matching hashes, financial/event
+links, actual recorded admission and monotonic dispatch metadata. The disposable
+full and compact recording dropped no work, and optional live-status omissions
+were zero.
+The capture readback verifies those links rather than complete causal-feature
+replay. The sole verified disposable schema was retired after final acceptance.
+
+This is actual bounded local-model coexistence evidence: the trained model
+completed while the native engine traded, committed financial history and
+recorded data. It is separate from the earlier refused run, source fixtures,
+installed diagnostic-account/UI acceptance, operating active-position/real-feed
+load and economic strategy performance.
+
+## Remaining operating and product acceptance
+
 The accepted operating installation remains
 `38836fcf335261c9a96b9b68aef1237227ff2aaa`. This source lane performs no operating
 update, service restart, operating diagnostic-account creation or migration.
@@ -191,3 +370,21 @@ normal UI/recovery is `qa-20261006/browser-ui-final`, independent reviews are
 and the single actual-model coexistence result is retained separately when run.
 The actual refused invocation and read-only model reconciliation are under
 `actual-model-coexistence-1`; its original failed helper receipt is preserved.
+Its corrected read-only financial readback is
+`actual-model-coexistence-1/financial/readback-20261006-2/receipt.json`.
+Latency exception source checks and independent reviews are
+`qa-20261006/latency-override-04.xml`,
+`qa-20261006/development-latency-override-source-qa.json`,
+`qa-20261006/latency-override-independent-review.json` and
+`qa-20261006/latency-transport-independent-review.json`. The separate fake native
+procedure is `coexistence-latency-override-procedural-20261006-1`. The actual
+once-only exception measurement is retained separately under
+`actual-model-coexistence-latency-disabled-1`.
+Its actual outcome and cleanup are `model-result-reopened.json` and
+`model-child-cleanup-reopened.json`; the final financial/capture result is
+`financial/receipt.json` and the driver-level result is
+`final-coexistence-receipt.json`. The retained read-only artifact analysis is
+`read-only-analysis.json`; it independently verifies all 1,232 packet hashes and
+documents sampled installed gaps/omission deltas. No receipt from the earlier
+refused run is
+replaced by this later, separately authorized result.

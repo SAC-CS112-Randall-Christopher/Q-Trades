@@ -187,6 +187,7 @@ async def run_coexistence(
     model_limit_seconds: float = MODEL_LIMIT_SECONDS,
     recovery_seconds: float = RECOVERY_SECONDS,
     model_evidence_kind: str = "caller_owned_unverified",
+    latency_admission_enabled: bool = True,
 ) -> dict[str, Any]:
     """Measure one diagnostic run and capture; caller owns its single model attempt.
 
@@ -213,6 +214,8 @@ async def run_coexistence(
         "procedural_fake_callback",
     }:
         raise ValueError("Declare the callback evidence scope explicitly")
+    if type(latency_admission_enabled) is not bool:
+        raise ValueError("Latency admission must be explicitly enabled or disabled")
     dsn = load_dsn(database_config)
     info = conninfo_to_dict(dsn)
     if info.get("host") != "127.0.0.1" or info.get("port") != "54544":
@@ -244,6 +247,12 @@ async def run_coexistence(
             "restarts": 0,
         },
         "pressure_policy": PRESSURE_POLICY_VERSION,
+        "latency_admission_enabled": latency_admission_enabled,
+        "latency_override_scope": (
+            "One finite disposable QA workload; raw pressure remains measured and recorded"
+            if not latency_admission_enabled
+            else None
+        ),
         "source_sha256": source,
         "measurement_scope": (
             "Fixture/capture preparation, native SQL commit, full/compact capture flush, "
@@ -294,7 +303,8 @@ async def run_coexistence(
 
     def record_model_start(details: dict[str, Any]) -> None:
         admission = pressure.evaluate(time.monotonic())
-        if not admission.pressure_allows or stop_requested.is_set():
+        effective_allowed = not latency_admission_enabled or admission.pressure_allows
+        if not effective_allowed or stop_requested.is_set():
             stop_requested.set()
             write_json(
                 output / "root-model-admission-closed.json",
@@ -302,6 +312,8 @@ async def run_coexistence(
                     "wall_at": time.time(),
                     "mono_at": time.monotonic(),
                     "pressure": asdict(admission),
+                    "latency_admission_enabled": latency_admission_enabled,
+                    "effective_latency_admission": effective_allowed,
                     "details": details,
                     "model_dispatch_authorized_by_qa": False,
                 },
@@ -313,6 +325,9 @@ async def run_coexistence(
                 "wall_at": time.time(),
                 "mono_at": time.monotonic(),
                 "details": details,
+                "pressure": asdict(admission),
+                "latency_admission_enabled": latency_admission_enabled,
+                "effective_latency_admission": effective_allowed,
                 "helper_model_boundary_mono": phase_started,
                 "scope": (
                     "Caller-reported existing runner dispatch; "
@@ -357,7 +372,9 @@ async def run_coexistence(
                     stop_requested.set()
                 elapsed_phase = now_mono - phase_started
                 if phase == "warmup":
-                    if pressure.evaluate(now_mono).pressure_allows:
+                    if (not latency_admission_enabled and rows) or pressure.evaluate(
+                        now_mono
+                    ).pressure_allows:
                         before_creation = deepcopy(store.read()["accounts"])
                         creation_prefix = events(store)
 
@@ -385,6 +402,7 @@ async def run_coexistence(
                         "histories": deepcopy(histories),
                         "packet": deepcopy(packet),
                         "pressure_policy": pressure,
+                        "latency_admission_enabled": latency_admission_enabled,
                         "stop_requested": stop_requested,
                         "output": output,
                         "phase": phase,
@@ -456,6 +474,7 @@ async def run_coexistence(
                 )
                 tick_mono = time.monotonic()
                 evaluation = pressure.evaluate(tick_mono)
+                effective_allowed = not latency_admission_enabled or evaluation.pressure_allows
                 at = time.time()
                 work_start = time.perf_counter()
                 frames, studies, histories = fixture(at, len(rows) + 1)
@@ -484,11 +503,12 @@ async def run_coexistence(
                     frames: dict[str, Any] = frames,
                     studies: dict[str, Any] = studies,
                     measured: dict[str, Any] = measured,
-                    diagnostic_allowed: bool = evaluation.pressure_allows,
+                    diagnostic_allowed: bool = effective_allowed,
                 ) -> None:
                     measured["dispatch_mono"] = time.monotonic()
                     packet["state_before"] = state_snapshot(engine.state)
                     packet["diagnostic_allowed"] = diagnostic_allowed
+                    packet["latency_admission_enabled"] = latency_admission_enabled
                     engine.evidence_trace = []
                     engine.tick(frames, studies, diagnostic_allowed=diagnostic_allowed)
                     measured.update(events=engine.events, traces=engine.evidence_trace or [])
@@ -537,7 +557,11 @@ async def run_coexistence(
                 observed_mono = time.monotonic()
                 pressure.observe(whole_ms, observed_mono)
                 pressure_after = pressure.evaluate(observed_mono)
-                if phase == "model" and not pressure_after.pressure_allows:
+                if (
+                    latency_admission_enabled
+                    and phase == "model"
+                    and not pressure_after.pressure_allows
+                ):
                     stop_requested.set()
                     write_json(
                         output / "guard-stop.json",
@@ -573,7 +597,8 @@ async def run_coexistence(
                     "transaction_ms": (committed - commit_start) * 1000,
                     "capture_and_flush_ms": (capture_finished - committed) * 1000,
                     "readback_ms": (finished - capture_finished) * 1000,
-                    "diagnostic_allowed": evaluation.pressure_allows,
+                    "diagnostic_allowed": effective_allowed,
+                    "latency_admission_enabled": latency_admission_enabled,
                     "pressure_before": asdict(evaluation),
                     "pressure_after": asdict(pressure_after),
                     "positions": positions,
@@ -604,7 +629,7 @@ async def run_coexistence(
                 expected[receipt["revision"]] = {
                     "projection_sha256": receipt["projection_sha256"],
                     "event_ids": [ref["event_id"] for ref in receipt["events"]],
-                    "diagnostic_allowed": evaluation.pressure_allows,
+                    "diagnostic_allowed": effective_allowed,
                     "receipt_to_dispatch_ms": {
                         symbol: max(0, (measured["dispatch_mono"] - frame["received_mono"]) * 1000)
                         for symbol, frame in frames.items()
@@ -674,6 +699,9 @@ async def run_coexistence(
                         kind: sum(row["event_counts"][kind] for row in selected) for kind in COUNTS
                     },
                     "admitted_ticks": sum(row["diagnostic_allowed"] for row in selected),
+                    "raw_pressure_closed_ticks": sum(
+                        not row["pressure_before"]["pressure_allows"] for row in selected
+                    ),
                     "active_inventory_or_orders_ticks": sum(
                         bool(row["positions"] or row["pending"]) for row in selected
                     ),
