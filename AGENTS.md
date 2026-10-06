@@ -1,4 +1,29 @@
-# Current direction — October 6, 2026, bounded admission policy (#66)
+# Current direction — October 6, 2026, model child resource repair (#66)
+
+PR #68 is merged and the single authorized policy update is installed at
+`44354feab630caffa188d1e5839407c8f5c838de`. Its bounded preservation receipt
+passed. The original trained-v2 attempt was admitted once, then cooperatively
+cancelled after native evidence showed that launcher RSS did not enforce the
+actual interpreter's frozen 24 GiB ceiling. That failed attempt and its allowance
+are consumed and retained; no repeat is authorized.
+
+This follow-up is source and disposable QA only. Reuse ChildOwner's Windows Job,
+the existing transport/registry, and the frozen profile, runner, packet and model.
+Pin ownership before the venv launcher can spawn, observe bounded Job members'
+actual working sets, and preserve failure/cleanup/accounting semantics. Commit
+and push tested repairs to one draft with independent review. No operating
+update/restart, model dispatch, retry, allowance reset, research activation or
+financial-policy change follows. A future installed test needs separate approval
+for the reviewed exact target, update and a new finite attempt. Keep the current
+500 ms/four-of-twenty policy and the original accepted 626 rollout scope intact.
+
+For isolated QA, explicitly select a disposable or intentionally absent
+`QTRADES_TEST_DATABASE`; never fall back to the operating financial database.
+Run Windows native fixtures in task-owned temporary storage with normal user
+permissions when sandbox temporary-directory ACLs prevent execution. Retain
+setup failures and skips separately from completed native verification.
+
+# Historical direction — October 6, 2026, bounded admission policy (#66)
 
 Chris selected 100 ms as advisory and new work >=500 ms as a blocker when at
 least four of the complete latest twenty observations are >=500 ms. The

@@ -303,7 +303,7 @@ def test_supervisor_stops_only_its_owned_procedural_child_and_retains_failure(
 
     monkeypatch.setattr("trading.peft_role_model.subprocess.Popen", launch)
     if fault == "pressure":
-        monkeypatch.setattr("trading.peft_role_model.child_rss", lambda pid: 25 * 1024**3)
+        monkeypatch.setattr("trading.peft_role_model.ChildOwner.rss", lambda owner: 25 * 1024**3)
     if fault == "guard":
         calls = []
 

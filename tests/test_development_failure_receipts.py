@@ -190,7 +190,7 @@ def test_unsampled_failure_rss_remains_unknown(failure_task, monkeypatch):
     model, worker = failure_task
     profile = model.declaration()[2]
     child_launcher(monkeypatch, profile, "exit")
-    monkeypatch.setattr("trading.peft_role_model.child_rss", lambda pid: 0)
+    monkeypatch.setattr("trading.peft_role_model.ChildOwner.rss", lambda owner: 0)
     with pytest.raises(DevelopmentTransportFailure):
         asyncio.run(worker.development_answer(TASK, model))
     receipt = worker.view(TASK)["attempts"][0]["response"]
