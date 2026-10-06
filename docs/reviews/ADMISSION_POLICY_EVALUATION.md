@@ -125,6 +125,9 @@ strict Windows-targeted mypy passes all **108 source files**. The offline
 evaluation was reopened after the bounded-read repair and reproduced the same
 result from the same immutable input hashes. Exact published head/checks are
 recorded in issue #66; these focused checks are not a new full acceptance suite.
+The existing Windows-native CI selection now includes the new policy, retained
+receipt and financial fixtures plus existing engine diagnostics. Every original
+selector, job owner and lifecycle budget remains intact; no new CI job is added.
 The initial sandboxed run failed because pytest could not access its disposable
 temporary directory and then failed during cleanup. A fresh authorized native
 QA run corrected that harness access. The separate financial run passed six
