@@ -674,18 +674,41 @@ def test_selector_is_financially_neutral_with_actual_disposable_pending_and_part
         )
         primary = lab.paper.state["accounts"]["primary"]
         assert primary["pending"] and not primary["positions"]
+        order = copy.deepcopy(primary["pending"]["BTCUSD"])
+        assert D(order["quantity"]) > D("0.1") and D(order["reserved"]) > 0
         before = copy.deepcopy(store.read())
         assert worker.select_fresh_question(clock[0]) == 1
         assert store.read() == before
         clock[0] += 2
         lab.paper.books = {
-            "BTCUSD": causal_frame(clock[0], lab.paper.history["BTCUSD"], sequence=2, quantity="1")
+            "BTCUSD": causal_frame(
+                clock[0], lab.paper.history["BTCUSD"], sequence=2, quantity="0.1"
+            )
         }
         lab.paper.state = store.transact(
             clock[0],
             lambda engine: engine.tick(lab.paper.books, {"BTCUSD": {"breakout-v1": feature}}),
         )
-        assert lab.paper.state["accounts"]["primary"]["positions"]
+        primary = lab.paper.state["accounts"]["primary"]
+        position = primary["positions"]["BTCUSD"]
+        assert 0 < D(position["quantity"]) < D(order["quantity"])
+        # Native IOC semantics cancel the unfilled remainder and release its reserve.
+        assert not primary["pending"]
+        assert D(primary["cash"]) + D(position["cost"]) == D(100)
+        reserve = store.connection.execute(
+            "SELECT coalesce(sum(amount),0) AS amount FROM paper_journal "
+            "WHERE account='primary' AND asset='USD' AND bucket='reserved'"
+        ).fetchone()
+        assert reserve["amount"] == 0
+        fills = [
+            event
+            for event in store.export(0, 1000, "primary")["records"]
+            if event["kind"] == "fill" and event["account"] == "primary"
+        ]
+        assert len(fills) == 1 and fills[0]["body"]["partial"] is True
+        assert D(fills[0]["body"]["unfilled_cancelled"]) == (
+            D(order["quantity"]) - D(position["quantity"])
+        )
         before = copy.deepcopy(store.read())
         assert worker.select_fresh_question(clock[0]) == 0
         assert store.read() == before and store.reconcile()["balanced"]
