@@ -184,7 +184,26 @@ def observer_for(body, response=None):
     return initialized(Observer(client)), calls, client
 
 
-def test_wire_initialize_discovery_notifications_and_eof_have_no_http():
+@pytest.mark.parametrize(
+    "params",
+    [
+        None,
+        {},
+        {"cursor": None},
+        {"_meta": {}},
+        {"_meta": {"progressToken": "catalog-1"}},
+        {"cursor": None, "_meta": {"progressToken": 2}},
+    ],
+    ids=[
+        "absent",
+        "empty",
+        "null-cursor-compatibility",
+        "empty-metadata",
+        "metadata",
+        "metadata-and-null-cursor-compatibility",
+    ],
+)
+def test_wire_initialize_discovery_notifications_and_eof_have_no_http(params):
     client = httpx.Client(transport=httpx.MockTransport(lambda _: pytest.fail("Unexpected GET")))
     observer = Observer(client)
     messages = [
@@ -203,6 +222,8 @@ def test_wire_initialize_discovery_notifications_and_eof_have_no_http():
         {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
         {"jsonrpc": "2.0", "method": "tools/call", "params": {"name": "research_status"}},
     ]
+    if params is not None:
+        messages[3]["params"] = params
     destination = io.BytesIO()
     assert (
         serve(
@@ -219,6 +240,37 @@ def test_wire_initialize_discovery_notifications_and_eof_have_no_http():
     assert all(v["inputSchema"]["additionalProperties"] is False for v in tools)
     assert all(v["annotations"]["readOnlyHint"] is True for v in tools)
     client.close()
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"cursor": ""},
+        {"cursor": "unknown-cursor"},
+        {"cursor": False},
+        {"cursor": 0},
+        {"cursor": []},
+        {"cursor": {}},
+        {"_meta": None},
+        {"_meta": []},
+        {"_meta": "value"},
+        {"_meta": False},
+        {"unknown": None},
+        {"cursor": None, "unknown": "value"},
+        {"cursor": None, "_meta": None},
+        {"_meta": {}, "cursor": "unknown-cursor"},
+    ],
+)
+def test_fixed_catalog_rejects_real_cursor_unknown_fields_and_malformed_metadata(params):
+    with httpx.Client(
+        transport=httpx.MockTransport(lambda _: pytest.fail("Unexpected GET"))
+    ) as client:
+        observer = initialized(Observer(client))
+        response = observer.rpc(
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": params}
+        )
+    assert response["error"]["code"] == -32602
+    assert "result" not in response
 
 
 def test_status_waiting_and_readiness_remain_distinct_with_private_values_omitted():

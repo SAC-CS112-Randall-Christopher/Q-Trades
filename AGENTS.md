@@ -1,4 +1,26 @@
-# Current source follow-up — October 6, 2026, research tool requests (#66)
+# Current source follow-up — October 6, 2026, Local Codex observation (#66)
+
+Chris selected Local Codex first for the research oversight MCP connection.
+Reuse the installed paper service at `4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`
+and its accepted rollout receipt. The separately installed passive stdio observer
+may be repaired and registered within that connection request; this is not an
+authorization to update or restart the paper service, change its profile/grant,
+dispatch a model, or activate external research/review.
+
+Keep source and isolated QA in the owning draft PR #74. Retain actual host
+discovery failures and distinguish installed Codex discovery, current-chat tool
+loading, actual tool calls and operating API acceptance. Inspect only Q-Trades'
+selected entry when reconciling unrelated Codex configuration changes, and never
+restore old settings over newer edits. Reuse the existing verified process owner
+for finite native QA; do not start a chat or model to manufacture connection proof.
+
+An optional catalog-only branch on the existing tool API is a source proposal.
+Preserve ordinary history/pagination/errors and require an explicit response
+marker before calling catalog-only observation verified. Installing that core
+API change requires a separate reviewed operating-update decision. Do not add a
+cache, database, scheduler, serving backend or speculative optimization.
+
+# Historical source follow-up — October 6, 2026, research tool requests (#66)
 
 Chris asked that the researcher request tools to be implemented when they would
 help a strategy. Use the successor research-evidence-continuation lane to deliver

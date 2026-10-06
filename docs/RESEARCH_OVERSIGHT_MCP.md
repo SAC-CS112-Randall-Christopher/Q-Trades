@@ -133,6 +133,14 @@ handshake versions are `2025-03-26`, `2025-06-18`, and `2025-11-25`; other reque
 versions negotiate `2025-11-25`. It advertises tools only. It sends no unsolicited
 requests, sampling, elicitation, prompts, resources or experimental task handles.
 
+Tool-list requests may include protocol `_meta` objects, which are ignored rather
+than treated as a pagination cursor. An absent cursor, or an explicit null cursor
+accepted for client compatibility, selects the single fixed tool list. Non-null
+cursors, unknown parameters and malformed metadata remain invalid. Listing tools
+performs no operating HTTP request. The retained installed Codex discovery failure
+showed that rejecting every nonempty list-parameter object prevented startup; its
+outer host transcript did not retain the inner MCP parameter values.
+
 See the authoritative [MCP stdio specification](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports),
 [lifecycle](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle),
 [tools](https://modelcontextprotocol.io/specification/2025-11-25/server/tools), and

@@ -447,8 +447,15 @@ class Observer:
         elif not self.ready:
             return error(-32600, "Initialize and notify initialized before tool use")
         elif method == "tools/list":
-            if params:
-                return error(-32602, "This fixed tool list has no cursor")
+            # Request metadata does not paginate or route the fixed catalog.
+            # Accept null cursor as absent for compatibility; real cursors fail.
+            if (
+                set(params) - {"cursor", "_meta"}
+                or params.get("cursor") is not None
+                or "_meta" in params
+                and not isinstance(params["_meta"], dict)
+            ):
+                return error(-32602, "Fixed tool list requires no cursor and object metadata")
             result = {
                 "tools": [
                     {
