@@ -18,7 +18,7 @@ from trading.autonomous_lab import AutonomousLab, InputWait
 from trading.autonomous_spec import LabProposal, MemoryFilter, RuleSpec
 from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
-from trading.lab_role_contract import VERSION, Idea, Review, validate
+from trading.lab_role_contract import TOOL_REQUEST_VERSION, VERSION, Idea, IdeaV6, Review, validate
 from trading.local_role_model import LocalRoles
 from trading.peft_role_model import DevelopmentTransportFailure
 from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
@@ -98,6 +98,8 @@ class RoleWorker:
                 CREATE TRIGGER IF NOT EXISTS role_answer_frozen BEFORE UPDATE ON role_attempts
                   WHEN OLD.response IS NOT NULL AND NEW.response IS NOT OLD.response
                   BEGIN SELECT RAISE(ABORT,'Completed model answer is immutable'); END;
+                CREATE INDEX IF NOT EXISTS role_pending_work ON role_tasks(stage,status)
+                  WHERE status NOT IN ('done','failed');
             """)
         self.history = RoleHistory(registry)
         self._maintenance_due: dict[str, float] = {}
@@ -115,8 +117,16 @@ class RoleWorker:
     def execution_mode(self) -> str:
         return PAPER_RESEARCH_PILOT if self.paper_pilot else "qualified_roles"
 
+    def _contract_version(self) -> str:
+        version = getattr(self.transport, "role_contract", VERSION)
+        if version not in (VERSION, TOOL_REQUEST_VERSION):
+            raise ValueError("Role contract needs an explicitly reviewed supported profile")
+        return str(version)
+
     def _same_mode(self, task: dict[str, Any]) -> bool:
         if task["context"].get("execution_mode", "qualified_roles") != self.execution_mode:
+            return False
+        if task["context"].get("contract", VERSION) != self._contract_version():
             return False
         if self.paper_pilot:
             try:
@@ -388,7 +398,7 @@ class RoleWorker:
                         | {"artifact": artifact_summary(artifact) | {"retained": True}}
                     }
         context = {
-            "contract": VERSION,
+            "contract": self._contract_version(),
             "question": question_body,
             "policy": policy,
             "policy_sha256": fingerprint(policy),
@@ -416,6 +426,7 @@ class RoleWorker:
                     "source": causal_inputs["closed_bar_sha256"],
                     "waits": waits,
                     "dependency_evidence": _dependency_evidence,
+                    **({"contract": context["contract"]} if context["contract"] != VERSION else {}),
                     **(
                         {
                             "execution_mode": PAPER_RESEARCH_PILOT,
@@ -654,9 +665,11 @@ class RoleWorker:
         query += "ORDER BY t.created DESC,t.id DESC LIMIT 21"
         try:
             pilot_grant_id = self._pilot_grant_id()
+            current_contract = self._contract_version()
             current_authority = True
         except (ValueError, OSError, KeyError):
             pilot_grant_id = None
+            current_contract = None
             current_authority = False
         with self.registry.lock:
             rows = self.registry.db.execute(query, params).fetchall()
@@ -674,6 +687,7 @@ class RoleWorker:
                 "SELECT id,question_text AS question,stage,status,reason,updated,lease_until "
                 "FROM role_tasks WHERE owner=? AND lease_until>=? AND ? "
                 "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
                 "ORDER BY updated DESC,id LIMIT 1",
                 (
@@ -681,18 +695,69 @@ class RoleWorker:
                     time.time(),
                     current_authority,
                     self.execution_mode,
+                    current_contract,
+                    pilot_grant_id,
+                    pilot_grant_id,
+                ),
+            ).fetchone()
+            pending = self.registry.db.execute(
+                "SELECT count(*) AS total,"
+                "coalesce(sum(stage='tool_wait'),0) AS tools,"
+                "coalesce(sum(stage='data_wait'),0) AS data,"
+                "coalesce(sum(stage='outcome'),0) AS outcomes "
+                "FROM role_tasks WHERE status NOT IN ('done','failed') AND ? "
+                "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
+                "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?)",
+                (
+                    current_authority,
+                    self.execution_mode,
+                    current_contract,
                     pilot_grant_id,
                     pilot_grant_id,
                 ),
             ).fetchone()
         enabled = self._activation_enabled()
+        queued = pending["total"] - pending["tools"] - pending["data"] - pending["outcomes"]
+        activity = {
+            "state": "unavailable"
+            if not current_authority
+            else "paused"
+            if not enabled
+            else "running"
+            if current
+            else "queued"
+            if queued
+            else "waiting"
+            if pending["total"]
+            else "idle",
+            "reason": (
+                "Current research authority unavailable; retained tasks are unchanged"
+                if not current_authority
+                else "Research is paused"
+                if not enabled
+                else "The current task owns the inference or processing lease"
+                if current
+                else "Saved investigations await dispatch and its protected prerequisites"
+                if queued
+                else "Saved investigations await tool review, eligible data or paper outcomes"
+                if pending["total"]
+                else "No queued investigation or eligible continuation; no model request is running"
+            ),
+            "checked_at": time.time(),
+            "pending_tools": pending["tools"],
+            "pending_data": pending["data"],
+            "pending_outcomes": pending["outcomes"],
+            "queued": queued,
+        }
         return {
             "enabled": enabled,
             "paper_pilot": self.paper_pilot,
             "experimental": self.paper_pilot,
             "execution_mode": self.execution_mode,
             "current_task": dict(current) if current else None,
-            "contract": VERSION,
+            "activity": activity,
+            "contract": current_contract,
             "reason": self.reason
             if not enabled
             else "Separate sequential role worker; task receipts show actual progress",
@@ -911,7 +976,7 @@ class RoleWorker:
             raise InputWait("Paper controller unavailable; task retained")
         if (
             task["stage"] in {"idea", "review", "followup"}
-            and task["context"]["contract"] != VERSION
+            and task["context"]["contract"] != self._contract_version()
         ):
             raise ValueError("Frozen role contract changed; replan before new inference")
         lab = c.paper.state.get("autonomous_lab")
@@ -926,12 +991,28 @@ class RoleWorker:
             raise ValueError("Paper policy changed after dispatch; create a new scoped task")
         if task["proposal"]:
             finance.validate_parent(c.paper.state, LabProposal.model_validate(task["proposal"]))
-        if task["context"]["contract"] != VERSION:
+        if task["context"]["contract"] != self._contract_version():
             raise ValueError("Frozen capability contract changed; replan this task")
         return c
 
     def _packet(self, task: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         role, packet = self._base_packet(task)
+        if task["context"].get("contract", VERSION) == TOOL_REQUEST_VERSION:
+            packet["contract"] = TOOL_REQUEST_VERSION
+            if role == "researcher":
+                packet["tool_inventory"] = {
+                    "strategy_family": sorted(
+                        {v["family"] for v in packet["capabilities"].values()}
+                    ),
+                    "feature": sorted(
+                        {
+                            key
+                            for feature in task["context"]["tool_evidence"]["features"].values()
+                            for key in feature
+                        }
+                    ),
+                    "analysis_tool": ["matched_comparison", "reviewed_rule_inputs"],
+                }
         knowledge = task["context"].get("knowledge")
         if task["context"].get("execution_mode") == PAPER_RESEARCH_PILOT and knowledge is not None:
             raise ValueError("Paper pilot packet cannot include separately authorized RAG inputs")
@@ -1120,7 +1201,9 @@ class RoleWorker:
                 raise ValueError("Retained development transport failed; no invisible retry")
             if not response.get("complete"):
                 raise ValueError("Retained development response is incomplete")
-            return validate(role, response["answer"], packet)
+            return validate(
+                role, response["answer"], packet, contract_version=packet.get("contract", VERSION)
+            )
         profile = await asyncio.to_thread(transport.development_admit, role)
         if profile.get("development_only") is not True:
             raise ValueError("Development needs its explicitly frozen separate profile")
@@ -1193,7 +1276,9 @@ class RoleWorker:
                 raise ValueError("Original development response is incomplete")
             if cancelled:
                 raise cancelled
-            return validate(role, response["answer"], packet)
+            return validate(
+                role, response["answer"], packet, contract_version=packet.get("contract", VERSION)
+            )
         except BaseException as exc:
             failure_body = None
             if isinstance(exc, DevelopmentTransportFailure):
@@ -1242,7 +1327,12 @@ class RoleWorker:
                 raise ValueError("Retained failed pilot answer cannot authorize stage advancement")
             if fingerprint(json.loads(previous["packet"])) != fingerprint(packet):
                 raise ValueError("Completed answer belongs to a different frozen packet")
-            return validate(role, json.loads(previous["response"])["answer"], packet)
+            return validate(
+                role,
+                json.loads(previous["response"])["answer"],
+                packet,
+                contract_version=packet.get("contract", VERSION),
+            )
         if previous and previous["status"] != "retry_authorized":
             # An unknown completion is never an invisible retry for a preferred verdict.
             raise ValueError(
@@ -1259,6 +1349,9 @@ class RoleWorker:
             raise InputWait("Required role is unavailable: " + str(exc)[:300]) from exc
         if self.paper_pilot:
             self._current(task)  # A replacement grant cannot adopt an earlier task.
+        preflight = getattr(self.transport, "preflight", None)
+        if callable(preflight):
+            preflight(role, packet, profile)
         started = time.time()
         timeout = profile["timeout_seconds"]
         attempt_number = previous["attempt"] + 1 if previous else 1
@@ -1342,7 +1435,9 @@ class RoleWorker:
                 raise ValueError("Original pilot response is incomplete")
             if cancelled:
                 raise cancelled
-            return validate(role, response["answer"], packet)
+            return validate(
+                role, response["answer"], packet, contract_version=packet.get("contract", VERSION)
+            )
         except BaseException as exc:
             if not isinstance(exc, Exception) and not (
                 self.paper_pilot and isinstance(exc, asyncio.CancelledError)
@@ -1383,11 +1478,19 @@ class RoleWorker:
         with self.registry.transaction():
             row = self.registry.db.execute(
                 "SELECT id FROM role_tasks WHERE status NOT IN ('done','failed') AND "
-                "stage<>'data_wait' "
+                "stage NOT IN ('data_wait','tool_wait') "
                 "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
                 "AND retry_at<=? AND (owner IS NULL OR lease_until<?) ORDER BY updated LIMIT 1",
-                (self.execution_mode, pilot_grant_id, pilot_grant_id, now, now),
+                (
+                    self.execution_mode,
+                    self._contract_version(),
+                    pilot_grant_id,
+                    pilot_grant_id,
+                    now,
+                    now,
+                ),
             ).fetchone()
             if row:
                 self.registry.db.execute(
@@ -1406,7 +1509,7 @@ class RoleWorker:
             if not admitted:
                 raise InputWait("Optional role work yields to financial processing/resource guard")
             stage = task["stage"]
-            if stage == "data_wait":
+            if stage in {"data_wait", "tool_wait"}:
                 return False  # Only a new eligible source/event resumes this dependency.
             if stage in {"idea", "review", "followup"}:
                 answer = await self._answer(task)
@@ -1428,6 +1531,14 @@ class RoleWorker:
                         )
                     else:
                         self._update(task, "submit", result={"review": answer.model_dump()})
+                elif isinstance(answer, IdeaV6) and answer.action == "request_tool":
+                    self._update(
+                        task,
+                        "tool_wait",
+                        "waiting",
+                        result=(task["result"] or {}) | answer.model_dump(),
+                        reason="Requested tool awaits implementation review; nothing installed",
+                    )
                 elif stage == "followup":
                     changed = self._update(
                         task,
@@ -1681,11 +1792,19 @@ class RoleWorker:
                 "SELECT task AS id FROM role_followups f JOIN role_tasks t ON t.id=f.task "
                 "WHERE f.state='pending' AND f.retry_at<=? "
                 "AND coalesce(json_extract(t.context,'$.execution_mode'),'qualified_roles')=? "
+                "AND coalesce(json_extract(t.context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(t.context,'$.pilot_grant_id')=?) "
                 "AND NOT EXISTS "
                 "(SELECT 1 FROM research_selection s JOIN research_lessons l ON l.id=s.lesson "
                 "WHERE l.task=f.task AND s.retry_at>?) ORDER BY f.retry_at,task LIMIT 20",
-                (time.time(), self.execution_mode, pilot_grant_id, pilot_grant_id, time.time()),
+                (
+                    time.time(),
+                    self.execution_mode,
+                    self._contract_version(),
+                    pilot_grant_id,
+                    pilot_grant_id,
+                    time.time(),
+                ),
             ).fetchall()
         selected = waiting = 0
         for row in rows:
@@ -1769,9 +1888,16 @@ class RoleWorker:
             rows = self.registry.db.execute(
                 "SELECT id FROM role_tasks WHERE stage='data_wait' AND status='waiting' "
                 "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
                 "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
                 "AND retry_at<=? AND owner IS NULL ORDER BY updated,id LIMIT 20",
-                (self.execution_mode, pilot_grant_id, pilot_grant_id, now),
+                (
+                    self.execution_mode,
+                    self._contract_version(),
+                    pilot_grant_id,
+                    pilot_grant_id,
+                    now,
+                ),
             ).fetchall()
         resumed = 0
         for row in rows:
