@@ -76,6 +76,7 @@ jobs:
             tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
             tests/test_role_capability_contract.py tests/test_role_tool_requests.py `
             tests/test_role_tool_transport.py `
+            tests/test_research_observer_mcp.py tests/test_research_observer_registration.py `
             tests/test_paper_pilot_worker.py tests/test_paper_pilot_api.py tests/test_peft_paper_pilot.py `
             tests/test_paper_pilot_lifecycle.py `
             tests/test_role_readiness.py tests/test_peft_development.py tests/test_peft_loader_contract.py `

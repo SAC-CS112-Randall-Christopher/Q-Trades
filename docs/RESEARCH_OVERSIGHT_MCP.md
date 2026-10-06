@@ -17,7 +17,7 @@ it is not an oversight connection for the local experimental researcher.
 | `research_task` | One observed `role-…` ID: original question, saved contract/mode/grant, offered strategy configurations, causal feature facts and hashes, matched-rule evaluation, result, retained attempt answers/failures and typed waits. |
 | `research_lessons` | At most 20 supported lessons; continue with `next_before`. Original scientific support stays distinct from access frequency. |
 | `research_quality` | Recorded attempts/activity and explicitly unmeasured matched research/economic value. Activity is not a strategy-quality score. |
-| `research_capabilities` | Current read-only tool descriptions. Listing a tool does not execute it or grant installation authority. |
+| `research_capabilities` | Descriptions of the six registered evidence-inspection tools. Listing a tool does not execute it or establish its readiness or installation authority. |
 
 Each tool reads installed code identity through `/api/health`, then its fixed GET
 route. It returns observation time, code identity, paper-health observations and
@@ -29,6 +29,15 @@ current journal-monitor availability/status/balance/age from the last completed
 balanced audit. An unavailable current monitor remains unavailable even when its
 last completed audit was balanced; raw audit errors/financial projections are
 not exposed.
+
+`research_capabilities` uses `/api/research/tools`, which loads tool history and
+its configured archive before returning the static descriptions. A history or
+storage failure makes this observation explicitly unavailable; the observer does
+not replace it with a cached catalog or suppress the error. These six descriptions
+are not the complete v6 strategy/feature inventory. `research_task` separately
+shows the selected offered configurations and causal feature facts frozen for
+that saved question, under its recorded contract, with current contract
+applicability reported separately.
 
 The response is a selected scientific projection, not a complete model packet.
 Private profiles/configuration, model paths/weights, raw packets, training/holdout
@@ -57,21 +66,53 @@ remain authoritative. There is no background polling or additional scheduler.
 
 The connector owner copies the independently reviewed standalone
 `src/trading/research_observer_mcp.py` unchanged into
-`C:\Projects\Q-Trades-MCP\research_observer_mcp.py` and retains a manifest binding
-its exact source hash/revision, dependencies and installation verification.
+`C:\Projects\Q-Trades-MCP\research_observer_mcp.py`, and copies the registration
+helper `scripts/register_research_observer.py` into the same durable folder.
+Retain a manifest binding both exact source hashes/revisions, dependencies and
+installation verification.
 Use the verified installed Q-Trades Python interpreter with its existing pinned
 `httpx` and `pydantic` dependencies. The artifact has no engine/registry/model
 imports and needs neither a development checkout nor another operating update.
 Copying/registering the connector does not start or restart the paper service.
 
-The host owner registers a scoped MCP entry using the existing Codex configuration
-owner, preserving unrelated entries and secrets. The following is the intended
-shape; the interpreter must be verified before replacing the placeholder:
+Prefer the reviewed registration helper, which appends the fixed scoped entry
+while preserving the existing configuration's raw bytes and parsed values.
+Verify the interpreter and frozen artifact before replacing the placeholders:
+
+```powershell
+& "<verified installed Q-Trades Python>" -I -B -u "C:\Projects\Q-Trades-MCP\register_research_observer.py" --python "<verified installed Q-Trades Python>" --artifact "C:\Projects\Q-Trades-MCP\research_observer_mcp.py"
+```
+
+The configuration defaults to the existing `~/.codex/config.toml`; `--config`
+can select another explicit existing local file. The helper refuses missing,
+redirected, oversized or invalid files. It does not execute the supplied
+interpreter or artifact. A matching entry is idempotent; a differing entry
+requires separate review. It keeps an exclusive byte-for-byte backup in the
+private config directory, fsyncs a fresh staging file, and checks the original
+hash immediately before atomic replacement. This is not an interprocess
+compare-and-swap: avoid concurrent configuration edits, and retain exact
+before/after preservation verification. A post-publication verification failure
+remains an unknown acknowledgment; the helper never restores over newer edits.
+
+The supported Codex CLI command is also:
+
+```powershell
+codex mcp add qtrades_research -- "<verified installed Q-Trades Python>" -I -B -u "C:\Projects\Q-Trades-MCP\research_observer_mcp.py"
+```
+
+In the retained installed setup, that command rewrote existing server entries
+and omitted four unrelated fields. Its successful exit did not establish
+preservation; the failure and separately reviewed guarded repair are retained.
+Do not use the bare CLI command as a preservation procedure. It applies default
+client settings, whereas the helper adds the explicit five-tool allowlist and
+15/20-second client settings below. `-I` isolates Python from the current checkout
+and user environment, `-B` avoids bytecode writes, and `-u` provides unbuffered
+stdio. The helper's fixed entry has this shape:
 
 ```toml
 [mcp_servers.qtrades_research]
 command = "<verified installed Q-Trades Python>"
-args = ["-I", "-u", 'C:\Projects\Q-Trades-MCP\research_observer_mcp.py']
+args = ["-I", "-B", "-u", 'C:\Projects\Q-Trades-MCP\research_observer_mcp.py']
 enabled_tools = ["research_status", "research_task", "research_lessons", "research_quality", "research_capabilities"]
 startup_timeout_sec = 15
 tool_timeout_sec = 20
@@ -103,6 +144,14 @@ A local connection does not establish ChatGPT-web or remote-account access.
 Offline protocol/HTTP fixtures prove parsing, strict argument refusal, projection,
 privacy, bounds and error semantics. They do not establish an installed Codex
 connection, model usefulness, autonomous continuation or financial coexistence.
+Installed standalone stdio verification reopened status, lessons, quality, and
+both the historical v5 and new v6 saved tasks at installed code
+`4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`. The capability call first returned a
+`ReadTimeout`, then an HTTP 503; a separate direct catalog GET returned HTTP 200.
+The four successful tools and the capability failure are retained separately.
+These observations establish neither all-tool acceptance nor current loading in
+the Codex host.
+
 After registration, verify actual initialization/tool discovery in Codex, then
 use the tools to reopen actual saved researcher status/results. Retain that
 connection evidence separately; do not label mock/stub results as installed proof.
