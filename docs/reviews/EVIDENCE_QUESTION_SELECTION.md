@@ -52,6 +52,11 @@ financial Lab policy. Dispatch rechecks the marker before attempt reservation
 and before the existing owned child launch. Data-resumption and mature-follow-up
 descendants retain the original selection authority. A replaced or downgraded
 grant cannot adopt them, including replacement under the same grant ID.
+The existing historical-learning rule remains: outcome retrieval and follow-up
+annotation use the original frozen policy after an operator changes the current
+Lab policy. Full grant/profile authority still applies. A new investigation or
+financial submission must bind and validate the current policy in its owner;
+historical annotation cannot rewrite the earlier policy or authorize orders.
 New archive projections retain only explicitly recorded policy and authority
 metadata. Old archives are not inferred, migrated or rewritten.
 
