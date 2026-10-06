@@ -20,6 +20,11 @@ from trading.paper_engine import PaperEngine, initial_state
 from trading.tiered_runtime import TieredPaperRuntime
 
 
+@pytest.fixture(params=[150.0, 600.0], ids=["150ms_below_blocker", "600ms_blocks"])
+def elapsed_burst_ms(request):
+    return request.param
+
+
 def current_pressure_policy():
     # Reuse the unchanged runtime observer without constructing its services.
     runtime = object.__new__(TieredPaperRuntime)
@@ -30,7 +35,7 @@ def current_pressure_policy():
     return runtime
 
 
-def replay(policy, steps):
+def replay(policy, steps, elapsed_burst_ms):
     state = initial_state(START)
     trace = []
     for offset, (frames, studies, paused) in enumerate(steps):
@@ -42,7 +47,7 @@ def replay(policy, steps):
         # Financial work precedes pressure observation, as in the real loop.
         engine.tick(copy.deepcopy(frames), copy.deepcopy(studies))
         engine.assert_invariants()
-        duration = 150.0 if 16 <= offset <= 19 else 20.0
+        duration = elapsed_burst_ms if 16 <= offset <= 19 else 20.0
         now_mono = 1000.0 + offset
         if isinstance(policy, TieredPaperRuntime):
             policy.observe_engine_work(duration, now_mono)
@@ -63,13 +68,13 @@ def replay(policy, steps):
     return trace
 
 
-def assert_matched_financial_trace(steps):
-    current = replay(current_pressure_policy(), steps)
-    candidate = replay(ModerateRecoveryCandidate(), steps)
-    # The same moderate burst blocks both. Only the candidate has recovered
-    # after twenty consecutive calm samples, while current retains its hold.
+def assert_matched_financial_trace(steps, elapsed_burst_ms):
+    current = replay(current_pressure_policy(), steps, elapsed_burst_ms)
+    candidate = replay(ModerateRecoveryCandidate(), steps, elapsed_burst_ms)
+    # The unchanged current policy blocks either burst. Below 500ms is only
+    # a performance concern for the candidate; 600ms requires calm recovery.
     assert not current[19]["pressure_would_allow"]
-    assert not candidate[19]["pressure_would_allow"]
+    assert candidate[19]["pressure_would_allow"] == (elapsed_burst_ms < 500)
     assert not current[39]["pressure_would_allow"]
     assert candidate[39]["pressure_would_allow"]
     for old, proposed in zip(current, candidate, strict=True):
@@ -134,7 +139,9 @@ def primary_events(trace, kind):
     ]
 
 
-def test_active_position_partial_stop_exit_and_journal_match_after_moderate_recovery():
+def test_active_position_partial_stop_exit_and_journal_match_after_moderate_recovery(
+    elapsed_burst_ms,
+):
     steps = []
     for offset in range(44):
         if offset == 1:
@@ -150,7 +157,7 @@ def test_active_position_partial_stop_exit_and_journal_match_after_moderate_reco
         else:
             observed = frame(START + offset, sequence=1 if offset == 0 else 3)
         steps.append(({"BTCUSD": observed}, study(), offset >= 4))
-    trace = assert_matched_financial_trace(steps)
+    trace = assert_matched_financial_trace(steps, elapsed_burst_ms)
     assert trace[0]["state"]["accounts"]["primary"]["pending"]
     assert not primary_events(trace[:2], "fill")
     position = trace[39]["state"]["accounts"]["primary"]["positions"]["BTCUSD"]
@@ -177,7 +184,7 @@ def test_active_position_partial_stop_exit_and_journal_match_after_moderate_reco
 @pytest.mark.parametrize(
     "outcome", ["fill", "operator_cancel", "filter_rejection", "expiry", "entry_rejection"]
 )
-def test_pending_order_fill_cancel_and_real_rejection_conventions_match(outcome):
+def test_pending_order_fill_cancel_and_real_rejection_conventions_match(outcome, elapsed_burst_ms):
     steps = []
     for offset in range(55 if outcome == "expiry" else 41):
         observed = frame(START + offset, sequence=1 if offset <= 38 else 2)
@@ -194,7 +201,7 @@ def test_pending_order_fill_cancel_and_real_rejection_conventions_match(outcome)
                 observed["book"] = parse_book(observed["raw"])
                 studies = study()
         steps.append((frames, studies, paused))
-    trace = assert_matched_financial_trace(steps)
+    trace = assert_matched_financial_trace(steps, elapsed_burst_ms)
     account = trace[-1]["state"]["accounts"]["primary"]
     if outcome != "entry_rejection":
         pending = trace[38]["state"]["accounts"]["primary"]["pending"]["BTCUSD"]

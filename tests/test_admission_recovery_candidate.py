@@ -49,34 +49,83 @@ def test_normal_work_startup_requires_measured_count_and_coverage():
     assert candidate.evaluate(now).clean_samples == 20
 
 
-def test_moderate_burst_has_earlier_hypothetical_recovery_without_threshold_change():
+def test_blocking_burst_recovers_below500_without_requiring100ms_target():
     current, candidate = current_policy(), ModerateRecoveryCandidate()
     now = observe_both(current, candidate, [50] * 21)
-    now = observe_both(current, candidate, [150] * 4, start=now + 0.5)
+    now = observe_both(current, candidate, [600] * 4, start=now + 0.5)
     trigger = now
     assert current._constrained_until == trigger + 300
     assert not candidate.evaluate(now).pressure_would_allow
-    now = observe_both(current, candidate, [50] * 20, start=now + 0.5)
+    now = observe_both(current, candidate, [150] * 20, start=now + 0.5)
     assert not candidate.evaluate(now).pressure_would_allow  # Only 9.5s calm coverage.
-    now = observe_both(current, candidate, [50], start=now + 0.5)
+    now = observe_both(current, candidate, [150], start=now + 0.5)
     assert now - trigger == 10.5
     assert candidate.evaluate(now).pressure_would_allow
-    assert current._constrained_until - now == 289.5
-    assert current._work_diagnostics.triggers == 1  # Fast work never renews recovery.
+    assert current._constrained_until - now == 300
+    assert candidate.evaluate(now).target_exceedances == 20
+    assert candidate.evaluate(now).observed_samples == 20
 
 
-@pytest.mark.parametrize("duration", [100.0, 100.001, 999.999])
-def test_isolated_jitter_does_not_create_a_new_moderate_trigger(duration):
+@pytest.mark.parametrize("duration", [100.0, 100.001, 250.0, 499.999])
+def test_target_miss_below500_does_not_create_a_block_or_discard_coverage(duration):
     current, candidate = current_policy(), ModerateRecoveryCandidate()
     now = observe_both(current, candidate, [50] * 21)
     now = observe_both(current, candidate, [duration], start=now + 0.5)
     assert current._constrained_until == 0
     assert candidate.evaluate(now).pressure_would_allow
+    assert candidate.evaluate(now).clean_samples == 20
+    assert candidate.evaluate(now).target_exceedances == (duration > 100)
+
+
+@pytest.mark.parametrize("duration", [500.0, 500.001, 999.999])
+def test_isolated_at_or_above500_pass_does_not_block_recovered_candidate(duration):
+    current, candidate = current_policy(), ModerateRecoveryCandidate()
+    now = observe_both(current, candidate, [50] * 21)
+    now = observe_both(current, candidate, [duration], start=now + 0.5)
+    assert current._constrained_until == 0  # Original four-of-twenty latency component.
+    assert candidate.evaluate(now).pressure_would_allow
+    assert candidate.evaluate(now).clean_samples == 0
+    assert candidate.evaluate(now).severe_remaining_seconds == 0
+
+
+def test_four_at_or_above500_in_latest_twenty_block_on_new_slow_work():
+    candidate = ModerateRecoveryCandidate()
+    now = warm(candidate)
+    for duration in [500, 150, 500, 150, 500]:
+        now += 0.5
+        candidate.observe(duration, now)
+        assert candidate.evaluate(now).pressure_would_allow
+    now += 0.5
+    candidate.observe(499.999, now)
+    assert candidate.evaluate(now).pressure_would_allow
+    now += 0.5
+    candidate.observe(500, now)
+    assert not candidate.evaluate(now).pressure_would_allow
+
+
+def test_old_500_samples_outside_latest_twenty_do_not_qualify_a_new_trigger():
+    candidate = ModerateRecoveryCandidate()
+    now = warm(candidate)
+    for duration in [500] * 3 + [150] * 20 + [500]:
+        now += 0.5
+        candidate.observe(duration, now)
+        assert candidate.evaluate(now).pressure_would_allow
+    assert sum(value >= 500 for value in candidate._window) == 1
+
+
+@pytest.mark.parametrize("duration", [100.001, 150.0, 250.0, 499.999])
+def test_sustained_target_misses_below500_allow_after_valid_startup(duration):
+    current, candidate = current_policy(), ModerateRecoveryCandidate()
+    now = observe_both(current, candidate, [duration] * 200)
+    assert current._constrained_until == now + 300
+    assert candidate.evaluate(now).pressure_would_allow
+    assert candidate.evaluate(now).clean_samples == 20
+    assert candidate.evaluate(now).target_exceedances == 20
 
 
 def test_sustained_pressure_never_recovers_and_current_policy_keeps_renewing():
     current, candidate = current_policy(), ModerateRecoveryCandidate()
-    now = observe_both(current, candidate, [150] * 200)
+    now = observe_both(current, candidate, [600] * 200)
     assert current._constrained_until == now + 300
     assert current._work_diagnostics.triggers == 181
     assert not candidate.evaluate(now).pressure_would_allow
@@ -101,7 +150,7 @@ def test_moderate_pressure_during_severe_recovery_cannot_downgrade_or_shorten_ho
     current, candidate = current_policy(), ModerateRecoveryCandidate()
     now = observe_both(current, candidate, [50] * 21)
     now = observe_both(current, candidate, [1000], start=now + 0.5)
-    now = observe_both(current, candidate, [150] * 4, start=now + 0.5)
+    now = observe_both(current, candidate, [600] * 4, start=now + 0.5)
     assert candidate.evaluate(now).severe_remaining_seconds == 300
     assert current._constrained_until == now + 300
     now = observe_both(current, candidate, [50] * 21, start=now + 0.5)
@@ -109,6 +158,18 @@ def test_moderate_pressure_during_severe_recovery_cannot_downgrade_or_shorten_ho
     assert "severe_recovery_hold" in candidate.evaluate(now).reasons
     candidate.observe(2000, now + 0.5)
     assert candidate.evaluate(now + 0.5).severe_remaining_seconds == 300
+
+
+def test_sub500_target_misses_do_not_renew_severe_hold_or_prevent_its_recovery():
+    current, candidate = current_policy(), ModerateRecoveryCandidate()
+    now = observe_both(current, candidate, [1000], start=1000)
+    now = observe_both(current, candidate, [150] * 599, start=now + 0.5)
+    assert now == 1299.5
+    assert candidate.evaluate(now).severe_remaining_seconds == 0.5
+    assert not candidate.evaluate(1300).pressure_would_allow
+    now = observe_both(current, candidate, [150], start=1300)
+    assert candidate.evaluate(now).pressure_would_allow
+    assert current._constrained_until == now + 300
 
 
 @pytest.mark.parametrize("missing", [None, -1.0, float("nan"), float("inf"), True])
@@ -163,16 +224,16 @@ def test_invalid_evaluation_clock_never_reports_admission(clock):
 def test_repeated_oscillation_cannot_pool_calm_samples_across_interruptions():
     current, candidate = current_policy(), ModerateRecoveryCandidate()
     now = observe_both(current, candidate, [50] * 21)
-    now = observe_both(current, candidate, [150] * 4, start=now + 0.5)
+    now = observe_both(current, candidate, [600] * 4, start=now + 0.5)
     for _ in range(10):
         now = observe_both(current, candidate, [50] * 19, start=now + 0.5)
         assert not candidate.evaluate(now).pressure_would_allow
-        now = observe_both(current, candidate, [150], start=now + 0.5)
+        now = observe_both(current, candidate, [600], start=now + 0.5)
         assert not candidate.evaluate(now).pressure_would_allow
     # Each recovered epoch must acquire its own complete calm run.
     now = observe_both(current, candidate, [50] * 21, start=now + 0.5)
     assert candidate.evaluate(now).pressure_would_allow
-    now = observe_both(current, candidate, [150] * 4, start=now + 0.5)
+    now = observe_both(current, candidate, [600] * 4, start=now + 0.5)
     assert not candidate.evaluate(now).pressure_would_allow
 
 

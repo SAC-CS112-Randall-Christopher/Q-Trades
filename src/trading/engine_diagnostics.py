@@ -15,16 +15,19 @@ class PressureRecoveryEvaluation:
     clean_samples: int
     clean_span_seconds: float
     severe_remaining_seconds: float | None
+    target_exceedances: int
+    observed_samples: int
 
 
 class ModerateRecoveryCandidate:
     """Offline proposal only; no runtime, configuration or dispatch integration.
 
-    Keep the existing 100ms/4-of-20 and 1000ms trigger thresholds. Moderate
-    pressure can recover with 20 consecutive <=100ms full-work observations
-    spanning at least 10 seconds. Startup, missing observations, >2s gaps and
-    clock rollback discard calm evidence. Severe pressure retains the existing
-    300-second hold, including renewal by new qualifying pressure during it.
+    The 100ms target is advisory. New >=500ms work blocks when at least four of
+    the latest twenty observations are >=500ms. Moderate pressure can recover
+    with 20 consecutive <500ms observations spanning at least 10 seconds.
+    Startup, missing observations, >2s gaps and clock rollback discard recovery
+    evidence. Any >=1000ms work retains the 300-second severe hold, including
+    renewal by new qualifying repeated pressure during that hold.
 
     The 10s/2s recovery bounds are proposed QA parameters, not established
     financial requirements or demonstrated installed coexistence limits.
@@ -80,17 +83,18 @@ class ModerateRecoveryCandidate:
             self._recovering = True
             return
         self._window.append(elapsed_ms)
+        blocking = elapsed_ms >= 500
         repeated = (
-            elapsed_ms > 100
+            blocking
             and len(self._window) == 20
-            and sum(value > 100 for value in self._window) >= 4
+            and sum(value >= 500 for value in self._window) >= 4
         )
         severe = elapsed_ms >= 1000
         if repeated or severe:
             self._recovering = True
         if severe or (repeated and now_mono < self._severe_until):
             self._severe_until = now_mono + 300
-        if elapsed_ms > 100:
+        if blocking:
             self._discard_calm()
         else:
             if self._clean_since is None:
@@ -123,13 +127,19 @@ class ModerateRecoveryCandidate:
         if not fresh:
             reasons.append("missing_or_stale_work")
         if self._recovering:
-            reasons.append("insufficient_consecutive_calm_work")
+            reasons.append("insufficient_consecutive_sub500_work")
         if self._pending_severe:
             reasons.append("unanchored_severe_work")
         if remaining is not None and remaining > 0:
             reasons.append("severe_recovery_hold")
         return PressureRecoveryEvaluation(
-            not reasons, tuple(reasons), self._clean_count, span, remaining
+            not reasons,
+            tuple(reasons),
+            self._clean_count,
+            span,
+            remaining,
+            sum(value > 100 for value in self._window),
+            len(self._window),
         )
 
 

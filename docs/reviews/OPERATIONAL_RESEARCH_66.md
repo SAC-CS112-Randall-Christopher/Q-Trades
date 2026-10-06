@@ -6,9 +6,12 @@ The approved operating rollout is complete at
 `6265240d64a932d987a763d106726675a1a18019` within its documented scope; reuse
 [the existing #66 receipt](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/66#issuecomment-6005141750).
 The latest assignment produces a
-[tested offline recovery candidate](ADMISSION_POLICY_EVALUATION.md) and
+[tested offline 500-ms/four-of-twenty candidate](ADMISSION_POLICY_EVALUATION.md) and
 [source/evidence rationale](ADMISSION_POLICY_RATIONALE.md), with no operating
-check/wait, update/restart or inference. The original attempt remains unused
+check/wait, update/restart or inference. Chris selected 100 ms as an advisory
+target and >=500 ms in four of the latest twenty observations as the blocker;
+the earlier 100-ms-trigger draft is superseded. This is source-only and does
+not change the installed guard. The original attempt remains unused
 under its unchanged complete guard. A changed-policy coexistence test needs the
 explicit additional decisions specified in the evaluation. Earlier handoff text
 below describes pre-rollout evidence and pending permissions at that time.

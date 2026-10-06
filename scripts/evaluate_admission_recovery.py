@@ -29,18 +29,19 @@ def summarize_window(window: list[dict[str, Any]]) -> dict[str, Any]:
         raise ValueError("Invalid retained work observations; no recovery inferred")
     clean_tail = 0
     for duration in reversed(durations):
-        if duration > 100:
+        if duration >= 500:
             break
         clean_tail += 1
     return {
         "samples": len(window),
-        "slow_samples": sum(value > 100 for value in durations),
+        "target_exceedances_over100": sum(value > 100 for value in durations),
+        "blocking_samples_at_or_above500": sum(value >= 500 for value in durations),
         "severe_samples": sum(value >= 1000 for value in durations),
         "median_ms": statistics.median(durations),
         "wall_clock_span_seconds": stamps[-1] - stamps[0],
-        "clean_suffix_samples": clean_tail,
+        "sub500_suffix_samples": clean_tail,
         "candidate_recovery_evidence": (
-            "insufficient_clean_suffix_even_if_clock_and_coverage_were_valid"
+            "insufficient_sub500_suffix_even_if_clock_and_coverage_were_valid"
             if clean_tail < 20
             else "unknown_monotonic_clock_and_prior_severity_not_retained"
         ),
@@ -97,9 +98,9 @@ def evaluate(current_path: Path, earlier_path: Path) -> dict[str, Any]:
     guard = current["paper"]["performance"]["resource_guard"]
     old_guard = earlier["resource_guard"]
     return {
-        "format": "qtrades-offline-admission-evaluation-v1",
+        "format": "qtrades-offline-admission-evaluation-v2",
         "base_commit": "6265240d64a932d987a763d106726675a1a18019",
-        "candidate": "offline-moderate-recovery-20-clean-10s-gap-2s-v1",
+        "candidate": "offline-500ms-4of20-block-100ms-target-20-clean-10s-gap-2s-v2",
         "new_operating_guard_checks": 0,
         "new_model_calls": 0,
         "original_attempt_consumed": False,
@@ -121,13 +122,18 @@ def evaluate(current_path: Path, earlier_path: Path) -> dict[str, Any]:
         },
         "fixtures": {
             "normal_work": fixture_comparison([50] * 100),
-            "moderate_burst_then_calm": fixture_comparison([50] * 21 + [150] * 4 + [50] * 100),
-            "sustained_pressure": fixture_comparison([150] * 200),
+            "sub500_target_miss_burst": fixture_comparison([50] * 21 + [150] * 4 + [50] * 100),
+            "blocking_burst_then_target_misses": fixture_comparison(
+                [50] * 21 + [600] * 4 + [150] * 100
+            ),
+            "sustained_sub500_target_misses": fixture_comparison([150] * 200),
+            "sustained_blocking_pressure": fixture_comparison([600] * 200),
             "severe_stall_then_calm": fixture_comparison([1000] + [50] * 601),
+            "severe_stall_then_sub500_target_misses": fixture_comparison([1000] + [150] * 601),
             "missing_observation_then_recovery": fixture_comparison([50] * 21 + [None] + [50] * 21),
             "startup_before_minimum_coverage": fixture_comparison([50] * 20, step=0.1),
             "repeated_oscillation": fixture_comparison(
-                [50] * 21 + [150] * 4 + ([50] * 19 + [150]) * 10
+                [50] * 21 + [600] * 4 + ([150] * 19 + [600]) * 10
             ),
         },
         "interpretation": {

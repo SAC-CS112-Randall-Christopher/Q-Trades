@@ -7,6 +7,36 @@ inspection, model, benchmark or test and changes no admission permission.
 The original trained-v2 development attempt remains authorized and unused under
 its applicable unchanged packet/profile and complete guard.
 
+## Latest user decision and source proposal
+
+Chris confirmed the source-policy choice for draft #68: retain **100 ms as an
+advisory whole-work target**, and block optional research on a **new duration
+>=500 ms when at least four of the latest twenty work samples are >=500 ms**.
+The repeated-pressure predicate requires a complete twenty-sample window;
+exactly 500 ms counts, and a fast new pass cannot renew it from older slow
+samples. Any **duration >=1,000 ms** remains an immediate severe trigger,
+including before the window fills, with the **300-second severe recovery hold**
+preserved. The 500-ms choice supersedes the earlier 250-ms blocking proposal
+in this lane; it does not revise the historical percentile acceptance targets
+below.
+
+This is a **user-directed, uncalibrated source proposal**, represented by the
+offline candidate in [`engine_diagnostics.py`](../../src/trading/engine_diagnostics.py).
+It is not the installed policy, a demonstrated safe model-admission threshold
+or a change to the original attempt's permission. The complete guard, financial
+authority and frozen account rules, current audit/freshness checks, disk/capture
+protections, memory/profile/packet checks, twenty slots and storage policy remain
+separate requirements. Candidate recovery parameters and procedural evidence
+retain their stated source-only scope.
+
+The 100-ms target measures preparation, financial transaction and post-commit
+evidence capture together. It is not a measured order-response, feed-to-fill or
+exchange execution deadline. Neither the inspected history nor matching-input
+financial fixtures establish the effect of a 100-ms or 500-ms whole-work
+boundary on win rate, profit or active-position protection. Unchanged financial
+results under fixed inputs do not establish actual model coexecution capacity
+or protection from contention under a new admission policy.
+
 ## What the existing numbers mean
 
 At this base, `TieredPaperRuntime.observe_engine_work()` uses the entire completed
