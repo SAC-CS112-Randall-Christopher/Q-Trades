@@ -120,6 +120,18 @@ build and `api-pure-05` test run are the completed source verification. The buil
 reports the existing large bundle warning, and API tests report the existing
 Starlette/httpx deprecation warning.
 
+The first hosted head `4cfe21f25fb1280e3fa5540287dd060b6e69bce5` failed the
+existing selected training-export regression in both the Windows selection
+(934 passed, 227 skipped, one failed) and complete PostgreSQL suite (1,381 passed,
+98 skipped, one failed). The pilot exclusion had incorrectly used the full task
+reader. The repair checks execution mode within the existing selected-row reader
+or verified archive context. An added matched hot/cold fixture also exposed an
+existing archive path that bypassed the selected-answer size limit; the common
+selected-record check now applies the original 131,072-byte limit to both paths.
+The final affected training/worker selection passed 52 tests. Independent review
+cleared that narrow repair; failed hosted and intermediate fixture receipts remain
+retained. The corrected head requires its own hosted checks before installation.
+
 The final API recovery-only addition maps an unavailable status read after a
 successful pilot-control write to an explicit unknown acknowledgment (HTTP 503).
 Its post-commit branch is covered by `api-pure-05`; the successful compiled

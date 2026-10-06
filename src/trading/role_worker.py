@@ -736,15 +736,11 @@ class RoleWorker:
 
         if stage not in {"idea", "review", "followup"} or not 1 <= attempt <= 100:
             raise ValueError("Select a retained attempt")
-        if self.get(identity)["context"].get("execution_mode") == PAPER_RESEARCH_PILOT:
-            raise ValueError(
-                "Experimental pilot answers are retained; training export needs "
-                "separate authorization"
-            )
         with self.registry.lock, self.registry.transaction():
             row = self.registry.db.execute(
                 "SELECT id,created,updated,stage,status,archive_reference,archive_sha256,"
                 "json_extract(context,'$.contract') AS contract,"
+                "json_extract(context,'$.execution_mode') AS execution_mode,"
                 "json_extract(context,'$.question') AS question,"
                 "json_extract(context,'$.issued.sha256') AS bundle_sha256,"
                 "json_extract(result,'$.outcome') AS outcome "
@@ -756,6 +752,19 @@ class RoleWorker:
             if row["archive_reference"]:
                 saved = self.history.read(row)
                 context = json.loads(saved["context"])
+            else:
+                context = {
+                    "contract": row["contract"],
+                    "execution_mode": row["execution_mode"],
+                    "question": json.loads(row["question"]),
+                    "issued": {"sha256": row["bundle_sha256"]},
+                }
+            if context.get("execution_mode") == PAPER_RESEARCH_PILOT:
+                raise ValueError(
+                    "Experimental pilot answers are retained; training export needs "
+                    "separate authorization"
+                )
+            if row["archive_reference"]:
                 selected = [
                     a for a in saved["attempts"] if a["stage"] == stage and a["attempt"] == attempt
                 ]
@@ -774,17 +783,15 @@ class RoleWorker:
                         (identity, stage, attempt),
                     )
                 ]
-                context = {
-                    "contract": row["contract"],
-                    "question": json.loads(row["question"]),
-                    "issued": {"sha256": row["bundle_sha256"]},
-                }
                 result = {"outcome": json.loads(row["outcome"])} if row["outcome"] else None
             if len(selected) != 1:
                 raise ValueError("Selected retained attempt is unavailable")
             a = selected[0]
             if a["packet"] is None or (
-                a.get("packet_bytes", 0) > 131072 or a.get("response_bytes", 0) > 131072
+                a.get("packet_bytes", 0) > 131072
+                or a.get("response_bytes", 0) > 131072
+                or len(a["packet"].encode("utf-8")) > 131072
+                or len((a["response"] or "").encode("utf-8")) > 131072
             ):
                 raise ValueError("Selected retained attempt exceeds its export allowance")
             task = {"id": identity, "context": context, "attempts": selected}

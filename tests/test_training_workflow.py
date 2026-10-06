@@ -108,9 +108,26 @@ def seed_attempt(workflow, count=1, oversized=False):
     return original["id"]
 
 
-def test_selected_export_does_not_serialize_unrelated_history(tmp_path, monkeypatch):
+@pytest.mark.parametrize("archived", [False, True])
+def test_selected_export_does_not_serialize_unrelated_history(tmp_path, monkeypatch, archived):
     workflow = local(tmp_path)
     identity = seed_attempt(workflow, count=7)
+    expected = workflow.roles.training_candidate(identity, "idea", 1)
+    if archived:
+        from test_research_storage import plan_at
+
+        from trading.research_storage import save_plan
+
+        save_plan(tmp_path, plan_at(tmp_path))
+        with workflow.registry.transaction():
+            workflow.registry.db.execute(
+                "UPDATE role_tasks SET status='done',stage='complete' WHERE id=?", (identity,)
+            )
+        monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+        workflow.roles.history.rollover()
+        assert workflow.registry.db.execute(
+            "SELECT archive_reference FROM role_tasks WHERE id=?", (identity,)
+        ).fetchone()[0]
 
     def fail(*args):
         raise AssertionError("Full task dashboard must not be used for selected export")
@@ -118,8 +135,17 @@ def test_selected_export_does_not_serialize_unrelated_history(tmp_path, monkeypa
     monkeypatch.setattr(workflow.roles, "view", fail)
     monkeypatch.setattr(workflow.roles, "get", fail)
     selected = workflow.roles.training_candidate(identity, "idea", 1)
+    assert selected == expected
     assert selected["candidate"]["original_answer"]["action"] == "no_change"
-    assert len(workflow.sources()["attempts"]) == 7
+    if archived:
+        assert (
+            workflow.registry.db.execute(
+                "SELECT count(*) FROM role_archive_attempts WHERE task=?", (identity,)
+            ).fetchone()[0]
+            == 7
+        )
+    else:
+        assert len(workflow.sources()["attempts"]) == 7
     with pytest.raises(ValueError, match="unavailable|exceeds|retained"):
         workflow.roles.training_candidate(identity, "idea", 2)
 

@@ -407,12 +407,47 @@ def test_pilot_supervisor_cancel_awaits_owned_cleanup_and_retains_racing_answer(
     assert len(worker.transport.calls) == 1
 
 
-def test_pilot_answers_cannot_automatically_become_training_candidates(workspace):
-    worker, _, _ = workspace
+@pytest.mark.parametrize("archived", [False, True])
+def test_pilot_answers_cannot_automatically_become_training_candidates(
+    workspace, monkeypatch, archived
+):
+    worker, _, directory = workspace
     task = worker.enqueue(question(), START)
     assert asyncio.run(worker.step(START))
-    with pytest.raises(ValueError, match="training export needs separate authorization"):
-        worker.training_candidate(task["id"], "idea", 1)
+    if archived:
+        save_plan(directory, plan_at(directory))
+        worker._update(worker.get(task["id"]), "complete", "done")
+        monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+        worker.history.rollover()
+        row = worker.registry.db.execute(
+            "SELECT context,archive_reference FROM role_tasks WHERE id=?", (task["id"],)
+        ).fetchone()
+        assert row["archive_reference"] is not None
+        # Even a compact stub without the mode cannot reinterpret the verified
+        # original archived pilot context as training-export authority.
+        with worker.registry.transaction():
+            worker.registry.db.execute(
+                "UPDATE role_tasks SET context=? WHERE id=?",
+                (json.dumps({"question": task["context"]["question"]}), task["id"]),
+            )
+    before = worker.get(task["id"])
+    disclosed_before = worker.registry.db.execute(
+        "SELECT count(*) FROM evidence_windows"
+    ).fetchone()[0]
+
+    def fail(*args):
+        raise AssertionError("Full task dashboard must not be used for selected export")
+
+    with monkeypatch.context() as selected_reader:
+        selected_reader.setattr(worker, "get", fail)
+        selected_reader.setattr(worker, "view", fail)
+        with pytest.raises(ValueError, match="training export needs separate authorization"):
+            worker.training_candidate(task["id"], "idea", 1)
+    assert (
+        worker.registry.db.execute("SELECT count(*) FROM evidence_windows").fetchone()[0]
+        == disclosed_before
+    )
+    assert worker.get(task["id"]) == before
 
 
 def test_pilot_page_uses_current_activation_without_dispatch(workspace):
