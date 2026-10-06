@@ -25,6 +25,11 @@ paused or unavailable activity independently of model readiness. Counts apply
 to the current execution mode and pilot grant. Missing activity is unavailable,
 and a failed refresh labels the retained observation as historical. An enabled
 worker with no eligible continuation is idle; it is not continuing learning.
+Opening historical detail separately explains whether its frozen instruction
+contract matches the selected worker, differs, or cannot currently be read.
+This is a read-time applicability disclosure; it never rewrites the recorded
+reason, status, context, result, attempts or allowances. Older work stays inactive
+during a contract replacement and reopens with its original facts.
 
 This delivery records requests awaiting implementation review. It does not yet
 deliver approval/disposition controls, tool implementation, tool installation,
@@ -90,10 +95,21 @@ is introduced.
 After exact-head checks and independent review pass, a separate operating
 decision must name the reviewed successor merge/update target, full updater
 ExpectedCommit, the explicit v2 grant/new profile digest, and the scope of new
-prospective research requests. The original completed answer and consumed
-allowances remain untouched. Any finite installed v6 test retains its actual
-outcome, even if it requests nothing, is invalid, fails or waits; no preferred
-retry follows. Qualification/holdouts, RAG, paid/external review, training,
+prospective research requests. The offline successor profile digest is
+`38647b415568d992f8555f72580348c4c19caf4bd7d50b6aaf42cecb3f79d04a`;
+only its contract hash and explicit version field differ from the retained v5
+profile. The copied grant remains disabled and unselected. This is a proposal,
+not actual model-compatibility or qualification evidence.
+
+The original completed answer and consumed allowances remain untouched. The
+existing pilot grant supports ongoing selected-worker operation under unchanged
+budgets; it has no once-only or expiry field. A guaranteed one-request-only v6
+test is not currently supported by the v5 development route or disabled pilot
+grant. It requires a separately reviewed finite invocation boundary before
+execution. Do not start another worker or reinterpret ongoing activation as a
+one-call guarantee. Actual results remain retained, including invalid, failed,
+incomplete or waiting outcomes, without preferred-answer retries.
+Qualification/holdouts, RAG, paid/external review, training,
 downloads/conversion, promotion and financial-policy changes remain outside
 this source/test delivery. Prior rollout/desktop acceptance is not repeated or
 reclassified to obtain these decisions.

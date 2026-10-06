@@ -5,6 +5,7 @@ import copy
 import json
 from types import SimpleNamespace
 
+import pytest
 from fastapi.testclient import TestClient
 from test_paper_pilot_worker import PilotFixture, question
 from test_paper_pilot_worker import workspace as workspace
@@ -158,17 +159,44 @@ def test_invalid_contract_shows_unavailable_without_adopting_retained_task(works
     assert state["activity"]["state"] == "unavailable"
     assert state["contract"] is None
     assert worker.get(task["id"])["context"]["contract"] == VERSION
+    view = worker.view(task["id"])
+    assert view["contract_applicability"]["state"] == "unavailable"
+    assert view["contract_applicability"]["selected_contract"] is None
+    assert view["reason"] is None
+
+
+@pytest.mark.parametrize("error", [OSError("Profile metadata unavailable"), KeyError("contract")])
+def test_unreadable_current_contract_reopens_retained_history(workspace, monkeypatch, error):
+    worker, clock, _ = workspace
+    task = worker.enqueue(question(), clock[0])
+    retained = copy.deepcopy(worker.get(task["id"]))
+
+    def unavailable():
+        raise error
+
+    monkeypatch.setattr(worker, "_contract_version", unavailable)
+    view = worker.view(task["id"])
+    assert view["contract_applicability"]["state"] == "unavailable"
+    assert view["contract_applicability"]["selected_contract"] is None
+    assert view["reason"] == retained["reason"]
+    assert worker.get(task["id"]) == retained
 
 
 def test_version_switch_preserves_old_task_request_identity_and_current_selection(workspace):
     worker, clock, _ = workspace
     old = worker.enqueue(question(), clock[0])
+    assert worker.view(old["id"])["contract_applicability"]["state"] == "matching"
+    retained = copy.deepcopy(worker.get(old["id"]))
     worker.transport = ToolFixture()
     # Reconciliation of the same already-created intent must never create a new attempt.
     assert worker.enqueue(question(), clock[0])["id"] == old["id"]
     assert worker.page()["activity"]["state"] == "idle"
     assert not asyncio.run(worker.step(clock[0]))
     assert worker.get(old["id"])["status"] == "queued"
+    view = worker.view(old["id"])
+    assert view["contract_applicability"]["state"] == "different"
+    assert "contract changed" in view["contract_applicability"]["reason"]
+    assert view["reason"] is None and worker.get(old["id"]) == retained
     newer = worker.enqueue(question().model_copy(update={"request_id": None}), clock[0])
     assert newer["id"] != old["id"]
     assert newer["context"]["contract"] == TOOL_REQUEST_VERSION

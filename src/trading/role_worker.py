@@ -776,6 +776,28 @@ class RoleWorker:
 
     def view(self, identity: str) -> dict[str, Any]:
         task = self.get(identity)
+        recorded_contract = task["context"].get("contract", VERSION)
+        try:
+            selected_contract: str | None = self._contract_version()
+        except (ValueError, OSError, KeyError):
+            selected_contract = None
+        # This is current applicability, not a new historical outcome. Older
+        # tasks stay unchanged when the selected profile's contract changes.
+        task["contract_applicability"] = {
+            "state": "unavailable"
+            if selected_contract is None
+            else "matching"
+            if recorded_contract == selected_contract
+            else "different",
+            "reason": "Current role contract unavailable; retained history is unchanged"
+            if selected_contract is None
+            else "Saved role contract matches the selected worker; admission is separate"
+            if recorded_contract == selected_contract
+            else "Frozen role contract changed; retained investigation is inactive under the "
+            "selected profile",
+            "recorded_contract": recorded_contract,
+            "selected_contract": selected_contract,
+        }
         # Never repeat full candle inputs in a polling response. Exact saved
         # inputs reopen through their existing typed G: detail reference.
         if task["evaluation"] and "inputs" in task["evaluation"]:

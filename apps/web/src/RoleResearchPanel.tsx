@@ -51,6 +51,12 @@ type ToolRequest = {
 };
 type Task = {
   id: string; stage: string; status: string; updated: number; reason: string | null;
+  contract_applicability?: {
+    state: "matching" | "different" | "unavailable";
+    reason: string;
+    recorded_contract: string;
+    selected_contract: string | null;
+  };
   execution: {kind: string; actor?: string; lease_until: number | null};
   context: { execution_mode?: string; experimental?: boolean; question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
   proposal: { request_id: string; kind: string; strategy: {family: string; lookback: number; entry_filter?: {kind: string; horizon_seconds: number; marginal_daily_usd: string; fallback: string; artifact: {sha256: string}}}; reference: { family: string; lookback: number } } | null;
@@ -302,6 +308,7 @@ export function RoleResearchPanel() {
       <h3>{task.context.question.question}</h3><p>{task.context.question.horizon} horizon · {stageLabel(task.stage)} · {task.status} · progress {stamp(task.updated)}</p>
       <p>{statusError || taskError ? "Last observed ownership" : "Current ownership"}: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
       {task.reason && <p>{task.reason}</p>}
+      {task.contract_applicability && task.contract_applicability.state !== "matching" && <p role="status" aria-label="Saved question format applicability">{statusError || taskError ? "Last observed research format" : "Current research format"}: <strong>{task.contract_applicability.state === "different" ? "Saved question inactive for the selected format" : "Current format unknown"}</strong>. {task.contract_applicability.reason}</p>}
       {task.result?.action === "request_tool" && task.result.tool_request && <section aria-label="Requested research tool">
         <h4>Tool requested · pending implementation review</h4>
         <p><strong>{toolKinds[task.result.tool_request.kind]}:</strong> {task.result.tool_request.identifier}</p>
