@@ -6,14 +6,17 @@ The approved operating rollout is complete at
 `6265240d64a932d987a763d106726675a1a18019` within its documented scope; reuse
 [the existing #66 receipt](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/issues/66#issuecomment-6005141750).
 The latest assignment produces a
-[tested offline 500-ms/four-of-twenty candidate](ADMISSION_POLICY_EVALUATION.md) and
+[500-ms/four-of-twenty integration and finite test](ADMISSION_POLICY_EVALUATION.md) and
 [source/evidence rationale](ADMISSION_POLICY_RATIONALE.md), with no operating
-check/wait, update/restart or inference. Chris selected 100 ms as an advisory
+check/wait, update/restart or inference in its initial offline evaluation. Chris selected 100 ms as an advisory
 target and >=500 ms in four of the latest twenty observations as the blocker;
-the earlier 100-ms-trigger draft is superseded. This is source-only and does
-not change the installed guard. The original attempt remains unused
-under its unchanged complete guard. A changed-policy coexistence test needs the
-explicit additional decisions specified in the evaluation. Earlier handoff text
+the earlier 100-ms-trigger draft is superseded. Chris then authorized
+**"Merge when ready and then try it working all together"**: integrate/review/verify,
+merge the ready head, use the guarded updater through the existing sole owner,
+and run one finite original-task coexistence experiment under the changed guard.
+The original packet/candidate/model profile and once-only limit stay unchanged;
+original authorization/admission metadata is retained. The checkpoint records
+actual installation and dispatch results separately. Earlier handoff text
 below describes pre-rollout evidence and pending permissions at that time.
 
 ## Historical baseline and authorization before the accepted rollout

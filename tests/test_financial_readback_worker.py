@@ -9,7 +9,7 @@ from threading import Event
 
 import psycopg
 import pytest
-from financial_monitoring_fixture import FinancialMonitoringFixture
+from financial_monitoring_fixture import FinancialMonitoringFixture, monitoring_constrained
 from psycopg.conninfo import make_conninfo
 from test_paper_engine import START
 from test_paper_store import pg_store as pg_store
@@ -83,7 +83,7 @@ def test_retry_audit_keeps_known_optional_failure_unavailable_until_real_recover
             assert "financial_readback_unavailable" in (
                 snapshot["performance"]["resource_guard"]["blocking_conditions"]
             )
-            assert runtime.readback_unavailable() and runtime.constrained()
+            assert runtime.readback_unavailable() and monitoring_constrained(runtime)
             assert notice["condition"] == "unknown"
             assert notice["facts"]["status"] == "unavailable"
             assert runtime._financial_failure is None and runtime.error is None
@@ -95,7 +95,7 @@ def test_retry_audit_keeps_known_optional_failure_unavailable_until_real_recover
             fixture.recover(ancillary)
             await fixture.wait_sample(repeated_completed)
             assert runtime.journal_status()["status"] == "balanced"
-            assert not runtime.readback_unavailable() and not runtime.constrained()
+            assert not runtime.readback_unavailable() and not monitoring_constrained(runtime)
             assert runtime._financial_failure is None and runtime.error is None
             assert (store.read(), store.export(0, 1000)) == before
         finally:
@@ -137,13 +137,13 @@ def test_recovery_of_one_optional_query_keeps_the_other_failure_outstanding(
             await fixture.wait_held(remaining)
             await fixture.wait_audit(previous_audit)
             assert runtime.journal_status()["status"] == "unavailable"
-            assert runtime.constrained() and runtime._financial_failure is None
+            assert monitoring_constrained(runtime) and runtime._financial_failure is None
             fixture.recover(remaining)
             fixture.release(remaining)
             await fixture.wait_sample(completed)
             assert runtime._readback_sample["refresh_errors"] == {}
             assert runtime.journal_status()["status"] == "balanced"
-            assert not runtime.constrained()
+            assert not monitoring_constrained(runtime)
         finally:
             await fixture.stop()
 
@@ -169,7 +169,7 @@ def test_healthy_optional_refresh_in_flight_keeps_current_monitoring_available(p
             assert runtime.receipts == audit
             assert runtime.journal_status()["status"] == "balanced"
             assert runtime.journal_status()["available"] is True
-            assert not runtime.readback_unavailable() and not runtime.constrained()
+            assert not runtime.readback_unavailable() and not monitoring_constrained(runtime)
             fixture.release("recent")
             await fixture.wait_sample(completed)
             assert runtime.journal_status()["status"] == "balanced"
@@ -201,7 +201,7 @@ def test_optional_retry_timeout_retains_new_audit_and_recovers_without_restart(p
             await fixture.wait_audit(previous_audit)
             audit = dict(runtime.receipts)
             assert runtime.journal_status()["status"] == "unavailable"
-            assert runtime.constrained()
+            assert monitoring_constrained(runtime)
             async with asyncio.timeout(
                 worker_module.SAMPLE_SECONDS + worker_module.DRAIN_SECONDS
                 + worker_module.TERMINATE_SECONDS + 3
@@ -221,7 +221,7 @@ def test_optional_retry_timeout_retains_new_audit_and_recovers_without_restart(p
             fixture.release("recent")
             await fixture.wait_sample(completed)
             assert runtime.journal_status()["status"] == "balanced"
-            assert not runtime.constrained()
+            assert not monitoring_constrained(runtime)
             assert fixture.reader._process is not None and fixture.reader._process.is_alive()
             assert (store.read(), store.export(0, 1000)) == before
         finally:
@@ -261,11 +261,11 @@ def test_reader_restart_retains_optional_failure_until_its_real_query_recovers(p
             assert second.completed_at == completed
             assert runtime.recent == retained_history
             assert runtime.journal_status()["status"] == "unavailable"
-            assert runtime.constrained() and runtime._financial_failure is None
+            assert monitoring_constrained(runtime) and runtime._financial_failure is None
             second.release("recent")
             await second.wait_sample(completed)
             assert runtime.journal_status()["status"] == "balanced"
-            assert not runtime.constrained()
+            assert not monitoring_constrained(runtime)
             assert (store.read(), store.export(0, 1000)) == before
         finally:
             await second.stop()

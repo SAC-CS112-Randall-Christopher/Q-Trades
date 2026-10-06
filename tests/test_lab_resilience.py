@@ -3,6 +3,7 @@ import json
 import time
 
 import pytest
+from financial_monitoring_fixture import monitoring_constrained
 from test_experiment_registry import plan, shifted_inputs
 
 from trading.experiment_lab import ExperimentLab
@@ -141,7 +142,6 @@ def test_disk_pressure_pauses_research_without_changing_financial_authority(tmp_
     from trading.tiered_runtime import TieredPaperRuntime
 
     runtime = object.__new__(TieredPaperRuntime)
-    runtime._constrained_until = 0
     runtime.disk_free = 4 * 1024**3
     runtime._capture_failure = None
     # This fixture isolates disk admission with a current successful readback.
@@ -149,8 +149,10 @@ def test_disk_pressure_pauses_research_without_changing_financial_authority(tmp_
     runtime._readback_sample = None
     runtime._readback_audit_mono = time.monotonic()
     runtime.receipts = {"balanced": True}
-    assert runtime.constrained()
-    lab = ExperimentLab(tmp_path / "registry.sqlite", None, lambda: not runtime.constrained())
+    assert monitoring_constrained(runtime)
+    lab = ExperimentLab(
+        tmp_path / "registry.sqlite", None, lambda: not monitoring_constrained(runtime)
+    )
     frozen = plan(evidence_kind="synthetic_qa")
     lab.registry.reserve(frozen, code_fingerprint())
     lab.registry.inputs(frozen.request_id, shifted_inputs())

@@ -2,10 +2,11 @@
 
 October 6, 2026. This bounded source/history evaluation is pinned to accepted
 base `6265240d64a932d987a763d106726675a1a18019`. It reuses the completed rollout
-and identified retained evidence. It runs no operating guard, API, SQL, process
-inspection, model, benchmark or test and changes no admission permission.
-The original trained-v2 development attempt remains authorized and unused under
-its applicable unchanged packet/profile and complete guard.
+and identified retained evidence. This rationale performs no operating action;
+implementation/test and installed evidence belong to the #66 checkpoint.
+Chris subsequently authorized merging the reviewed integrated policy and trying
+it together with the original unused trained-v2 task in one bounded experiment.
+The packet, candidate, approved model profile and once-only limit remain unchanged.
 
 ## Latest user decision and source proposal
 
@@ -21,9 +22,11 @@ in this lane; it does not revise the historical percentile acceptance targets
 below.
 
 This is a **user-directed, uncalibrated source proposal**, represented by the
-offline candidate in [`engine_diagnostics.py`](../../src/trading/engine_diagnostics.py).
-It is not the installed policy, a demonstrated safe model-admission threshold
-or a change to the original attempt's permission. The complete guard, financial
+integrated policy in [`engine_diagnostics.py`](../../src/trading/engine_diagnostics.py).
+Its installed status and actual coexistence evidence must be verified separately;
+source fixtures do not demonstrate a safe model-admission threshold. The explicit
+merge/combined-test instruction covers the changed guard for this one experiment,
+without rewriting original authorization metadata. All independent guards, financial
 authority and frozen account rules, current audit/freshness checks, disk/capture
 protections, memory/profile/packet checks, twenty slots and storage policy remain
 separate requirements. Candidate recovery parameters and procedural evidence

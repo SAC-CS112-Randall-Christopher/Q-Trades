@@ -1,4 +1,23 @@
-# Current direction — October 5, 2026, operational research (#66)
+# Current direction — October 6, 2026, bounded admission policy (#66)
+
+Chris selected 100 ms as advisory and new work >=500 ms as a blocker when at
+least four of the complete latest twenty observations are >=500 ms. The
+one-second severe guard and independent financial/resource protections remain.
+"Merge when ready and then try it working all together" authorizes the reviewed
+integration, exact-merged-SHA guarded update of the existing installation, and
+one finite original trained-v2 development attempt under that policy. Reuse the
+existing process, updater, acceptance collector, registry and once-only route.
+Retain the original packet/profile and supplementary authorization separately;
+existing or uncertain dispatch must be reconciled without another attempt.
+The earlier accepted 6265240 rollout remains complete within its stated scope.
+No additional question, retry, RAG, qualification/holdouts, operating activation,
+paid/external review, promotion, training/download/conversion, compression,
+financial-policy change or desktop packaging follows. Preserve false ownership
+checks, legitimate appends and incomplete coverage. See
+`docs/reviews/ADMISSION_POLICY_EVALUATION.md` and the #66 ledger for the finite
+experiment and distinct source/installed/model proof stages.
+
+# Historical direction — October 5, 2026, operational research (#66)
 
 Use issue #66 and `docs/reviews/OPERATIONAL_RESEARCH_66.md` for this lane's
 current outcome, original-attempt identity, installed/source distinction and

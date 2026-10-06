@@ -8,16 +8,16 @@ constructor is used. Matching input evidence is not disk-capture acceptance.
 
 import copy
 import json
-from collections import defaultdict, deque
+from collections import defaultdict
 from decimal import Decimal as D
 
 import pytest
 from test_paper_engine import START, frame, study
 
-from trading.engine_diagnostics import EngineWorkDiagnostics, ModerateRecoveryCandidate
+from scripts.evaluate_admission_recovery import BaselinePressurePolicy
+from trading.engine_diagnostics import EngineWorkPressurePolicy
 from trading.market import parse_book
 from trading.paper_engine import PaperEngine, initial_state
-from trading.tiered_runtime import TieredPaperRuntime
 
 
 @pytest.fixture(params=[150.0, 600.0], ids=["150ms_below_blocker", "600ms_blocks"])
@@ -26,13 +26,7 @@ def elapsed_burst_ms(request):
 
 
 def current_pressure_policy():
-    # Reuse the unchanged runtime observer without constructing its services.
-    runtime = object.__new__(TieredPaperRuntime)
-    runtime._loop_ms = deque(maxlen=1000)
-    runtime._constrained_until = 0.0
-    runtime._work_diagnostics = EngineWorkDiagnostics()
-    runtime._notice_queue = []
-    return runtime
+    return BaselinePressurePolicy()
 
 
 def replay(policy, steps, elapsed_burst_ms):
@@ -49,12 +43,12 @@ def replay(policy, steps, elapsed_burst_ms):
         engine.assert_invariants()
         duration = elapsed_burst_ms if 16 <= offset <= 19 else 20.0
         now_mono = 1000.0 + offset
-        if isinstance(policy, TieredPaperRuntime):
+        if isinstance(policy, BaselinePressurePolicy):
             policy.observe_engine_work(duration, now_mono)
             would_allow = now_mono >= policy._constrained_until
         else:
             policy.observe(duration, now_mono)
-            would_allow = policy.evaluate(now_mono).pressure_would_allow
+            would_allow = policy.evaluate(now_mono).pressure_allows
         # Some emitted bodies share mutable engine objects; freeze each tick.
         trace.append(
             {
@@ -62,7 +56,7 @@ def replay(policy, steps, elapsed_burst_ms):
                 "events": copy.deepcopy(engine.events),
                 "frames": copy.deepcopy(frames),
                 "studies": copy.deepcopy(studies),
-                "pressure_would_allow": would_allow,
+                "pressure_allows": would_allow,
             }
         )
     return trace
@@ -70,13 +64,13 @@ def replay(policy, steps, elapsed_burst_ms):
 
 def assert_matched_financial_trace(steps, elapsed_burst_ms):
     current = replay(current_pressure_policy(), steps, elapsed_burst_ms)
-    candidate = replay(ModerateRecoveryCandidate(), steps, elapsed_burst_ms)
+    candidate = replay(EngineWorkPressurePolicy(), steps, elapsed_burst_ms)
     # The unchanged current policy blocks either burst. Below 500ms is only
     # a performance concern for the candidate; 600ms requires calm recovery.
-    assert not current[19]["pressure_would_allow"]
-    assert candidate[19]["pressure_would_allow"] == (elapsed_burst_ms < 500)
-    assert not current[39]["pressure_would_allow"]
-    assert candidate[39]["pressure_would_allow"]
+    assert not current[19]["pressure_allows"]
+    assert candidate[19]["pressure_allows"] == (elapsed_burst_ms < 500)
+    assert not current[39]["pressure_allows"]
+    assert candidate[39]["pressure_allows"]
     for old, proposed in zip(current, candidate, strict=True):
         for key in ("frames", "studies", "state", "events"):
             assert old[key] == proposed[key]

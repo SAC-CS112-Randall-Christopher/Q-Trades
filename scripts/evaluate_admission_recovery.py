@@ -13,8 +13,32 @@ from collections import deque
 from pathlib import Path
 from typing import Any
 
-from trading.engine_diagnostics import EngineWorkDiagnostics, ModerateRecoveryCandidate
-from trading.tiered_runtime import TieredPaperRuntime
+from trading.engine_diagnostics import EngineWorkPressurePolicy
+
+
+class BaselinePressurePolicy:
+    """Offline reference for the accepted 6265240 observer, never a runtime gate.
+
+    Keep its strict >100-ms/new-pass/4-of-20 trigger and >=1000-ms severe
+    trigger, both renewing a 300-second hold. This reference retains historical
+    comparisons after the production owner adopts the reviewed successor.
+    """
+
+    def __init__(self) -> None:
+        self._loop_ms: deque[float] = deque(maxlen=20)
+        self._constrained_until = 0.0
+        self.qualifying_triggers = 0
+
+    def observe_engine_work(self, elapsed_ms: float, now_mono: float) -> None:
+        self._loop_ms.append(elapsed_ms)
+        repeated = (
+            elapsed_ms > 100
+            and len(self._loop_ms) == 20
+            and sum(value > 100 for value in self._loop_ms) >= 4
+        )
+        if repeated or elapsed_ms >= 1000:
+            self._constrained_until = now_mono + 300
+            self.qualifying_triggers += 1
 
 
 def summarize_window(window: list[dict[str, Any]]) -> dict[str, Any]:
@@ -51,19 +75,15 @@ def summarize_window(window: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def fixture_comparison(values: list[float | None], *, step: float = 0.5) -> dict[str, Any]:
-    current = object.__new__(TieredPaperRuntime)
-    current._loop_ms = deque(maxlen=1000)
-    current._constrained_until = 0.0
-    current._work_diagnostics = EngineWorkDiagnostics()
-    current._notice_queue = []
-    candidate = ModerateRecoveryCandidate()
+    current = BaselinePressurePolicy()
+    candidate = EngineWorkPressurePolicy()
     current_allows = candidate_allows = earlier_recovery = 0
     for index, duration in enumerate(values):
         now = 1000 + index * step
         if duration is not None:
             current.observe_engine_work(duration, now)
         candidate.observe(duration, now)
-        a, b = now >= current._constrained_until, candidate.evaluate(now).pressure_would_allow
+        a, b = now >= current._constrained_until, candidate.evaluate(now).pressure_allows
         current_allows += a
         candidate_allows += b
         earlier_recovery += b and not a
@@ -74,7 +94,7 @@ def fixture_comparison(values: list[float | None], *, step: float = 0.5) -> dict
         "current_pressure_allows_at_observation": current_allows,
         "candidate_pressure_allows_at_observation": candidate_allows,
         "candidate_allows_while_current_pressure_blocks": earlier_recovery,
-        "current_qualifying_trigger_count": current._work_diagnostics.triggers,
+        "current_qualifying_trigger_count": current.qualifying_triggers,
         "final_current_pressure_allows": a,
         "final_candidate_pressure_allows": b,
     }
@@ -98,9 +118,9 @@ def evaluate(current_path: Path, earlier_path: Path) -> dict[str, Any]:
     guard = current["paper"]["performance"]["resource_guard"]
     old_guard = earlier["resource_guard"]
     return {
-        "format": "qtrades-offline-admission-evaluation-v2",
+        "format": "qtrades-offline-admission-evaluation-v3",
         "base_commit": "6265240d64a932d987a763d106726675a1a18019",
-        "candidate": "offline-500ms-4of20-block-100ms-target-20-clean-10s-gap-2s-v2",
+        "candidate": "engine-work-pressure-v3",
         "new_operating_guard_checks": 0,
         "new_model_calls": 0,
         "original_attempt_consumed": False,
@@ -138,6 +158,7 @@ def evaluate(current_path: Path, earlier_path: Path) -> dict[str, Any]:
         },
         "interpretation": {
             "availability": "Counts at synthetic observation points; not elapsed availability",
+            "baseline": "Offline pinned 6265240 pressure reference; not a reachable runtime guard",
             "coexistence_safety": (
                 "Unmeasured; no trained model or active operating positions tested"
             ),

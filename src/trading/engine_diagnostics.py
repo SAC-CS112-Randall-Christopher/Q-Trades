@@ -1,26 +1,34 @@
 """Bounded evidence for the existing engine resource gate; no scheduling authority."""
 
+import os
+import uuid
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from math import isfinite
 from typing import Any
+
+PRESSURE_POLICY_VERSION = "engine-work-pressure-v3"
 
 
 @dataclass(frozen=True)
 class PressureRecoveryEvaluation:
-    """Hypothetical pressure decision, never a complete research admission."""
+    """The engine-work component only, never a complete research admission."""
 
-    pressure_would_allow: bool
+    pressure_allows: bool
     reasons: tuple[str, ...]
     clean_samples: int
     clean_span_seconds: float
     severe_remaining_seconds: float | None
     target_exceedances: int
     observed_samples: int
+    blocking_exceedances: int
+    last_observed_mono: float | None
+    observed_repeated: bool
+    observed_severe: bool
 
 
-class ModerateRecoveryCandidate:
-    """Offline proposal only; no runtime, configuration or dispatch integration.
+class EngineWorkPressurePolicy:
+    """Bounded pressure state used by the existing runtime resource owner.
 
     The 100ms target is advisory. New >=500ms work blocks when at least four of
     the latest twenty observations are >=500ms. Moderate pressure can recover
@@ -29,8 +37,10 @@ class ModerateRecoveryCandidate:
     evidence. Any >=1000ms work retains the 300-second severe hold, including
     renewal by new qualifying repeated pressure during that hold.
 
-    The 10s/2s recovery bounds are proposed QA parameters, not established
-    financial requirements or demonstrated installed coexistence limits.
+    These are user-directed, uncalibrated policy parameters; they do not prove
+    financial execution deadlines or safe model coexecution.
+    Completed work can share a coarse monotonic timestamp. Nondecreasing times
+    count distinct observations; the measured span still bounds recovery.
     Callers must supply explicit monotonic observations; retained wall-clock
     snapshots alone cannot establish an uninterrupted recovery sequence.
     """
@@ -43,12 +53,16 @@ class ModerateRecoveryCandidate:
         self._severe_until = 0.0
         self._recovering = True
         self._pending_severe = False
+        self._observed_repeated = False
+        self._observed_severe = False
 
     def _discard_calm(self) -> None:
         self._clean_since = None
         self._clean_count = 0
 
     def observe(self, elapsed_ms: float | None, now_mono: float) -> None:
+        self._observed_repeated = False
+        self._observed_severe = False
         known_severe = (
             elapsed_ms is not None
             and type(elapsed_ms) in (float, int)
@@ -58,7 +72,7 @@ class ModerateRecoveryCandidate:
         if (
             type(now_mono) not in (float, int)
             or not isfinite(now_mono)
-            or (self._last_mono is not None and now_mono <= self._last_mono)
+            or (self._last_mono is not None and now_mono < self._last_mono)
         ):
             self._discard_calm()
             self._recovering = True
@@ -90,6 +104,8 @@ class ModerateRecoveryCandidate:
             and sum(value >= 500 for value in self._window) >= 4
         )
         severe = elapsed_ms >= 1000
+        self._observed_repeated = repeated
+        self._observed_severe = severe
         if repeated or severe:
             self._recovering = True
         if severe or (repeated and now_mono < self._severe_until):
@@ -140,12 +156,18 @@ class ModerateRecoveryCandidate:
             remaining,
             sum(value > 100 for value in self._window),
             len(self._window),
+            sum(value >= 500 for value in self._window),
+            self._last_mono,
+            self._observed_repeated,
+            self._observed_severe,
         )
 
 
 class EngineWorkDiagnostics:
-    def __init__(self) -> None:
+    def __init__(self, observation_epoch: str | None = None) -> None:
         self.samples: deque[dict[str, Any]] = deque(maxlen=20)
+        self.observation_epoch = observation_epoch or uuid.uuid4().hex
+        self.work_observations = 0
         self.triggers = 0
         self.queued_receipts = 0
         self.last_trigger: dict[str, Any] | None = None
@@ -156,6 +178,14 @@ class EngineWorkDiagnostics:
     def record(
         self, sample: dict[str, Any], now_mono: float, *, repeated: bool, severe: bool
     ) -> dict[str, Any] | None:
+        self.work_observations += 1
+        sample = {
+            **sample,
+            "work_number": self.work_observations,
+            "observed_mono": now_mono,
+            "observation_epoch": self.observation_epoch,
+            "policy_version": PRESSURE_POLICY_VERSION,
+        }
         self.samples.append(sample)
         if not (repeated or severe):
             return None
@@ -164,7 +194,8 @@ class EngineWorkDiagnostics:
         if self._peak is None or sample["elapsed_ms"] > self._peak["elapsed_ms"]:
             self._peak = sample
         self.last_trigger = {
-            "diagnostic_version": "engine-work-v1",
+            "diagnostic_version": "engine-work-v2",
+            "policy_version": PRESSURE_POLICY_VERSION,
             "at": sample["at"],
             "trigger_number": self.triggers,
             "repeated_slow_work": repeated,
@@ -172,6 +203,7 @@ class EngineWorkDiagnostics:
             "sample": sample,
             "window_samples": len(self.samples),
             "slow_window": [s for s in self.samples if s["elapsed_ms"] > 100],
+            "blocking_window": [s for s in self.samples if s["elapsed_ms"] >= 500],
         }
         # One permanent diagnostic receipt per minute at most. All trade records
         # retain their existing policy; only repetitive diagnostic notices coalesce.
@@ -181,17 +213,27 @@ class EngineWorkDiagnostics:
             **self.last_trigger,
             "triggers_since_receipt": self._unreported,
             "peak_since_receipt": self._peak,
-            "cooldown_seconds": 300,
+            "severe_cooldown_seconds": 300,
+            "moderate_recovery": "20 consecutive <500ms work samples spanning at least 10s",
         }
         self._last_notice_mono = now_mono
         self._unreported, self._peak = 0, None
         self.queued_receipts += 1
         return notice
 
-    def snapshot(self, now_mono: float, constrained_until: float) -> dict[str, Any]:
+    def snapshot(self, pressure: PressureRecoveryEvaluation) -> dict[str, Any]:
         return {
-            "diagnostic_version": "engine-work-v1",
-            "cooldown_remaining_seconds": round(max(0, constrained_until - now_mono), 3),
+            "diagnostic_version": "engine-work-v2",
+            "policy_version": PRESSURE_POLICY_VERSION,
+            "observation_epoch": self.observation_epoch,
+            "observer_pid": os.getpid(),
+            "work_observations": self.work_observations,
+            "cooldown_remaining_seconds": (
+                round(pressure.severe_remaining_seconds, 3)
+                if pressure.severe_remaining_seconds is not None else None
+            ),
+            "cooldown_scope": "Severe hold only; moderate recovery requires fresh work evidence",
+            "pressure_recovery": asdict(pressure),
             "trigger_count": self.triggers,
             "queued_receipts": self.queued_receipts,
             "unreported_triggers": self._unreported,

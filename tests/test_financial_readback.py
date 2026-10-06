@@ -9,6 +9,7 @@ from threading import Event
 
 import psycopg
 import pytest
+from financial_monitoring_fixture import monitoring_constrained
 from psycopg.conninfo import make_conninfo
 from test_paper_engine import START, frame, study
 from test_paper_store import pg_store as pg_store
@@ -122,7 +123,7 @@ def test_background_readback_recovers_real_connection_outage_without_restart(
                         "reader_alive": reader._process is not None
                         and reader._process.is_alive(),
                     }))
-                assert not worker.done() and runtime.constrained()
+                assert not worker.done() and monitoring_constrained(runtime)
                 assert runtime.journal_status()["error"] is not None
                 if runtime._readback_error is None:
                     assert runtime._readback_sample["refresh_errors"]
@@ -136,7 +137,7 @@ def test_background_readback_recovers_real_connection_outage_without_restart(
                     while runtime.readback_unavailable():
                         await asyncio.sleep(0.01)
                 assert not worker.done() and runtime.receipts["balanced"]
-                assert runtime._readback_error is None and not runtime.constrained()
+                assert runtime._readback_error is None and not monitoring_constrained(runtime)
                 store.transact(START + 1, lambda engine: None)
                 assert store.reconcile()["balanced"]
             finally:
@@ -196,7 +197,7 @@ def test_api_snapshot_notice_and_admission_share_current_audit_status(pg_store, 
         "clear" if mode == "balanced" else "active" if mode == "imbalanced" else "unknown"
     )
     assert api["journal"]["available"] == api["performance"]["financial_readback"]["available"]
-    assert runtime.constrained() == (mode != "balanced")
+    assert monitoring_constrained(runtime) == (mode != "balanced")
     assert runtime.receipts == original  # Reads do not rewrite dates or verified history.
     if mode in {"expired", "unavailable"}:
         assert api["journal"]["balanced"] is True
@@ -228,22 +229,22 @@ def test_normal_supervisor_stops_for_a_confirmed_reconciliation_failure(
     asyncio.run(asyncio.wait_for(runtime.run(), timeout=3))
     assert not runtime.running and runtime.error
     assert runtime.receipts["balanced"] is False
-    assert runtime.constrained()
+    assert monitoring_constrained(runtime)
 
 
 def test_readback_age_and_query_error_keep_optional_research_closed(pg_store, tmp_path):
     store, _ = pg_store
     runtime = TieredPaperRuntime(store, None, tmp_path / "capture.sqlite")
     runtime.disk_free = 10 * 1024**3
-    assert runtime.constrained()
+    assert monitoring_constrained(runtime)
     runtime._readback_audit_mono = time.monotonic()
     runtime.receipts = {"balanced": True}
-    assert not runtime.constrained()
+    assert not monitoring_constrained(runtime)
     runtime._readback_error = "Durable financial monitoring query unavailable"
-    assert runtime.constrained()
+    assert monitoring_constrained(runtime)
     runtime._readback_error = None
     runtime._readback_audit_mono = time.monotonic() - 120
-    assert runtime.constrained()
+    assert monitoring_constrained(runtime)
     snapshot = runtime.snapshot()
     assert (
         "financial_readback_unavailable"

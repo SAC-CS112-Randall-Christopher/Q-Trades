@@ -2,6 +2,8 @@
 
 import json
 import math
+import time
+from dataclasses import asdict
 from typing import Any
 
 from trading.experiment_registry import ExperimentRegistry
@@ -45,20 +47,35 @@ def operational_conditions(paper: Any, now: float) -> list[dict[str, Any]]:
     journal_state = journal.get("status", "pending")
     journal_condition = {
         "key": "financial_monitoring",
-        "condition": "clear" if journal_state == "balanced" else
-        "active" if journal_state == "imbalanced" else "unknown",
+        "condition": "clear"
+        if journal_state == "balanced"
+        else "active"
+        if journal_state == "imbalanced"
+        else "unknown",
         "severity": "critical" if journal_state == "imbalanced" else "warning",
         "source_at": now,
         "title": "Financial journal monitoring",
-        "market": None, "account": None,
+        "market": None,
+        "account": None,
         "impact": "Last completed audit and current monitoring availability are separate",
         "next_action": "Inspect audit time, revision and current monitoring; preserve history",
         "link": "#accounts",
-        "facts": {k: journal.get(k) for k in
-                  ("status", "available", "balanced", "checked_at", "revision", "error",
-                   "audit_age_seconds")},
+        "facts": {
+            k: journal.get(k)
+            for k in (
+                "status",
+                "available",
+                "balanced",
+                "checked_at",
+                "revision",
+                "error",
+                "audit_age_seconds",
+            )
+        },
     }
     guarded = getattr(paper, "constrained", None)
+    pressure = getattr(paper, "_work_pressure", None)
+    pressure_recovery = pressure.evaluate(time.monotonic()) if pressure is not None else None
     rows.append(
         {
             "key": "research_resource",
@@ -78,7 +95,7 @@ def operational_conditions(paper: Any, now: float) -> list[dict[str, Any]]:
             "next_action": "Inspect readiness and whole-work guard; preserve protection",
             "link": "#role-research",
             "facts": {
-                "cooldown_until_mono": getattr(paper, "_constrained_until", None),
+                "pressure_recovery": asdict(pressure_recovery) if pressure_recovery else None,
                 "disk_free_bytes": getattr(paper, "disk_free", None),
                 "capture_failure": getattr(paper, "_capture_failure", None),
             },
