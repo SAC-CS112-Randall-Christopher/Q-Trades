@@ -342,6 +342,9 @@ def test_knowledge_backed_answer_is_not_disclosed_by_ordinary_role_read_scope():
         ("research_task", {"task_id": "https://foreign.example"}),
         ("research_lessons", {"before": True}),
         ("research_quality", {"request": "run"}),
+        ("research_capabilities", {"include_history": True}),
+        ("research_capabilities", {"cursor": "next"}),
+        ("research_capabilities", {"origin": "https://foreign.example"}),
     ],
 )
 def test_unknown_commands_and_invalid_strict_arguments_never_reach_http(name, args):
@@ -440,6 +443,7 @@ def test_oversize_stdio_line_stops_without_drain_or_get():
         (
             "research_capabilities",
             {
+                "history_requested": False,
                 "tools": [
                     {
                         "id": "cost_hurdle",
@@ -463,7 +467,58 @@ def test_all_remaining_read_routes_have_scientific_scope_and_no_execution_catalo
         assert json.loads(text)["observed"]["economic_value"]["net_benefit"] is None
     if name == "research_lessons":
         assert json.loads(text)["observed"]["next_before"] == 4
+    if name == "research_capabilities":
+        assert json.loads(text)["observed"]["history_requested"] is False
+        assert str(calls[1].url) == ORIGIN + "/api/research/tools?include_history=false"
     client.close()
+
+
+@pytest.mark.parametrize(
+    "marker,present,available",
+    [
+        (False, True, True),
+        (None, False, False),
+        (True, True, False),
+        (0, True, False),
+        ("false", True, False),
+        (None, True, False),
+    ],
+    ids=["false", "legacy-missing", "true", "integer-zero", "string", "null"],
+)
+def test_catalog_only_requires_literal_false_marker_without_inferred_empty_history(
+    marker, present, available
+):
+    body = {
+        "tools": [{"id": "cost_hurdle", "name": "Calculate cost hurdle"}],
+        "runs": [{"id": "legacy-history-must-not-be-disclosed"}],
+        "total": 7,
+        "capacity": 20,
+        "next_cursor": "private-history-cursor",
+    }
+    if present:
+        body["history_requested"] = marker
+    if available:
+        for key in ("runs", "total", "capacity", "next_cursor"):
+            body.pop(key)
+    observer, calls, client = observer_for(body)
+    try:
+        response = invoke(observer, "research_capabilities")["result"]
+        assert str(calls[1].url) == ORIGIN + "/api/research/tools?include_history=false"
+        assert len(calls) == 2 and all(request.method == "GET" for request in calls)
+        text = response["content"][0]["text"]
+        assert response["isError"] is not available
+        assert "legacy-history-must-not-be-disclosed" not in text
+        assert "private-history-cursor" not in text
+        if available:
+            observed = json.loads(text)["observed"]
+            assert observed["history_requested"] is False
+            assert set(observed) == {"authority", "history_requested", "tools"}
+            assert observed["tools"] == body["tools"]
+        else:
+            assert json.loads(text)["state"] == "unavailable"
+            assert "observed" not in json.loads(text)
+    finally:
+        client.close()
 
 
 def test_compressed_payload_is_refused_before_decoding():

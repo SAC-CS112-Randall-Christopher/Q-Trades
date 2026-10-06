@@ -30,14 +30,27 @@ balanced audit. An unavailable current monitor remains unavailable even when its
 last completed audit was balanced; raw audit errors/financial projections are
 not exposed.
 
-`research_capabilities` uses `/api/research/tools`, which loads tool history and
-its configured archive before returning the static descriptions. A history or
-storage failure makes this observation explicitly unavailable; the observer does
-not replace it with a cached catalog or suppress the error. These six descriptions
+The source proposal makes `research_capabilities` request
+`/api/research/tools?include_history=false`. The API returns its current six
+descriptions with the literal marker `history_requested:false`, without opening
+the tool journal or configured archive. It omits history rows, counts, capacity
+and cursors. The observer requires that marker; an older API that ignores the
+query remains explicitly unavailable. The ordinary API route still defaults to
+history, preserves pagination and returns its existing history/storage errors.
+A cursor with catalog-only selection is invalid. These six descriptions
 are not the complete v6 strategy/feature inventory. `research_task` separately
 shows the selected offered configurations and causal feature facts frozen for
 that saved question, under its recorded contract, with current contract
 applicability reported separately.
+
+The installed connector remains the compatible protocol repair from source
+`6316129a95b21c925afb1d401780f3461052991d`, SHA256
+`68bd9500903fcd74decc4c5f6c7e4bebb77ecfb88c8d1af118bc5a045ab7fa6b`.
+It still uses the older history-coupled API at the accepted installed core
+`4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`. Its capability errors remain
+retained. Installing the catalog-only core route and updating the observer to
+this later source proposal need a separate reviewed operating-update decision.
+No cached catalog, timeout increase or repeated live request establishes repair.
 
 The response is a selected scientific projection, not a complete model packet.
 Private profiles/configuration, model paths/weights, raw packets, training/holdout
@@ -159,6 +172,21 @@ both the historical v5 and new v6 saved tasks at installed code
 The four successful tools and the capability failure are retained separately.
 These observations establish neither all-tool acceptance nor current loading in
 the Codex host.
+
+Actual discovery in a separate installed Codex 0.160.1 host now passes with the
+protocol-repaired standalone artifact above. Its threadless status response
+contained the expected server identity and all five fixed tool schemas, with no
+tools error. The existing process owner observed an empty owned Job before handle
+closure and host exit 0; protected inputs remained unchanged. The first probe
+refused a changed full Codex configuration before launch. A bounded comparison
+proved the Q-Trades entry unchanged while retaining unknown changes to other MCP
+entries and project settings. The next probe exposed the protocol rejection;
+both failures remain retained separately from the corrected discovery.
+
+This host check sent only initialization and tool-discovery messages. It created
+no chat, invoked no tool or operating API, and dispatched no provider/model call.
+Threadless `runtimeStatus:null` remains null. It does not prove that the current
+desktop chat has loaded the tools or that all five operating reads succeed.
 
 After registration, verify actual initialization/tool discovery in Codex, then
 use the tools to reopen actual saved researcher status/results. Retain that

@@ -300,6 +300,8 @@ class Observer:
         ):
             raise ValueError("Installed source identity unavailable")
         identity = values.pop("task_id", "")
+        if name == "research_capabilities":
+            values["include_history"] = False
         body = self.get(path + identity, values, deadline)
         if name == "research_task":
             observed = task_projection(body, identity)
@@ -344,8 +346,11 @@ class Observer:
                 **flat(body, "next_before"),
             }
         elif name == "research_capabilities":
+            if body.get("history_requested") is not False:
+                raise ValueError("Catalog-only observation is unavailable on this API")
             observed = {
                 "authority": "Read-only descriptions; no execution authority",
+                "history_requested": False,
                 "tools": [flat(v, "id name label description purpose") for v in body["tools"]],
             }
         else:
