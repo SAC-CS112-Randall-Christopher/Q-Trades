@@ -5,6 +5,7 @@ import copy
 import pytest
 
 from trading.lab_role_contract import (
+    CAPABILITY_VERSION,
     TOOL_REQUEST_VERSION,
     VERSION,
     Idea,
@@ -18,6 +19,7 @@ from trading.lab_role_contract import (
 )
 
 V5_HASH = "71f90342b3781819e690cf9bb8890a750e97a34b3818fb1a8d04b2324682b7f5"
+V6_HASH = "cb4d5c9435720f7c48e85ecbc582658821e01d2ad51d92274cfb54bc1a64e4e3"
 
 
 def packet():
@@ -94,6 +96,121 @@ def test_frozen_v5_defaults_and_hash_remain_exact():
     assert "unsupported_basis" not in schema("researcher")["properties"]
     assert "tool_request" not in schema("researcher")["properties"]
     assert contract_hash(TOOL_REQUEST_VERSION) != V5_HASH
+    assert TOOL_REQUEST_VERSION == "reviewed-rule-role-v6"
+    assert contract_hash(TOOL_REQUEST_VERSION) == V6_HASH
+
+
+def capability_successor(value, observed=None):
+    selected = packet() if observed is None else copy.deepcopy(observed)
+    selected["contract"] = CAPABILITY_VERSION
+    return validate("researcher", value, selected, CAPABILITY_VERSION)
+
+
+def retained_handle_denial():
+    # Redacted scientific reproduction of c887's actual v6 answer/issued packet.
+    # Original operating files stay private; this fixture makes no new inference.
+    observed = packet()
+    value = {
+        "action": "unsupported_capability",
+        "capability": None,
+        "dependency": None,
+        "evidence_ids": ["e0", "e2"],
+        "falsification": "A later closed bar with confirmed volume could enable the comparison.",
+        "mechanism": "The declared capability is a feature, not a strategy family.",
+        "rationale": "The requested comparison is not supported by the declared capability.",
+        "unsupported_basis": {"kind": "feature", "identifier": "r0"},
+        "tool_request": None,
+    }
+    return observed, value
+
+
+def test_actual_v6_handle_denial_remains_valid_historically_but_v7_refuses():
+    observed, value = retained_handle_denial()
+    original = packet_json({"packet": observed, "answer": value})
+    assert successor(value, observed).unsupported_basis.identifier == "r0"
+    with pytest.raises(ValueError, match="offered comparison handle"):
+        capability_successor(value, observed)
+    assert packet_json({"packet": observed, "answer": value}) == original
+
+
+@pytest.mark.parametrize("kind", ["feature", "strategy_family", "analysis_tool"])
+@pytest.mark.parametrize("handle", ["r0", "r1"])
+@pytest.mark.parametrize("action", ["unsupported_capability", "request_tool"])
+def test_any_offered_handle_cannot_be_denied_or_requested_under_another_kind(kind, handle, action):
+    value = answer() if action == "unsupported_capability" else tool_answer(kind, handle)
+    if action == "unsupported_capability":
+        value["unsupported_basis"] = {"kind": kind, "identifier": handle}
+    with pytest.raises(ValueError, match="offered comparison handle"):
+        capability_successor(value)
+
+
+@pytest.mark.parametrize("action", ["unsupported_capability", "request_tool"])
+def test_unoffered_feature_identifier_is_still_a_typed_v7_request_or_abstention(action):
+    value = tool_answer() if action == "request_tool" else answer()
+    if action == "unsupported_capability":
+        value["unsupported_basis"] = {"kind": "feature", "identifier": "book_resilience"}
+    parsed = capability_successor(value)
+    assert parsed.action == action
+    assert (parsed.unsupported_basis or parsed.tool_request).identifier == "book_resilience"
+
+
+def test_v7_missing_current_data_uses_the_offered_wait_and_preserves_the_source():
+    value = answer("request_data")
+    value.update(unsupported_basis=None, dependency="new_closed_bars")
+    assert capability_successor(value).dependency == "new_closed_bars"
+    with pytest.raises(ValueError, match="offered wait requirement"):
+        capability_successor(value | {"dependency": "preferred_future_outcome"})
+
+
+def test_v7_contract_is_explicit_with_same_typed_shape_and_fixed_control_instructions():
+    assert CAPABILITY_VERSION == "reviewed-rule-role-v7"
+    assert schema("researcher", CAPABILITY_VERSION) == schema("researcher", TOOL_REQUEST_VERSION)
+    assert schema("reviewer", CAPABILITY_VERSION) == schema("reviewer", VERSION)
+    assert contract_hash(CAPABILITY_VERSION) not in {V5_HASH, V6_HASH}
+    explicit = prompt("researcher", CAPABILITY_VERSION)
+    assert "reserved comparison handle" in explicit
+    assert "volume_multiple" in explicit
+    assert "Identical fixed controls do not constitute a stronger-volume comparison" in explicit
+    assert "reserved comparison handle" not in prompt("researcher", TOOL_REQUEST_VERSION)
+    observed, value = retained_handle_denial()
+    with pytest.raises(ValueError, match="exact frozen packet contract"):
+        validate("researcher", value, observed, CAPABILITY_VERSION)
+    with pytest.raises(ValueError, match="exact frozen packet contract"):
+        successor(value, observed | {"contract": CAPABILITY_VERSION})
+
+
+def test_v7_offered_fixed_volume_is_not_an_invented_proposal_handle():
+    observed = packet()
+    for capability in observed["capabilities"].values():
+        capability["fixed_comparison"] = {
+            "strategy": {"volume_multiple": "2", "exit_seconds": 2700, "progress_seconds": 600},
+            "reference": {"volume_multiple": "2", "exit_seconds": 2700, "progress_seconds": 600},
+            "parameter_selection": "server_frozen_only",
+        }
+    value = answer("propose_experiment") | {"capability": "r0", "unsupported_basis": None}
+    frozen = packet_json(observed)
+    assert capability_successor(value, observed).capability == "r0"
+    with pytest.raises(ValueError, match="Unsupported or stale rule capability"):
+        capability_successor(value | {"capability": "r0_stronger_volume"}, observed)
+    assert packet_json(observed) == frozen
+
+
+@pytest.mark.parametrize(
+    "kind,identifier",
+    [("strategy_family", "breakout"), ("feature", "atr"), ("analysis_tool", "matched_comparison")],
+)
+def test_v7_inventory_absence_rules_still_reject_implemented_tools(kind, identifier):
+    with pytest.raises(ValueError, match="already in the frozen tool inventory"):
+        capability_successor(tool_answer(kind, identifier))
+
+
+def test_v7_inventory_cannot_omit_an_offered_family_or_invent_evidence():
+    observed = packet()
+    observed["tool_inventory"]["strategy_family"].remove("range_reversion")
+    with pytest.raises(ValueError, match="omits an offered strategy family"):
+        capability_successor(tool_answer(), observed)
+    with pytest.raises(ValueError, match="evidence handle"):
+        capability_successor(tool_answer() | {"evidence_ids": ["invented"]})
 
 
 def test_retained_v5_adverse_answer_is_not_regraded_or_rewritten():

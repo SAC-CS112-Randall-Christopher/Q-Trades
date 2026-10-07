@@ -38,7 +38,7 @@ and cursors. The observer requires that marker; an older API that ignores the
 query remains explicitly unavailable. The ordinary API route still defaults to
 history, preserves pagination and returns its existing history/storage errors.
 A cursor with catalog-only selection is invalid. These six descriptions
-are not the complete v6 strategy/feature inventory. `research_task` separately
+are not the complete versioned strategy/feature inventory. `research_task` separately
 shows the selected offered configurations and causal feature facts frozen for
 that saved question, under its recorded contract, with current contract
 applicability reported separately.
@@ -46,10 +46,12 @@ applicability reported separately.
 The installed connector remains the compatible protocol repair from source
 `6316129a95b21c925afb1d401780f3461052991d`, SHA256
 `68bd9500903fcd74decc4c5f6c7e4bebb77ecfb88c8d1af118bc5a045ab7fa6b`.
-It still uses the older history-coupled API at the accepted installed core
-`4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`. Its capability errors remain
-retained. Installing the catalog-only core route and updating the observer to
-this later source proposal need a separate reviewed operating-update decision.
+Its retained operating observations used the older history-coupled API at core
+`4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`. The separately approved paper service
+now uses `d36a45a7bee7c79e02cb06ad4fee112b330f5c07`; this source reconciliation
+retains the earlier capability errors and makes no fresh operating acceptance
+claim. Installing the catalog-only core route and updating the observer to this
+later source proposal need a separate reviewed operating-update decision.
 No cached catalog, timeout increase or repeated live request establishes repair.
 
 The response is a selected scientific projection, not a complete model packet.

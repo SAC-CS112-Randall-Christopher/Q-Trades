@@ -186,6 +186,10 @@ class ResearchActors:
         task = self.worker.get(task_id)
         self.worker._current(task)
         role, packet = self.worker._packet(task)
+        if task["context"].get("contract", VERSION) != VERSION or (
+            packet.get("contract", VERSION) != VERSION
+        ):
+            raise ValueError("Scoped actor requires its reviewed v5 role contract")
         if (
             role != "researcher"
             or task["stage"] not in {"idea", "followup"}

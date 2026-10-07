@@ -23,6 +23,13 @@ type RoleState = {
     pending_outcomes: number;
     queued: number;
   };
+  question_selection?: {
+    policy: "evidence-question-selection-v1" | null;
+    state: "selected" | "waiting" | "disabled" | "unavailable";
+    reason: string;
+    task?: string;
+    evidence?: unknown;
+  };
   supervision?: { phase: string; status: string; reason: string | null; retry_at: number; updated: number }[];
   readiness: {
     qualification_valid?: boolean; runtime_available?: boolean; ready?: boolean;
@@ -49,6 +56,31 @@ type ToolRequest = {
   required_inputs: string[];
   acceptance_checks: string[];
 };
+type QuestionSelection = {
+  authority: {
+    question_policy: string;
+    grant_id: string;
+    grant_sha: string;
+    profile_sha: string;
+    contract_version: string;
+    contract_sha: string;
+  };
+  scope_sha: string;
+  selection_sha?: string;
+  method: "r1";
+  horizon: string;
+  source_sha: string;
+  source_start: number;
+  source_end: number;
+  source_count: number;
+  source_basis?: string;
+  strategy_sha: string;
+  reference_sha: string;
+  lesson?: { id: string; sha256: string } | null;
+  reason: string;
+  falsification: string;
+  limitations: string[];
+};
 type Task = {
   id: string; stage: string; status: string; updated: number; reason: string | null;
   contract_applicability?: {
@@ -58,7 +90,7 @@ type Task = {
     selected_contract: string | null;
   };
   execution: {kind: string; actor?: string; lease_until: number | null};
-  context: { execution_mode?: string; experimental?: boolean; question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
+  context: { execution_mode?: string; experimental?: boolean; question_selection?: QuestionSelection; question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
   proposal: { request_id: string; kind: string; strategy: {family: string; lookback: number; entry_filter?: {kind: string; horizon_seconds: number; marginal_daily_usd: string; fallback: string; artifact: {sha256: string}}}; reference: { family: string; lookback: number } } | null;
   evaluation: { input_count: number; evaluated_at: number; feature: { eligible?: boolean; reason?: string }; replay: string; detail_reference?: string } | null;
   result: { action?: string; tool_request?: ToolRequest | null; evidence_ids?: string[]; rationale?: string; falsification?: string; proposal_id?: string; trial_id?: string; review?: { action: string; rationale: string }; outcome?: {body: {outcome: string; reason: string; window_start: number; window_end: number; available_at: number; delta_usd: string | null; net_after_operating_usd: {candidate: string; reference: string}; qualification: string}}; followup?: { action: string; rationale: string; dependency: string | null } } | null;
@@ -82,6 +114,10 @@ const stages: Record<string, string> = { idea: "Model investigation", evaluate: 
 const activityLabels: Record<NonNullable<RoleState["activity"]>["state"], string> = {
   running: "Working on a saved question", waiting: "Waiting", queued: "Work queued",
   idle: "Idle", paused: "Paused", unavailable: "Unavailable",
+};
+const selectionLabels: Record<NonNullable<RoleState["question_selection"]>["state"], string> = {
+  selected: "Saved evidence-driven question", waiting: "Waiting for eligible evidence or prior work",
+  disabled: "Automatic question selection disabled", unavailable: "Question selection unavailable",
 };
 const toolKinds: Record<ToolRequest["kind"], string> = {
   strategy_family: "Strategy method", feature: "Feature", analysis_tool: "Analysis tool",
@@ -266,6 +302,13 @@ export function RoleResearchPanel() {
         <p>{statusError ? "Last observed pending work" : "Pending work"}: {state.activity.pending_tools} tool requests · {state.activity.pending_data} data dependencies · {state.activity.pending_outcomes} comparison outcomes · {state.activity.queued} queued questions. Checked {stamp(state.activity.checked_at)}.</p>
       </> : <p role="status">{!state && !statusError ? "Loading actual research activity…" : "Current research activity is unavailable."}</p>}
     </section>
+    <section aria-label="Evidence-driven question selection">
+      {state?.question_selection ? <>
+        <p role="status">{statusError ? "Last observed question selection" : "Current question selection"}: <strong>{selectionLabels[state.question_selection.state]}</strong> · {state.question_selection.reason}</p>
+        {state.question_selection.task && <p><button type="button" onClick={() => open(state.question_selection!.task!)}>Open the selected saved question</button></p>}
+        {state.question_selection.evidence != null && <details><summary>{statusError ? "Last observed selection evidence" : "Selection evidence"}</summary><pre>{JSON.stringify(state.question_selection.evidence, null, 2)}</pre></details>}
+      </> : <p role="status">{!state && !statusError ? "Loading question selection status…" : "Automatic question selection status is unavailable."}</p>}
+    </section>
     {statusError && state && statusObservedAt !== null && <p>Retained observation from {stamp(statusObservedAt)}: research policy {state.enabled ? "enabled" : "disabled"} · declared profile qualification {state.readiness.qualification_valid ? "verified" : "unverified"}. Reconnect before treating these observations as current.</p>}
     {state?.readiness.model && <p>{statusError ? "Last observed model" : "Model"} {state.readiness.model}</p>}
     {state?.readiness.reason && <p>{statusError ? "Last observed reason: " : ""}{state.readiness.reason}</p>}
@@ -309,6 +352,17 @@ export function RoleResearchPanel() {
       <p>{statusError || taskError ? "Last observed ownership" : "Current ownership"}: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
       {task.reason && <p>{task.reason}</p>}
       {task.contract_applicability && task.contract_applicability.state !== "matching" && <p role="status" aria-label="Saved question format applicability">{statusError || taskError ? "Last observed research format" : "Current research format"}: <strong>{task.contract_applicability.state === "different" ? "Saved question inactive for the selected format" : "Current format unknown"}</strong>. {task.contract_applicability.reason}</p>}
+      {task.context.question_selection && <section aria-label="Why this research question was selected">
+        <h4>Evidence-driven question · experimental paper research</h4>
+        <p>This saved investigation is unqualified research. Its selection does not establish strategy value or authorize promotion.</p>
+        <p><strong>Why this question:</strong> {task.context.question_selection.reason}</p>
+        <p><strong>What would disprove the idea:</strong> {task.context.question_selection.falsification}</p>
+        <p><strong>Captured source:</strong> {task.context.question_selection.source_count} closed bars · {stamp(task.context.question_selection.source_start)} to {stamp(task.context.question_selection.source_end)} · {task.context.question_selection.horizon} horizon.</p>
+        {task.context.question_selection.source_basis && <p><strong>Recorded source basis:</strong> {task.context.question_selection.source_basis}</p>}
+        <p><strong>Prior lesson reference:</strong> {task.context.question_selection.lesson?.id ?? (task.context.question_selection.lesson === null ? "No prior lesson used for this selection." : "Unavailable in this saved selection.")}</p>
+        {!!task.context.question_selection.limitations.length && <><h5>Uncertainties and limits</h5><ul>{task.context.question_selection.limitations.map((limit, index) => <li key={index}>{limit}</li>)}</ul></>}
+        <details><summary>Saved selection provenance and frozen comparison identities</summary><pre>{JSON.stringify(task.context.question_selection, null, 2)}</pre></details>
+      </section>}
       {task.result?.action === "request_tool" && task.result.tool_request && <section aria-label="Requested research tool">
         <h4>Tool requested · pending implementation review</h4>
         <p><strong>{toolKinds[task.result.tool_request.kind]}:</strong> {task.result.tool_request.identifier}</p>

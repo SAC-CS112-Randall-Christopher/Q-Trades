@@ -1,5 +1,12 @@
 # Research tool requests and evidence consistency — issue #66
 
+The v6 delivery described below was subsequently installed through approved
+PR #72 at `4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`, and its explicit v2 grant
+was selected. Its actual adverse result and the source-only v7 follow-up are
+recorded in [Capability semantics](RESEARCH_CAPABILITY_SEMANTICS.md). The
+disabled/unselected profile and operating-decision text below describes the
+earlier source proposal; it is historical, not current installation status.
+
 Chris asked for autonomous, evidence-driven strategy research alongside the
 independent financial engine, including requests for useful tools to be
 implemented. The first installed pilot answer at `9b6fe7011f2ddf739a000d8708ed685c2b3783e5`
