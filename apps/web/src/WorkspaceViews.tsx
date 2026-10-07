@@ -954,8 +954,8 @@ function AccountInspector({
         Clearing an entry pause does not clear a global pause, hard stop or
         valuation block. Funding and all earlier losses are preserved.
       </p>
-      <PaperCampaignJournal key={name} account={name} />
-      {isOriginalAccount(name) && <OriginalStrategyPanel key={name} name={name} account={a} unavailable={unavailable} />}
+      <PaperCampaignJournal key={`journal-${name}`} account={name} />
+      {isOriginalAccount(name) && <OriginalStrategyPanel key={`strategy-${name}`} name={name} account={a} unavailable={unavailable} />}
     </section>
   );
 }
