@@ -187,7 +187,7 @@ class CandleStudyRequest(BaseModel):
 
 class PatternControl(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    action: Literal["prepare", "start", "pause"]
+    action: Literal["prepare", "start", "pause", "daily_enable", "daily_pause"]
     request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,64}$")
     symbols: list[str] = Field(default_factory=list, max_length=2000)
     campaign_id: str | None = Field(default=None, pattern=r"^patterns-[a-f0-9]{24}$")
@@ -1851,6 +1851,24 @@ def create_app(
             return await asyncio.to_thread(scanner_owner(request).campaigns)
         except (sqlite3.Error, OSError, ValueError) as exc:
             raise HTTPException(503, "Retained campaign identities unavailable") from exc
+
+    @app.get("/api/research/pattern-scanner/daily/shortlists")
+    async def scanner_daily_pages(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(scanner_owner(request).daily_pages, before)
+        except (sqlite3.Error, OSError, ValueError) as exc:
+            raise HTTPException(503, "Saved daily shortlist history unavailable") from exc
+
+    @app.get("/api/research/pattern-scanner/daily/shortlists/{identity}")
+    async def scanner_daily_snapshot(request: Request, identity: str) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(scanner_owner(request).daily_snapshot, identity)
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (sqlite3.Error, OSError) as exc:
+            raise HTTPException(503, "Exact daily shortlist unavailable") from exc
 
     @app.post("/api/research/pattern-scanner/control")
     async def scanner_control(command: PatternControl, request: Request) -> dict[str, Any]:

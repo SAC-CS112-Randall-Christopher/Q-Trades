@@ -5,8 +5,10 @@ created here. Every strict confirmed pivot is retained; pagination is a view.
 """
 
 import asyncio
+import copy
 import json
 import math
+import re
 import time
 from collections import deque
 from collections.abc import Callable
@@ -25,6 +27,18 @@ from trading.station import cost_hurdle
 from trading.venue import FeedError, PublicVenue
 
 VERSION = "year-pattern-scanner-v1"
+DAILY_VERSION = "year-pattern-scanner-v2"
+DAILY_POLICY = {
+    "version": "daily-pattern-research-v1",
+    "cadence": "UTC calendar day; no missed-day dispatch burst",
+    "picks": 5,
+    "new_markets_per_day": 5,
+    "evidence_window_seconds": 86400,
+    "ranking": "At least one prepared native frame with recorded volume-confirmed causal "
+    "breakout/retest/bounce first; analyzed markets next; pending history by observed "
+    "USD liquidity. Quote volume descending, spread ascending and symbol break ties.",
+    "limitations": "Research priority, not win probability or independent pattern samples.",
+}
 YEAR_MS = 365 * 86400000
 MARKET_LIMIT = 2000
 PAGE_ROWS = 1000
@@ -165,18 +179,48 @@ class PatternScanner:
                     BEFORE DELETE ON pattern_levels
                     BEGIN SELECT RAISE(ABORT,'Confirmed levels immutable'); END;
             """)
-            # A process restart is observation recovery, never operating activation.
+            registry.db.executescript("""
+                CREATE TABLE IF NOT EXISTS pattern_enrollments(
+                    campaign TEXT,symbol TEXT,body TEXT NOT NULL,
+                    PRIMARY KEY(campaign,symbol));
+                CREATE TABLE IF NOT EXISTS pattern_daily_state(
+                    campaign TEXT PRIMARY KEY,body TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS pattern_daily_days(
+                    seq INTEGER PRIMARY KEY,id TEXT UNIQUE NOT NULL,campaign TEXT,
+                    day INTEGER,body TEXT NOT NULL,UNIQUE(campaign,day));
+                CREATE TABLE IF NOT EXISTS pattern_daily_evidence(
+                    campaign TEXT,symbol TEXT,timeframe TEXT,seq INTEGER,body TEXT NOT NULL,
+                    PRIMARY KEY(campaign,symbol,timeframe));
+                CREATE TRIGGER IF NOT EXISTS pattern_enrollment_frozen_update
+                    BEFORE UPDATE ON pattern_enrollments
+                    BEGIN SELECT RAISE(ABORT,'Enrolled source scope immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS pattern_enrollment_frozen_delete
+                    BEFORE DELETE ON pattern_enrollments
+                    BEGIN SELECT RAISE(ABORT,'Enrolled source scope retained'); END;
+                CREATE TRIGGER IF NOT EXISTS pattern_daily_frozen_update
+                    BEFORE UPDATE ON pattern_daily_days
+                    BEGIN SELECT RAISE(ABORT,'Daily selection immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS pattern_daily_frozen_delete
+                    BEFORE DELETE ON pattern_daily_days
+                    BEGIN SELECT RAISE(ABORT,'Daily selection retained'); END;
+            """)
+            # Manual v1 never resumes implicitly. Only the persisted v2 daily
+            # opt-in survives, still subject to frozen source and admission.
             registry.db.execute(
-                "UPDATE pattern_campaigns SET enabled=0,revision=revision+1 WHERE enabled=1"
+                "UPDATE pattern_campaigns SET enabled=0,revision=revision+1 WHERE enabled=1 "
+                "AND (json_extract(body,'$.version') IS NULL OR "
+                "json_extract(body,'$.version')!=?)",
+                (DAILY_VERSION,),
             )
 
-    def roster(self, now: float) -> dict[str, Any]:
+    def roster(self, now: float, *, full: bool = False) -> dict[str, Any]:
         universe = getattr(self.paper, "universe", None)
         if universe is None:
             return {"available": False, "observed_at": None, "rows": [], "eligible": 0, "total": 0}
         valid = 0 <= now - universe.scanned_at <= 120 and 0 <= now - universe.metadata_at <= 900
         rows = [
             {
+                **(copy.deepcopy(row) if full else {}),
                 "symbol": row["symbol"],
                 "eligible": valid and row.get("eligible") is True,
                 "reason": row.get("reason") if valid else "Current market screen unavailable",
@@ -185,13 +229,16 @@ class PatternScanner:
             }
             for row in universe.rows
         ]
-        return {
+        result = {
             "available": valid,
             "observed_at": universe.scanned_at,
             "rows": rows,
             "total": len(rows),
             "eligible": sum(row["eligible"] for row in rows),
         }
+        if full:
+            result.update(metadata_at=universe.metadata_at, policy=universe.snapshot()["policy"])
+        return result
 
     def _campaign(self) -> Any:
         return self.registry.db.execute(
@@ -213,6 +260,8 @@ class PatternScanner:
                 return receipt
             action = command["action"]
             current = self._campaign()
+            if action in {"daily_enable", "daily_pause"}:
+                return self._daily_control(command, current, now)
             if action == "prepare":
                 self._admission(WRITE_ESTIMATE + len(command.get("symbols", [])) * 8192)
                 if current and current["enabled"]:
@@ -304,6 +353,8 @@ class PatternScanner:
                 if not current or current["id"] != command.get("campaign_id"):
                     raise ValueError("Exact current campaign identity is required")
                 campaign, revision = current["id"], current["revision"] + 1
+                if json.loads(current["body"]).get("version") == DAILY_VERSION:
+                    raise ValueError("Use explicit daily controls for this daily-owned campaign")
                 if action == "start" and command.get("expected_revision") != current["revision"]:
                     raise ValueError(
                         "Preparation changed; reopen its current revision before Start"
@@ -346,6 +397,556 @@ class PatternScanner:
                 "SELECT receipt FROM pattern_controls WHERE request_id=?", (request_id,)
             ).fetchone()
             return json.loads(row[0]) if row else None
+
+    def _daily_control(self, command: dict[str, Any], current: Any, now: float) -> dict[str, Any]:
+        previous_campaign_id = current["id"] if current else None
+        if command.get("symbols"):
+            raise ValueError(
+                "Daily enrollment uses the captured eligible roster, not manual symbols"
+            )
+        action = command["action"]
+        daily = current and json.loads(current["body"]).get("version") == DAILY_VERSION
+        if action == "daily_pause":
+            if not daily or command.get("campaign_id") != current["id"]:
+                raise ValueError("Exact current daily campaign required")
+        else:
+            if type(command.get("expected_revision")) is not int:
+                raise ValueError("Exact integer revision required before daily enable")
+            if command.get("expected_revision") != (current["revision"] if current else 0):
+                raise ValueError("Preparation changed; reopen its revision before daily enable")
+            if current and command.get("campaign_id") != current["id"]:
+                raise ValueError("Exact current campaign required before daily enable")
+            if self.plan is None:
+                raise ValueError("Existing owned research storage is required")
+            self._admission()
+            if daily:
+                frozen = json.loads(current["body"])
+                if frozen["implementation_sha256"] != self.implementation_sha256 or frozen[
+                    "storage_plan_sha256"
+                ] != digest(self.plan.model_dump()):
+                    raise ValueError("Frozen daily source/storage changed; no automatic adoption")
+            else:
+                if current and current["enabled"]:
+                    raise ValueError(
+                        "Pause the existing preparation before enabling daily analysis"
+                    )
+                if (
+                    self.registry.db.execute("SELECT count(*) FROM pattern_campaigns").fetchone()[0]
+                    >= 32
+                ):
+                    raise ValueError("Retained preparation capacity reached; history preserved")
+                roster = self.roster(now, full=True)
+                if not roster["available"]:
+                    raise ValueError("Fresh eligible USD roster required for daily policy")
+                self._admission()
+                campaign = "patterns-" + digest(command)[:24]
+                body = {
+                    "id": campaign,
+                    "version": DAILY_VERSION,
+                    "symbols": [],
+                    "timeframes": list(INTERVALS),
+                    "requested_days": 365,
+                    "roster": roster,
+                    "created_at": now,
+                    "scope_mode": "immutable_daily_enrollments",
+                    "daily_policy": DAILY_POLICY,
+                    "policy_sha256": digest(DAILY_POLICY),
+                    "implementation_sha256": self.implementation_sha256,
+                    "storage_plan_sha256": digest(self.plan.model_dump()),
+                    "limitations": [
+                        DAILY_POLICY["limitations"],
+                        "New markets enroll once; daily picks do not imply "
+                        "completed year coverage.",
+                    ],
+                }
+                self.registry.db.execute(
+                    "INSERT INTO pattern_campaigns VALUES(?,?,0,0,?)",
+                    (campaign, encoded(body), now),
+                )
+                self.registry.db.execute(
+                    "INSERT INTO pattern_daily_state VALUES(?,?)",
+                    (campaign, encoded({"active": None})),
+                )
+                current = self._campaign()
+        campaign, revision = current["id"], current["revision"] + 1
+        self.registry.db.execute(
+            "UPDATE pattern_campaigns SET enabled=?,revision=? WHERE id=?",
+            (int(action == "daily_enable"), revision, campaign),
+        )
+        receipt = {
+            "request_id": command["request_id"],
+            "action": action,
+            "campaign_id": campaign,
+            "previous_campaign_id": previous_campaign_id,
+            "revision": revision,
+            "applied": True,
+            "applied_at": now,
+            "policy": DAILY_POLICY["version"],
+        }
+        self.registry.db.execute(
+            "INSERT INTO pattern_controls VALUES(?,?,?)",
+            (command["request_id"], encoded(command), encoded(receipt)),
+        )
+        return receipt
+
+    def _enroll(self, campaign: str, symbol: str, roster: dict[str, Any], now: float) -> None:
+        if self.registry.db.execute(
+            "SELECT 1 FROM pattern_enrollments WHERE campaign=? AND symbol=?", (campaign, symbol)
+        ).fetchone():
+            return
+        if (
+            self.registry.db.execute(
+                "SELECT count(*) FROM pattern_enrollments WHERE campaign=?", (campaign,)
+            ).fetchone()[0]
+            >= MARKET_LIMIT
+        ):
+            raise ValueError("Daily enrolled market capacity reached; history retained")
+        declaration = {
+            "symbol": symbol,
+            "enrolled_at": now,
+            "roster": roster,
+            "implementation_sha256": self.implementation_sha256,
+            "timeframes": list(INTERVALS),
+            "requested_days": 365,
+        }
+        self.registry.db.execute(
+            "INSERT INTO pattern_enrollments VALUES(?,?,?)",
+            (campaign, symbol, encoded(declaration)),
+        )
+        for frame, seconds in INTERVALS.items():
+            cutoff = int(now * 1000) // (seconds * 1000) * seconds * 1000
+            start = cutoff - YEAR_MS
+            state = {
+                "symbol": symbol,
+                "timeframe": frame,
+                "requested_start_ms": start,
+                "cutoff_ms": cutoff,
+                "cursor_ms": start,
+                "expected_bars": YEAR_MS // (seconds * 1000),
+                "observed_bars": 0,
+                "missing_bars": 0,
+                "pages": 0,
+                "status": "queued",
+                "error": None,
+                "retry_at": 0,
+                "buffer": [],
+                "source_sha256": digest([]),
+                "gap_count": 0,
+                "segment": 0,
+                "latest_close_ms": None,
+                "request_attempts": 0,
+                "attempts_at_cursor": 0,
+                "buffer_refs": [],
+            }
+            self.registry.db.execute(
+                "INSERT INTO pattern_progress VALUES(?,?,?,?,'queued',?,?,0,0)",
+                (campaign, symbol, frame, encoded(state), start, cutoff),
+            )
+
+    @staticmethod
+    def _priority(row: dict[str, Any]) -> tuple[Any, ...]:
+        return (
+            0
+            if row["basis"] == "recognized_setup"
+            else 1
+            if row["basis"] == "analyzed_no_setup"
+            else 2,
+            -Decimal(row["quote_volume"]),
+            Decimal(row["spread_bps"]),
+            row["symbol"],
+        )
+
+    def _daily_inputs(
+        self, campaign: str, symbols: list[str]
+    ) -> tuple[dict[str, dict[str, Any]], dict[str, list[Any]], set[str]]:
+        """Three indexed reads for at most one twenty-market bookkeeping slice."""
+        if not symbols:
+            return {}, {}, set()
+        if len(symbols) > BAR_WORK:
+            raise ValueError("Daily input slice exceeds the existing work bound")
+        placeholders = ",".join("?" for _ in symbols)
+        args = (campaign, *symbols)
+        states: dict[str, dict[str, Any]] = {}
+        for saved in self.registry.db.execute(
+            "SELECT symbol,timeframe,body FROM pattern_progress WHERE campaign=? "
+            f"AND symbol IN ({placeholders})",
+            args,
+        ):
+            states.setdefault(saved["symbol"], {})[saved["timeframe"]] = json.loads(saved["body"])
+        evidence: dict[str, list[Any]] = {}
+        for saved in self.registry.db.execute(
+            "SELECT d.symbol,d.timeframe,d.seq,d.body,e.body AS original,e.kind FROM "
+            "pattern_daily_evidence d LEFT JOIN pattern_events e ON e.seq=d.seq "
+            "AND e.campaign=d.campaign AND e.symbol=d.symbol AND e.timeframe=d.timeframe "
+            f"WHERE d.campaign=? AND d.symbol IN ({placeholders})",
+            args,
+        ):
+            evidence.setdefault(saved["symbol"], []).append(saved)
+        enrolled = {
+            saved[0]
+            for saved in self.registry.db.execute(
+                "SELECT symbol FROM pattern_enrollments WHERE campaign=? "
+                f"AND symbol IN ({placeholders})",
+                args,
+            )
+        }
+        return states, evidence, enrolled
+
+    def _daily_candidate(
+        self,
+        campaign: str,
+        row: dict[str, Any],
+        as_of: float,
+        inputs: tuple[dict[str, dict[str, Any]], dict[str, list[Any]], set[str]] | None = None,
+    ) -> dict[str, Any]:
+        symbol = row["symbol"]
+        inputs = self._daily_inputs(campaign, [symbol]) if inputs is None else inputs
+        states = inputs[0].get(symbol, {})
+        coverage = []
+        for frame in INTERVALS:
+            state = states.get(frame)
+            coverage.append(
+                {
+                    "timeframe": frame,
+                    "status": state["status"] if state else "unprepared",
+                    **(
+                        {
+                            key: state[key]
+                            for key in (
+                                "requested_start_ms",
+                                "cutoff_ms",
+                                "cursor_ms",
+                                "expected_bars",
+                                "observed_bars",
+                                "missing_bars",
+                                "pages",
+                                "gap_count",
+                                "latest_close_ms",
+                                "source_sha256",
+                                "error",
+                                "request_attempts",
+                            )
+                        }
+                        if state
+                        else {}
+                    ),
+                    "progress_sha256": digest(state) if state else None,
+                }
+            )
+        completed = {
+            frame
+            for frame, s in states.items()
+            if s["cursor_ms"] >= s["cutoff_ms"]
+            and s["latest_close_ms"] is not None
+            and s["status"] != "source_blocked"
+        }
+        complete = bool(completed)
+        evidence = []
+        for saved in inputs[1].get(symbol, []):
+            body = json.loads(saved["body"])
+            if saved["body"] != saved["original"]:
+                raise ValueError("Daily evidence differs from its immutable recognized event")
+            if (
+                saved["timeframe"] in completed
+                and body["volume_confirmed"] is True
+                and as_of * 1000 - 86400000 <= body["bar_close_ms"] <= as_of * 1000
+                and body["observed_at"] <= as_of
+            ):
+                evidence.append(
+                    {
+                        "kind": saved["kind"],
+                        "seq": saved["seq"],
+                        "timeframe": saved["timeframe"],
+                        "body": body,
+                    }
+                )
+        basis = (
+            "recognized_setup"
+            if evidence
+            else "analyzed_no_setup"
+            if complete
+            else "history_pending"
+        )
+        return {
+            "symbol": symbol,
+            "campaign_id": campaign,
+            "basis": basis,
+            "reason": "Original volume-confirmed causal setup in a prepared frame; no outcome claim"
+            if evidence
+            else "At least one frame prepared; no qualifying recorded recent setup"
+            if complete
+            else "History incomplete; observed USD liquidity research priority only",
+            "quote_volume": row["quote_volume"],
+            "spread_bps": row["spread_bps"],
+            "trades": row["trades"],
+            "coverage": coverage,
+            "evidence": evidence,
+            "observed_eligible": True,
+            "prepared_timeframes": sorted(completed),
+        }
+
+    def _daily_work(self, now: float) -> bool:
+        """One bounded bookkeeping slice; acquisition remains the existing scanner owner."""
+        deadline = time.perf_counter() + WORK_SECONDS
+        with self.registry.transaction():
+            current = self._campaign()
+            if not current or not current["enabled"]:
+                return False
+            campaign = current["id"]
+            frozen = json.loads(current["body"])
+            if frozen.get("version") != DAILY_VERSION:
+                return False
+            if (
+                self.plan is None
+                or frozen["implementation_sha256"] != self.implementation_sha256
+                or frozen["storage_plan_sha256"] != digest(self.plan.model_dump())
+            ):
+                self.reason = "Frozen daily source/storage changed; explicit new policy required"
+                return False
+            if not self._allowed():
+                self.reason = (
+                    "Daily analysis yielding to protected paper/resource/storage admission"
+                )
+                return False
+            self._admission()
+            state = json.loads(
+                self.registry.db.execute(
+                    "SELECT body FROM pattern_daily_state WHERE campaign=?", (campaign,)
+                ).fetchone()[0]
+            )
+            active = state["active"]
+            day = int(now // 86400)
+            if active is None:
+                if self.registry.db.execute(
+                    "SELECT 1 FROM pattern_daily_days WHERE campaign=? AND day=?", (campaign, day)
+                ).fetchone():
+                    return False
+                roster = self.roster(now, full=True)
+                if not roster["available"]:
+                    self.reason = "Daily selection awaiting fresh current USD roster"
+                    return False
+                active = {
+                    "day": day,
+                    "started_at": now,
+                    "roster": roster,
+                    "index": 0,
+                    "picks": [],
+                    "new": [],
+                    "eligible": 0,
+                    "analyzed": 0,
+                    "pending": 0,
+                    "excluded": 0,
+                }
+                latest = self.registry.db.execute(
+                    "SELECT day FROM pattern_daily_days WHERE campaign=? ORDER BY seq DESC LIMIT 1",
+                    (campaign,),
+                ).fetchone()
+                active["missed_days"] = max(0, day - latest["day"] - 1) if latest else 0
+                state["active"] = active
+            rows = active["roster"]["rows"]
+            expired = active["day"] != day
+            inputs = self._daily_inputs(
+                campaign,
+                [r["symbol"] for r in rows[active["index"] : active["index"] + BAR_WORK]]
+                if not expired
+                else [],
+            )
+            for _ in range(0 if expired else BAR_WORK):
+                if active["index"] >= len(rows) or time.perf_counter() >= deadline:
+                    break
+                if not self._allowed():
+                    self.reason = "Daily selection yielding to protected paper admission"
+                    break
+                row = rows[active["index"]]
+                active["index"] += 1
+                if row["eligible"] is not True:
+                    active["excluded"] += 1
+                    continue
+                candidate = self._daily_candidate(campaign, row, now, inputs)
+                candidate["captured_at"] = now
+                active["eligible"] += 1
+                active["pending" if candidate["basis"] == "history_pending" else "analyzed"] += 1
+                active["picks"] = sorted([*active["picks"], candidate], key=self._priority)[:5]
+                if row["symbol"] not in inputs[2]:
+                    active["new"] = sorted([*active["new"], candidate], key=self._priority)[:5]
+            if active["index"] >= len(rows) or expired:
+                if not self._allowed():
+                    self.reason = "Daily publication yielding to protected paper admission"
+                    self.registry.db.execute(
+                        "UPDATE pattern_daily_state SET body=? WHERE campaign=?",
+                        (encoded(state), campaign),
+                    )
+                    return True
+                # Recheck dispatch eligibility without overwriting the saved screen.
+                current_roster = self.roster(now, full=True)
+                eligible = {r["symbol"] for r in current_roster["rows"] if r["eligible"] is True}
+                enrolled = []
+                if not expired and current_roster["available"]:
+                    for candidate in active["new"]:
+                        if candidate["symbol"] in eligible:
+                            self._enroll(
+                                campaign,
+                                candidate["symbol"],
+                                {
+                                    **current_roster,
+                                    "rows": [
+                                        r
+                                        for r in current_roster["rows"]
+                                        if r["symbol"] == candidate["symbol"]
+                                    ],
+                                },
+                                now,
+                            )
+                            enrolled.append(candidate["symbol"])
+                selected = [
+                    p
+                    for p in active["picks"]
+                    if current_roster["available"] and p["symbol"] in eligible
+                ]
+                picks = [{**p, "rank": i + 1} for i, p in enumerate(selected)]
+                snapshot = {
+                    "id": "daily-" + digest([campaign, active["day"], DAILY_POLICY])[:24],
+                    "campaign_id": campaign,
+                    "utc_day": active["day"],
+                    "generated_at": now,
+                    "as_of": now,
+                    "policy": DAILY_POLICY,
+                    "policy_sha256": digest(DAILY_POLICY),
+                    "status": "incomplete"
+                    if expired or not current_roster["available"]
+                    else "complete",
+                    "missed_days": active["missed_days"],
+                    "implementation_sha256": self.implementation_sha256,
+                    "roster": active["roster"],
+                    "enrollment_roster": current_roster,
+                    "pool": {
+                        **{k: active[k] for k in ("eligible", "analyzed", "pending", "excluded")},
+                        "scored": active["index"],
+                        "total": len(rows),
+                    },
+                    "picks": picks,
+                    "enrolled_today": enrolled,
+                    "limitations": [
+                        DAILY_POLICY["limitations"],
+                        "Per-market captured_at/progress "
+                        "are distinct observations; not a simultaneous whole-universe comparison.",
+                        "Historical discovery is training evidence, "
+                        "not prospective trading performance.",
+                    ],
+                }
+                self.registry.db.execute(
+                    "INSERT INTO pattern_daily_days(id,campaign,day,body) VALUES(?,?,?,?)",
+                    (snapshot["id"], campaign, active["day"], encoded(snapshot)),
+                )
+                state["active"] = None
+            self.registry.db.execute(
+                "UPDATE pattern_daily_state SET body=? WHERE campaign=?", (encoded(state), campaign)
+            )
+            return True
+
+    def daily_snapshot(self, identity: str) -> dict[str, Any]:
+        if not re.fullmatch(r"daily-[a-f0-9]{24}", identity):
+            raise ValueError("Invalid saved daily shortlist identity")
+        with self.registry.lock:
+            row = self.registry.db.execute(
+                "SELECT body FROM pattern_daily_days WHERE id=?", (identity,)
+            ).fetchone()
+            if row is None:
+                raise LookupError("Saved daily shortlist unavailable")
+            result: dict[str, Any] = json.loads(row[0])
+            return result
+
+    def daily_pages(self, before: int = 0) -> dict[str, Any]:
+        if type(before) is not int or before < 0:
+            raise ValueError("Invalid saved daily page cursor")
+        with self.registry.lock:
+            rows = self.registry.db.execute(
+                "SELECT seq,body FROM pattern_daily_days WHERE "
+                "(?=0 OR seq<?) ORDER BY seq DESC LIMIT 101",
+                (before, before),
+            ).fetchall()
+            return {
+                "rows": [
+                    {
+                        "seq": r["seq"],
+                        **{
+                            k: json.loads(r["body"])[k]
+                            for k in ("id", "campaign_id", "utc_day", "generated_at", "picks")
+                        },
+                    }
+                    for r in rows[:100]
+                ],
+                "total": self.registry.db.execute(
+                    "SELECT count(*) FROM pattern_daily_days"
+                ).fetchone()[0],
+                "next_before": rows[99]["seq"] if len(rows) > 100 else None,
+            }
+
+    def _daily_status(self, row: Any, now: float) -> dict[str, Any]:
+        daily = bool(row and json.loads(row["body"]).get("version") == DAILY_VERSION)
+        current_roster = self.roster(now, full=True)
+        result: dict[str, Any] = {
+            "policy": DAILY_POLICY["version"],
+            "enabled": False,
+            "state": "disabled",
+            "reason": None,
+            "next_due_at": None,
+            "active_day": None,
+            "latest_id": None,
+            "campaign_id": row["id"] if daily else None,
+            "current_roster": current_roster,
+        }
+        if not daily:
+            return result
+        state = json.loads(
+            self.registry.db.execute(
+                "SELECT body FROM pattern_daily_state WHERE campaign=?", (row["id"],)
+            ).fetchone()[0]
+        )
+        latest = self.registry.db.execute(
+            "SELECT id,day FROM pattern_daily_days WHERE campaign=? ORDER BY seq DESC LIMIT 1",
+            (row["id"],),
+        ).fetchone()
+        frozen = json.loads(row["body"])
+        valid = (
+            self.plan is not None
+            and frozen["implementation_sha256"] == self.implementation_sha256
+            and frozen["storage_plan_sha256"] == digest(self.plan.model_dump())
+        )
+        enabled = bool(row["enabled"])
+        admitted = self._allowed()
+        result.update(
+            enabled=enabled,
+            latest_id=latest["id"] if latest else None,
+            active_day=state["active"]["day"] if state["active"] else None,
+            next_due_at=float((latest["day"] + 1) * 86400) if latest else now,
+            state="disabled"
+            if not enabled
+            else "blocked"
+            if not valid
+            else "waiting_admission"
+            if not admitted
+            else "waiting_roster"
+            if not current_roster["available"]
+            else "selecting"
+            if state["active"]
+            else "published"
+            if latest
+            else "history_pending",
+            reason=(
+                "Frozen daily source/storage identity changed"
+                if not valid
+                else "Daily analysis awaiting protected paper freshness and "
+                "resource/recording/storage admission; progress retained"
+                if enabled and not admitted
+                else "Fresh current USD roster unavailable; saved selections remain historical"
+                if enabled and not current_roster["available"]
+                else self.reason
+                if enabled
+                else None
+            ),
+        )
+        return result
 
     def snapshot(self, campaign_id: str | None = None) -> dict[str, Any]:
         with self.registry.lock:
@@ -403,6 +1004,7 @@ class PatternScanner:
                 "progress_total": sum(counts.values()),
                 "progress_omitted": max(0, sum(counts.values()) - len(progress)),
                 "roster": campaign["roster"] if campaign else self.roster(time.time()),
+                "daily_selection": self._daily_status(row, time.time()),
                 "status": status,
                 "reason": self.reason
                 or (
@@ -756,6 +1358,7 @@ class PatternScanner:
             current = self._campaign()
             if not current or current["id"] != campaign or not current["enabled"]:
                 return False
+            daily = json.loads(current["body"]).get("version") == DAILY_VERSION
             saved_state = self.registry.db.execute(
                 "SELECT body FROM pattern_progress WHERE campaign=? AND symbol=? AND timeframe=?",
                 (campaign, state["symbol"], state["timeframe"]),
@@ -913,6 +1516,24 @@ class PatternScanner:
                                     encoded(event),
                                 ),
                             )
+                            if daily and event["volume_confirmed"] is True:
+                                saved_event = self.registry.db.execute(
+                                    "SELECT seq,body FROM pattern_events WHERE campaign=? AND "
+                                    "symbol=? AND timeframe=? AND identity=?",
+                                    (campaign, symbol, frame, event["id"]),
+                                ).fetchone()
+                                self.registry.db.execute(
+                                    "INSERT INTO pattern_daily_evidence VALUES(?,?,?,?,?) "
+                                    "ON CONFLICT(campaign,symbol,timeframe) DO UPDATE SET "
+                                    "seq=excluded.seq,body=excluded.body",
+                                    (
+                                        campaign,
+                                        symbol,
+                                        frame,
+                                        saved_event["seq"],
+                                        saved_event["body"],
+                                    ),
+                                )
                     incomplete = len(matches) > level_budget
                     level_budget -= len(applied)
                     if incomplete:
@@ -1000,17 +1621,55 @@ class PatternScanner:
         try:
             with self.registry.lock:
                 current = self._campaign()
+                daily = bool(
+                    current and json.loads(current["body"]).get("version") == DAILY_VERSION
+                )
+                if daily:
+                    frozen = json.loads(current["body"])
+                    if (
+                        self.plan is None
+                        or frozen["implementation_sha256"] != self.implementation_sha256
+                        or frozen["storage_plan_sha256"] != digest(self.plan.model_dump())
+                    ):
+                        self.reason = (
+                            "Frozen daily source/storage changed; explicit new policy required"
+                        )
+                        return False
+            if daily and await self._owned(self._daily_work, time.time()):
+                return True
+            with self.registry.lock:
+                current = self._campaign()
                 if not current or not current["enabled"]:
                     return False
                 campaign = current["id"]
                 now = time.time()
                 scope = (campaign, now)
-                chosen = self.registry.db.execute(
-                    "SELECT body FROM pattern_progress WHERE campaign=? AND retry_at<=? "
-                    "AND pending=1 AND status='monitoring' ORDER BY cursor_ms LIMIT 1",
-                    scope,
-                ).fetchone()
-                if chosen is None:
+                chosen = (
+                    self.registry.db.execute(
+                        "SELECT body FROM pattern_progress WHERE campaign=? AND retry_at<=? "
+                        "AND pending=1 ORDER BY cursor_ms LIMIT 1",
+                        scope,
+                    ).fetchone()
+                    if daily
+                    else self.registry.db.execute(
+                        "SELECT body FROM pattern_progress WHERE campaign=? AND retry_at<=? "
+                        "AND pending=1 AND status='monitoring' ORDER BY cursor_ms LIMIT 1",
+                        scope,
+                    ).fetchone()
+                )
+                if chosen is None and daily:
+                    chosen = self.registry.db.execute(
+                        "SELECT body FROM pattern_progress WHERE campaign=? AND retry_at<=? AND "
+                        "pending=0 AND (status IN ('queued','preparing') AND cursor_ms<cutoff_ms "
+                        "OR status='monitoring' AND cursor_ms < CAST(? / (CASE timeframe "
+                        "WHEN '5m' THEN 300000 WHEN '15m' THEN 900000 WHEN '30m' THEN 1800000 "
+                        "WHEN '1h' THEN 3600000 ELSE 14400000 END) AS INTEGER)*(CASE timeframe "
+                        "WHEN '5m' THEN 300000 WHEN '15m' THEN 900000 WHEN '30m' THEN 1800000 "
+                        "WHEN '1h' THEN 3600000 ELSE 14400000 END)) "
+                        "ORDER BY json_extract(body,'$.pages'),cursor_ms,symbol,timeframe LIMIT 1",
+                        (*scope, now * 1000),
+                    ).fetchone()
+                if chosen is None and not daily:
                     chosen = self.registry.db.execute(
                         "SELECT body FROM pattern_progress WHERE campaign=? AND "
                         "retry_at<=? AND status='monitoring' AND pending=0 "
@@ -1023,13 +1682,13 @@ class PatternScanner:
                         "WHEN '1h' THEN 3600000 ELSE 14400000 END) ORDER BY cursor_ms LIMIT 1",
                         (*scope, now * 1000),
                     ).fetchone()
-                if chosen is None:
+                if chosen is None and not daily:
                     chosen = self.registry.db.execute(
                         "SELECT body FROM pattern_progress WHERE campaign=? AND retry_at<=? "
                         "AND pending=1 ORDER BY cursor_ms LIMIT 1",
                         scope,
                     ).fetchone()
-                if chosen is None:
+                if chosen is None and not daily:
                     chosen = self.registry.db.execute(
                         "SELECT body FROM pattern_progress WHERE campaign=? AND "
                         "retry_at<=? AND status IN ('queued','preparing') AND "

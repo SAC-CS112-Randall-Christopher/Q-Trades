@@ -371,4 +371,4 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m mypy --platform win32 src
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py tests/test_candle_patterns.py tests/test_candle_history.py tests/test_pattern_scanner.py tests/test_pattern_charts.py tests/test_live_candle_storage.py
+          python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py tests/test_candle_patterns.py tests/test_candle_history.py tests/test_pattern_scanner.py tests/test_daily_pattern_analyzer.py tests/test_pattern_charts.py tests/test_live_candle_storage.py

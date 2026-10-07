@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useEvidenceRead } from "./useEvidenceRead";
 import { ScannerChartGrid, type ScannerChartFocus } from "./CandleWorkspace";
+import { DailyAnalyzer, validDaily, type DailySelection } from "./DailyAnalyzer";
 import "./scanner-workspace.css";
 
 type Frame = "5m" | "15m" | "30m" | "1h" | "4h";
@@ -9,25 +10,26 @@ type RosterRow = { symbol: string; eligible: boolean; reason: string; selected: 
 type Progress = { symbol: string; timeframe: Frame; requested_start_ms: number; cutoff_ms: number;
   cursor_ms: number; expected_bars: number; observed_bars: number; missing_bars: number;
   pages: number; status: string; error: string | null; gap_count?: number };
-type Campaign = { id: string;
+type Campaign = { id: string; version?: string;
   requested_start_ms?: number; cutoff_ms?: number; symbols?: string[] };
 type CampaignSummary = { id: string; created: number; market_count: number; requested_days: number; timeframes: Frame[] };
-type ScannerState = { version: "year-pattern-scanner-v1"; enabled: boolean; campaign: Campaign | null;
+type ScannerState = { daily_selection?: DailySelection; version: "year-pattern-scanner-v1"; enabled: boolean; campaign: Campaign | null;
   current_campaign_id: string | null; is_current: boolean;
   revision: number; status: string; reason: string | null;
   roster: { observed_at: number; total: number; eligible: number; selected: number; queued: number; rows: RosterRow[] };
   progress: Progress[]; progress_total: number; progress_omitted: number;
   progress_counts: Record<string, number>; limits: Record<string, unknown>; authority: string };
-type Command = { action: "prepare" | "start" | "pause"; request_id: string;
+type Command = { action: "prepare" | "start" | "pause" | "daily_enable" | "daily_pause"; request_id: string;
   symbols?: string[]; campaign_id?: string; expected_revision?: number };
 type Receipt = { request_id: string; action: Command["action"]; campaign_id: string; revision: number;
-  applied_at: number; applied: true; current_status?: ScannerState };
+  applied_at: number; applied: true; policy?: string; previous_campaign_id?: string | null; current_status?: ScannerState };
 type Row = Record<string, unknown> & { seq: number; id: string; symbol?: string; timeframe?: Frame };
 type Page = { campaign_id: string; symbol: string; timeframe: Frame; rows: Row[]; total: number; next_before: number | null };
 type ProgressPage = { campaign_id: string; rows: Progress[]; total: number; next_before: number | null };
 const frames: Frame[] = ["5m", "15m", "30m", "1h", "4h"];
 const endpoint = "/api/research/pattern-scanner";
 const pendingKey = "qtrades-year-pattern-scanner-pending-v1";
+const isPause = (action: Command["action"]) => action === "pause" || action === "daily_pause";
 const safeSymbol = (symbol: unknown): symbol is string => typeof symbol === "string" && /^[A-Z0-9]{3,24}$/.test(symbol);
 const number = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value.toLocaleString() : "Unknown";
 const date = (ms: unknown) => typeof ms === "number" && Number.isFinite(ms) ? new Date(ms).toLocaleString() : "Unknown";
@@ -41,12 +43,14 @@ function pendingCommands(): { commands: Command[]; error: string | null } {
     if (!raw) return { commands: [], error: null };
     const values = JSON.parse(raw) as Command[];
     if (!Array.isArray(values) || values.length > 2 || values.some(command => !command ||
-      !["prepare", "start", "pause"].includes(command.action) ||
+      !["prepare", "start", "pause", "daily_enable", "daily_pause"].includes(command.action) ||
       !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(command.request_id) ||
       command.action === "prepare" && (!Array.isArray(command.symbols) || !command.symbols.length || command.symbols.length > 2000 || !command.symbols.every(safeSymbol)) ||
-      command.action !== "prepare" && (typeof command.campaign_id !== "string" || !command.campaign_id) ||
-      command.action === "start" && (!Number.isSafeInteger(command.expected_revision) || command.expected_revision! < 0)) ||
-      new Set(values.map(command => command.action === "pause" ? "pause" : "setup")).size !== values.length) throw new Error();
+      command.action.startsWith("daily_") && command.symbols != null ||
+      command.action === "daily_enable" && command.campaign_id != null && (typeof command.campaign_id !== "string" || !/^patterns-[a-f0-9]{24}$/.test(command.campaign_id)) ||
+      command.action !== "prepare" && command.action !== "daily_enable" && (typeof command.campaign_id !== "string" || !command.campaign_id) ||
+      (command.action === "start" || command.action === "daily_enable") && (!Number.isSafeInteger(command.expected_revision) || command.expected_revision! < 0)) ||
+      new Set(values.map(command => isPause(command.action) ? "pause" : "setup")).size !== values.length) throw new Error();
     return { commands: values, error: null };
   } catch { return { commands: [], error: "Saved scanner control is unreadable. Its outcome must be reconciled before a new control." }; }
 }
@@ -147,9 +151,14 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
   useEffect(() => { progressRead.cancel(); setProgressPage(null); setProgressError(null); setProgressBusy(false); }, [campaign?.id, progressRead.cancel]);
 
   async function acceptReceipt(value: Receipt, command: Command) {
+    const dailyControl = command.action === "daily_enable" || command.action === "daily_pause";
+    const dailyBound = !dailyControl || value?.policy === "daily-pattern-research-v1" &&
+      value.previous_campaign_id === (command.campaign_id ?? null);
+    const newDailyCampaign = command.action === "daily_enable" && dailyBound &&
+      typeof value?.campaign_id === "string" && /^patterns-[a-f0-9]{24}$/.test(value.campaign_id);
     if (value?.request_id !== command.request_id || value.action !== command.action || value.applied !== true ||
-      typeof value.campaign_id !== "string" || !Number.isSafeInteger(value.revision) ||
-      command.campaign_id != null && value.campaign_id !== command.campaign_id) throw new Error("The control acknowledgment does not match the original request. Its outcome remains unknown.");
+      typeof value.campaign_id !== "string" || !Number.isSafeInteger(value.revision) || !dailyBound ||
+      command.campaign_id != null && value.campaign_id !== command.campaign_id && !newDailyCampaign) throw new Error("The control acknowledgment does not match the original request. Its outcome remains unknown.");
     await controlLock(() => {
       const saved = pendingCommands(); if (saved.error) throw new Error(saved.error);
       const original = saved.commands.find(item => item.request_id === command.request_id);
@@ -159,7 +168,7 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
     });
     if (!mounted.current) return;
     setPending(pendingCommands().commands);
-    setNotice(`${words(command.action)} was acknowledged for the original campaign. Preparation and current evaluation still follow the recorded progress.`);
+    setNotice(`${words(command.action)} was acknowledged for the original request. Preparation and current evaluation still follow the recorded progress.`);
     if (value.current_status) {
       try { validateState(value.current_status); setState(value.current_status); setStatusError(null); setChecked(Date.now()); }
       catch { setStatusError("The original control was acknowledged, but current scanner status is unavailable."); }
@@ -168,13 +177,13 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
   }
 
   async function control(action: Command["action"]) {
-    if (sending.current || storageError || pending.some(command => action === "pause" ? command.action === "pause" : true)) return;
+    if (sending.current || storageError || pending.some(command => isPause(action) ? isPause(command.action) : true)) return;
     const command: Command = { action, request_id: crypto.randomUUID() };
     if (action === "prepare") command.symbols = [...chosen].sort();
     else {
-      if (!state?.campaign) return;
-      command.campaign_id = state.campaign.id;
-      if (action === "start") command.expected_revision = state!.revision;
+      if (!state?.campaign && action !== "daily_enable") return;
+      if (state?.campaign) command.campaign_id = state.campaign.id;
+      if (action === "start" || action === "daily_enable") command.expected_revision = state?.revision ?? 0;
     }
     sending.current = true; setBusy(true); setControlError(null); setNotice(null);
     const holder: { response: Promise<Response> | null } = { response: null };
@@ -182,7 +191,7 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
       await controlLock(() => {
         if (!mounted.current) throw new Error("This view closed before the control was saved. No request was sent.");
         const saved = pendingCommands(); if (saved.error) throw new Error(saved.error);
-        if (saved.commands.some(item => action === "pause" ? item.action === "pause" : true)) throw new Error("An original control is awaiting acknowledgment. Find its saved result first.");
+        if (saved.commands.some(item => isPause(action) ? isPause(item.action) : true)) throw new Error("An original control is awaiting acknowledgment. Find its saved result first.");
         localStorage.setItem(pendingKey, JSON.stringify([...saved.commands, command]));
         holder.response = fetch(`${endpoint}/control`, { method: "POST", headers: { "Content-Type": "application/json", "X-Local-Operator": "1" },
           body: JSON.stringify(command), signal: AbortSignal.timeout(15000) });
@@ -306,9 +315,30 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
     return () => { removeEventListener("hashchange", restore); removeEventListener("popstate", restore); };
   }, [campaignRead.cancel]);
 
+  function openDaily(campaignId: string, nextSymbol: string, snapshotId: string,
+    evidence?: { timeframe: Frame; kind: "patterns" | "alerts"; seq: number; body: Record<string, unknown>; progress_sha256?: string }) {
+    onChooseMarket(nextSymbol);
+    const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    for (const key of [...params.keys()]) if (key.startsWith("scanner_chart_")) params.delete(key);
+    params.set("symbol", nextSymbol); params.set("scanner_campaign", campaignId); params.set("daily_shortlist", snapshotId);
+    history.replaceState(null, "", `#markets?${params}`);
+    setMarket(nextSymbol);
+    void reopenCampaign(campaignId, false);
+    if (evidence && typeof evidence.body.bar_open_ms === "number") {
+      // URL scope restores the original event after the exact campaign read settles.
+      params.set("scanner_chart_frame", evidence.timeframe); params.set("scanner_chart_at_ms", String(evidence.body.bar_open_ms));
+      params.set("scanner_chart_kind", evidence.kind); params.set("scanner_chart_seq", String(evidence.seq));
+      if (evidence.progress_sha256 && /^[a-f0-9]{64}$/.test(evidence.progress_sha256)) params.set("scanner_chart_progress_sha256", evidence.progress_sha256);
+      history.replaceState(null, "", `#markets?${params}`);
+    }
+    document.getElementById("scanner-chart-grid")?.scrollIntoView({ block: "start" });
+  }
+
+  const daily = validDaily(state?.daily_selection) ? state.daily_selection : null;
+  const dailyCampaign = state?.campaign?.version === "year-pattern-scanner-v2";
   const roster = state?.roster.rows ?? [];
   const chosen = selected.filter(name => roster.some(row => row.symbol === name && row.eligible));
-  const prepareAllowed = !statusError && state != null && chosen.length > 0 && chosen.length <= 2000 && !state.enabled;
+  const prepareAllowed = !statusError && state != null && chosen.length > 0 && chosen.length <= 2000 && !state.enabled && !dailyCampaign;
   const setupBusy = busy || !!storageError || pending.length > 0 || !navigator.locks;
   const visibleRows = roster.slice(rosterPage * 24, rosterPage * 24 + 24);
   const visibleProgress = progressPage?.rows ?? displayState?.progress ?? [];
@@ -321,11 +351,15 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
       {state?.campaign && <p>Current campaign {state.campaign.id} · revision {state?.revision} · {state?.enabled ? "Worker enabled" : "Worker paused"}. Restarted preparation requires an explicit Start; saved history remains retained.</p>}
     </div>
     {statusError && <p role="alert">{statusError}</p>}
+    <DailyAnalyzer selection={daily} statusError={statusError} checked={checked}
+      enableDisabled={setupBusy || !!statusError || !!state?.enabled && !dailyCampaign}
+      pauseDisabled={busy || !!storageError || !navigator.locks || pending.some(command => isPause(command.action))}
+      onEnable={() => void control("daily_enable")} onPause={() => void control("daily_pause")} onOpen={openDaily} />
     <div className="scanner-filters"><label>Analysis market <select aria-label="Analysis chart market" value={market} onChange={event => onChooseMarket(event.target.value)}>{[...new Set([market, ...(campaign?.symbols ?? []), ...roster.map(row => row.symbol)])].map(name => <option key={name}>{name}</option>)}</select></label></div>
     <ScannerChartGrid campaignId={campaign?.id ?? null} symbol={market} focus={chartFocus} />
     <div className="scanner-controls"><button type="button" disabled={setupBusy || !prepareAllowed} onClick={() => void control("prepare")}>Prepare selected markets</button>
-      <button type="button" disabled={setupBusy || !!statusError || !state?.campaign || state?.enabled === true} onClick={() => void control("start")}>Start / resume scanner</button>
-      <button type="button" disabled={busy || !!storageError || !state?.campaign || !navigator.locks || pending.some(command => command.action === "pause")} onClick={() => void control("pause")}>Pause scanner</button>
+      <button type="button" disabled={setupBusy || !!statusError || !state?.campaign || state?.enabled === true || dailyCampaign} onClick={() => void control("start")}>Start / resume scanner</button>
+      <button type="button" disabled={busy || !!storageError || !state?.campaign || dailyCampaign || !navigator.locks || pending.some(command => isPause(command.action))} onClick={() => void control("pause")}>Pause scanner</button>
       <button type="button" onClick={() => refreshAgain.current()}>Refresh status</button></div>
     {pending.map(command => <div className="scanner-pending" role="status" key={command.request_id}><p>Original {words(command.action)} control is awaiting acknowledgment. Its saved identity is retained.</p><button type="button" disabled={busy} onClick={() => void recover(command)}>Find saved {words(command.action)} result</button></div>)}
     {(controlError || storageError) && <p role="alert">{storageError ?? controlError}</p>}{notice && <p role="status">{notice}</p>}
