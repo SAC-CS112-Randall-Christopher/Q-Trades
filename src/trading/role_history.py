@@ -196,6 +196,22 @@ class RoleHistory:
                                     json.dumps(
                                         {"question": context["question"]}
                                         | (
+                                            {"contract": context["contract"]}
+                                            if "contract" in context
+                                            else {}
+                                        )
+                                        | (
+                                            {
+                                                key: context[key]
+                                                for key in (
+                                                    "policy_sha256",
+                                                    "question_selection",
+                                                    "selection_authority",
+                                                )
+                                                if key in context
+                                            }
+                                        )
+                                        | (
                                             {
                                                 key: context[key]
                                                 for key in ("execution_mode", "pilot_grant_id")

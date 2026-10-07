@@ -1,4 +1,39 @@
-# Current source follow-up — October 6, 2026, research tool requests (#66)
+# Current source follow-up — October 6, 2026, evidence-backed questions (#66)
+
+Continue the existing draft PR73 lane within source and isolated-QA permission.
+The explicit v4 paper-pilot selection policy is a source proposal only; existing
+v1/v2/v3 grants, selected v6 installation and consumed original attempts remain
+unchanged. Read `docs/reviews/EVIDENCE_QUESTION_SELECTION.md` for selection scope,
+immutable provenance, adverse-result retention and operating proof limits.
+No operating update, new profile/grant selection or model call follows.
+
+# Previous source follow-up — October 6, 2026, explicit capability semantics (#66)
+
+Continue the source/isolated-QA lane in draft PR #73. The single authorized
+PR #72 update is installed at `4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`;
+reuse its preserved acceptance scope and receipt. The selected v6 pilot's
+actual answer classified offered comparison handle `r0` as a missing feature.
+Retain that answer, original packet/profile/grant and consumed attempt. Do not
+retry or retroactively regrade it to manufacture a useful research result.
+
+An explicit v7 successor distinguishes offered comparison handles from absent
+tools and discloses already frozen method controls. It cannot invent a varying
+volume experiment from identical controls. Preserve v5/v6 defaults, hashes,
+historical wire packets and qualification boundaries. A v3 paper-pilot grant
+requires its reviewed v7 contract and full successor profile digest; it is a
+source proposal, not selected operating authority. See
+`docs/reviews/RESEARCH_CAPABILITY_SEMANTICS.md` for proof and remaining gaps.
+
+This increment permits source, disposable QA, independent review, commit/push
+and checkpoint publication. No new installation/restart, profile/grant selection,
+model dispatch, preferred-answer retry, qualification/holdout, RAG, external/paid
+review, training/download/conversion, strategy promotion or financial-policy
+change follows. Preserve protected accounting, freshness, input eligibility,
+recording/storage, ownership and unchanged model resource limits. Existing
+worker/registry ownership governs further question-selection source proposals;
+an enabled but empty worker must not be represented as autonomous learning.
+
+# Previous source direction — October 6, 2026, research tool requests (#66)
 
 Chris asked that the researcher request tools to be implemented when they would
 help a strategy. Use the successor research-evidence-continuation lane to deliver

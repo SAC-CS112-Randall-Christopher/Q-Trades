@@ -18,6 +18,7 @@ from test_role_worker import ModelStub, make_lab
 from trading.api import create_app
 from trading.config import Settings
 from trading.evidence_runtime import EvidenceRecorder
+from trading.lab_role_contract import TOOL_REQUEST_VERSION, VERSION
 from trading.research_actors import ActorAnswer, ActorGrant, ResearchActors
 from trading.research_storage import save_plan
 from trading.role_worker import Question, RoleWorker
@@ -66,6 +67,102 @@ def answer(scope, claim, **change):
     value = scope.model.infer("researcher", packet, {})["answer"]
     scope.model.calls.clear()
     return ActorAnswer(claim=claim["claim"], answer=value | change)
+
+
+@pytest.mark.parametrize("mode", ["qualified-v6", "pilot-v6", "v5-with-v6-packet"])
+def test_incompatible_actor_contract_refuses_without_any_reservation(scope, monkeypatch, mode):
+    s = scope
+    if mode != "v5-with-v6-packet":
+        s.model.role_contract = TOOL_REQUEST_VERSION
+        if mode == "pilot-v6":
+            s.model.paper_pilot = True
+            s.model.policy = lambda: {"enabled": True, "grant_id": "synthetic-v6-pilot-grant"}
+            s.worker.paper_admission = lambda: True
+        task = s.worker.enqueue(
+            Question(question="A distinct causal v6 hypothesis has no external actor authority."),
+            START,
+        )
+    else:
+        task = s.task
+        original_packet = s.worker._packet
+
+        def incompatible_packet(row):
+            role, packet = original_packet(row)
+            return role, packet | {"contract": TOOL_REQUEST_VERSION}
+
+        monkeypatch.setattr(s.worker, "_packet", incompatible_packet)
+    grant = s.actors.grant(
+        ActorGrant(
+            actor="qa-contract-boundary",
+            tasks=[task["id"]],
+            processing_location="Local disposable contract refusal fixture",
+        )
+    )
+    # Both qualified and pilot v6 tasks pass their own current local authority;
+    # the separate v5 actor contract must refuse before claiming that task.
+    s.worker._current(task)
+
+    def retained():
+        return {
+            "task": s.worker.get(task["id"]),
+            "registry": {
+                table: [
+                    tuple(row)
+                    for row in s.worker.registry.db.execute(f"SELECT * FROM {table} ORDER BY 1,2,3")
+                ]
+                for table in (
+                    "role_tasks",
+                    "role_attempts",
+                    "role_attempt_allowances",
+                    "role_requests",
+                    "actor_claims",
+                    "research_actors",
+                )
+            },
+            "financial_state": s.store.read(),
+            "financial_events": s.store.export(0, 1000)["records"],
+            "controller_state": copy.deepcopy(s.lab.paper.state),
+        }
+
+    before = retained()
+    with pytest.raises(ValueError, match="Scoped actor requires its reviewed v5 role contract"):
+        s.actors.claim(grant["token"], task["id"])
+    assert retained() == before
+    assert s.worker.get(task["id"])["execution"] == {"kind": "unclaimed", "lease_until": None}
+    assert not s.worker.get(task["id"])["attempts"]
+    assert not s.model.calls
+    assert s.store.reconcile()["balanced"]
+
+
+def test_reviewed_v5_actor_claim_and_answer_remain_supported(scope):
+    s = scope
+    financial_state = s.store.read()
+    financial_events = s.store.export(0, 1000)["records"]
+    claim = s.actors.claim(s.grant["token"], s.task["id"])
+    assert claim["contract"] == VERSION
+    saved = s.worker.get(s.task["id"])
+    assert saved["execution"]["kind"] == "external"
+    assert saved["execution"]["lease_until"] == claim["lease_until"]
+    owner = s.worker.registry.db.execute(
+        "SELECT owner FROM role_tasks WHERE id=?", (s.task["id"],)
+    ).fetchone()[0]
+    assert owner == "actor:" + claim["claim"]
+    assert len(saved["attempts"]) == 1
+    assert json.loads(saved["attempts"][0]["profile"])["contract"] == VERSION
+    assert saved["attempts"][0]["wall_reserved"] == 90
+    assert saved["attempts"][0]["tokens_reserved"] == 8192
+    result = s.actors.answer(s.grant["token"], answer(s, claim))
+    assert result["status"] == "recorded"
+    saved = s.worker.get(s.task["id"])
+    assert saved["execution"] == {"kind": "unclaimed", "lease_until": None}
+    assert s.worker.registry.db.execute(
+        "SELECT owner,lease_until FROM role_tasks WHERE id=?", (s.task["id"],)
+    ).fetchone()[:] == (None, None)
+    assert saved["attempts"][0]["status"] == "answered"
+    assert len(saved["attempts"]) == 1
+    assert s.store.read() == financial_state
+    assert s.store.export(0, 1000)["records"] == financial_events
+    assert s.store.reconcile()["balanced"]
 
 
 def test_archived_external_answers_keep_shared_hourly_allowance(scope, monkeypatch):
