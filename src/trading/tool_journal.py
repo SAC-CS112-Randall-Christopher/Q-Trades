@@ -155,6 +155,21 @@ class ToolJournal:
         request_id: str | None = None,
         query: dict[str, Any] | None = None,
     ) -> int:
+        run_id, _ = self.start_once(
+            tool, symbol, account=account, request_id=request_id, query=query
+        )
+        return run_id
+
+    def start_once(
+        self,
+        tool: str,
+        symbol: str,
+        *,
+        account: str = "primary",
+        request_id: str | None = None,
+        query: dict[str, Any] | None = None,
+    ) -> tuple[int, bool]:
+        """Return whether this call created work, never redispatch a recovered request."""
         identity = encoded(query or {"tool": tool, "symbol": symbol, "account": account})
         with self.lock:
             if request_id:
@@ -175,7 +190,7 @@ class ToolJournal:
                     if old["query"] != identity:
                         raise ValueError("Request ID belongs to a different evidence scope")
                     self._recover()
-                    return int(old["id"])
+                    return int(old["id"]), False
             self._recover()
             self._rollover()
             with self.connection:
@@ -204,7 +219,24 @@ class ToolJournal:
                 self.connection.execute(
                     "UPDATE tool_meta SET value=CAST(value AS INTEGER)+1 WHERE key='logical_count'"
                 )
-            return run_id
+            return run_id, True
+
+    def find_request(self, request_id: str) -> dict[str, Any] | None:
+        """Resolve a lost acknowledgment through the existing hot/cold request index."""
+        with self.lock:
+            row = self.connection.execute(
+                "SELECT id FROM tool_runs WHERE request_id=?", (request_id,)
+            ).fetchone()
+            if row is None and self.storage_plan:
+                store = self._storage()
+                try:
+                    row = store.db.execute(
+                        "SELECT id FROM tool_receipt_index WHERE namespace=? AND request_id=?",
+                        (self.namespace, request_id),
+                    ).fetchone()
+                finally:
+                    store.close()
+            return self.get(row[0]) if row is not None else None
 
     def _recover(self) -> None:
         with self.connection:
