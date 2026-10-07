@@ -14,6 +14,9 @@ there; only this redacted checkpoint belongs in Git.
   206 cases, zero failures/skips/errors. Later new compatibility/guard fixtures
   passed 57 cases, including all six native original identities, preserved funding
   and old medium/long stale-feature semantics.
+- The final complete affected selection passed 311 cases, zero failures/skips,
+  after all source repairs. It includes the bank, original-account controls,
+  engine/risk/campaign/economics/runtime/Lab and evidence/replay files.
 - Actual native financial controls passed restart/exact duplicate receipt after
   a later control, rollback before commit, lost acknowledgment after commit,
   preserved event prefixes, local API authorization and exact result retrieval.
@@ -23,6 +26,10 @@ there; only this redacted checkpoint belongs in Git.
   monitoring failure did not alter financial data to create a failure.
 - Economics verification retained completed historical windows and lifetime
   funding/counters, while excluding a mixed-strategy window from ranking.
+- A separate pure comparison reproduced the exact approved-base serialized v2
+  contracts for short, medium and long horizons. All three canonical contract
+  hashes match. V3's explicit-component validation and behavior remain covered by
+  the existing rule-component tests; no component-free v3 contract is assumed.
 - An explicit v4 pair passed evaluation with an actual server-issued evidence
   bundle, normal native reservation/funding, two exact frozen rule specs, unchanged
   originals, balanced journal and its fixed one-day review. No model call or
@@ -104,8 +111,28 @@ recursive/forced deletion; source and retained artifacts remain.
 The broad formatting check reported pre-existing formatting gaps outside this
 change as well as three changed-file differences. Only changed files were
 formatted; scoped formatting and full lint subsequently passed. A broad local
-regression run was also launched after all source repairs; its final result and
-remaining skips are recorded below when settled.
+regression run after all source repairs recorded 1,912 passes, two failures and
+one skip. Both failures were in unchanged PDF/background child-process tests.
+The background trace explicitly reports `ModuleNotFoundError: trading`: the
+first full launcher omitted the child-visible source path. The PDF child uses
+the same interpreter but suppresses its stderr, so that failure's exact cause
+cannot be read from the retained trace. A matched PDF rerun with the exact lane's
+`PYTHONPATH` passed. The first full failure remains retained, not reclassified.
+
+The corrected full launch explicitly sets both the disposable database and
+`PYTHONPATH` to this lane's `src` before starting pytest. Its result is a separate
+receipt (`native-qa-2/final-full-2.xml`), pending at this documentation checkpoint;
+the PR and #66 ledger carry the settled result. Future local full runs must use
+the same child-visible source setup or an explicitly installed test package.
+Existing hosted PostgreSQL and persistent-research jobs already install the
+application package for this requirement; no product fallback was introduced.
+
+All six hosted gates passed at implementation head
+`473ac4aacf69417772fe275ad1747c7d4ab08c01` in run `37563755265`: native Windows,
+runtime ownership/updater, dashboard build, complete authenticated PostgreSQL
+integration, financial-monitoring browser and persistent research/static checks.
+This checkpoint's documentation-only successor is verified separately in the
+PR's exact-head check results; the changed application source remains identical.
 
 ## Separate acceptance boundaries
 
