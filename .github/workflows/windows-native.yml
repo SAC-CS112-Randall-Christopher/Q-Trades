@@ -69,7 +69,7 @@ jobs:
             tests/test_research_audit_corrections.py tests/test_memory_accounts.py `
             tests/test_autonomous_lab.py tests/test_continuous_safety.py tests/test_research_storage.py `
             tests/test_research_storage_expansion.py tests/test_research_storage_file_accounting.py tests/test_capture_recovery.py `
-            tests/test_continuous_audit.py tests/test_trade_history.py tests/test_scoped_tools.py `
+            tests/test_trade_history.py tests/test_scoped_tools.py `
             tests/test_activity_reader_recovery.py tests/test_capture_projection.py tests/test_paper_projection.py `
             tests/test_projection_ram.py `
             tests/test_financial_readback.py `
@@ -86,13 +86,40 @@ jobs:
             tests/test_role_readiness.py tests/test_peft_development.py tests/test_peft_loader_contract.py `
             tests/test_development_failure_receipts.py tests/test_development_latency_measurement.py `
             tests/test_peft_child_owner.py tests/test_peft_child_resource_integration.py `
-            tests/test_strategy_diagnosis.py `
             tests/test_request_counts.py `
-            tests/test_research_notices.py tests/test_notice_contention.py `
+            tests/test_research_notices.py `
             tests/test_question_recovery.py tests/test_research_lessons.py tests/test_role_supervisor.py `
             tests/test_rule_component.py tests/test_role_packet_preflight.py `
             tests/test_stock_research.py tests/test_research_actors.py `
             tests/test_research_acceptance.py
+
+  native-research-recovery:
+    # Retain the measured slow research checks on Windows without extending
+    # the required native job's complete eight-minute lifecycle budget.
+    runs-on: windows-2025
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: powershell
+    env:
+      QTRADES_POWERSHELL: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+      PYTHONDONTWRITEBYTECODE: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned test requirements
+        run: python -m pip install --no-input -r requirements-lock.txt
+      - name: Verify research contention, diagnosis and continuous audit
+        run: |
+          $PSVersionTable.PSVersion.ToString()
+          if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Requires Windows PowerShell 5.1' }
+          python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 `
+            tests/test_notice_contention.py tests/test_strategy_diagnosis.py tests/test_continuous_audit.py
 
   windows-dashboard:
     # Keep the independent dashboard build out of the native suite's complete

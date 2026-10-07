@@ -367,6 +367,27 @@ affected plot cases passed after correcting only that synthetic sequence.
 This local union is not a single successful final full 17-case run. Hosted
 exact-head checks must separately establish the final combined workflow.
 
+The first chart head `6614cf792d72f3312e70c0b0542b748f63a324e3`, hosted run
+`37689414648`, passed the dashboard, runtime ownership, persistent research,
+PostgreSQL and browser jobs. Persistent research passed 190 tests; PostgreSQL
+passed 1,946 with 98 skips. Its browser job passed all 16 new chart,
+14 original scanner and 17 separate candle-study groups. The Windows native
+test step passed 1,355 with 254 skips and two existing deselections in 450.90
+seconds, but the overall job was cancelled: GitHub's annotation states
+`The job has exceeded the maximum execution time of 8m0s`. Setup and cleanup
+also consume that limit. This is a failed hosted gate despite the passing
+test-step result; it does not establish all-gate completion.
+
+The timing report identifies at least 102.62 seconds in three existing native
+recovery files: notice contention, strategy diagnosis and continuous audit.
+The CI repair moves exactly those file selectors to a separate Windows
+`native-research-recovery` job, preserving their assertions, environment,
+pytest options, pinned requirements and eight-minute limit. The remaining
+`native` job keeps its name and the original two exact deselections; the
+runtime-ownership job still executes those two cases. No test is dropped,
+and no product, strategy or admission policy changes. The expected headroom
+is a timing projection; only a fresh exact-head run can establish completion.
+
 Predecessor failures remain retained. The initial chart setup exhausted its
 finite processing budget. Later normal UI checks exposed unstable chart-host
 geometry: the pinned library's `autoSize` ignores an explicit height unless its
