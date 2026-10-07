@@ -388,6 +388,30 @@ runtime-ownership job still executes those two cases. No test is dropped,
 and no product, strategy or admission policy changes. The expected headroom
 is a timing projection; only a fresh exact-head run can establish completion.
 
+The partitioned head `29994916421a8b952dd5ae1f261f9ded9a90b481`, run
+`37691493663`, passed six jobs: native 1,291/238 skipped/two deselected,
+research recovery 64/16 skipped, runtime ownership 75, persistent research 190,
+dashboard build and PostgreSQL 1,946/98 skipped. Its first browser attempt
+passed all 47 chart/scanner/candle groups but was cancelled after the Ubuntu
+dependency download alone took four minutes. A single browser-only retry used
+the same source and reused the other six jobs. Setup completed in 40 seconds;
+monitoring, account history and all 17 candle groups passed. The legacy scanner
+then passed nine groups and timed out waiting for immediate Pause acknowledgment.
+The new chart group was not executed in that retry. Both failed attempts and
+their separate artifacts remain retained; same-name rerun uploads succeeded
+without deleting the earlier artifact.
+
+The failed scanner artifact shows a paused campaign at revision six, the
+original stale-Start refusal and an original Pause awaiting acknowledgment.
+It lacks the second window's response/DOM and final probe, so the exact lock
+interleaving is not established. The existing UI deliberately retains a request
+when acknowledgment cleanup cannot obtain its shared Web Lock and offers the
+exact saved-result GET. The test correction captures the actual Pause response,
+UUID and revision and exercises that existing recovery flow when necessary,
+then requires the acknowledgment, final paused state, unchanged original
+Start refusal and no repeated control POST. It also retains both windows and
+the final probe on failure. No production control or admission policy changes.
+
 Predecessor failures remain retained. The initial chart setup exhausted its
 finite processing budget. Later normal UI checks exposed unstable chart-host
 geometry: the pinned library's `autoSize` ignores an explicit height unless its

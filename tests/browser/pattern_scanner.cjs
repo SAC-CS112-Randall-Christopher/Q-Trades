@@ -8,6 +8,14 @@ const origin = process.env.QTRADES_BROWSER_QA_ORIGIN || "http://127.0.0.1:58969"
 const directory = process.env.QTRADES_BROWSER_QA_OUTPUT;
 const token = process.env.QTRADES_BROWSER_QA_TOKEN;
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
+const bounded = async (work, milliseconds, label) => {
+  let timer;
+  try {
+    return await Promise.race([work, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(label)), milliseconds);
+    })]);
+  } finally { clearTimeout(timer); }
+};
 
 (async () => {
   assert(directory && token, "Task-owned output and explicit QA token are required");
@@ -20,7 +28,7 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     operating_acceptance: false, financial_database: false, model_calls: 0,
     full_year_scale_or_market_capacity: false, profitability_or_strategy_approval: false,
     harness_sha256: sha(fs.readFileSync(__filename)), groups, pageErrors, externalRequests, apiRequests };
-  let browser, context, page, failure = null, phase = "startup";
+  let browser, context, page, other, failure = null, phase = "startup";
   const headers = { "x-qa-token": token };
   const save = (name, value) => fs.writeFileSync(path.join(directory, name), JSON.stringify(value, null, 2));
   try {
@@ -164,7 +172,7 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     await mode("normal"); await refresh(); groups.push({ name: phase, paused_with_last_known_identity: true });
 
     phase = "delayed-start-cannot-overtake-acknowledged-pause";
-    const other = await context.newPage(); await other.goto(`${origin}/#markets`);
+    other = await context.newPage(); await other.goto(`${origin}/#markets`);
     const otherPanel = other.getByRole("region", { name: "Year pattern scanner" });
     await otherPanel.getByText(new RegExp(`^Current campaign ${prepared.campaign_id} \\u00b7 revision`)).waitFor();
     await otherPanel.getByRole("button", { name: "Pause scanner", exact: true }).waitFor();
@@ -181,9 +189,64 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     assert.equal(held.held_start.request_id, pendingStart.request_id);
     assert.equal(held.held_start.expected_revision, pendingStart.expected_revision);
     save("delayed-start-held-before-pause.json", held);
-    await otherPanel.getByRole("button", { name: "Pause scanner", exact: true }).click();
-    await otherPanel.getByText(/pause was acknowledged/).waitFor();
-    assert.equal((await startResponse).status(), 409);
+    const pauseDeadline = Date.now() + 30000;
+    const remainingPauseTime = () => {
+      const remaining = pauseDeadline - Date.now();
+      assert(remaining > 0, "Pause acknowledgment and exact recovery must finish within the original 30-second bound");
+      return remaining;
+    };
+    const withinPauseTime = work => {
+      const remaining = remainingPauseTime();
+      return bounded(work(), remaining, "Pause acknowledgment or exact recovery exceeded the original 30-second bound");
+    };
+    const pauseResponse = other.waitForResponse(r => r.url() === `${origin}/api/research/pattern-scanner/control` &&
+      r.request().method() === "POST" && r.request().postDataJSON().action === "pause", { timeout: remainingPauseTime() });
+    void pauseResponse.catch(() => {});
+    await otherPanel.getByRole("button", { name: "Pause scanner", exact: true }).click({ timeout: remainingPauseTime() });
+    const pauseActual = await withinPauseTime(() => pauseResponse);
+    const pauseCommand = pauseActual.request().postDataJSON();
+    save("delayed-start-pause-command.json", { http_status: pauseActual.status(), command: pauseCommand });
+    const pauseReceipt = await withinPauseTime(() => pauseActual.json());
+    save("delayed-start-pause-response.json", { http_status: pauseActual.status(), command: pauseCommand, receipt: pauseReceipt });
+    assert.equal(pauseActual.status(), 200, JSON.stringify(pauseReceipt));
+    assert.equal(pauseCommand.action, "pause"); assert.equal(pauseCommand.campaign_id, prepared.campaign_id);
+    assert.equal(pauseReceipt.request_id, pauseCommand.request_id);
+    assert.equal(pauseReceipt.action, "pause"); assert.equal(pauseReceipt.applied, true);
+    assert.equal(pauseReceipt.campaign_id, prepared.campaign_id);
+    assert.equal(pauseReceipt.revision, held.held_start.expected_revision + 1);
+    assert.equal(pauseReceipt.current_status.enabled, false);
+    assert.equal(pauseReceipt.current_status.revision, pauseReceipt.revision);
+    const savedPause = { ...pauseReceipt }; delete savedPause.current_status;
+    const refusedStart = await withinPauseTime(() => startResponse), startRefusal = await withinPauseTime(() => refusedStart.json());
+    save("delayed-start-refusal-response.json", { http_status: refusedStart.status(), command: refusedStart.request().postDataJSON(), receipt: startRefusal });
+    assert.equal(refusedStart.status(), 409, JSON.stringify(startRefusal));
+    assert.equal(refusedStart.request().postDataJSON().request_id, held.held_start.request_id);
+    assert.equal(startRefusal.detail, "Preparation changed; reopen its current revision before Start");
+    // Wait for the original refusal cleanup before a second tab performs GET-only recovery.
+    await workspace().getByRole("alert").filter({ hasText: startRefusal.detail }).waitFor({ timeout: remainingPauseTime() });
+    await workspace().getByRole("button", { name: "Find saved start result", exact: true }).waitFor({ state: "detached", timeout: remainingPauseTime() });
+    await other.waitForFunction(() => {
+      const region = document.querySelector(".scanner-workspace");
+      return region && (region.textContent.includes("pause was acknowledged") ||
+        [...region.querySelectorAll("button")].some(button => button.textContent === "Find saved pause result" && !button.disabled));
+    }, null, { timeout: remainingPauseTime() });
+    const pendingPause = await withinPauseTime(() => other.evaluate(() => JSON.parse(localStorage.getItem("qtrades-year-pattern-scanner-pending-v1") || "[]")));
+    let recoveredPause = false;
+    if (pendingPause.length) {
+      assert.deepEqual(pendingPause, [pauseCommand], "Only the original acknowledged Pause may remain for recovery");
+      const exactPause = other.waitForResponse(r => r.url() === `${origin}/api/research/pattern-scanner/requests/${pauseCommand.request_id}` &&
+        r.request().method() === "GET", { timeout: remainingPauseTime() });
+      void exactPause.catch(() => {});
+      await otherPanel.getByRole("button", { name: "Find saved pause result", exact: true }).click({ timeout: remainingPauseTime() });
+      const reopenedPause = await withinPauseTime(() => exactPause), reopenedReceipt = await withinPauseTime(() => reopenedPause.json());
+      save("delayed-start-pause-reopened.json", { http_status: reopenedPause.status(), request_id: pauseCommand.request_id, receipt: reopenedReceipt });
+      const reopenedSaved = { ...reopenedReceipt }; delete reopenedSaved.current_status;
+      assert.equal(reopenedPause.status(), 200); assert.deepEqual(reopenedSaved, savedPause);
+      assert.equal(reopenedReceipt.current_status.enabled, false);
+      assert.equal(reopenedReceipt.current_status.revision, pauseReceipt.revision);
+      recoveredPause = true;
+    }
+    await otherPanel.getByText(/pause was acknowledged/).waitFor({ timeout: remainingPauseTime() });
     const afterHeldPause = await probe(); assert.equal(afterHeldPause.state.enabled, false);
     assert.equal(afterHeldPause.held_start.status, "released_after_acknowledged_pause");
     assert.equal(afterHeldPause.held_start.request_id, held.held_start.request_id);
@@ -192,10 +255,13 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     assert.equal(heldPosts.length, 1); assert.equal(heldPosts[0].http_status, 409);
     const releasingPause = afterHeldPause.posts.find(row => row.body.request_id === afterHeldPause.held_start.pause_request_id);
     assert.equal(releasingPause.http_status, 200); assert.equal(releasingPause.saved_receipt.applied, true);
+    assert.equal(releasingPause.body.request_id, pauseCommand.request_id);
+    assert.deepEqual(releasingPause.body, pauseCommand); assert.deepEqual(releasingPause.saved_receipt, savedPause);
+    assert.equal(afterHeldPause.posts.filter(row => row.body.request_id === pauseCommand.request_id).length, 1);
     save("delayed-start-released-after-pause.json", afterHeldPause);
     assert.equal(await page.evaluate(() => localStorage.getItem("qtrades-year-pattern-scanner-pending-v1")), null);
     await other.close(); await mode("normal");
-    groups.push({ name: phase, stale_start: 409, pause_preserved: true });
+    groups.push({ name: phase, stale_start: 409, pause_preserved: true, exact_pause_get_recovery: recoveredPause, original_pause_posts: 1 });
 
     phase = "owner-reopen-preserves-history-and-stays-disabled";
     const beforeRestart = await probe();
@@ -273,8 +339,17 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
   } catch (error) {
     failure = { phase, name: error.name, message: error.message }; receipt.passed = false;
     if (page) {
-      try { fs.writeFileSync(path.join(directory, "failure-dom.txt"), await page.locator("body").innerText()); } catch {}
-      try { await page.screenshot({ path: path.join(directory, "failure.png"), fullPage: true }); } catch {}
+      try { fs.writeFileSync(path.join(directory, "failure-dom.txt"), await page.locator("body").innerText({ timeout: 5000 })); } catch {}
+      try { await page.screenshot({ path: path.join(directory, "failure.png"), fullPage: true, timeout: 5000 }); } catch {}
+      try { save("failure-probe.json", await bounded((async () => (await page.request.get(`${origin}/__qa/probe`, { headers, timeout: 5000 })).json())(), 5000, "Failure probe unavailable")); } catch {}
+      try { save("failure-pending.json", await bounded(page.evaluate(() => ({
+        pending: localStorage.getItem("qtrades-year-pattern-scanner-pending-v1"),
+        refusal: localStorage.getItem("qtrades-year-pattern-scanner-refusal-v1")
+      })), 5000, "Failure pending identity unavailable")); } catch {}
+    }
+    if (other && !other.isClosed()) {
+      try { fs.writeFileSync(path.join(directory, "failure-other-dom.txt"), await other.locator("body").innerText({ timeout: 5000 })); } catch {}
+      try { await other.screenshot({ path: path.join(directory, "failure-other.png"), fullPage: true, timeout: 5000 }); } catch {}
     }
   } finally {
     try { receipt.stop_status = (await fetch(`${origin}/__qa/stop`, { method: "POST", headers, signal: AbortSignal.timeout(5000) })).status; }
