@@ -123,6 +123,52 @@ class TieredPaperRuntime(PaperRuntime):
                 or self.readback_unavailable(observed_mono)
             )
 
+    def operator_launch_admission(self, allow_engine_work_recovery: bool = False) -> dict[str, Any]:
+        """Explicit finite setup decision; never used by background/trade admission."""
+        observed_mono = time.monotonic()
+        with self._work_pressure.lock:
+            pressure = self._work_pressure.evaluate(observed_mono)
+            evidence = self._work_diagnostics.snapshot(pressure)
+            coverage = self._work_diagnostics.known_latency_window(pressure, observed_mono)
+            if tuple(row["elapsed_ms"] for row in self._work_diagnostics.samples) != tuple(
+                self._work_pressure._window
+            ):
+                coverage = False
+            journal = self.journal_status(observed_mono)
+            blockers = [
+                name
+                for name, blocked in (
+                    ("engine_work_recovery", not pressure.pressure_allows),
+                    ("local_capture_disk_space", self.disk_free < 5 * 1024**3),
+                    ("raw_capture_failure", self._capture_failure is not None),
+                    (
+                        "financial_readback_unavailable",
+                        journal["status"] not in {"balanced", "imbalanced"},
+                    ),
+                    ("financial_reconciliation_failed", journal["status"] == "imbalanced"),
+                )
+                if blocked
+            ]
+            raw_blockers = list(blockers)
+            if allow_engine_work_recovery:
+                if not coverage:
+                    blockers.append("engine_work_observation_coverage")
+                elif "engine_work_recovery" in blockers:
+                    blockers.remove("engine_work_recovery")
+            return {
+                "admitted": not blockers,
+                "blocking_conditions": blockers,
+                "raw_blocking_conditions": raw_blockers,
+                "latency_exception_requested": allow_engine_work_recovery,
+                "latency_exception_applied": (
+                    allow_engine_work_recovery and coverage and not pressure.pressure_allows
+                ),
+                "complete_current_work_coverage": coverage,
+                "observed_at": time.time(),
+                "work_evidence": evidence,
+                "journal": journal,
+            }
+
     def diagnostic_entries_allowed(self) -> bool:
         return super().diagnostic_entries_allowed() and not self.constrained()
 

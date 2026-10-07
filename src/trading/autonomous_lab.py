@@ -11,7 +11,7 @@ import psycopg
 
 from trading import autonomous_finance as finance
 from trading.account_purpose import research_account
-from trading.autonomous_spec import ORIGINALS, LabPolicy, LabProposal, RuleSpec
+from trading.autonomous_spec import ORIGINALS, LabPolicy, LabProposal, OperatorLaunch, RuleSpec
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_proposals import LabProposals
 from trading.paper_economics import sample
@@ -29,11 +29,156 @@ class InputWait(ValueError):
 
 class AutonomousLab:
     def __init__(
-        self, registry: ExperimentRegistry, paper: PaperRuntime, can_research: Callable[[], bool]
+        self,
+        registry: ExperimentRegistry,
+        paper: PaperRuntime,
+        can_research: Callable[[], bool],
+        operator_admission: Callable[[bool], dict[str, Any]] | None = None,
     ):
         self.registry, self.paper, self.can_research = registry, paper, can_research
         self.inbox = LabProposals(registry)
         self.last_error: str | None = None
+        self.operator_admission = operator_admission
+
+    def launch_existing(self, request_id: str, intent: OperatorLaunch) -> dict[str, Any]:
+        """Set up one retained pair; no replay, research job or model dispatch."""
+        with self.paper.store.transaction_lock:
+            started = time.perf_counter()
+            self.paper.state = self.paper.store.read()
+            row = self.inbox.get(request_id)
+            proposal = LabProposal.model_validate(row["body"])
+            lab = self.paper.state.get("autonomous_lab")
+            if (
+                not lab
+                or fingerprint(proposal.model_dump()) != intent.expected_proposal_sha256
+                or row["sha256"] != intent.expected_proposal_sha256
+                or lab["policy_sha256"] != intent.expected_policy_sha256
+            ):
+                raise ValueError("Operator setup names another immutable proposal or policy")
+            if row["status"] in {"completed", "rejected"}:
+                raise ValueError("Completed/rejected evidence cannot be relaunched")
+            result: dict[str, Any] = {}
+            outcome = self.paper.store.lab_proposal_outcome(request_id)
+            evaluation: dict[str, Any] | None = None
+            if not outcome or outcome["funding_complete"] is not True:
+                self.paper.require_healthy_control()
+                if self.operator_admission is None:
+                    raise finance.AdmissionWait("Operator setup resource observations unavailable")
+                admission = self.operator_admission(intent.allow_engine_work_recovery)
+                if admission.get("admitted") is not True:
+                    raise finance.AdmissionWait(
+                        "Protected setup admission is closed: "
+                        + str(admission.get("blocking_conditions", "unavailable"))
+                    )
+                if not intent.allow_engine_work_recovery and not self.can_research():
+                    raise finance.AdmissionWait("Complete existing research admission is closed")
+                # The existing bounded historical reader/feature calculation stays
+                # outside the financial SQL transaction. No new historical replay.
+                evaluation = self.evaluate(proposal, time.time())
+
+            def launch(engine: PaperEngine, trial_id: str) -> None:
+                trial = engine.state["autonomous_lab"]["trials"].get(trial_id)
+                if trial is None:
+                    raise ValueError("Historical reservation cannot be resurrected")
+                prior = trial.get("operator_launch_intent")
+                if prior is not None and prior != intent.model_dump():
+                    raise ValueError("Retained operator setup intent cannot be rewritten")
+                if trial["status"] != "reserved":
+                    result.update(status="already_funded", trial_id=trial_id)
+                    return
+                self.paper.require_healthy_control()
+                policy = LabPolicy.model_validate(engine.state["autonomous_lab"]["policy"])
+                current = engine.state["autonomous_lab"]
+                if (
+                    engine.state["paused"]
+                    or current["proposals_paused"]
+                    or current["entries_paused"]
+                ):
+                    raise finance.AdmissionWait("Operator pause prevents finite account setup")
+                if self.operator_admission is None:
+                    raise finance.AdmissionWait("Operator setup resource observations unavailable")
+                admission = self.operator_admission(intent.allow_engine_work_recovery)
+                if admission.get("admitted") is not True:
+                    raise finance.AdmissionWait(
+                        "Protected setup admission is closed: "
+                        + str(admission.get("blocking_conditions", "unavailable"))
+                    )
+                if not intent.allow_engine_work_recovery and not self.can_research():
+                    raise finance.AdmissionWait("Complete existing research admission is closed")
+                files = (
+                    self.registry.path,
+                    self.registry.path.with_name(self.registry.path.name + "-wal"),
+                    self.registry.path.with_name(self.registry.path.name + "-shm"),
+                )
+                if (
+                    shutil.disk_usage(self.registry.path.parent).free
+                    < policy.minimum_disk_gib * 1024**3
+                    or sum(path.stat().st_size for path in files if path.exists())
+                    > policy.registry_mib * 1024**2
+                ):
+                    raise finance.AdmissionWait("Retained research storage capacity is unavailable")
+                now = time.time()
+                if load_plan(self.registry.path.parent) is not None:
+                    storage = storage_snapshot(self.registry.path.parent)
+                    if (
+                        storage.get("state") != "recording"
+                        or not 0 <= now - storage.get("receipt_at", 0) <= 30
+                    ):
+                        raise finance.AdmissionWait("Current owned recording is unavailable")
+                frame = self.paper.control_frames().get("BTCUSD")
+                observed_at = time.time()
+                if (
+                    evaluation is None
+                    or not fresh_frame(frame, observed_at)
+                    or not 0 <= observed_at - evaluation["evaluated_at"] <= 5
+                ):
+                    raise InputWait("Current causal evaluation or executable book is unavailable")
+                finance.periods(current, now)
+                budget = current["budget"]
+                work_steps = 1 if outcome else 2
+                measured_seconds = time.perf_counter() - started
+                allocated_seconds = max(float(work_steps), measured_seconds)
+                if (
+                    budget["steps"] + work_steps > policy.hourly_steps
+                    or budget["compute_seconds"] + allocated_seconds > policy.hourly_compute_seconds
+                ):
+                    raise finance.AdmissionWait("UTC hourly setup work budget exhausted")
+                budget["steps"] += work_steps
+                budget["compute_seconds"] += allocated_seconds
+                budget["measured_seconds"] += measured_seconds
+                current["last_work_at"] = now
+                trial["operator_launch_intent"] = intent.model_dump()
+                engine.emit(
+                    "lab_operator_launch_admitted",
+                    "system",
+                    {
+                        "proposal_id": request_id,
+                        "trial_id": trial_id,
+                        "intent": intent.model_dump(),
+                        "admission": admission,
+                        "evaluation": {
+                            key: value for key, value in evaluation.items() if key != "inputs"
+                        },
+                        "inputs_sha256": fingerprint(evaluation["inputs"]),
+                        "input_count": len(evaluation["inputs"]),
+                        "work_steps": work_steps,
+                        "allocated_seconds": allocated_seconds,
+                        "measured_seconds": measured_seconds,
+                        "measurement_scope": (
+                            "Preparation to pre-funding check; funding/commit excluded"
+                        ),
+                        "scope": (
+                            "Finite account setup only; background/model/trade guards unchanged"
+                        ),
+                    },
+                )
+                result.update(finance.fund(engine, trial_id))
+
+            self.paper.store.lab_reserve(time.time(), proposal, operator_launch=launch)
+            self.paper.state = self.paper.store.read()
+            if result["status"] in {"funded", "already_funded"}:
+                self.inbox.update(request_id, "funded", result["trial_id"])
+            return {**result, "proposal": self.inbox.get(request_id)}
 
     def start(self, policy: LabPolicy) -> dict[str, Any]:
         self.paper.require_healthy_control()

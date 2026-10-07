@@ -24,7 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from psycopg.conninfo import make_conninfo
 from pydantic import BaseModel, ConfigDict, Field
 
-from trading.autonomous_spec import LabControl, LabPolicy, LabProposal
+from trading.autonomous_spec import LabControl, LabPolicy, LabProposal, OperatorLaunch
 from trading.compact_memory import compact_evidence
 from trading.config import Settings
 from trading.evidence_runtime import feature_reproduction
@@ -312,8 +312,29 @@ def create_app(
                     if app.state.paper is not None:
                         from trading.autonomous_lab import AutonomousLab
 
+                        def operator_setup_admission(exception: bool) -> dict[str, Any]:
+                            result = dict(app.state.paper.operator_launch_admission(exception))
+                            for name, active in (
+                                ("replay_worker_active", bool(replay_lab and replay_lab.busy)),
+                                ("numerical_worker_active", bool(lab and lab.child is not None)),
+                            ):
+                                if active:
+                                    result["admitted"] = False
+                                    result["blocking_conditions"] = [
+                                        *result["blocking_conditions"],
+                                        name,
+                                    ]
+                                    result["raw_blocking_conditions"] = [
+                                        *result["raw_blocking_conditions"],
+                                        name,
+                                    ]
+                            return result
+
                         lab.autonomous = AutonomousLab(
-                            lab.registry, app.state.paper, lambda: lab.can_research()
+                            lab.registry,
+                            app.state.paper,
+                            lambda: lab.can_research(),
+                            operator_setup_admission,
                         )
                     local_roles = local_role_transport(database.parent)
                     lab.roles = RoleWorker(lab.registry, lab.autonomous, local_roles)
@@ -1370,7 +1391,7 @@ def create_app(
             raise HTTPException(409, str(exc)) from exc
 
     @app.get("/api/autonomous/proposals/{request_id}")
-    async def autonomous_proposal(request: Request, request_id: str) -> dict[str, Any]:
+    def autonomous_proposal(request: Request, request_id: str) -> dict[str, Any]:
         try:
             controller = autonomous(request)
             result = dict(controller.inbox.get(request_id))
@@ -1380,9 +1401,25 @@ def create_app(
                     (result["body"]["evidence_bundle_sha256"],),
                 ).fetchone()
             result["issued_bundle"] = json.loads(row["body"]) if row else None
+            result["financial_outcome"] = controller.paper.store.lab_proposal_outcome(request_id)
             return result
         except ValueError as exc:
             raise HTTPException(404, str(exc)) from exc
+
+    @app.post("/api/autonomous/proposals/{request_id}/launch")
+    def autonomous_operator_launch(
+        request: Request, request_id: str, body: OperatorLaunch
+    ) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return dict(autonomous(request).launch_existing(request_id, body))
+        except (psycopg.Error, sqlite3.Error, OSError) as exc:
+            raise HTTPException(
+                503,
+                "Setup acknowledgment unknown; reopen the same proposal identity before retrying",
+            ) from exc
+        except (ValueError, RuntimeError) as exc:
+            raise HTTPException(409, str(exc)[:300]) from exc
 
     @app.get("/api/autonomous/history")
     async def autonomous_history(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:

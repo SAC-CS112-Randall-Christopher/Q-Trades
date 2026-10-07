@@ -249,3 +249,60 @@ class EngineWorkDiagnostics:
             "current_window": list(self.samples),
             "retention": "Latest 20 work samples in memory; coalesced trigger receipts in journal",
         }
+
+    def known_latency_window(self, pressure: PressureRecoveryEvaluation, now_mono: float) -> bool:
+        """Coverage for finite operator setup only; ordinary admission is unchanged."""
+        rows = list(self.samples)
+        if (
+            len(rows) != 20
+            or pressure.observed_samples != 20
+            or set(pressure.reasons)
+            - {"insufficient_consecutive_sub500_work", "severe_recovery_hold"}
+        ):
+            return False
+        previous: float | None = None
+        for index, row in enumerate(rows):
+            at, elapsed = row.get("observed_mono"), row.get("elapsed_ms")
+            if (
+                row.get("observation_epoch") != self.observation_epoch
+                or row.get("policy_version") != PRESSURE_POLICY_VERSION
+                or type(row.get("work_number")) is not int
+                or row["work_number"] != self.work_observations - 19 + index
+                or not isinstance(at, (float, int))
+                or isinstance(at, bool)
+                or not isfinite(at)
+                or not isinstance(elapsed, (float, int))
+                or isinstance(elapsed, bool)
+                or not isfinite(elapsed)
+                or elapsed < 0
+                or (previous is not None and not 0 <= at - previous <= 2)
+            ):
+                return False
+            previous = at
+        if (
+            type(now_mono) not in (float, int)
+            or not isfinite(now_mono)
+            or previous is None
+            or not 0 <= now_mono - previous <= 2
+            or previous != pressure.last_observed_mono
+        ):
+            return False
+        if pressure.pressure_allows:
+            return True
+        trigger = self.last_trigger
+        sample = trigger.get("sample", {}) if trigger else {}
+        elapsed = sample.get("elapsed_ms")
+        return bool(
+            trigger
+            and trigger.get("policy_version") == PRESSURE_POLICY_VERSION
+            and sample.get("observation_epoch") == self.observation_epoch
+            and type(sample.get("work_number")) is int
+            and 0 < sample["work_number"] <= self.work_observations
+            and isinstance(elapsed, (float, int))
+            and not isinstance(elapsed, bool)
+            and isfinite(elapsed)
+            and (
+                (trigger.get("severe_stall") is True and elapsed >= 1000)
+                or (trigger.get("repeated_slow_work") is True and elapsed >= 500)
+            )
+        )
