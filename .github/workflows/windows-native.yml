@@ -44,6 +44,8 @@ jobs:
           $PSVersionTable.PSVersion.ToString()
           if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Requires Windows PowerShell 5.1' }
           python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 `
+            --deselect=tests/test_scoped_tools.py::test_physical_journal_pressure_archives_before_64_mib `
+            --deselect=tests/test_scoped_tools.py::test_more_than_5000_receipts_reopen_failures_and_stable_request_ids `
             tests/test_simple_health.py tests/test_paper_update_shutdown.py `
             tests/test_windows_supervision.py tests/test_paper_engine.py `
             tests/test_redesign_strategy.py tests/test_account_redesign.py `
@@ -66,7 +68,7 @@ jobs:
             tests/test_portfolio_components.py tests/test_integrated_research.py `
             tests/test_research_audit_corrections.py tests/test_memory_accounts.py `
             tests/test_autonomous_lab.py tests/test_continuous_safety.py tests/test_research_storage.py `
-            tests/test_research_storage_expansion.py tests/test_capture_recovery.py `
+            tests/test_research_storage_expansion.py tests/test_research_storage_file_accounting.py tests/test_capture_recovery.py `
             tests/test_continuous_audit.py tests/test_trade_history.py tests/test_scoped_tools.py `
             tests/test_activity_reader_recovery.py tests/test_capture_projection.py tests/test_paper_projection.py `
             tests/test_projection_ram.py `
@@ -136,7 +138,10 @@ jobs:
         run: |
           $PSVersionTable.PSVersion.ToString()
           if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Requires Windows PowerShell 5.1' }
-          python -B -m pytest -q -p no:cacheprovider --tb=long tests/test_model_runtime_task_ownership.py tests/test_simple_update.py
+          python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 `
+            tests/test_model_runtime_task_ownership.py tests/test_simple_update.py `
+            tests/test_scoped_tools.py::test_physical_journal_pressure_archives_before_64_mib `
+            tests/test_scoped_tools.py::test_more_than_5000_receipts_reopen_failures_and_stable_request_ids
 
   postgres-integration:
     # Full portable suite with real password authentication, independent of

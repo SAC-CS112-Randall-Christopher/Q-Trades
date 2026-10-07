@@ -176,9 +176,70 @@ Every baseline selector, job and lifecycle budget remains unchanged. Final
 hosted completion must verify both the original native selection and the
 additional Windows research coverage; no longer limit or reduced selection
 substitutes for completion.
+
+The second hosted head `d6ad9309f0182573f78c32ee821845ddc42a4b09` passed
+four jobs, including the added scanner/shared-writer research coverage. Its
+portable PostgreSQL suite failed one concurrent-review case after 1,901 passes
+and 98 platform skips (430.60 seconds). The failure was a vanished SQLite
+shared-memory file between `is_file()` and the separate size stat. The trace
+does not identify the closing thread. The corrected storage tally uses one
+stat for classification and size. A missing known SQLite sidecar restarts the
+entire tally once because checkpointing can grow a main database already
+counted. A second disappearance refuses admission; persistent-file loss,
+missing directories and other I/O failures still propagate. Real SQLite
+fixtures reproduce the old failure and verify checkpoint-growth quota refusal,
+bounded recount, retained evidence and unchanged reserves/volume checks.
+
+That second Windows native job was cancelled with one station-test failure,
+1,319 passes and 194 skips (469.45 seconds). The station fixture incorrectly
+assumed its real I/O would finish within the production one-second cooldown.
+Its API-local test clock now verifies refusal at 0.999 seconds, unchanged
+receipts and admission at exactly one second without replacing the global
+clock or changing production policy. Duration evidence also measured two
+existing scoped-tool cases at 135.47 and 71.66 seconds. Those exact cases
+retain their assertions and move from the native selection to the existing
+Windows runtime-ownership job. All 95 baseline native file selectors remain
+in order, with only those two exact node IDs deselected there and selected
+in the ownership job. The new storage-accounting regression file is also
+explicitly selected on Windows. Six jobs, their original selectors in the
+combined coverage, and every lifecycle budget remain protected. A fresh
+exact-head run must establish completion; the failed runs remain retained.
+
+After those repairs, the affected native storage, capture, concurrent-review,
+scanner, candle, scoped-tool and station suites passed 150 tests with the same
+single Windows symlink-privilege skip and existing deprecation warning (95.84
+seconds). They used the explicitly verified disposable PostgreSQL database,
+including the native maturity/expansion cases omitted from the author's initial
+SQLite-only check. The separate 14 new storage regressions passed without
+skips. All-source Ruff passed; the changed storage owner passed strict Windows
+mypy. Independent reviews cleared the repair and exact selector partition.
+The fresh compiled scanner browser check passed all 14 groups at the changed
+storage-owner hash, using the unchanged compiled dashboard. Its owned browser,
+fixture server and loopback listener closed normally. The disposable PostgreSQL
+owner was verified before normal cleanup, no other clients remained, and its
+process/listener stopped with all data retained. The earlier 1,999-pass full
+native run applies to the pre-repair application source; it is not substituted
+for final-head hosted verification. Published PR #80 checks and the subsequent
+#66 checkpoint record that separate exact-head outcome.
+
 Operating installation/activation and a full real year across the eligible
 roster remain separate acceptance. No trading value, complete model coexistence,
 continuous recording or populated Library/Reviews acceptance follows from
 synthetic fixtures. After the scanner is complete, Chris requested investigation
 of the expected eighteen accounts versus eight shown; that investigation does
 not authorize recreating accounts or restoring financial history.
+
+The later bounded account investigation read the installed status, account
+identities, autonomous trial history and performance status, then reopened
+one archived candidate through the ordinary dashboard. All ten requested
+additions were funded as five candidate/reference pairs with fixed four-hour
+reviews. Each pair recorded a data-blocked review and then retired through
+the existing supervisor; they collectively retained 12 closed trades. Their
+retirement preceded the PR #79 rollout. Six protected original accounts and
+one newer medium-horizon pair remain active, explaining the displayed eight.
+All 18 archived identities remain listed, for 26 distinct identities over time.
+This is not an eight-account UI cap or evidence of update-related deletion.
+The saved scores omit the exact input/passive-evidence predicate that blocked
+those reviews, so the precise blocker remains unknown. The archived trials
+are not established as losing strategies. This investigation does not fund,
+restore, reopen or convert them into continuing accounts.

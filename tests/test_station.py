@@ -4,11 +4,13 @@ import json
 import time
 from collections import deque
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
 from test_paper_runtime import ReadOnlyStub, instrument
 
+from trading import api as api_module
 from trading.api import create_app
 from trading.config import Settings
 from trading.market import parse_book
@@ -337,7 +339,16 @@ def test_tool_capacity_blocks_new_work_without_pruning_receipts(tmp_path, monkey
         journal.close()
 
 
-def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path):
+def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path, monkeypatch):
+    api_monotonic = [1000.0]
+    stdlib_monotonic = time.monotonic
+    # Control only the API cooldown clock; asyncio and other owners keep real time.
+    monkeypatch.setattr(
+        api_module,
+        "time",
+        SimpleNamespace(time=time.time, monotonic=lambda: api_monotonic[0]),
+    )
+    assert time.monotonic is stdlib_monotonic
     app = create_app(Settings(), tmp_path / "monitor.sqlite3", background=False)
     before = copy.deepcopy(runtime.state)
     with TestClient(app) as client:
@@ -357,18 +368,25 @@ def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path):
         run = client.post("/api/research/tools/run", json=args, headers=headers).json()
         assert run["status"] == "completed", run["error"]
         assert client.get(f"/api/research/tools/runs/{run['id']}").json() == run
+        assert app.state.last_tool_at == 1000.0
+        retained = app.state.tool_journal.recent()["total"]
+        api_monotonic[0] = 1000.999
         assert client.post("/api/research/tools/run", json=args, headers=headers).status_code == 429
-        app.state.last_tool_at = 0
-        market_run = client.post(
+        assert app.state.tool_journal.recent()["total"] == retained
+        assert app.state.tool_journal.get(run["id"]) == run
+        api_monotonic[0] = 1001.0
+        market_response = client.post(
             "/api/research/tools/run",
             json={"tool": "market_evidence", "symbol": "BTCUSD"},
             headers=headers,
-        ).json()
+        )
+        assert market_response.status_code == 200
+        market_run = market_response.json()
         assert market_run["status"] == "completed"
         assert market_run["result"]["version"] == "scoped-research-tools-v3"
         assert len(market_run["result"]["result"]["detail"]["indicators"]["points"]) == 120
         assert client.get(f"/api/research/tools/runs/{market_run['id']}").json() == market_run
-        app.state.last_tool_at = 0
+        api_monotonic[0] += 1
         bad = client.post(
             "/api/research/tools/run", json={**args, "tool": "place_order"}, headers=headers
         )
@@ -381,10 +399,11 @@ def test_station_api_authority_receipts_and_read_only_routes(runtime, tmp_path):
             ).status_code
             == 503
         )
-        app.state.last_tool_at = 0
+        api_monotonic[0] += 1
         saved_read = client.post("/api/research/tools/run", json=args, headers=headers)
         assert saved_read.status_code == 200 and saved_read.json()["status"] == "completed"
     assert runtime.state == before
+    assert time.monotonic is stdlib_monotonic
 
 
 def test_station_optional_tools_respect_low_disk_without_changing_accounts(runtime, tmp_path):
