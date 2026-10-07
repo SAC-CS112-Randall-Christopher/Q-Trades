@@ -58,6 +58,7 @@ jobs:
             tests/test_research_campaigns.py tests/test_paper_learning.py `
             tests/test_lab_resilience.py tests/test_live_readiness.py tests/test_efficiency_contracts.py `
             tests/test_research_evidence.py tests/test_pattern_memory.py tests/test_execution_replay.py `
+            tests/test_pattern_scanner.py tests/test_live_candle_storage.py `
             tests/test_memory_quality.py tests/test_context_flow.py tests/test_incremental_memory.py `
             tests/test_execution_window.py tests/test_streaming.py `
             tests/test_engine_diagnostics.py tests/test_admission_recovery_candidate.py `
@@ -267,6 +268,22 @@ jobs:
             QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58968 \
             node tests/browser/candle_patterns.cjs
           wait "$candle_pid"
+      - name: Verify native-year preparation, all levels, alerts and control recovery
+        run: |
+          python -B tests/browser/pattern_scanner_server.py \
+            --directory "$RUNNER_TEMP/scanner-browser-workspace" \
+            --web-dist "$GITHUB_WORKSPACE/apps/web/dist" \
+            > "$RUNNER_TEMP/scanner-browser-server.log" 2>&1 &
+          scanner_pid=$!
+          trap 'kill "$scanner_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:58969/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          QTRADES_BROWSER_QA_OUTPUT="$RUNNER_TEMP/browser-output/pattern-scanner" \
+            QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58969 \
+            node tests/browser/pattern_scanner.cjs
+          wait "$scanner_pid"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

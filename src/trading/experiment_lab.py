@@ -35,6 +35,7 @@ class ExperimentLab:
         self.child: subprocess.Popen[bytes] | None = None
         self.autonomous: Any = None
         self.roles: Any = None
+        self.pattern_scanner: Any = None
         self.notices = ResearchNotices(self.registry)
         self.notice_source: Callable[[], list[dict[str, Any]]] | None = None
         self.notice_error: str | None = None
@@ -238,6 +239,13 @@ class ExperimentLab:
                     await asyncio.to_thread(self.autonomous.step)
                 if self.can_research():
                     await asyncio.to_thread(self.campaigns.step, time.time())
+                if self.pattern_scanner is not None:
+                    try:
+                        await self.pattern_scanner.step()
+                    except (sqlite3.Error, OSError, ValueError):
+                        self.pattern_scanner.reason = (
+                            "Pattern preparation storage unavailable; inspect retained progress"
+                        )
                 await self.run_once()
                 await asyncio.sleep(2)
         finally:

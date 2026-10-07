@@ -5,6 +5,7 @@ import "./station.css";
 import { MarketChart, type Candle, type Indicators } from "./MarketChart";
 import { useEvidenceRead } from "./useEvidenceRead";
 import { CandleWorkspace } from "./CandleWorkspace";
+import { ScannerWorkspace } from "./ScannerWorkspace";
 
 const historicalTools = new Set(["input_diagnosis", "cost_diagnosis", "strategy_evidence", "outcome_review"]);
 
@@ -267,6 +268,10 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
       <section className="station-events" aria-label="Recent paper activity"><div className="station-pane-title"><h3>Paper activity</h3><span>Primary account</span></div>{detail?.paper_events.slice(0, 5).map(event => <div className="station-event" key={event.id}><div><strong>{event.kind.replaceAll("_", " ")}</strong><time>{time(event.at * 1000)}</time></div><p>{event.body.reason ?? [event.body.side, event.body.quantity, event.body.price].filter(Boolean).join(" · ")}</p></div>)}{!detail?.paper_events.length && <p className="station-empty">No matching activity in the recent account window.</p>}<button className="station-text-button" type="button" disabled={busy || !detail} onClick={() => void runTool("outcome_review")}>Review outcomes <ChevronRight size={14} /></button></section>
     </div>
     </>}
+    {!strategyOnly && <ScannerWorkspace symbol={symbol} onInspect={market => {
+      chooseScope(market, account);
+      document.getElementById("candle-workspace-title")?.scrollIntoView({ block: "start" });
+    }} />}
     {!strategyOnly && <CandleWorkspace symbol={symbol} savedRuns={toolsPoll.data?.runs ?? []} onChooseMarket={(market, id) => chooseScope(market, account, id)} />}
     {strategyOnly && (detail?.experiments ? <StrategyLab data={detail.experiments} symbol={symbol} unavailable={!!detailPoll.error || live?.running !== true || !!live?.error} /> : <p className="station-empty">{detailPoll.error ?? "Waiting for recorded strategy evidence…"}</p>)}
     <section className="station-tools" aria-label="Research tools">
