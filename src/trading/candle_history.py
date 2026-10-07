@@ -8,13 +8,15 @@ import copy
 import json
 import math
 import time
+from collections.abc import Callable
+from contextlib import AbstractContextManager, closing
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
 from trading.candle_patterns import analyze_candles
 from trading.paper_strategy import Bar
 from trading.research_evidence import digest
-from trading.research_storage import ResearchStorage, StoragePlan
+from trading.research_storage import ResearchStorage, StoragePlan, reopen_evidence
 from trading.venue import PublicVenue
 
 INTERVALS = {"5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400}
@@ -137,10 +139,11 @@ def retain_history(
     analysis: dict[str, Any],
     raw: list[list[Any]],
     account: str = "primary",
+    storage_owner: Callable[[StoragePlan], AbstractContextManager[ResearchStorage]] | None = None,
 ) -> dict[str, Any]:
     """Keep exact inputs and full chart in the existing bounded research store."""
-    with_store = ResearchStorage(plan)
-    try:
+    access = storage_owner(plan) if storage_owner else closing(ResearchStorage(plan))
+    with access as with_store:
         now = time.time()
         if not 0 < len(raw) <= MAX_BARS or len(analysis["candles"]) != len(raw):
             raise ValueError("Candle study input and analysis counts differ")
@@ -202,8 +205,6 @@ def retain_history(
                 "retention_until": until,
             },
         }
-    finally:
-        with_store.close()
 
 
 def reopen_history(plan: StoragePlan, namespace: str, receipt: dict[str, Any]) -> None:
@@ -211,44 +212,40 @@ def reopen_history(plan: StoragePlan, namespace: str, receipt: dict[str, Any]) -
     if receipt.get("tool") != "candle_patterns" or not value:
         return
     envelope = value["envelope"]
-    store = ResearchStorage(plan)
-    try:
-        full = store.reopen(envelope["candle_analysis_reference"])
+    full = reopen_evidence(plan, envelope["candle_analysis_reference"])
+    if (
+        full.get("kind") != "candle_pattern_manifest"
+        or full.get("namespace") != namespace
+        or full.get("run_id") != receipt["id"]
+        or not 0 < full.get("bar_count", 0) <= MAX_BARS
+        or len(full.get("chunk_references", [])) != (full["bar_count"] + 499) // 500
+    ):
+        raise ValueError("Saved candle study identity differs")
+    analysis = copy.deepcopy(full["analysis"])
+    raw_rows = []
+    for index, reference in enumerate(full["chunk_references"]):
+        chunk = reopen_evidence(plan, reference)
+        expected = min(500, full["bar_count"] - index * 500)
         if (
-            full.get("kind") != "candle_pattern_manifest"
-            or full.get("namespace") != namespace
-            or full.get("run_id") != receipt["id"]
-            or not 0 < full.get("bar_count", 0) <= MAX_BARS
-            or len(full.get("chunk_references", [])) != (full["bar_count"] + 499) // 500
+            chunk.get("kind") != "candle_pattern_chunk"
+            or chunk.get("namespace") != namespace
+            or chunk.get("run_id") != receipt["id"]
+            or chunk.get("start") != index * 500
+            or any(len(chunk.get(key, [])) != expected for key in ("rows", "candles", "points"))
         ):
-            raise ValueError("Saved candle study identity differs")
-        analysis = copy.deepcopy(full["analysis"])
-        raw_rows = []
-        for index, reference in enumerate(full["chunk_references"]):
-            chunk = store.reopen(reference)
-            expected = min(500, full["bar_count"] - index * 500)
-            if (
-                chunk.get("kind") != "candle_pattern_chunk"
-                or chunk.get("namespace") != namespace
-                or chunk.get("run_id") != receipt["id"]
-                or chunk.get("start") != index * 500
-                or any(len(chunk.get(key, [])) != expected for key in ("rows", "candles", "points"))
-            ):
-                raise ValueError("Saved candle chunk identity differs")
-            raw_rows.extend(chunk["rows"])
-            analysis["candles"].extend(chunk["candles"])
-            analysis["indicators"]["points"].extend(chunk["points"])
-        query = json.loads(receipt["query"])
-        if (
-            digest(raw_rows) != analysis["source_sha256"]
-            or digest(analysis) != envelope["candle_analysis_sha256"]
-            or analysis["symbol"] != receipt["symbol"]
-            or any(analysis[key] != query[key] for key in ("timeframe", "window"))
-            or envelope["account"] != receipt["account"]
-        ):
-            raise ValueError("Saved candle input identity differs")
-        # Preserve the original receipt body and result_sha256 exactly. The expanded
-        # chart has its own manifest/reference and analysis digest in the envelope.
-        receipt["candle_analysis"] = analysis
-    finally:
-        store.close()
+            raise ValueError("Saved candle chunk identity differs")
+        raw_rows.extend(chunk["rows"])
+        analysis["candles"].extend(chunk["candles"])
+        analysis["indicators"]["points"].extend(chunk["points"])
+    query = json.loads(receipt["query"])
+    if (
+        digest(raw_rows) != analysis["source_sha256"]
+        or digest(analysis) != envelope["candle_analysis_sha256"]
+        or analysis["symbol"] != receipt["symbol"]
+        or any(analysis[key] != query[key] for key in ("timeframe", "window"))
+        or envelope["account"] != receipt["account"]
+    ):
+        raise ValueError("Saved candle input identity differs")
+    # Preserve the original receipt body and result_sha256 exactly. The expanded
+    # chart has its own manifest/reference and analysis digest in the envelope.
+    receipt["candle_analysis"] = analysis

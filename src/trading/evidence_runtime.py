@@ -8,11 +8,13 @@ import sqlite3
 import time
 import uuid
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import asdict
 from decimal import Decimal
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from trading.compact_memory import CompactMemory, prefix
@@ -30,7 +32,7 @@ from trading.research_evidence import (
     canonical,
     digest,
 )
-from trading.research_storage import ResearchStorage, load_plan
+from trading.research_storage import ResearchStorage, StoragePlan, load_plan
 
 
 def plain(value: Any) -> Any:
@@ -342,6 +344,10 @@ class EvidenceRecorder:
         self.compact_status: dict[str, Any] = {"state": "starting"}
         self.compact_dropped = 0
         self._storage: ResearchStorage | None = None
+        # Tools borrow this recorder's initialized writer. Startup reconciliation
+        # must not run again for each optional page/read while capture is active.
+        self._storage_lock = RLock()
+        self._closed = False
         self._external_expected = (path.parent / "research-storage.json").exists()
         self.storage_status: dict[str, Any] = {"state": "not_configured"}
         # An empty retry must cover the declined real input, not just zero bytes.
@@ -630,7 +636,25 @@ class EvidenceRecorder:
         packets = [self.pending.popleft() for _ in range(min(8, len(self.pending)))]
         await asyncio.to_thread(self._write_batch, compact, packets, disk_available)
 
+    @contextmanager
+    def research_store(self, plan: StoragePlan) -> Iterator[ResearchStorage]:
+        """Borrow the existing live writer; never start another recovery owner."""
+        with self._storage_lock:
+            if self._closed or self._storage is None:
+                raise OSError("Existing research recorder is not ready; no alternate writer")
+            if self._storage.plan != plan or load_plan(self.path.parent) != plan:
+                raise ValueError("Research recorder storage identity differs")
+            yield self._storage
+
     def _write_batch(
+        self, compact: list[dict[str, Any]], packets: list[dict[str, Any]], disk_available: bool
+    ) -> None:
+        with self._storage_lock:
+            if self._closed:
+                raise OSError("Research recorder has closed")
+            self._write_owned_batch(compact, packets, disk_available)
+
+    def _write_owned_batch(
         self, compact: list[dict[str, Any]], packets: list[dict[str, Any]], disk_available: bool
     ) -> None:
         try:
@@ -832,6 +856,15 @@ class EvidenceRecorder:
                 # Yield to finance but continue queued capture without an idle delay.
                 await asyncio.sleep(0 if self.pending or self.compact_pending else 0.25)
         finally:
+            # An optional borrower can still be finishing a bounded write. Wait
+            # off the event loop so independent financial cleanup can proceed.
+            await asyncio.to_thread(self.close)
+
+    def close(self) -> None:
+        with self._storage_lock:
+            if self._closed:
+                return
+            self._closed = True
             if self._storage is not None:
                 self._storage.close()
             if self._archive is not None:

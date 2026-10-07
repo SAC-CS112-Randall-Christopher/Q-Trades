@@ -1,4 +1,14 @@
-# Current direction — October 4, 2026, issue #48
+# Current scanner proposal — October 7, 2026, issue #66
+
+The dedicated scanner source lane starts from merged/installed candle PR #79
+`f9bd8574f71badf7218ace0952ad2709ac1a7461`. It adds a frozen 365-day native
+5m/15m/30m/1h/4h preparation, all detected levels, saved alerts and current
+candidate reasons through the existing Markets and research owners. Read
+[PATTERN_SCANNER.md](PATTERN_SCANNER.md) for scope, executed checks, recovery,
+capacity and operating acceptance limits. This new source is not installed or
+activated. The earlier sections below are historical receipts.
+
+# Historical direction — October 4, 2026, issue #48
 
 Read [CURRENT_RESEARCH_STATUS.md](CURRENT_RESEARCH_STATUS.md) before acting. The recorded baseline is main
 `5d7bf35`; the selected direction is Qwen3.5-4B and operating storage is
