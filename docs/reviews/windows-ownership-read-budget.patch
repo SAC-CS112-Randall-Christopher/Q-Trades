@@ -1,0 +1,11 @@
+--- collect_receipt.py (retained original owner; do not modify in place)
++++ collect_receipt.py (proposed separately reviewed acceptance revision)
+@@ -288,7 +288,7 @@
+     logs = safe_path(args.output)
+     with (logs / (args.phase + "-native.stdout")).open("xb") as out, (logs / (args.phase + "-native.stderr")).open("xb") as err:
+         child = subprocess.Popen(native_args, stdout=out, stderr=err, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+-        native_end = time.monotonic() + 8
++        native_end = time.monotonic() + 20
+         try:
+             while child.poll() is None:
+                 deadline()
