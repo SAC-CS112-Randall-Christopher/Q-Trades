@@ -1,4 +1,28 @@
-# Current source follow-up — October 6, 2026, original account redesign (#66)
+# Current source follow-up — October 7, 2026, saved scanner charts (#66)
+
+Chris expects an analyzed crypto to have five native candle charts (5m, 15m,
+30m, 1h and 4h), a breakdown of its recorded findings, named pattern annotations,
+and horizontal support/resistance alert zones. Historical event selection must
+open that event's saved candles rather than a fresh, unrelated tool study.
+Show available VWAP, moving averages and volume alongside the original event;
+these display relationships are not a newly validated predictive mechanism.
+
+Reuse the existing Markets workspace, scanner registry, immutable native input
+archives and chart library. Preserve the scanner's frozen implementation identity,
+actual progress cutoff, gaps, source references, every paginated retained level,
+original alert evaluations and all financial/research owners. Bounded read-only
+chart projection and source/disposable QA are authorized. Keep a separate candle
+study's existing request/receipt recovery owner intact.
+
+The approved scanner rollout at de51151173ae9455521728e5e44ac6fdfac9fdb6 is
+complete within its documented receipt scope. Reuse that receipt; do not repeat
+the rollout or manufacture strict ownership/full-coverage acceptance. This new
+visual follow-up requires source checks, independent review and an owning draft
+PR before its separately reviewable exact-target merge/install decision. Do not
+start an operating scanner campaign, dispatch a model, retry consumed attempts,
+reopen/refund retired trials, change financial rules or activate research here.
+
+# Previous source follow-up — October 6, 2026, original account redesign (#66)
 
 Chris requested redesign after the original six breakout baselines recorded
 poor after-cost outcomes. The other two older long-horizon accounts have no

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CandlestickSeries, ColorType, CrosshairMode, HistogramSeries, LineSeries,
-  createChart, createSeriesMarkers, type IChartApi, type ISeriesApi, type UTCTimestamp } from "lightweight-charts";
+  createChart, createSeriesMarkers, type IChartApi, type ISeriesApi, type ISeriesMarkersPluginApi, type Time, type UTCTimestamp } from "lightweight-charts";
 import type { Candle } from "./MarketChart";
 import { useEvidenceRead } from "./useEvidenceRead";
 import "./candle-workspace.css";
@@ -25,6 +25,36 @@ type Analysis = { version: string; symbol: string; timeframe: Frame; window: Win
     patterns_observed: number; patterns_omitted_from_display: number; latest_segment_candles: number };
   candles: Candle[]; indicators: { points: Point[] }; zones: Zone[]; patterns: Pattern[];
   parameters: Record<string, unknown>; limitations: string[] };
+export type CandleChartAnalysis = Analysis;
+export type ScannerChartFocus = { timeframe: Frame; atMs: number; levelId?: string; nonce: number;
+  kind?: "levels" | "patterns" | "alerts"; seq?: number };
+type ScannerLevel = { seq: number; id: string; kind: string; price: string; low: string; high: string;
+  confirmed_at_ms: number; first_usable_ms: number; segment: number; validation: string; usable_until_ms?: number };
+type ScannerEvent = Pattern & { seq: number; historical: boolean; bar_close_ms: number;
+  evaluation?: { status: string; checks: Record<string, boolean | null>; unknowns: string[];
+    evaluated_at: number; criteria: string; limitations: string[] } };
+type OverlayPage<T> = { rows: T[]; total: number; next_before: number | null };
+type ScannerView = { version: string; campaign_id: string; symbol: string; timeframe: Frame; seconds: number;
+  observed_at: number; mode: "latest" | "historical"; processed_through_ms: number | null;
+  candles: Candle[]; indicators: { points: Point[] }; levels: OverlayPage<ScannerLevel>;
+  patterns: OverlayPage<ScannerEvent>; alerts: OverlayPage<ScannerEvent>;
+  coverage: { state: string; input_candles: number; actual_start_ms: number | null; actual_end_ms: number | null;
+    requested_start_ms: number | null; requested_end_ms: number | null; missing_candles: number;
+    segments: number; segment_spans: { start_ms: number; end_ms: number; scanner_segment: number | null }[]; latest_segment_candles: number;
+    warmup: Record<string, boolean>; source_available: boolean; source_error: string | null;
+    scanner_status: string; scanner_error: string | null; scanner_observed_bars: number;
+    scanner_expected_bars: number; scanner_missing_bars: number; pending: boolean;
+    selected_at_ms: number | null; selected_candle_available: boolean | null };
+  gaps: unknown[]; pagination: { next_before_ms: number | null };
+  source: { kind: string; rows_sha256: string; progress_sha256: string; recognition_source_sha256: string;
+    implementation_sha256: string; references: string[]; archive_verified: boolean };
+  parameters: Record<string, unknown>; limitations: string[]; financial_authority: false;
+  selection: null | { kind: "levels" | "patterns" | "alerts"; record: ScannerLevel | ScannerEvent;
+    known_by_window_end: boolean; candle_available: boolean } };
+type ChartQuery = { at_ms?: number; before_ms?: number; levels_before?: number; patterns_before?: number;
+  alerts_before?: number; expected_progress_sha256?: string; selected_kind?: "levels" | "patterns" | "alerts"; selected_seq?: number };
+type ScannerCard = { view: ScannerView | null; loading: boolean; error: string | null;
+  query: ChartQuery; viewQuery: ChartQuery };
 type Run = { id: number; tool: string; symbol: string; status: string; request_id: string;
   query: string | Record<string, unknown>; started: number; error: string | null;
   result: Record<string, unknown> | null; candle_analysis?: Analysis };
@@ -43,6 +73,15 @@ const finiteDecimal = (value: unknown) => typeof value === "string" && value.len
   /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) && Number.isFinite(Number(value));
 const nullableDecimal = (value: unknown) => value === null || finiteDecimal(value);
 const count = (value: unknown) => Number.isSafeInteger(value) && Number(value) >= 0;
+
+function patternMarkersFor(patterns: Pattern[], selected: number | null) {
+  const grouped = new Map<number, Pattern[]>();
+  for (const pattern of patterns) grouped.set(pattern.bar_open_ms, [...(grouped.get(pattern.bar_open_ms) ?? []), pattern]);
+  return [...grouped.entries()].map(([time, events]) => ({ time: (time / 1000) as UTCTimestamp,
+    position: "aboveBar" as const, shape: "circle" as const,
+    color: events.some(event => event.volume_confirmed === true) ? "#f8c66a" : "#b3bfc7",
+    text: time === selected ? `${[...new Set(events.map(event => title(event.kind)))].join(" · ")}${events.length > 1 ? ` (${events.length})` : ""}` : events.length > 1 ? String(events.length) : "" }));
+}
 
 function savedCommand(): Saved {
   try {
@@ -134,8 +173,9 @@ function validateRun(value: Run, expected: { id?: number; command?: Command }): 
       !Number.isFinite(z.confirmed_at_ms) || !Number.isFinite(z.last_touch_ms))) throw new Error("Saved pattern or level data failed validation.");
 }
 
-function CandleStudyChart({ analysis, selected, onSelect }: {
-  analysis: Analysis; selected: number | null; onSelect: (time: number) => void;
+export function CandleStudyChart({ analysis, selected, onSelect, compact = false, scannerLevels }: {
+  analysis: Analysis; selected: number | null; onSelect: (time: number) => void; compact?: boolean;
+  scannerLevels?: ScannerLevel[];
 }) {
   const host = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
@@ -147,13 +187,14 @@ function CandleStudyChart({ analysis, selected, onSelect }: {
   choose.current = onSelect;
   visibleLines.current = enabled;
   const lines = useRef<Partial<Record<Indicator, ISeriesApi<"Line">[]>>>({});
+  const patternMarkers = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const timeline = useRef<number[]>([]);
   useEffect(() => {
     if (!host.current) return;
     let instance: IChartApi | null = null;
     try {
       instance = createChart(host.current, {
-        autoSize: true, height: 390,
+        autoSize: true, height: compact ? 290 : 390,
         layout: { background: { type: ColorType.Solid, color: "#0e2026" }, textColor: "#bcd1cd" },
         grid: { vertLines: { color: "#243e43" }, horzLines: { color: "#243e43" } },
         crosshair: { mode: CrosshairMode.Normal },
@@ -170,7 +211,8 @@ function CandleStudyChart({ analysis, selected, onSelect }: {
       const span = data.length ? Math.max(.00000001, Math.max(...data.map(b => b.high)) - Math.min(...data.map(b => b.low))) : 1;
       const precision = Math.min(8, Math.max(2, Math.ceil(-Math.log10(span / 100))));
       candles.applyOptions({ priceFormat: { type: "price", precision, minMove: 10 ** -precision } });
-      const gaps = data.flatMap((bar, i) => i > 0 ? Array.from({ length: Math.max(0,
+      const gaps = data.flatMap((bar, i) => i > 0 ? Array.from({ length: scannerLevels ?
+        (bar.time > data[i - 1].time + analysis.seconds ? 1 : 0) : Math.max(0,
         (bar.time - data[i - 1].time) / analysis.seconds - 1) }, (_, gap) =>
         ({ time: (data[i - 1].time + (gap + 1) * analysis.seconds) as UTCTimestamp })) : []);
       const allTimes = [...data, ...gaps].sort((a, b) => a.time - b.time);
@@ -203,18 +245,36 @@ function CandleStudyChart({ analysis, selected, onSelect }: {
           to: points.at(-1)!.time * 1000, points: points.length }));
       }
       host.current.dataset.indicatorSegments = JSON.stringify(segmentBounds);
-      if (levels) for (const zone of analysis.zones.slice(-30)) candles.createPriceLine({
+      const overlaySegments: { id: string; from: number; to: number; price: string }[] = [];
+      if (levels && scannerLevels) for (const zone of scannerLevels) {
+        const usable = analysis.candles.filter(bar => bar.open_ms >= zone.first_usable_ms &&
+          (zone.usable_until_ms == null || bar.open_ms < zone.usable_until_ms));
+        const segments: Candle[][] = [];
+        for (const bar of usable) {
+          if (!segments.length || bar.open_ms !== segments.at(-1)!.at(-1)!.open_ms + analysis.seconds * 1000) segments.push([]);
+          segments.at(-1)!.push(bar);
+        }
+        for (const segment of segments) for (const [boundary, price] of [["low", zone.low], ["price", zone.price], ["high", zone.high]]) {
+          const line = instance.addSeries(LineSeries, { color: zone.kind === "support" ? "#7ed4b3a0" : "#eda89ca0",
+            lineWidth: 1, lineStyle: 2, lastValueVisible: false, priceLineVisible: false,
+            crosshairMarkerVisible: false });
+          const endpoints = segment.length > 1 ? [segment[0], segment.at(-1)!] : segment;
+          line.setData(endpoints.map(bar => ({ time: (bar.open_ms / 1000) as UTCTimestamp, value: Number(price) })));
+          overlaySegments.push({ id: `${zone.id}:${boundary}`, from: segment[0].open_ms,
+            to: segment.at(-1)!.open_ms, price });
+        }
+      }
+      host.current.dataset.levelSegments = JSON.stringify(overlaySegments);
+      host.current.dataset.levelIds = JSON.stringify(levels ? scannerLevels?.map(level => level.id) ?? analysis.zones.slice(-30).map(level => level.id) : []);
+      if (levels && !scannerLevels) for (const zone of analysis.zones.slice(-30)) candles.createPriceLine({
         price: Number(zone.price), color: zone.kind.includes("support") ? "#7ed4b380" : "#eda89c80", lineWidth: 1,
         lineStyle: 2, axisLabelVisible: false, title: title(zone.kind),
       });
-      const patternsByCandle = new Map(analysis.patterns.slice(-100).map(pattern => [pattern.bar_open_ms, pattern]));
-      const markers = [...patternsByCandle.values()].map(pattern => ({
-        time: (pattern.bar_open_ms / 1000) as UTCTimestamp,
-        position: "aboveBar" as const, shape: "circle" as const,
-        color: pattern.volume_confirmed === true ? "#f8c66a" : "#b3bfc7",
-        text: "",
-      })).sort((a, b) => a.time - b.time);
-      createSeriesMarkers(candles, markers);
+      const markers = patternMarkersFor(analysis.patterns, null).sort((a, b) => a.time - b.time);
+      patternMarkers.current = createSeriesMarkers(candles, markers);
+      host.current.dataset.patternIds = JSON.stringify(analysis.patterns.map(pattern => pattern.id));
+      host.current.dataset.markerCount = String(markers.length);
+      host.current.dataset.patternCount = String(analysis.patterns.length);
       instance.subscribeClick(event => { if (typeof event.time === "number") choose.current(Number(event.time) * 1000); });
       instance.subscribeCrosshairMove(event => { if (typeof event.time === "number") choose.current(Number(event.time) * 1000); });
       instance.timeScale().subscribeVisibleTimeRangeChange(range => {
@@ -228,12 +288,13 @@ function CandleStudyChart({ analysis, selected, onSelect }: {
     } catch {
       setChartError("The saved chart could not be drawn. Its candle and pattern evidence remains available below.");
     }
-    return () => { instance?.remove(); chart.current = null; lines.current = {}; timeline.current = []; };
-  }, [analysis, levels]);
+    return () => { instance?.remove(); chart.current = null; patternMarkers.current = null; lines.current = {}; timeline.current = []; };
+  }, [analysis, levels, compact, scannerLevels]);
   useEffect(() => {
     for (const key of Object.keys(colors) as Indicator[]) for (const line of lines.current[key] ?? []) line.applyOptions({ visible: enabled.includes(key) });
   }, [enabled]);
   useEffect(() => {
+    patternMarkers.current?.setMarkers(patternMarkersFor(analysis.patterns, selected).sort((a, b) => a.time - b.time));
     if (!chart.current) return;
     if (selected == null) {
       chart.current.timeScale().setVisibleLogicalRange({ from: Math.max(0, timeline.current.length - 100), to: timeline.current.length + 2 });
@@ -244,7 +305,7 @@ function CandleStudyChart({ analysis, selected, onSelect }: {
     if (index >= 0 && range && (index < range.from || index > range.to)) {
       chart.current.timeScale().setVisibleLogicalRange({ from: Math.max(0, index - 25), to: index + 25 });
     }
-  }, [selected, analysis]);
+  }, [selected, analysis, levels]);
   return <div className="candle-study-chart">
     <div className="candle-chart-controls" role="group" aria-label="Candle chart overlays">
       {(Object.keys(colors) as Indicator[]).map(key => <button key={key} type="button" aria-pressed={enabled.includes(key)}
@@ -253,13 +314,15 @@ function CandleStudyChart({ analysis, selected, onSelect }: {
       <button type="button" onClick={() => chart.current?.timeScale().fitContent()}>Fit saved history</button>
     </div>
     {chartError && <p role="alert">{chartError}</p>}
-    <div ref={host} role="img" aria-label={`${analysis.symbol} closed ${analysis.timeframe} candles with volume, SMA 10, 50, 100 and 50-candle VWAP`} />
-    <p className="candle-help">Drag to pan; scroll or pinch to zoom. Dots mark candles with recorded patterns; choose a named pattern below for its reason and volume. Chart axis UTC; inspection and crosshair Mountain time. Candles close on UTC interval boundaries. Missing candle intervals stay empty; indicator lines restart only after their contiguous warmup. Zone lines summarize the saved study; their confirmation times below show when they first became known.</p>
+    <div ref={host} className={`candle-chart-host${compact ? " candle-chart-host-compact" : ""}`} role="img" aria-label={`${analysis.symbol} closed ${analysis.timeframe} candles with volume, SMA 10, 50, 100 and 50-candle VWAP`} />
+    <p className="candle-help">Drag to pan; scroll or pinch to zoom. Dots mark recorded patterns; selecting their candle reveals its name. Chart axis UTC; inspection and crosshair Mountain time. Missing intervals stay empty, and indicators restart after contiguous warmup. Level confirmation times and original reasons are in the chart details.</p>
     <p className="chart-attribution"><a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">TradingView Lightweight Charts™</a> · Copyright © 2025 TradingView, Inc.</p>
   </div>;
 }
 
-function StudyResult({ run }: { run: Run }) {
+function StudyResult({ run, compact = false, expanded = true, onExpand }: {
+  run: Run; compact?: boolean; expanded?: boolean; onExpand?: () => void;
+}) {
   const analysis = run.candle_analysis!;
   const [selected, setSelected] = useState<number | null>(null);
   const [pattern, setPattern] = useState<string | null>(null);
@@ -273,11 +336,20 @@ function StudyResult({ run }: { run: Run }) {
   return <div className="candle-study-result">
     <div className="candle-study-heading"><h4>{analysis.symbol.replace(/USD$/, " / USD")} · {analysis.timeframe} candles</h4>
       <span>Saved study #{run.id} · {stamp(analysis.observed_at * 1000)} MT</span></div>
+    {compact && <p className="candle-source">{analysis.source} · SMA 10 / 50 / 100 and 50-candle VWAP · {windows[analysis.window]}</p>}
     <p className="candle-coverage"><strong>{coverage.bar_count.toLocaleString()} actual closed candles</strong> of {coverage.expected_bars.toLocaleString()} requested · {coverage.missing_bars.toLocaleString()} missing within the bounded retrieval.
       {coverage.truncated && <strong> Requested history was truncated to the bounded retrieval.</strong>}<br />
       Requested {stamp(coverage.requested_start_ms)} to {stamp(coverage.requested_end_ms)} MT. Returned {stamp(coverage.actual_start_ms)} to {stamp(coverage.actual_end_ms)} MT.<br />
       Latest contiguous segment: {coverage.latest_segment_candles.toLocaleString()} candles. {coverage.patterns_omitted_from_display > 0 && `${coverage.patterns_omitted_from_display.toLocaleString()} older pattern records are outside the retained display bound.`}</p>
-    <CandleStudyChart analysis={analysis} selected={selected} onSelect={setSelected} />
+    <CandleStudyChart analysis={analysis} selected={selected} onSelect={setSelected} compact={compact} />
+    {compact && <div className="candle-pattern-summary" aria-label={`${analysis.timeframe} pattern summary`}>
+      {Object.entries(analysis.patterns.reduce<Record<string, number>>((counts, item) => {
+        counts[item.kind] = (counts[item.kind] ?? 0) + 1; return counts;
+      }, {})).map(([kind, total]) => <span key={kind}>{title(kind)} <strong>{total}</strong></span>)}
+      {!analysis.patterns.length && <span>No recorded pattern in this study</span>}
+      <button type="button" aria-expanded={expanded} onClick={onExpand}>{expanded ? `Hide ${analysis.timeframe} details` : `Inspect ${analysis.timeframe} details`}</button>
+    </div>}
+    {(!compact || expanded) && <>
     <section className="candle-inspector" aria-label="Selected candle and volume">
       <h4>{bar ? `${stamp(bar.open_ms)} MT · closed ${analysis.timeframe} candle` :
         `${selected == null ? "Selected interval" : stamp(selected) + " MT"} · no recorded candle available`}</h4>
@@ -314,7 +386,319 @@ function StudyResult({ run }: { run: Run }) {
     </div>
     <details><summary>Coverage, settings and limitations</summary><p>Source: {analysis.source}. Historical public candles were retrieved for this request; they were not observed inputs to earlier paper decisions.</p>
       <ul>{analysis.limitations.map((limitation, i) => <li key={i}>{limitation}</li>)}</ul><pre>{JSON.stringify(analysis.parameters, null, 2)}</pre></details>
+    </>}
   </div>;
+}
+
+function validateScannerView(value: ScannerView, campaignId: string, symbol: string, frame: Frame, query: ChartQuery) {
+  const fail = () => { throw new Error("Saved scanner chart identity or coverage is incomplete. No fresh study was substituted."); };
+  if (!value || value.version !== "saved-scanner-chart-v1" || value.campaign_id !== campaignId ||
+      value.symbol !== symbol || value.timeframe !== frame || value.seconds !== frames[frame] ||
+      value.financial_authority !== false || value.mode !== (query.at_ms !== undefined || query.before_ms !== undefined ? "historical" : "latest") ||
+      !Number.isFinite(value.observed_at) || !Array.isArray(value.candles) || value.candles.length > 1000 ||
+      !Array.isArray(value.indicators?.points) || value.indicators.points.length !== value.candles.length ||
+      !value.source || typeof value.source.kind !== "string" || typeof value.source.archive_verified !== "boolean" ||
+      !Array.isArray(value.source.references) || !value.source.references.every(item => typeof item === "string") ||
+      ![value.source.rows_sha256, value.source.progress_sha256, value.source.recognition_source_sha256, value.source.implementation_sha256].every(hash => typeof hash === "string" && /^[a-f0-9]{64}$/.test(hash)) ||
+      !Array.isArray(value.limitations) || !value.limitations.every(item => typeof item === "string")) fail();
+  const step = frames[frame] * 1000;
+  value.candles.forEach((bar, i) => {
+    const point = value.indicators.points[i];
+    if (!Number.isSafeInteger(bar.open_ms) || bar.open_ms % step !== 0 || bar.close_ms !== bar.open_ms + step - 1 ||
+        ![bar.open, bar.high, bar.low, bar.close, bar.volume].every(finiteDecimal) || Number(bar.volume) < 0 ||
+        Number(bar.low) <= 0 || Number(bar.low) > Math.min(Number(bar.open), Number(bar.close)) ||
+        Number(bar.high) < Math.max(Number(bar.open), Number(bar.close)) ||
+        i > 0 && bar.open_ms <= value.candles[i - 1].open_ms || point?.open_ms !== bar.open_ms ||
+        ![point.sma10, point.sma50, point.sma100, point.vwap, point.volume_ratio].every(nullableDecimal)) fail();
+  });
+  for (const page of [value.levels, value.patterns, value.alerts]) {
+    if (!page || !Array.isArray(page.rows) || page.rows.length > 100 || !count(page.total) || page.total < page.rows.length ||
+        page.next_before !== null && !count(page.next_before) || page.rows.some(item => !count(item.seq) || typeof item.id !== "string")) fail();
+  }
+  const selectedLevel = value.selection?.kind === "levels" ? value.selection.record as ScannerLevel : undefined;
+  const selectedEvent = value.selection && value.selection.kind !== "levels" ? value.selection.record as ScannerEvent : undefined;
+  if (value.selection !== null && (!value.selection || !["levels", "patterns", "alerts"].includes(value.selection.kind) ||
+      !count(value.selection.record?.seq) || typeof value.selection.record?.id !== "string" ||
+      typeof value.selection.known_by_window_end !== "boolean" || typeof value.selection.candle_available !== "boolean")) fail();
+  if (query.selected_kind !== undefined ? value.selection?.kind !== query.selected_kind || value.selection?.record.seq !== query.selected_seq : value.selection !== null) fail();
+  if ([...value.levels.rows, ...(selectedLevel ? [selectedLevel] : [])].some(item => ![item.price, item.low, item.high].every(finiteDecimal) ||
+      ![item.confirmed_at_ms, item.first_usable_ms].every(Number.isSafeInteger) || !count(item.segment) ||
+      !["support", "resistance"].includes(item.kind) || item.first_usable_ms !== item.confirmed_at_ms + 1 ||
+      Number(item.low) > Number(item.price) || Number(item.high) < Number(item.price))) fail();
+  for (const item of [...value.patterns.rows, ...value.alerts.rows, ...(selectedEvent ? [selectedEvent] : [])]) if (!Number.isSafeInteger(item.bar_open_ms) ||
+      typeof item.kind !== "string" || typeof item.level_id !== "string" || !finiteDecimal(item.level_price) ||
+      !nullableDecimal(item.volume_ratio) || ![true, false, null].includes(item.volume_confirmed) ||
+      typeof item.reason !== "string" || typeof item.historical !== "boolean" ||
+      item.evaluation !== undefined && (!item.evaluation || typeof item.evaluation.status !== "string" ||
+        !item.evaluation.checks || typeof item.evaluation.checks !== "object" || Array.isArray(item.evaluation.checks) ||
+        !Object.values(item.evaluation.checks).every(check => check === null || check === true || check === false) ||
+        !Array.isArray(item.evaluation.unknowns) || !item.evaluation.unknowns.every(unknown => typeof unknown === "string") ||
+        !Number.isFinite(item.evaluation.evaluated_at) || typeof item.evaluation.criteria !== "string")) fail();
+  const coverage = value.coverage;
+  if (!coverage || coverage.input_candles !== value.candles.length || typeof coverage.source_available !== "boolean" ||
+      coverage.selected_at_ms !== (query.at_ms ?? null) || typeof coverage.pending !== "boolean" ||
+      ![coverage.actual_start_ms, coverage.actual_end_ms, coverage.requested_start_ms, coverage.requested_end_ms].every(time => time === null || Number.isSafeInteger(time)) ||
+      ![coverage.input_candles, coverage.missing_candles, coverage.latest_segment_candles,
+        coverage.scanner_observed_bars, coverage.scanner_expected_bars, coverage.scanner_missing_bars].every(count) ||
+      !Array.isArray(coverage.segment_spans) || coverage.segment_spans.some(span =>
+        !Number.isSafeInteger(span.start_ms) || !Number.isSafeInteger(span.end_ms) || span.end_ms < span.start_ms ||
+        span.scanner_segment !== null && !count(span.scanner_segment)) ||
+      !value.pagination || value.pagination.next_before_ms !== null && !count(value.pagination.next_before_ms)) fail();
+  if (value.candles.length && (coverage.actual_start_ms !== value.candles[0].open_ms || coverage.actual_end_ms !== value.candles.at(-1)!.close_ms) ||
+      !value.candles.length && (coverage.actual_start_ms !== null || coverage.actual_end_ms !== null) ||
+      query.expected_progress_sha256 !== undefined && value.source.progress_sha256 !== query.expected_progress_sha256) fail();
+}
+
+function ScannerCardView({ frame, card, selection, expanded, onExpand, onRead, onSelect, onEvent }: {
+  frame: Frame; card: ScannerCard; selection: number | null; expanded: boolean;
+  onExpand: () => void; onRead: (query: ChartQuery) => void; onSelect: (time: number | null) => void;
+  onEvent: (event: ScannerEvent) => void;
+}) {
+  const view = card.view;
+  const plot = useMemo(() => {
+    if (!view) return null;
+    const visible = new Set(view.candles.map(bar => bar.open_ms));
+    const events = [...view.patterns.rows, ...view.alerts.rows];
+    const originalSelection = view.selection?.kind !== "levels" ? view.selection?.record as ScannerEvent | undefined : undefined;
+    if (originalSelection && !events.some(item => item.id === originalSelection.id)) events.push(originalSelection);
+    const originalLevels = [...view.levels.rows];
+    if (view.selection?.kind === "levels" && !originalLevels.some(level => level.id === view.selection!.record.id)) originalLevels.push(view.selection.record as ScannerLevel);
+    const levels = originalLevels.flatMap(level => view.coverage.segment_spans.flatMap(span => {
+      const confirmedHere = level.confirmed_at_ms >= span.start_ms && level.confirmed_at_ms <= span.end_ms;
+      const continuityKnown = level.confirmed_at_ms < span.start_ms && span.scanner_segment === level.segment;
+      if (!confirmedHere && !continuityKnown || level.first_usable_ms > span.end_ms) return [];
+      return [{ ...level, first_usable_ms: Math.max(level.first_usable_ms, span.start_ms),
+        usable_until_ms: span.end_ms + 1 }];
+    }));
+    const analysis: Analysis = { version: view.version, symbol: view.symbol, timeframe: frame, window: "recent",
+      seconds: view.seconds, source: view.source.kind, observed_at: view.observed_at,
+      candles: view.candles, indicators: view.indicators, zones: [], patterns: events.filter(item => visible.has(item.bar_open_ms)),
+      parameters: view.parameters, limitations: view.limitations,
+      coverage: { requested_start_ms: view.coverage.requested_start_ms ?? 0, requested_end_ms: view.coverage.requested_end_ms ?? 0,
+        actual_start_ms: view.coverage.actual_start_ms ?? 0, actual_end_ms: view.coverage.actual_end_ms ?? 0,
+        bar_count: view.candles.length, expected_bars: view.candles.length + view.coverage.missing_candles,
+        missing_bars: view.coverage.missing_candles, truncated: false, patterns_observed: view.patterns.total + view.alerts.total,
+        patterns_omitted_from_display: 0, latest_segment_candles: view.coverage.latest_segment_candles } };
+    return { analysis, levels };
+  }, [view, frame]);
+  const bar = selection === null ? view?.candles.at(-1) : view?.candles.find(item => item.open_ms === selection);
+  const point = view?.indicators.points.find(item => item.open_ms === bar?.open_ms);
+  const originalSelection = view?.selection?.kind !== "levels" ? view?.selection?.record as ScannerEvent | undefined : undefined;
+  const chosenEvent = originalSelection;
+  const events = [...(view?.patterns.rows ?? []), ...(view?.alerts.rows ?? [])].sort((a, b) => b.bar_open_ms - a.bar_open_ms);
+  const candleEvents = [...events];
+  if (chosenEvent && !candleEvents.some(event => event.id === chosenEvent.id)) candleEvents.push(chosenEvent);
+  return <article className="candle-chart-card" aria-label={`${frame} scanner chart`} data-timeframe={frame}>
+    <header><h4>{frame} · {view?.symbol ?? "saved scanner"}</h4><button type="button" aria-expanded={expanded} onClick={onExpand}>{expanded ? `Hide ${frame} details` : `Inspect ${frame} details`}</button></header>
+    <div className="candle-actions"><button type="button" disabled={card.loading || !view?.pagination.next_before_ms}
+      onClick={() => onRead({ before_ms: view!.pagination.next_before_ms! })}>Older saved candles</button>
+      <button type="button" disabled={card.loading} onClick={() => { onSelect(null); onRead({}); }}>Latest saved candles</button></div>
+    {card.loading && <p role="status">Reading {frame} saved scanner candles…</p>}
+    {card.error && <p role="alert" className="candle-error">{card.error}{view && " The last successful window remains visible below."}</p>}
+    {view && <p className="candle-coverage"><strong>{view.candles.length} recorded closed candles · {title(view.mode)}</strong><br />
+      {view.candles.length ? `${stamp(view.candles[0].open_ms)} to ${stamp(view.candles.at(-1)!.close_ms)} MT` : "No recorded candles in this saved window."}<br />
+      {view.coverage.missing_candles} missing candles in this window; latest contiguous warmup {view.coverage.latest_segment_candles} candles.<br />
+      Scanner scope: {view.coverage.scanner_observed_bars.toLocaleString()} observed / {view.coverage.scanner_expected_bars.toLocaleString()} expected · {view.coverage.scanner_missing_bars.toLocaleString()} missing · {title(view.coverage.scanner_status)}{view.coverage.pending && " · partial page processing retained"}.
+      {(view.coverage.source_error || view.coverage.scanner_error) && <span className="candle-error"> {view.coverage.source_error ?? view.coverage.scanner_error}</span>}</p>}
+    {plot && view?.candles.length ? <CandleStudyChart analysis={plot.analysis} selected={selection} onSelect={onSelect} compact scannerLevels={plot.levels} /> :
+      <div className="candle-chart-placeholder"><p>{card.loading ? "Reading this saved frame…" : view ? "No saved candles available here. Missing or unprepared history is not an empty successful analysis." : "A prepared scanner campaign is needed for saved candles."}</p></div>}
+    {view && <><div className="candle-pattern-summary" aria-label={`${frame} saved pattern counts`}>
+      <span>Historical patterns <strong>{view.patterns.total}</strong></span><span>Prospective alerts <strong>{view.alerts.total}</strong></span><span>Support/resistance levels <strong>{view.levels.total}</strong></span>
+      {Object.entries(events.reduce<Record<string, number>>((result, event) => { result[event.kind] = (result[event.kind] ?? 0) + 1; return result; }, {})).map(([kind, total]) => <span key={kind}>{title(kind)} <strong>{total} on loaded pages</strong></span>)}</div>
+      <p className="candle-help">Display SMAs use 10/50/100 candles of this frame. VWAP is a trailing 50-candle HLC3 approximation. These readings describe the saved window; the original recognition uses confirmed levels and volume, and does not establish a VWAP trading edge.</p>
+      {expanded && <><section className="candle-inspector" aria-label={`${frame} saved candle inspection`}>
+        <h4>{bar ? `${stamp(bar.open_ms)} MT · ${frame} closed candle` : selection !== null ? `${stamp(selection)} MT · selected candle unavailable` : "No recorded candle"}</h4>
+        {bar && <div className="candle-metrics"><span>Open <strong>{decimal(bar.open)}</strong></span><span>High <strong>{decimal(bar.high)}</strong></span><span>Low <strong>{decimal(bar.low)}</strong></span><span>Close <strong>{decimal(bar.close)}</strong></span><span>Volume <strong>{decimal(bar.volume)}</strong></span>
+          <span>Volume / prior median <strong>{point?.volume_ratio == null ? "Unavailable" : `${decimal(point.volume_ratio)}×`}</strong></span>
+          {(Object.keys(colors) as Indicator[]).map(key => <span key={key} style={{ color: colors[key] }}>{labels[key]}<strong>{decimal(point?.[key])}</strong>
+            <small>{bar && point?.[key] != null ? Number(bar.close) > Number(point[key]) ? "Close above" : Number(bar.close) < Number(point[key]) ? "Close below" : "Close at" : "Insufficient contiguous warmup"}</small></span>)}</div>}
+        {!bar && <p>No OHLC, volume or indicator value is assigned to this missing interval.</p>}
+        {candleEvents.filter(event => event.bar_open_ms === bar?.open_ms).map(event => <p key={`${event.historical}:${event.seq}`}><strong>{title(event.kind)}</strong> · level {decimal(event.level_price)}: {event.reason}</p>)}</section>
+        <div className="candle-pattern-grid"><section aria-label={`${frame} original patterns`}><h4>Original recognized moves</h4>
+          <p>{view.patterns.rows.length} historical pattern rows and {view.alerts.rows.length} alert rows on these pages. Only events whose candle is in this window are marked.</p>
+          <div className="candle-pattern-list">{events.map(event => <button type="button" key={`${event.historical ? "history" : "alert"}:${event.seq}`} aria-pressed={chosenEvent?.id === event.id}
+            onClick={() => onEvent(event)}><strong>{title(event.kind)}</strong><time>{stamp(event.bar_open_ms)} MT</time><span>{event.historical ? "Historical description" : `Prospective alert · ${title(event.evaluation?.status ?? "evaluation unavailable")}`} · level {decimal(event.level_price)}</span></button>)}</div>
+          {!events.length && <p>No original event on these saved pages.</p>}
+          <div className="candle-actions">{(["patterns", "alerts"] as const).map(kind => <button key={kind} type="button" disabled={card.loading || !!card.error || view[kind].next_before == null}
+            onClick={() => onRead({ ...card.viewQuery, [`${kind}_before`]: view[kind].next_before!, expected_progress_sha256: view.source.progress_sha256 })}>Older {kind}</button>)}</div></section>
+          <section className="candle-pattern-detail" aria-label={`${frame} original recognition explanation`}><h4>{chosenEvent ? title(chosenEvent.kind) : "Choose an original move"}</h4>
+            {chosenEvent ? <><p>{chosenEvent.reason}</p><p>{stamp(chosenEvent.bar_open_ms)} MT · recorded level {decimal(chosenEvent.level_price)} · original volume {chosenEvent.volume_ratio == null ? "unknown" : `${decimal(chosenEvent.volume_ratio)}×`}.
+              Volume confirmation {chosenEvent.volume_confirmed === null ? "unknown" : chosenEvent.volume_confirmed ? "present" : "absent"}.</p>
+              {view.selection && !view.selection.candle_available && <p>The exact saved event is retained, but its candle is missing from this source page. No neighboring candle was substituted.</p>}
+              {chosenEvent.evaluation ? <><p>Original current-candidate evaluation: <strong>{title(chosenEvent.evaluation.status)}</strong> · {stamp(chosenEvent.evaluation.evaluated_at * 1000)} MT.</p>
+                <ul>{Object.entries(chosenEvent.evaluation.checks).map(([name, value]) => <li key={name}>{title(name)}: {value === null ? "unknown" : value ? "met" : "not met"}</li>)}</ul>
+                <ul>{chosenEvent.evaluation.unknowns.map((unknown, i) => <li key={i}>{unknown}</li>)}</ul><p>{chosenEvent.evaluation.criteria}</p></> : <p>No prospective evaluation was recorded for this historical description.</p>}</> : <p>Select a saved event to reopen its original candle window and reason. Unknown inputs remain unknown.</p>}</section></div>
+        <section aria-label={`${frame} saved alert zones`}><h4>Horizontal support/resistance alert zones · {view.levels.rows.length} of {view.levels.total}</h4>
+          <p>Lines start after original confirmation, within verified contiguous history. A level with unknown continuity is listed without extending its line across a gap.</p>
+          {view.selection?.kind === "levels" && <p className="candle-pattern-detail">Selected original {title((view.selection.record as ScannerLevel).kind)} level {decimal((view.selection.record as ScannerLevel).price)} · zone {decimal((view.selection.record as ScannerLevel).low)} – {decimal((view.selection.record as ScannerLevel).high)}.<br />
+            First usable {stamp((view.selection.record as ScannerLevel).first_usable_ms)} MT. {view.selection.known_by_window_end ? "Already confirmed by this window’s end." : "Not yet known at this window’s end; no earlier alert line is drawn."}</p>}
+          <div className="candle-pattern-list">{view.levels.rows.map(level => <button key={level.seq} type="button" onClick={() => { onSelect(level.first_usable_ms); onRead({ at_ms: Math.min(level.first_usable_ms, view.processed_through_ms ?? level.confirmed_at_ms), selected_kind: "levels", selected_seq: level.seq }); }}>
+            <strong>{title(level.kind)} · {decimal(level.price)}</strong><span>Zone {decimal(level.low)} – {decimal(level.high)} · first usable {stamp(level.first_usable_ms)} MT</span></button>)}</div>
+          <button type="button" disabled={card.loading || !!card.error || view.levels.next_before == null} onClick={() => onRead({ ...card.viewQuery, levels_before: view.levels.next_before!, expected_progress_sha256: view.source.progress_sha256 })}>Older levels</button></section>
+        <details><summary>Saved source and coverage</summary><p>{view.source.kind} · archive verification {view.source.archive_verified ? "verified" : "not established"} · read {stamp(view.observed_at * 1000)} MT.</p>
+          <p>Display indicator recomputation is separate from original scanner recognition. No orders, strategy approval or measured profitability follows.</p>
+          <ul>{view.limitations.map((item, i) => <li key={i}>{item}</li>)}</ul><p className="candle-source">Saved rows {view.source.rows_sha256}<br />Original recognition {view.source.recognition_source_sha256}</p></details></>}
+    </>}
+  </article>;
+}
+
+export function ScannerChartGrid({ campaignId, symbol, focus }: {
+  campaignId: string | null; symbol: string; focus: ScannerChartFocus | null;
+}) {
+  const blank = (): Record<Frame, ScannerCard> => Object.fromEntries((Object.keys(frames) as Frame[]).map(frame => [frame,
+    { view: null, loading: false, error: null, query: {}, viewQuery: {} }])) as Record<Frame, ScannerCard>;
+  const [cards, setCards] = useState(blank);
+  const [expanded, setExpanded] = useState<Frame | null>(null);
+  const [selected, setSelected] = useState<Partial<Record<Frame, number | null>>>({});
+  const [bookmarkError, setBookmarkError] = useState<string | null>(null);
+  const latestBookmarkError = useRef(bookmarkError); latestBookmarkError.current = bookmarkError;
+  const latestCards = useRef(cards); latestCards.current = cards;
+  const scope = `${campaignId}:${symbol}`;
+  const displayedScope = useRef(scope);
+  const generation = useRef(0);
+  const serials = useRef<Partial<Record<Frame, number>>>({});
+  const active = useRef(new Map<Frame, AbortController>());
+  const queue = useRef<{ frame: Frame; query: ChartQuery; campaign: string; symbol: string; generation: number; serial: number }[]>([]);
+  const pump = useRef<() => void>(() => {});
+  const scopeRef = useRef(scope); scopeRef.current = scope;
+  const readyScope = displayedScope.current === scope;
+
+  pump.current = () => {
+    while (active.current.size < 2 && queue.current.length) {
+      const next = queue.current.findIndex(job => !active.current.has(job.frame));
+      if (next < 0) break;
+      const job = queue.current.splice(next, 1)[0];
+      if (job.generation !== generation.current || job.serial !== serials.current[job.frame]) continue;
+      const controller = new AbortController(); active.current.set(job.frame, controller);
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      const params = new URLSearchParams({ campaign_id: job.campaign, symbol: job.symbol, timeframe: job.frame });
+      for (const [key, value] of Object.entries(job.query)) if (value !== undefined) params.set(key, String(value));
+      const current = () => job.generation === generation.current && job.serial === serials.current[job.frame] && `${job.campaign}:${job.symbol}` === scopeRef.current;
+      void (async () => {
+        try {
+          const response = await fetch(`/api/research/pattern-scanner/chart?${params}`, { cache: "no-store", signal: controller.signal });
+          if (!response.ok) throw new Error(`Saved ${job.frame} scanner chart unavailable (${response.status}). No fresh study was requested.`);
+          const view = await response.json() as ScannerView;
+          validateScannerView(view, job.campaign, job.symbol, job.frame, job.query);
+          if (current()) {
+            const pinnedQuery = view.mode === "historical" ? { ...job.query, expected_progress_sha256: view.source.progress_sha256 } : job.query;
+            setCards(old => ({ ...old, [job.frame]: { view, loading: false, error: null, query: pinnedQuery, viewQuery: pinnedQuery } }));
+            if (view.mode === "historical") {
+              const saved = new URLSearchParams(location.hash.split("?")[1] ?? "");
+              if (saved.get("scanner_campaign") === job.campaign && saved.get("symbol") === job.symbol &&
+                  saved.get("scanner_chart_frame") === job.frame &&
+                  saved.get("scanner_chart_at_ms") === (job.query.at_ms === undefined ? null : String(job.query.at_ms)) &&
+                  saved.get("scanner_chart_before_ms") === (job.query.before_ms === undefined ? null : String(job.query.before_ms))) {
+                saved.set("scanner_chart_progress_sha256", view.source.progress_sha256);
+                history.replaceState(null, "", `#markets?${saved}`);
+              }
+            }
+          }
+        } catch (cause) {
+          if (current()) setCards(old => ({ ...old, [job.frame]: { ...old[job.frame], loading: false,
+            error: controller.signal.aborted ? "This saved read timed out or was canceled. Its original data was not replaced." : cause instanceof Error ? cause.message : "Saved chart unavailable." } }));
+        } finally {
+          clearTimeout(timeout);
+          if (active.current.get(job.frame) === controller) active.current.delete(job.frame);
+          pump.current();
+        }
+      })();
+    }
+  };
+  function read(frame: Frame, query: ChartQuery = {}) {
+    if (!campaignId || !/^patterns-[a-f0-9]{24}$/.test(campaignId) || !/^[A-Z0-9]{3,24}$/.test(symbol)) return;
+    const serial = (serials.current[frame] ?? 0) + 1; serials.current[frame] = serial;
+    queue.current = queue.current.filter(job => job.frame !== frame);
+    active.current.get(frame)?.abort();
+    queue.current.push({ frame, query, campaign: campaignId, symbol, generation: generation.current, serial });
+    setCards(old => ({ ...old, [frame]: { ...old[frame], loading: true, error: null, query } }));
+    pump.current();
+  }
+  useEffect(() => {
+    generation.current++; queue.current = []; serials.current = {};
+    for (const controller of active.current.values()) controller.abort();
+    displayedScope.current = scope; setCards(blank()); setSelected({}); setExpanded(null);
+    const restore = () => { if (campaignId) {
+      const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+      const rememberedFrame = params.get("scanner_chart_frame") as Frame;
+      const rememberedAt = params.get("scanner_chart_at_ms");
+      const rememberedBefore = params.get("scanner_chart_before_ms");
+      if (params.get("symbol") !== symbol || params.get("scanner_campaign") !== campaignId) {
+        if (params.has("scanner_chart_frame")) return;
+      }
+      const kind = params.get("scanner_chart_kind");
+      const seq = params.get("scanner_chart_seq");
+      const exactRecord = kind !== null && ["levels", "patterns", "alerts"].includes(kind) && seq !== null && /^\d+$/.test(seq) && Number.isSafeInteger(Number(seq)) && Number(seq) > 0;
+      const safeTime = (value: string | null) => value === null || /^\d+$/.test(value) && Number.isSafeInteger(Number(value));
+      const restored = params.has("scanner_chart_frame");
+      const query: ChartQuery = { ...(rememberedAt !== null ? { at_ms: Number(rememberedAt) } : {}),
+        ...(rememberedBefore !== null ? { before_ms: Number(rememberedBefore) } : {}),
+        ...(exactRecord ? { selected_kind: kind as "levels" | "patterns" | "alerts", selected_seq: Number(seq) } : {}) };
+      let badCursor = false;
+      for (const key of ["levels_before", "patterns_before", "alerts_before"] as const) {
+        const cursor = params.get(`scanner_chart_${key}`);
+        if (!safeTime(cursor)) badCursor = true;
+        if (cursor !== null) query[key] = Number(cursor);
+      }
+      const progress = params.get("scanner_chart_progress_sha256");
+      if (progress !== null) query.expected_progress_sha256 = progress;
+      if (restored && (!Object.hasOwn(frames, rememberedFrame) || !safeTime(rememberedAt) || !safeTime(rememberedBefore) ||
+          rememberedAt !== null && rememberedBefore !== null || (kind !== null || seq !== null) && !exactRecord ||
+          badCursor || progress !== null && !/^[a-f0-9]{64}$/.test(progress) ||
+          [query.levels_before, query.patterns_before, query.alerts_before].some(value => value !== undefined && value > 0) && !progress)) {
+        setBookmarkError("The saved chart link has invalid scope or pagination. No latest window was substituted. Choose Latest saved candles to read a new window."); return;
+      }
+      setBookmarkError(null);
+      for (const frame of Object.keys(frames) as Frame[]) read(frame, restored && frame === rememberedFrame ? query : {});
+      if (restored) { setSelected({ [rememberedFrame]: rememberedAt === null ? null : Number(rememberedAt) }); setExpanded(rememberedFrame); }
+      else { setSelected({}); setExpanded(null); }
+    } };
+    restore(); addEventListener("hashchange", restore); addEventListener("popstate", restore);
+    return () => { generation.current++; queue.current = []; for (const controller of active.current.values()) controller.abort(); removeEventListener("hashchange", restore); removeEventListener("popstate", restore); };
+  }, [scope]);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.hidden || !campaignId || latestBookmarkError.current || displayedScope.current !== scopeRef.current) return;
+      for (const frame of Object.keys(frames) as Frame[]) {
+        const card = latestCards.current[frame];
+        if (!card.loading && Object.keys(card.query).length === 0) read(frame);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [scope]);
+  function bookmark(frame: Frame, query: ChartQuery) {
+    const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    for (const key of [...params.keys()]) if (key.startsWith("scanner_chart_")) params.delete(key);
+    if (Object.keys(query).length && campaignId) {
+      params.set("scanner_campaign", campaignId); params.set("scanner_chart_frame", frame);
+      for (const [key, value] of Object.entries(query)) params.set(`scanner_chart_${key === "expected_progress_sha256" ? "progress_sha256" : key === "selected_kind" ? "kind" : key === "selected_seq" ? "seq" : key}`, String(value));
+    }
+    history.replaceState(null, "", `#markets?${params}`); setBookmarkError(null);
+  }
+  function choose(frame: Frame, atMs: number | null, record?: { kind: "levels" | "patterns" | "alerts"; seq: number }) {
+    setSelected(old => ({ ...old, [frame]: atMs }));
+    if (atMs !== null) bookmark(frame, { at_ms: atMs, ...(record ? { selected_kind: record.kind, selected_seq: record.seq } : {}) });
+  }
+  useEffect(() => {
+    if (!focus || !campaignId || !Object.hasOwn(frames, focus.timeframe) || !Number.isSafeInteger(focus.atMs)) return;
+    const record = focus.kind && focus.seq ? { kind: focus.kind, seq: focus.seq } : undefined;
+    setExpanded(focus.timeframe); choose(focus.timeframe, focus.atMs, record); read(focus.timeframe, { at_ms: focus.atMs,
+      ...(record ? { selected_kind: record.kind, selected_seq: record.seq } : {}) });
+  }, [focus?.nonce]);
+  return <section id="scanner-chart-grid" className="candle-workspace scanner-chart-workspace" aria-label="Saved scanner pattern charts">
+    <header><div><p className="station-kicker">SAVED SCANNER FINDINGS · FIVE NATIVE FRAMES</p><h3>{symbol.replace(/USD$/, " / USD")} pattern charts</h3></div><span>Descriptive · no order authority</span></header>
+    <p className="candle-intro">Candles, recognized moves and horizontal support/resistance alert zones from this scanner campaign. Inspect an event to see its original explanation alongside available moving averages, VWAP and volume. Historical recognition is not validated profitability.</p>
+    <p className="candle-help">Latest saved windows refresh every 30 seconds while this view is visible, with at most two reads at a time. Historical and paged windows stay pinned until you choose a different window.</p>
+    {bookmarkError && <p className="candle-error" role="alert">{bookmarkError}</p>}
+    <button type="button" disabled={!campaignId} onClick={() => { if (bookmarkError) bookmark("5m", {}); for (const frame of Object.keys(frames) as Frame[]) if (!latestCards.current[frame].loading && Object.keys(latestCards.current[frame].query).length === 0) read(frame); }}>Refresh latest saved charts</button>
+    {!campaignId && <p role="status">No scanner campaign is prepared. All five frames remain visible; saved candles will appear after their scope has actually been processed.</p>}
+    <div className="candle-chart-grid">{(Object.keys(frames) as Frame[]).map(frame => <ScannerCardView key={`${scope}:${frame}`} frame={frame}
+      card={readyScope ? cards[frame] : blank()[frame]} selection={selected[frame] ?? null}
+      expanded={expanded === frame} onExpand={() => setExpanded(old => old === frame ? null : frame)} onRead={query => { bookmark(frame, query); if (!Object.hasOwn(query, "selected_seq")) setSelected(old => ({ ...old, [frame]: null })); read(frame, query); }}
+      onSelect={atMs => setSelected(old => ({ ...old, [frame]: atMs }))} onEvent={event => { const kind = event.historical ? "patterns" : "alerts";
+        setExpanded(frame); choose(frame, event.bar_open_ms, { kind, seq: event.seq });
+        read(frame, { at_ms: event.bar_open_ms, selected_kind: kind, selected_seq: event.seq }); }} />)}</div>
+  </section>;
 }
 
 export function CandleWorkspace({ symbol, savedRuns, onChooseMarket }: {

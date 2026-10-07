@@ -67,7 +67,8 @@ def main():
     save_plan(args.directory, plan)
     calls, posts = [], []
     mode = "normal"
-    series = [*support_rows(), *resistance_rows()]
+    support_series = support_rows()
+    series = [*support_series, *resistance_rows()]
 
     def native_response(request):
         if request.url.path != "/api/v3/klines":
@@ -87,7 +88,12 @@ def main():
             times = times[:9]
         rows = []
         for at in times:
-            source = series[(at // step) % len(series)]
+            position = at // step
+            if mode == "gap_warm":
+                # Keep the reviewed terminal support visit after SMA100 warmup;
+                # advancing wall time must not rotate this fixture precondition.
+                position = at // step - end // step + len(support_series) - 1
+            source = series[position % len(series)]
             rows.append(
                 [
                     at,

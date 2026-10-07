@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useEvidenceRead } from "./useEvidenceRead";
+import { ScannerChartGrid, type ScannerChartFocus } from "./CandleWorkspace";
 import "./scanner-workspace.css";
 
 type Frame = "5m" | "15m" | "30m" | "1h" | "4h";
@@ -73,7 +74,7 @@ function validateState(value: ScannerState) {
   }
 }
 
-export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInspect: (symbol: string) => void }) {
+export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol: string; onInspect: (symbol: string) => void; onChooseMarket: (symbol: string) => void }) {
   const [state, setState] = useState<ScannerState | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [checked, setChecked] = useState<number | null>(null);
@@ -88,6 +89,7 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
   const [kind, setKind] = useState<Kind>("levels");
   const [market, setMarket] = useState(symbol);
   const [frame, setFrame] = useState<Frame>("5m");
+  const [chartFocus, setChartFocus] = useState<ScannerChartFocus | null>(null);
   const [page, setPage] = useState<Page | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [pageBusy, setPageBusy] = useState(false);
@@ -97,6 +99,7 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
   const [savedCampaign, setSavedCampaign] = useState("");
   const [historicalState, setHistoricalState] = useState<ScannerState | null>(null);
+  const [requestedCampaign, setRequestedCampaign] = useState<string | null>(null);
   const [campaignError, setCampaignError] = useState<string | null>(null);
   const [campaignBusy, setCampaignBusy] = useState(false);
   const statusAbort = useRef<AbortController | null>(null);
@@ -106,8 +109,10 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
   const details = useEvidenceRead();
   const progressRead = useEvidenceRead();
   const campaignRead = useEvidenceRead();
-  const displayState = historicalState ?? state;
+  const displayState = requestedCampaign ? historicalState : state;
   const campaign = displayState?.campaign;
+  useEffect(() => { setMarket(symbol); setChartFocus(null); }, [symbol]);
+  useEffect(() => { setChartFocus(null); }, [campaign?.id, market]);
   const pageScope = `${campaign?.id ?? ""}:${kind}:${market}:${frame}`;
   const currentPageScope = useRef(pageScope); currentPageScope.current = pageScope;
   useEffect(() => {
@@ -266,9 +271,18 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
     finally { if (request.isCurrent()) setCampaignBusy(false); }
   }
 
-  async function reopenCampaign() {
-    if (!savedCampaign) return;
-    const id = savedCampaign; const request = campaignRead.begin(7000); setCampaignBusy(true); setCampaignError(null);
+  async function reopenCampaign(id = savedCampaign, remember = true) {
+    if (!id) return;
+    setRequestedCampaign(id); setHistoricalState(null);
+    if (remember) {
+      const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+      if (params.get("scanner_campaign") !== id) for (const key of [...params.keys()]) {
+        if (key.startsWith("scanner_chart_")) params.delete(key);
+      }
+      params.set("scanner_campaign", id);
+      history.replaceState(null, "", `#markets?${params}`);
+    }
+    const request = campaignRead.begin(7000); setCampaignBusy(true); setCampaignError(null);
     try {
       const response = await fetch(`${endpoint}?campaign_id=${encodeURIComponent(id)}`, { cache: "no-store", signal: request.signal });
       if (!response.ok) throw new Error("The original campaign cannot be reopened right now.");
@@ -278,6 +292,19 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
     } catch (cause) { if (request.isCurrent()) setCampaignError(cause instanceof Error ? cause.message : "Campaign unavailable."); }
     finally { if (request.isCurrent()) setCampaignBusy(false); }
   }
+
+  useEffect(() => {
+    const restore = () => {
+      const id = new URLSearchParams(location.hash.split("?")[1] ?? "").get("scanner_campaign");
+      if (id == null) {
+        campaignRead.cancel(); setRequestedCampaign(null); setHistoricalState(null); setCampaignBusy(false); setCampaignError(null);
+      } else if (!/^patterns-[a-f0-9]{24}$/.test(id)) {
+        campaignRead.cancel(); setRequestedCampaign(id); setHistoricalState(null); setCampaignBusy(false); setCampaignError("The saved campaign identity is invalid. No current campaign was substituted.");
+      } else void reopenCampaign(id, false);
+    };
+    restore(); addEventListener("hashchange", restore); addEventListener("popstate", restore);
+    return () => { removeEventListener("hashchange", restore); removeEventListener("popstate", restore); };
+  }, [campaignRead.cancel]);
 
   const roster = state?.roster.rows ?? [];
   const chosen = selected.filter(name => roster.some(row => row.symbol === name && row.eligible));
@@ -294,6 +321,8 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
       {state?.campaign && <p>Current campaign {state.campaign.id} · revision {state?.revision} · {state?.enabled ? "Worker enabled" : "Worker paused"}. Restarted preparation requires an explicit Start; saved history remains retained.</p>}
     </div>
     {statusError && <p role="alert">{statusError}</p>}
+    <div className="scanner-filters"><label>Analysis market <select aria-label="Analysis chart market" value={market} onChange={event => onChooseMarket(event.target.value)}>{[...new Set([market, ...(campaign?.symbols ?? []), ...roster.map(row => row.symbol)])].map(name => <option key={name}>{name}</option>)}</select></label></div>
+    <ScannerChartGrid campaignId={campaign?.id ?? null} symbol={market} focus={chartFocus} />
     <div className="scanner-controls"><button type="button" disabled={setupBusy || !prepareAllowed} onClick={() => void control("prepare")}>Prepare selected markets</button>
       <button type="button" disabled={setupBusy || !!statusError || !state?.campaign || state?.enabled === true} onClick={() => void control("start")}>Start / resume scanner</button>
       <button type="button" disabled={busy || !!storageError || !state?.campaign || !navigator.locks || pending.some(command => command.action === "pause")} onClick={() => void control("pause")}>Pause scanner</button>
@@ -305,7 +334,13 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
       <div className="scanner-controls"><button type="button" disabled={campaignBusy} onClick={() => void readCampaigns()}>Read saved campaigns</button>
         <label>Campaign <select aria-label="Saved scanner campaign" value={savedCampaign} onChange={event => setSavedCampaign(event.target.value)}><option value="">Choose a saved campaign</option>{campaigns.map(row => <option key={row.id} value={row.id}>{date(row.created * 1000)} · {row.market_count} markets · {row.id}</option>)}</select></label>
         <button type="button" disabled={campaignBusy || !savedCampaign} onClick={() => void reopenCampaign()}>Reopen saved campaign</button>
-        <button type="button" disabled={!historicalState} onClick={() => { campaignRead.cancel(); setHistoricalState(null); }}>Inspect current campaign</button></div>
+        <button type="button" disabled={!requestedCampaign} onClick={() => {
+          campaignRead.cancel(); setHistoricalState(null); setRequestedCampaign(null); setCampaignBusy(false); setCampaignError(null);
+          const params = new URLSearchParams(location.hash.split("?")[1] ?? ""); params.delete("scanner_campaign");
+          for (const key of [...params.keys()]) if (key.startsWith("scanner_chart_")) params.delete(key);
+          location.hash = `markets?${params}`;
+        }}>Inspect current campaign</button></div>
+      {requestedCampaign && !historicalState && <p role="status">Requested saved campaign {requestedCampaign} is {campaignBusy ? "being read" : "unavailable"}. Its chart scope has not been replaced with the current campaign.</p>}
       {historicalState && <p role="status">Inspecting saved campaign {historicalState.campaign?.id}. This snapshot was reopened on request; its original coverage does not imply current readiness.</p>}
       {campaignError && <p role="alert">{campaignError}</p>}</section>
     <details className="scanner-roster" open><summary>{state?.campaign ? "Frozen market roster" : "Eligible market roster"} · {state ? number(state.roster.eligible) : "unknown"} eligible / {state ? number(state.roster.total) : "unknown"} observed</summary>
@@ -325,7 +360,7 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
     </section>
     <section aria-label="Saved scanner levels and alerts"><h4>Every saved level and candidate</h4><p>Pages retain the complete detected set; they are not a highest-scoring shortlist. Alert evaluation is descriptive and preserves missing current inputs and reasons.</p>
       <div className="scanner-filters"><label>Evidence <select aria-label="Scanner evidence type" value={kind} onChange={event => setKind(event.target.value as Kind)}><option value="levels">Historical levels</option><option value="patterns">Historical pattern candidates</option><option value="alerts">Current alerts and evaluation</option></select></label>
-        <label>Market <select aria-label="Scanner evidence market" value={market} onChange={event => setMarket(event.target.value)}>{[...new Set([market, ...(campaign?.symbols ?? []), ...roster.map(row => row.symbol)])].map(name => <option key={name}>{name}</option>)}</select></label>
+        <label>Market <select aria-label="Scanner evidence market" value={market} onChange={event => onChooseMarket(event.target.value)}>{[...new Set([market, ...(campaign?.symbols ?? []), ...roster.map(row => row.symbol)])].map(name => <option key={name}>{name}</option>)}</select></label>
         <label>Interval <select aria-label="Scanner evidence interval" value={frame} onChange={event => setFrame(event.target.value as Frame)}>{frames.map(name => <option key={name}>{name}</option>)}</select></label>
         <button type="button" disabled={!campaign || pageBusy} onClick={() => void inspect()}>Inspect saved evidence</button><button type="button" onClick={() => onInspect(market)}>Open bounded candle chart</button></div>
       <p>The candle chart is a separate bounded study of up to 5,000 candles. Choose its interval and Load to inspect that market; opening it does not start a new historical download or claim the full prepared year is displayed.</p>
@@ -336,6 +371,10 @@ export function ScannerWorkspace({ symbol, onInspect }: { symbol: string; onInsp
         return <article key={row.seq}><h5>#{row.seq} · {words(facts.kind ?? facts.pattern_kind)} · {page.symbol} · {page.timeframe}</h5>
           <p>Level {typeof facts.price === "string" ? facts.price : typeof facts.level_price === "string" ? facts.level_price : "Unknown"} · candle {date(facts.bar_open_ms ?? facts.pivot_open_ms)}{kind === "levels" && ` · confirmed ${date(facts.confirmed_at_ms)} · first usable ${date(facts.first_usable_ms)}`}</p>
           {typeof facts.reason === "string" && <p>{facts.reason}</p>}
+          {typeof (facts.bar_open_ms ?? facts.pivot_open_ms) === "number" && <button type="button" onClick={() => {
+            setChartFocus(previous => ({ timeframe: page.timeframe, atMs: Number(facts.bar_open_ms ?? facts.pivot_open_ms), levelId: typeof facts.level_id === "string" ? facts.level_id : row.id, kind, seq: row.seq, nonce: (previous?.nonce ?? 0) + 1 }));
+            document.getElementById("scanner-chart-grid")?.scrollIntoView({ block: "start" });
+          }}>Show this {kind === "levels" ? "level" : "pattern"} on chart</button>}
           {kind === "alerts" && <div><strong>Current evaluation: {evaluation ? words(evaluation.status) : "Unavailable"}</strong>
             {Array.isArray(reasons) ? <ul>{reasons.filter(reason => typeof reason === "string").map((reason, i) => <li key={i}>{String(reason)}</li>)}</ul> : <p>{typeof evaluation?.reason === "string" ? evaluation.reason : typeof evaluation?.criteria === "string" ? evaluation.criteria : "No complete current criteria are available in this record."}</p>}
             {object(evaluation?.checks) && <ul>{Object.entries(evaluation.checks).map(([name, passed]) => <li key={name}>{words(name)}: {passed === true ? "Met" : passed === false ? "Not met" : "Unknown"}</li>)}</ul>}

@@ -40,6 +40,7 @@ from trading.ownership import CollectorLock
 from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
+from trading.pattern_charts import saved_chart
 from trading.pattern_scanner import PatternScanner
 from trading.peft_role_model import PeftPaperPilotRoles, local_role_transport
 from trading.prospective_review import ProspectiveSpec
@@ -1886,6 +1887,46 @@ def create_app(
             return {**receipt, "current_status": await asyncio.to_thread(scanner.snapshot)}
         except (sqlite3.Error, OSError, ValueError) as exc:
             raise HTTPException(503, "Original control receipt unavailable") from exc
+
+    @app.get("/api/research/pattern-scanner/chart")
+    async def scanner_chart(
+        request: Request,
+        campaign_id: str = Query(pattern=r"^patterns-[a-f0-9]{24}$"),
+        symbol: str = Query(pattern=r"^[A-Z0-9]{3,24}$"),
+        timeframe: Literal["5m", "15m", "30m", "1h", "4h"] = Query(),
+        at_ms: int | None = Query(None, ge=0, le=9223372036854775807),
+        before_ms: int | None = Query(None, ge=0, le=9223372036854775807),
+        levels_before: int = Query(0, ge=0, le=9223372036854775807),
+        patterns_before: int = Query(0, ge=0, le=9223372036854775807),
+        alerts_before: int = Query(0, ge=0, le=9223372036854775807),
+        expected_progress_sha256: str | None = Query(None, pattern=r"^[a-f0-9]{64}$"),
+        selected_kind: Literal["levels", "patterns", "alerts"] | None = Query(None),
+        selected_seq: int | None = Query(None, ge=1, le=9223372036854775807),
+    ) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(
+                saved_chart,
+                scanner_owner(request),
+                campaign_id,
+                symbol,
+                timeframe,
+                at_ms,
+                before_ms,
+                levels_before,
+                patterns_before,
+                alerts_before,
+                expected_progress_sha256,
+                selected_kind,
+                selected_seq,
+            )
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (sqlite3.Error, OSError, KeyError, TypeError) as exc:
+            raise HTTPException(
+                503, "Exact saved scanner chart unavailable; no fresh substitute"
+            ) from exc
 
     @app.get("/api/research/pattern-scanner/{kind}")
     async def scanner_page(

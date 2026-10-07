@@ -52,6 +52,24 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     const probe = async () => (await page.request.get(`${origin}/__qa/probe`, { headers })).json();
     const mode = async name => assert.equal((await page.request.post(`${origin}/__qa/${name}`, { headers })).status(), 200);
     const save = (name, value) => fs.writeFileSync(path.join(directory, name), JSON.stringify(value, null, 2));
+    const captureWorkspace = async (name, width) => {
+      await page.setViewportSize({ width, height: 3200 });
+      await workspace().locator("header").click();
+      await workspace().evaluate(element => {
+        document.activeElement?.blur();
+        element.querySelector("[data-source-qa-caption]")?.remove();
+        const marker = document.createElement("p");
+        marker.dataset.sourceQaCaption = "true";
+        marker.textContent = "SOURCE QA · SYNTHETIC NATIVE CANDLES · NO FINANCIAL OR MODEL PROOF";
+        marker.style.cssText = "background:#f2d589;color:#10211d;padding:10px;font-size:12px";
+        element.prepend(marker);
+      });
+      const bounds = await workspace().boundingBox();
+      assert(bounds && bounds.height < 6000, "The bounded study must fit the capture viewport");
+      await page.setViewportSize({ width, height: Math.ceil(bounds.height) + 256 });
+      await workspace().scrollIntoViewIfNeeded();
+      await workspace().screenshot({ path: path.join(directory, name) });
+    };
     const waitStudy = async () => {
       await workspace().getByText(/actual closed candles/, { exact: false }).waitFor();
       assert.equal(await workspace().locator("canvas").count() > 0, true);
@@ -119,15 +137,7 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
       await workspace().getByRole("button", { name: "Latest interval", exact: true }).click();
       await viewportIncludes(analysis.candles.at(-1).open_ms);
       await workspace().getByRole("button", { name: "Fit saved history", exact: true }).click();
-      await page.setViewportSize({ width: 1440, height: 3200 });
-      await workspace().locator("header").click();
-      await page.evaluate(() => {
-        document.activeElement?.blur();
-        const marker = document.createElement("p"); marker.textContent = "SOURCE QA · SYNTHETIC NATIVE CANDLES · NO FINANCIAL OR MODEL PROOF";
-        marker.style.cssText = "background:#f2d589;color:#10211d;padding:10px;font-size:12px";
-        document.querySelector(".candle-workspace").prepend(marker);
-      });
-      await workspace().screenshot({ path: path.join(directory, "warmed-gap-study.png") });
+      await captureWorkspace("warmed-gap-study.png", 1440);
       await page.setViewportSize({ width: 1440, height: 1100 });
       groups.push({ name: phase, run: gapped.id, candles: 239, gap_time: gapTime,
         contiguous_candles: [120, 119], segments: gapBounds, selected_time: selectedTime, selected_viewport: selectedViewport });
@@ -294,17 +304,12 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 
     phase = "mobile-and-screenshot";
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.waitForFunction(() => { const element = document.querySelector(".candle-workspace");
-      return element.scrollWidth <= element.clientWidth; }, null, { timeout: 5000 });
+    await page.waitForFunction(() => { const element = document.querySelector('section[aria-labelledby="candle-workspace-title"]');
+      return element && element.scrollWidth <= element.clientWidth; }, null, { timeout: 5000 });
     assert.equal(await workspace().evaluate(element => element.scrollWidth <= element.clientWidth), true);
-    await page.evaluate(() => {
-      const marker = document.createElement("p"); marker.textContent = "SOURCE QA · SYNTHETIC NATIVE CANDLE RESPONSES · NO FINANCIAL OR MODEL PROOF";
-      marker.style.cssText = "background:#f2d589;color:#10211d;padding:10px;font-size:12px";
-      document.querySelector(".candle-workspace").prepend(marker);
-    });
-    await workspace().screenshot({ path: path.join(directory, "mobile-candle-study.png") });
+    await captureWorkspace("mobile-candle-study.png", 390);
+    await captureWorkspace("candle-study.png", 1440);
     await page.setViewportSize({ width: 1440, height: 1100 });
-    await workspace().screenshot({ path: path.join(directory, "candle-study.png") });
     groups.push({ name: phase, width: 390, horizontal_overflow: false });
     if (!remainingOnly && !scopeOnly) await checkPlots();
     }
