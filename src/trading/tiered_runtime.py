@@ -126,6 +126,13 @@ class TieredPaperRuntime(PaperRuntime):
     def diagnostic_entries_allowed(self) -> bool:
         return super().diagnostic_entries_allowed() and not self.constrained()
 
+    def strategy_change(self, name: str, spec: Any) -> dict[str, Any]:
+        if self.constrained():
+            raise ValueError(
+                "Existing financial, recording, storage or resource admission is unavailable"
+            )
+        return super().strategy_change(name, spec)
+
     def readback_unavailable(self, observed_mono: float | None = None) -> bool:
         return bool(self.journal_status(observed_mono)["status"] != "balanced")
 
@@ -274,8 +281,14 @@ class TieredPaperRuntime(PaperRuntime):
         started = time.perf_counter()
         self._feature_times[symbol] = now
         result = {v: features(bars, now, v) for v in VARIANTS}
+        result.update(self.replacement_study(symbol, now))
         for feature in result.values():
-            if feature.get("bar_open_ms", 0) + 60000 < self.ready_at * 1000:
+            bootstrap = (
+                feature.get("input_available_at", 0) <= self.ready_at
+                if feature.get("redesign_version")
+                else feature.get("bar_open_ms", 0) + 60000 < self.ready_at * 1000
+            )
+            if bootstrap:
                 feature.update(eligible=False, reason="Bootstrap only; awaiting new closed bar")
         self.study[symbol] = result
         self.numerical_study(now, self.study)
@@ -617,7 +630,12 @@ class TieredPaperRuntime(PaperRuntime):
             )
             study[symbol] = {v: dict(f) for v, f in self.study.get(symbol, {}).items()}
             for feature in study[symbol].values():
-                if now * 1000 - feature.get("bar_open_ms", 0) - 59999 > 90000:
+                interval = (
+                    feature.get("feature_seconds", 60) if feature.get("redesign_version") else 60
+                )
+                if now * 1000 - feature.get("bar_open_ms", 0) - interval * 1000 + 1 > max(
+                    90000, interval * 1000
+                ):
                     feature.update(eligible=False, reason="Closed candle is stale")
                 if symbol in self._candle_errors:
                     feature.update(eligible=False, reason=self._candle_errors[symbol])

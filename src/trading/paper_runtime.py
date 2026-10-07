@@ -21,6 +21,8 @@ from trading.paper_economics import report as economics_report
 from trading.paper_engine import SYMBOLS, PaperEngine, filters, fresh_frame, risk_summary
 from trading.paper_store import PaperStore
 from trading.paper_strategy import VARIANTS, Bar, features, parse_bars
+from trading.redesign_strategy import STRATEGIES
+from trading.redesign_strategy import features as replacement_features
 from trading.venue import FeedError, PublicVenue
 
 logger = logging.getLogger(__name__)
@@ -54,6 +56,15 @@ class PaperRuntime:
 
     def memory_book(self, symbol: str) -> dict[str, Any] | None:
         return self.books.get(symbol)
+
+    def replacement_study(self, symbol: str, now: float) -> dict[str, Any]:
+        versions = {
+            a["version"]
+            for a in self.state["accounts"].values()
+            if a["version"] in STRATEGIES and symbol in a.get("symbols", SYMBOLS)
+        }
+        bars = self.history.get(symbol, [])[-600:]
+        return {v: replacement_features(bars, now, v) for v in sorted(versions)}
 
     def lab_history(self, now: float, horizon: str) -> list[Bar]:
         if horizon == "short":
@@ -99,7 +110,11 @@ class PaperRuntime:
         self._lab_features = {k: v for k, v in cache.items() if k in specs}
         for key, a in specs.items():
             spec = RuleSpec.model_validate(a["rule_spec"])
-            bars = self.lab_history(now, spec.holding_horizon)
+            bars = (
+                self.history.get("BTCUSD", [])[-600:]
+                if spec.version == "reviewed-lab-rules-v4"
+                else self.lab_history(now, spec.holding_horizon)
+            )
             stamp = bars[-1].open_ms if bars else -1
             cached = self._lab_features.get(key)
             if cached is None or cached[0] != stamp or spec.entry_filter is not None:
@@ -108,6 +123,13 @@ class PaperRuntime:
                 )
                 self._lab_features[key] = stamp, calculated
             feature = dict(self._lab_features[key][1])
+            if spec.version == "reviewed-lab-rules-v4":
+                feature["input_checked_at"] = now
+                if feature.get("input_available_at", 0) <= self.ready_at:
+                    feature.update(
+                        eligible=False,
+                        reason="Bootstrap only; awaiting a subsequent complete five-minute bar",
+                    )
             if not bars or not 0 < now * 1000 - bars[-1].close_ms <= 90000:
                 feature.update(eligible=False, reason="Awaiting a fresh subsequent closed candle")
             study.setdefault("BTCUSD", {})[a["version"]] = feature
@@ -279,9 +301,15 @@ class PaperRuntime:
                 study[symbol] = {
                     v: features(self.history.get(symbol, []), received, v) for v in VARIANTS
                 }
+                study[symbol].update(self.replacement_study(symbol, received))
                 # Startup history is for features, never a backlog of trade opportunities.
                 for feature in study[symbol].values():
-                    if feature.get("bar_open_ms", 0) + 60000 < self.ready_at * 1000:
+                    bootstrap = (
+                        feature.get("input_available_at", 0) <= self.ready_at
+                        if feature.get("redesign_version")
+                        else feature.get("bar_open_ms", 0) + 60000 < self.ready_at * 1000
+                    )
+                    if bootstrap:
                         feature.update(
                             eligible=False, reason="Bootstrap only; awaiting new closed bar"
                         )
@@ -660,6 +688,47 @@ class PaperRuntime:
             lambda engine: result.update(control_account(engine, name, action, version, frames)),
         )
         return {**result, "account": name}
+
+    def strategy_change(self, name: str, spec: Any) -> dict[str, Any]:
+        from trading.account_redesign import change_strategy
+
+        self.require_healthy_control()
+        result: dict[str, Any] = {}
+
+        def apply(engine: PaperEngine) -> None:
+            # Permanent request receipts live in the existing append-only journal.
+            previous = self.store.connection.execute(
+                "SELECT account,body FROM paper_events WHERE kind='account_strategy_changed' "
+                "AND body->>'request_id'=%s LIMIT 2",
+                (spec.request_id,),
+            ).fetchall()
+            if previous:
+                if (
+                    len(previous) != 1
+                    or previous[0]["account"] != name
+                    or any(
+                        previous[0]["body"].get(key) != value
+                        for key, value in spec.model_dump().items()
+                    )
+                ):
+                    raise ValueError(
+                        "This request already names a different account or rule change"
+                    )
+                result.update(status="already_applied", account=name, **previous[0]["body"])
+                return
+            result.update(change_strategy(engine, name, spec))
+
+        self._transact_state(time.time(), apply)
+        return result
+
+    def strategy_receipt(self, name: str, request_id: str) -> dict[str, Any] | None:
+        with self.store.transaction_lock:
+            row = self.store.connection.execute(
+                "SELECT body FROM paper_events WHERE kind='account_strategy_changed' "
+                "AND account=%s AND body->>'request_id'=%s ORDER BY id DESC LIMIT 1",
+                (name, request_id),
+            ).fetchone()
+        return {"status": "applied", "account": name, **row["body"]} if row else None
 
     def risk_control(self, name: str, action: str, stop_id: int) -> dict[str, Any]:
         if not self.running or self.error or not 0 <= time.time() - self.state["last_tick"] <= 10:

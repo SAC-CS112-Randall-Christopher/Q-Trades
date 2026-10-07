@@ -7,6 +7,7 @@ from decimal import Decimal as D
 import pytest
 from fastapi.testclient import TestClient
 from test_paper_engine import frame, study
+from test_research_evidence import replacement_packet
 
 from trading.api import create_app
 from trading.config import Settings
@@ -278,3 +279,67 @@ def test_api_only_reserves_local_operator_requests_and_reopens_receipts(tmp_path
         assert client.get("/api/replays").json()["total"] == 1
         assert client.get("/api/replays/api-replay-request").json()["error"]
         assert client.get("/api/replays/unknown").status_code == 404
+
+
+@pytest.mark.parametrize("v4", [False, True])
+def test_recorded_replacement_uses_actual_engine_and_balances_without_mutating_inputs(
+    decision_packet, v4
+):
+    _, record, _ = replacement_packet(decision_packet, "cost-breakout-v1", v4=v4)
+    original = copy.deepcopy(record)
+    result = run_replay([record], source_hashes())
+    assert result["status"] == "reconciled"
+    assert result["baseline"][0]["state_matches"] and result["baseline"][0]["events_match"]
+    assert all(r["balanced"] for r in result["scenarios"])
+    assert record == original
+
+
+@pytest.mark.parametrize("v4", [False, True])
+def test_replacement_missing_source_or_different_method_source_refuses_replay(decision_packet, v4):
+    from trading.execution_replay import checked_packet
+
+    _, record, _ = replacement_packet(decision_packet, "cost-breakout-v1", v4=v4)
+    for missing in (True, False):
+        changed = copy.deepcopy(record)
+        if missing:
+            changed["payload"]["source_files"].pop("redesign_strategy.py")
+        else:
+            changed["payload"]["source_files"]["redesign_strategy.py"] = "0" * 64
+        changed["sha256"] = digest(changed["payload"])
+        with pytest.raises(ValueError, match="source differs"):
+            checked_packet(changed, source_hashes())
+
+
+@pytest.mark.parametrize(
+    "source", ["autonomous_spec.py", "rule_components.py", "evidence_runtime.py"]
+)
+def test_v4_requires_the_explicit_rule_contract_source(decision_packet, source):
+    from trading.execution_replay import checked_packet
+
+    _, record, _ = replacement_packet(decision_packet, "cost-breakout-v1", v4=True)
+    record["payload"]["source_files"].pop(source)
+    record["sha256"] = digest(record["payload"])
+    with pytest.raises(ValueError, match="source differs"):
+        checked_packet(record, source_hashes())
+
+
+@pytest.mark.parametrize("v4", [False, True])
+def test_altered_replacement_feature_cannot_produce_changed_replay_scenarios(decision_packet, v4):
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1", v4=v4)
+    record["payload"]["study"]["BTCUSD"][key]["eligible"] = False
+    record["sha256"] = digest(record["payload"])
+    with pytest.raises(ValueError, match="features cannot be reproduced"):
+        run_replay([record], source_hashes())
+
+
+def test_legacy_packet_without_new_source_field_keeps_existing_reproduction(decision_packet):
+    from trading.execution_replay import checked_packet
+
+    recorder, packet, frames, features = decision_packet
+    engine = PaperEngine(copy.deepcopy(packet["state_before"]), packet["at"])
+    engine.tick(frames, features)
+    recorder.complete(packet, engine.events, engine.state, [], {}, time.monotonic())
+    packet["source_files"].pop("redesign_strategy.py")
+    packet["source_files"].pop("evidence_runtime.py")
+    record = {"id": 1, "payload": packet, "sha256": digest(packet)}
+    assert checked_packet(record, source_hashes()) == packet

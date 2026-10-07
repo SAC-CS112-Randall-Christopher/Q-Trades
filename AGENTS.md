@@ -1,4 +1,24 @@
-# Current source follow-up — October 6, 2026, evidence-backed questions (#66)
+# Current source follow-up — October 6, 2026, original account redesign (#66)
+
+Chris requested redesign after the original six breakout baselines recorded
+poor after-cost outcomes. The other two older long-horizon accounts have no
+completed trades; do not classify them as losing. This isolated lane proposes
+eight fixed causal exploratory mechanisms and an explicit, prospective change
+for flat original spot accounts through their existing financial writer.
+Keep original versions, balances, funding, fees, losses, journal, pauses, risk
+ceilings, immutable lab contracts, capacity and storage policy. No automatic
+selection, new funds, cheaper assumed fills or trading-edge claim follows.
+The older lab pair must retire through its existing draining/archive owner
+before a distinct replacement comparison; never rewrite its frozen trial.
+
+Verify pure inputs/signals, native transaction/restart/duplicate/rollback and
+normal disposable UI behavior. Source, tests, independent review, commits/push
+and a draft PR are authorized. New merge/install/restart and operating rule
+cutover require their separately reviewable exact-target approval. No model
+dispatch, preferred-answer retry, qualification, external/paid activation,
+training/download/conversion or financial-policy change is part of this lane.
+
+# Previous source follow-up — October 6, 2026, evidence-backed questions (#66)
 
 Continue the existing draft PR73 lane within source and isolated-QA permission.
 The explicit v4 paper-pilot selection policy is a source proposal only; existing

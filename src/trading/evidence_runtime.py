@@ -19,6 +19,8 @@ from trading.compact_memory import CompactMemory, prefix
 from trading.execution_window import ExecutionWindow
 from trading.outcome_continuation import OutcomeContinuation
 from trading.paper_strategy import VARIANTS, Bar, features
+from trading.redesign_strategy import STRATEGIES
+from trading.redesign_strategy import features as replacement_features
 from trading.research_evidence import (
     MAX_PACKET,
     VERSION,
@@ -151,7 +153,94 @@ def feature_reproduction(packet: dict[str, Any]) -> dict[str, Any]:
             "reproduced": variants,
             "recorded": expected,
         }
+        recorded_features = packet["study"].get(symbol, {})
+        replacement_versions = {v for v in recorded_features if v in STRATEGIES}
+        for account in packet["state_before"].get("accounts", {}).values():
+            if account["version"] in STRATEGIES:
+                from trading.paper_engine import SYMBOLS
+
+                if symbol in account.get("symbols", SYMBOLS):
+                    replacement_versions.add(account["version"])
+        if replacement_versions:
+            replacements = {}
+            for version in sorted(replacement_versions):
+                result = replacement_features(bars, origin["computed_at"], version)
+                if (
+                    result.get("input_available_at", 0) <= origin["ready_at"]
+                    if result.get("redesign_version")
+                    else result.get("bar_open_ms", 0) + 60000 < origin["ready_at"] * 1000
+                ):
+                    result.update(eligible=False, reason="Bootstrap only; awaiting new closed bar")
+                interval = result.get("feature_seconds", 60)
+                if at * 1000 - result.get("bar_open_ms", 0) - interval * 1000 + 1 > max(
+                    90000, interval * 1000
+                ):
+                    result.update(eligible=False, reason="Closed candle is stale")
+                if origin["candle_error"]:
+                    result.update(eligible=False, reason=origin["candle_error"])
+                recorded = recorded_features.get(version)
+                replacements[version] = {
+                    "matched": result == recorded,
+                    "reproduced": result,
+                    "recorded": recorded,
+                }
+            closed_results[symbol]["replacement_features"] = replacements
+            closed_results[symbol]["matched"] &= all(r["matched"] for r in replacements.values())
         for a in packet["state_before"].get("accounts", {}).values():
+            if (
+                symbol == "BTCUSD"
+                and a.get("rule_spec", {}).get("version") == "reviewed-lab-rules-v4"
+            ):
+                from trading.autonomous_spec import RuleSpec, rule_feature
+                from trading.experiment_registry import fingerprint
+
+                recorded_rule = recorded_features.get(a["version"], {})
+                reproduced_rule = None
+                try:
+                    cutoff = recorded_rule["input_cutoff"]
+                    checked_at = recorded_rule["input_checked_at"]
+                    if (
+                        type(cutoff) not in {int, float}
+                        or type(checked_at) not in {int, float}
+                        or not math.isfinite(cutoff)
+                        or not math.isfinite(checked_at)
+                        or not 0 < cutoff <= checked_at <= at
+                        or fingerprint(frozen_bars(bars, cutoff))
+                        != recorded_rule["input_bars_sha256"]
+                    ):
+                        raise ValueError("Original v4 causal input prefix or cutoff unavailable")
+                    reproduced_rule = rule_feature(
+                        bars,
+                        cutoff,
+                        RuleSpec.model_validate(a["rule_spec"]),
+                        a["execution_profile"],
+                    )
+                    reproduced_rule["input_checked_at"] = checked_at
+                    if reproduced_rule.get("input_available_at", 0) <= origin["ready_at"]:
+                        reproduced_rule.update(
+                            eligible=False,
+                            reason="Bootstrap only; awaiting a subsequent complete five-minute bar",
+                        )
+                    if not bars or not 0 < checked_at * 1000 - bars[-1].close_ms <= 90000:
+                        reproduced_rule.update(
+                            eligible=False, reason="Awaiting a fresh subsequent closed candle"
+                        )
+                    interval = reproduced_rule.get("feature_seconds", 60)
+                    if at * 1000 - reproduced_rule.get(
+                        "bar_open_ms", 0
+                    ) - interval * 1000 + 1 > max(90000, interval * 1000):
+                        reproduced_rule.update(eligible=False, reason="Closed candle is stale")
+                    if origin["candle_error"]:
+                        reproduced_rule.update(eligible=False, reason=origin["candle_error"])
+                    replacement_matched = reproduced_rule == recorded_rule
+                except (KeyError, ValueError, TypeError, ArithmeticError):
+                    replacement_matched = False
+                closed_results[symbol].setdefault("replacement_rule_features", {})[a["version"]] = {
+                    "matched": replacement_matched,
+                    "reproduced": reproduced_rule,
+                    "recorded": recorded_rule,
+                }
+                closed_results[symbol]["matched"] &= replacement_matched
             if a.get("rule_spec", {}).get("entry_filter"):
                 from trading.autonomous_spec import RuleSpec
                 from trading.rule_components import reviewed_feature
@@ -230,6 +319,8 @@ class EvidenceRecorder:
                 "paper_diagnostics.py",
                 "account_purpose.py",
                 "paper_strategy.py",
+                "redesign_strategy.py",
+                "evidence_runtime.py",
                 "research_evidence.py",
                 "pattern_memory.py",
                 "execution_profiles.py",
@@ -411,8 +502,7 @@ class EvidenceRecorder:
                 s: {
                     "retained_bars": len(rows),
                     "continuous": all(
-                        b.open_ms == a.open_ms + 60000
-                        for a, b in zip(rows, rows[1:], strict=False)
+                        b.open_ms == a.open_ms + 60000 for a, b in zip(rows, rows[1:], strict=False)
                     ),
                     "last_close_ms": rows[-1].close_ms if rows else None,
                     "computed_at": origins.get(s),

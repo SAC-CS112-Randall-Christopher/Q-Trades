@@ -29,6 +29,18 @@ export type Account = {
   campaign_id?: string;
   entries_paused?: boolean;
   control_version?: number;
+  last_strategy_change?: {
+    account: string;
+    request_id: string;
+    strategy: string;
+    expected_strategy: string;
+    expected_control_version: number;
+    from: string;
+    to: string;
+    at: number;
+    version: number;
+    qualification: string;
+  };
   fault?: { at: number; code: string; reason: string };
   starting_capital?: string;
   risk?: RiskStatus;
