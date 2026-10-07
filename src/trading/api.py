@@ -1624,20 +1624,11 @@ def create_app(
 
     @app.get("/api/research/tools")
     async def research_tools(
-        request: Request, cursor: str | None = Query(None, max_length=2048)
+        request: Request,
+        cursor: str | None = Query(None, max_length=2048),
+        include_history: bool = Query(True),
     ) -> dict[str, Any]:
-        journal: ToolJournal | None = request.app.state.tool_journal
-        try:
-            history = (
-                await asyncio.to_thread(journal.recent, cursor)
-                if journal
-                else {"runs": [], "total": 0}
-            )
-        except ValueError as exc:
-            raise HTTPException(422, str(exc)) from exc
-        except (OSError, sqlite3.Error) as exc:
-            raise HTTPException(503, "Tool history is waiting for configured storage") from exc
-        return {
+        catalog = {
             "tools": [{"id": key, **value} for key, value in TOOLS.items()],
             "authority": "Read-only evidence; no financial or model authority",
             "agents_enabled": False,
@@ -1663,8 +1654,23 @@ def create_app(
                 },
                 "experiment_result": {"method": "GET", "path": "/api/lab/experiments/{request_id}"},
             },
-            **history,
         }
+        if not include_history:
+            if cursor is not None:
+                raise HTTPException(422, "A tool history cursor requires include_history=true")
+            return {**catalog, "history_requested": False}
+        journal: ToolJournal | None = request.app.state.tool_journal
+        try:
+            history = (
+                await asyncio.to_thread(journal.recent, cursor)
+                if journal
+                else {"runs": [], "total": 0}
+            )
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (OSError, sqlite3.Error) as exc:
+            raise HTTPException(503, "Tool history is waiting for configured storage") from exc
+        return {**catalog, "error": request.app.state.tool_error, **history}
 
     def disclose_tool(request: Request, receipt: dict[str, Any]) -> None:
         lab: ExperimentLab | None = request.app.state.lab

@@ -1,6 +1,7 @@
 import copy
 import hashlib
 import json
+import sqlite3
 import time
 from collections import deque
 from decimal import Decimal
@@ -8,11 +9,14 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 from test_paper_runtime import ReadOnlyStub, instrument
+from test_research_storage import plan_at
 
 from trading.api import create_app
 from trading.config import Settings
 from trading.market import parse_book
+from trading.ownership import CollectorLock
 from trading.paper_strategy import Bar
+from trading.research_storage import ResearchStorage
 from trading.station import (
     TOOLS,
     cost_hurdle,
@@ -401,3 +405,186 @@ def test_station_optional_tools_respect_low_disk_without_changing_accounts(runti
         assert response.status_code == 503
         assert "free disk" in response.json()["detail"]
         assert runtime.state == before
+
+
+@pytest.fixture
+def catalog_api(tmp_path, monkeypatch):
+    def no_financial_database(*args, **kwargs):
+        pytest.fail("Catalog fixtures must not open a financial database")
+
+    monkeypatch.setattr("trading.api.load_dsn", no_financial_database)
+    app = create_app(
+        Settings(), tmp_path / "monitor.sqlite3", background=False, paper_database=None
+    )
+    with TestClient(app) as client:
+        assert app.state.paper is None
+        yield app, client
+        assert app.state.paper is None
+
+
+def test_catalog_only_does_not_read_unavailable_history_or_hide_its_error(catalog_api):
+    app, client = catalog_api
+
+    class UnavailableHistory:
+        calls = 0
+
+        def recent(self, cursor):
+            self.calls += 1
+            raise OSError("Synthetic archive is unavailable")
+
+    history = UnavailableHistory()
+    app.state.tool_journal = history
+    app.state.tool_error = "Tool receipt storage unavailable; paper operation continues"
+    response = client.get("/api/research/tools", params={"include_history": "false"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["history_requested"] is False
+    assert body["error"] == app.state.tool_error
+    assert body["tools"] == [{"id": key, **value} for key, value in TOOLS.items()]
+    assert body["authority"] == "Read-only evidence; no financial or model authority"
+    assert body["agents_enabled"] is False
+    assert not {"runs", "total", "capacity", "capacity_basis", "next_cursor"}.intersection(body)
+    assert history.calls == 0
+
+
+def test_default_tool_history_keeps_original_receipts_and_pagination(catalog_api, monkeypatch):
+    app, client = catalog_api
+    # Pagination signs a fresh expiry. Fix the fixture clock so byte equality
+    # compares the route behavior rather than different issuance timestamps.
+    monkeypatch.setattr("trading.tool_journal.time.time", lambda: 1_800_000_000.0)
+    journal = app.state.tool_journal
+    for index in range(23):
+        identity = journal.start("cost_hurdle", "BTCUSD")
+        journal.finish(identity, {"ordinal": index}, None)
+    before = journal.connection.execute("SELECT * FROM tool_runs ORDER BY id").fetchall()
+    expected = journal.recent()
+    first = client.get("/api/research/tools").json()
+    explicit = client.get("/api/research/tools", params={"include_history": "true"}).json()
+    assert first == explicit
+    assert set(first) == {
+        "tools",
+        "authority",
+        "agents_enabled",
+        "error",
+        "capabilities",
+        *expected,
+    }
+    assert all(first[key] == value for key, value in expected.items())
+    assert first["total"] == 23 and len(first["runs"]) == 20
+    cursor = first["next_cursor"]
+    expected_next = journal.recent(cursor)
+    second = client.get("/api/research/tools", params={"cursor": cursor}).json()
+    assert all(second[key] == value for key, value in expected_next.items())
+    assert len(second["runs"]) == 3 and second["total"] == 23
+    assert before == journal.connection.execute("SELECT * FROM tool_runs ORDER BY id").fetchall()
+
+
+def test_default_tool_history_observes_current_error_after_await(catalog_api):
+    app, client = catalog_api
+    app.state.tool_error = "Prior synthetic error"
+
+    class ChangingHistory:
+        def recent(self, cursor):
+            app.state.tool_error = "Current synthetic error"
+            return {"runs": [], "total": 0}
+
+    app.state.tool_journal = ChangingHistory()
+    response = client.get("/api/research/tools")
+    assert response.status_code == 200
+    assert response.json()["error"] == "Current synthetic error"
+    assert "history_requested" not in response.json()
+
+
+@pytest.mark.parametrize("failure", [OSError("Unavailable"), sqlite3.OperationalError("Busy")])
+@pytest.mark.parametrize("query", [{}, {"include_history": "true"}])
+def test_default_tool_history_keeps_storage_refusal(catalog_api, failure, query):
+    app, client = catalog_api
+
+    class UnavailableHistory:
+        def recent(self, cursor):
+            raise failure
+
+    app.state.tool_journal = UnavailableHistory()
+    response = client.get("/api/research/tools", params=query)
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Tool history is waiting for configured storage"}
+
+
+def test_catalog_only_reads_no_archive_during_actual_writer_lock_contention(catalog_api, tmp_path):
+    app, client = catalog_api
+    plan = plan_at(tmp_path)
+    storage = ResearchStorage(plan)
+    storage.close()
+    journal = ToolJournal(tmp_path / "locked-tools.sqlite3", plan)
+    try:
+        identity = journal.start("cost_hurdle", "BTCUSD")
+        journal.finish(identity, {"scope": "Synthetic retained receipt"}, None)
+        original = journal.get(identity)
+        app.state.tool_journal = journal
+        owner = CollectorLock(storage.root / ".capture-owner.lock")
+        owner.acquire()
+        try:
+            refusal = client.get("/api/research/tools")
+            assert refusal.status_code == 503
+            assert refusal.json() == {"detail": "Tool history is waiting for configured storage"}
+            catalog = client.get("/api/research/tools", params={"include_history": "false"})
+            assert catalog.status_code == 200 and catalog.json()["history_requested"] is False
+            assert "runs" not in catalog.json()
+            assert journal.get(identity) == original
+        finally:
+            owner.release()
+        assert client.get("/api/research/tools").json()["total"] == 1
+        assert journal.get(identity) == original
+    finally:
+        journal.close()
+
+
+@pytest.mark.parametrize("cursor", ["", "opaque-cursor"])
+def test_catalog_only_rejects_even_empty_history_cursor(catalog_api, cursor):
+    _, client = catalog_api
+    response = client.get(
+        "/api/research/tools", params={"include_history": "false", "cursor": cursor}
+    )
+    assert response.status_code == 422
+    assert response.json() == {"detail": "A tool history cursor requires include_history=true"}
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        {"include_history": "unknown"},
+        {"cursor": "x" * 2049},
+        {"include_history": "false", "cursor": "x" * 2049},
+    ],
+)
+def test_catalog_query_validation_stays_bounded(catalog_api, query):
+    _, client = catalog_api
+    assert client.get("/api/research/tools", params=query).status_code == 422
+
+
+def test_default_history_still_rejects_invalid_cursor(catalog_api):
+    _, client = catalog_api
+    response = client.get("/api/research/tools", params={"cursor": "not-a-signed-cursor"})
+    assert response.status_code == 422 and "cursor" in response.json()["detail"].lower()
+
+
+def test_catalog_only_without_history_owner_never_claims_empty_history(catalog_api):
+    app, client = catalog_api
+    app.state.tool_journal = None
+    response = client.get("/api/research/tools", params={"include_history": "false"})
+    assert response.status_code == 200
+    assert response.json()["history_requested"] is False
+    assert "runs" not in response.json() and "total" not in response.json()
+    assert client.get("/api/research/tools").json()["runs"] == []
+    assert client.get("/api/research/tools").json()["total"] == 0
+
+
+def test_catalog_descriptions_never_grant_tool_execution(catalog_api):
+    app, client = catalog_api
+    before = app.state.tool_journal.recent()
+    assert client.get("/api/research/tools", params={"include_history": "false"}).status_code == 200
+    refused = client.post(
+        "/api/research/tools/run", json={"tool": "cost_hurdle", "symbol": "BTCUSD"}
+    )
+    assert refused.status_code == 403
+    assert app.state.tool_journal.recent() == before

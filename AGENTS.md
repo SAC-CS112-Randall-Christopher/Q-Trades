@@ -1,4 +1,50 @@
-# Current source follow-up — October 6, 2026, evidence-backed questions (#66)
+# Current source follow-up — October 6, 2026, Local Codex observation (#66)
+
+Chris selected Local Codex first for the research oversight MCP connection.
+Chris subsequently authorized write access through Q-Trades for diagnosis and
+optimization. In this source increment, expose only the six existing bounded
+station diagnostics through their normal operator route, exact saved diagnostic
+receipt reads, and the existing research Pause action. Require explicit
+tool/symbol/account/start and a stable request ID for each diagnostic. Retain
+refused, failed and uncertain acknowledgments without automatic POST retries;
+Pause acknowledgment does not establish model-child cleanup. No Resume, question
+enqueue, financial mutation, SQL, arbitrary file/URL, grant/profile, training or
+model command belongs in this connector.
+
+Extend the passive views with recorded v7 question-selection evidence, its six
+public authority identities and hash-verified frozen comparison controls. Keep
+unknown, historical, unavailable and unqualified states truthful. The local
+connection owner may publish the independently reviewed standalone connector and
+upgrade only the exact known five-tool selected entry to its nine-tool successor,
+preserving unrelated configuration bytes. That connection setup does not require
+or authorize the separate catalog-only core API update or a paper-service restart.
+The source agent does not invoke operating APIs or publish installed artifacts.
+The additional read-only `research_paper_trials` view uses only the existing
+`/api/autonomous` snapshot to expose Lab policy/slots/account IDs, fixed trial
+contracts/results and bounded proposal status. It adds no proposal or financial
+control. Accepted proposals awaiting admission are not funded accounts.
+
+Reconcile this source draft with the approved main revision
+`d36a45a7bee7c79e02cb06ad4fee112b330f5c07`. Its separately approved prospective
+paper trial remains under its operating owner. This follow-up permits source,
+isolated QA and commit/push in PR #74. Operating connection actions above remain
+with their authorized owner; no core installation/restart, profile/grant
+changes, model dispatch or external research/review activation.
+
+Keep source and isolated QA in the owning draft PR #74. Retain actual host
+discovery failures and distinguish installed Codex discovery, current-chat tool
+loading, actual tool calls and operating API acceptance. Inspect only Q-Trades'
+selected entry when reconciling unrelated Codex configuration changes, and never
+restore old settings over newer edits. Reuse the existing verified process owner
+for finite native QA; do not start a chat or model to manufacture connection proof.
+
+An optional catalog-only branch on the existing tool API is a source proposal.
+Preserve ordinary history/pagination/errors and require an explicit response
+marker before calling catalog-only observation verified. Installing that core
+API change requires a separate reviewed operating-update decision. Do not add a
+cache, database, scheduler, serving backend or speculative optimization.
+
+# Historical source follow-up — October 6, 2026, evidence-backed questions (#66)
 
 Continue the existing draft PR73 lane within source and isolated-QA permission.
 The explicit v4 paper-pilot selection policy is a source proposal only; existing
