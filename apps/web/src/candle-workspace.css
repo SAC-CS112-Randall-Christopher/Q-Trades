@@ -20,6 +20,8 @@
 .candle-study-result { margin-top: 22px; }
 .candle-workspace .candle-coverage { margin: 12px 0; padding: 12px; border: 1px solid #3b5759; border-radius: 5px; font-size: 11px; line-height: 1.85; color: #cddbd7; }
 .candle-chart-controls { margin: 14px 0 10px; }
+.candle-chart-host { width: 100%; height: 390px; min-width: 0; }
+.candle-chart-host-compact { height: 290px; }
 .candle-inspector { margin: 18px 0; padding: 16px; background: #193237; border: 1px solid #39575a; border-radius: 6px; }
 .candle-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 12px; padding: 12px 0 3px; }
 .candle-metrics span { font-size: 10px; color: #bdd0cd; }
@@ -34,4 +36,28 @@
 .candle-actions { font-size: 10px; color: #b7c9c5; justify-content: space-between; }
 .candle-workspace .candle-saved { padding-top: 8px; margin-top: 15px; border-top: 1px solid #365357; }
 .candle-saved > button { width: 100%; margin: 4px 0; display: flex; justify-content: space-between; gap: 12px; text-align: left; }
+.candle-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 20px; }
+.candle-chart-card { min-width: 0; padding: 16px; border: 1px solid #426362; border-radius: 8px; background: #10282d; }
+.candle-chart-card > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.candle-chart-card > header h4 { font-size: 17px; }
+.candle-chart-card .candle-study-result { margin-top: 10px; }
+.candle-chart-card .candle-study-heading { gap: 6px; }
+.candle-chart-card .candle-coverage { padding: 10px; }
+.candle-workspace .candle-source { margin-top: 8px; color: #b3cac3; font-size: 10px; line-height: 1.8; overflow-wrap: anywhere; }
+.candle-pattern-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.candle-pattern-summary > span { border: 1px solid #42615a; border-radius: 5px; padding: 6px 8px; font-size: 10px; color: #c7ddd2; }
+.candle-pattern-summary > button { margin-left: auto; }
+.candle-chart-placeholder { display: flex; align-items: center; justify-content: center; min-height: 290px; padding: 20px; background: #0e2026; border: 1px dashed #3a5659; border-radius: 6px; }
+.candle-chart-placeholder p { max-width: 350px; font-size: 12px; line-height: 1.8; color: #b7cec6; text-align: center; }
+.candle-chart-card .candle-pattern-grid { grid-template-columns: 1fr; }
+.candle-chart-card .candle-pattern-list button { grid-template-columns: 1fr; }
+.candle-chart-card .candle-pattern-list span { grid-column: auto; }
+.scanner-chart-workspace { padding: 20px 0; border-top: 0; }
+.scanner-chart-workspace .candle-actions { justify-content: flex-start; margin: 10px 0; }
+.scanner-chart-workspace .candle-metrics small { display: block; margin-top: 5px; color: #a7c5bb; font-size: 10px; }
+.scanner-chart-workspace .candle-pattern-detail, .scanner-chart-workspace .candle-pattern-grid { overflow-wrap: anywhere; }
+.scanner-chart-workspace .candle-chart-card > p[role=status] { margin: 10px 0; color: #b7cec6; font-size: 11px; }
+.scanner-chart-workspace .candle-study-chart { min-width: 0; }
+.candle-chart-grid .candle-chart-card:last-child { grid-column: 1 / -1; }
+@media (max-width: 1000px) { .candle-chart-grid { grid-template-columns: 1fr; }.candle-chart-card { padding: 12px; }.candle-pattern-summary > button { margin-left: 0; } }
 @media (max-width: 700px) { .candle-workspace { padding: 20px 16px; }.candle-pattern-grid { grid-template-columns: 1fr; }.candle-workspace button, .candle-workspace select { min-height: 44px; }.candle-load-controls { gap: 12px; }.candle-load-controls > label { flex: 1; }.candle-load-controls select { max-width: 100%; }.candle-workspace .candle-load-button { width: 100%; }.candle-pattern-list button { grid-template-columns: 1fr; }.candle-pattern-list span { grid-column: auto; } }

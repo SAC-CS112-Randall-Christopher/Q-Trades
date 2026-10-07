@@ -8,6 +8,50 @@ The existing Markets workspace owns the interface; ExperimentLab owns the
 cooperative background work and its existing registry owns saved progress.
 Orders, accounts, model requests and strategy activation are separate owners.
 
+## Saved analysis charts
+
+The chart follow-up makes the scanner's saved analysis the primary Markets view.
+An analyzed market has native 5m, 15m, 30m, 1h and 4h cards, with original pattern
+annotations and support/resistance alert zones. Opening an original event reads
+its retained candle window; it does not dispatch a fresh candle-tool study or
+retrospectively replace the scanner's findings. The separate candle study keeps
+its existing request and recovery workflow.
+
+The charts show actual available candles, volume, SMA 10/50/100 and trailing
+50-candle approximate VWAP. Indicator context is display-only. The current
+scanner recognizes confirmed support/resistance pivots, bounce, breakout and
+retest behavior; it does not establish a predictive VWAP/MA relationship or an
+after-cost winning edge. Original event reasons, volume confirmation and source
+coverage remain inspectable. Missing warmup, gaps, unavailable history and
+partial preparation remain explicit rather than producing blank success.
+
+Saved zones become usable only after their confirming candles. Their historical
+lines must not imply that an earlier candle knew a later-confirmed level.
+Current alert evaluations remain distinct from historical recognition. All
+retained levels and events remain reachable through bounded pages; a displayed
+window is not the complete year or an automatically selected shortlist.
+
+The read path shares the existing API, registry, immutable input archives and
+chart library. A chart-only projection preserves the scanner's frozen source
+identity, uses only completed processing, and cannot fetch new venue history,
+prepare/start work, place orders or invoke a model. Source/disposable chart
+acceptance and an installed chart rollout are separate proof stages.
+
+The latest view contains at most 100 already processed native candles. Older
+views reopen one original native page, at most 1,000 rows in two retained archive
+chunks, and clip forming/unprocessed observations. Its requested and actual
+bounds, progress state, gaps and indicator warmup remain explicit. Opening
+older history supplies more moving-average context when the original source
+has it; there is no fabricated warmup or all-year overview from 100 candles.
+
+Each original level, pattern and alert page is bounded at 100 records, with a
+total and continuation cursor. Continuation pins the progress digest and refuses
+a changed snapshot. A clicked original record can be reopened by its exact
+kind and sequence, scoped to the same campaign, market and interval, even when
+it falls outside that newest page. This single-record selection preserves its
+original body and does not perform an unbounded page walk. A record without an
+available candle remains inspectable as such, without an invented chart marker.
+
 ## Source and observation contract
 
 The current universe's USD spot, status, volume, activity, spread and freshness
@@ -243,3 +287,105 @@ The saved scores omit the exact input/passive-evidence predicate that blocked
 those reviews, so the precise blocker remains unknown. The archived trials
 are not established as losing strategies. This investigation does not fund,
 restore, reopen or convert them into continuing accounts.
+
+### Approved scanner installation, October 7
+
+PR #80 merged as `3ee32cbce1c56fec3862ec9c576ffc5fe2c9af75`; its six reviewed-head
+and six merged-head jobs passed. PR #81's reviewed reader proposal merged as
+`de51151173ae9455521728e5e44ac6fdfac9fdb6`, with exact reviewed/merged tree equality.
+PR #81 changed only proposal documentation; its runtime equals PR #80 and it had
+no separate hosted checks. One supported updater installed that full SHA after
+its own ExpectedCommit fetch matched, using the existing paper-service task.
+This accepted receipt is reused for the chart follow-up, with no second update.
+
+The scoped individual post-review confirmed the original 1,636,860-event and
+15,196-journal prefixes, accounts/funding/contracts, all 18 archived identities,
+retained evidence, selected role prefixes, consumed attempts, protected
+configuration, twenty-slot capacity and 400/100-GB policy. It retained 496
+legitimate appended financial events and ten appended experiment events.
+Installed identity passed all 252 selected file checks; storage passed 15/15.
+A 30.078-second, three-sample recording window passed 8/8 selected checks, with
+240 additional captures and 24 additional queue drops. This proves resumption,
+not lossless or uninterrupted collection. Financial audit was available and
+balanced and paper state was fresh in that window.
+
+Stop-stage to confirmed ready was conservatively at most 97.442 seconds;
+restart-stage to ready was at most 71.877 seconds. These are observed bounds,
+not exact financial downtime. The reused full comparator retained 12 passing,
+two false and two unavailable results; its strict collected/accepted/lifecycle
+gates remain false. The handoff observer retained `Task action differs.` and
+did not verify the new writer. Direct native TCP-to-database NAT writer mapping
+remains unresolved. Populated Library/Reviews and native desktop product
+acceptance are separate gaps. The individual receipt review hash is
+`ed9c22c957eefef62a2fdf6f0e27380e951921d561c8aff53bdfb8b7e37f3143`.
+
+The installed UI showed the expanded roster and scanner controls, but its
+single-interval candle tool and scanner tables did not satisfy Chris's intended
+five-chart explanation of recognized patterns. The new visual source proposal
+addresses that gap; opening a window alone does not complete desktop goal #65.
+
+### Saved-chart source verification, October 7
+
+The isolated chart lane adds the five native-frame views above the live feed,
+original pattern/alert selection, causal zone segments and explicit saved-window
+navigation. Accounts now classifies current `autonomous-lab` accounts in the
+same Research filter as forward accounts and links retained trial history.
+It does not recreate or refund retired accounts. The scanner's three frozen
+implementation-source inputs are unchanged from the approved installed base.
+
+The final backend module passed 30 cases without failures or skips, covering
+exact native buffers, retained archive identity/checksums, completed cutoffs,
+missing observations, original record selection beyond the first 100 records,
+bounded pagination, changed-progress refusal, lock release and read-only state.
+All-source Ruff, strict Windows mypy (116 source files), TypeScript and the
+compiled dashboard build passed. The existing large-bundle warning remains.
+
+The final compiled chart workflow passed all 16 groups against the actual
+disposable scanner/API/registry with synthetic native inputs. Eight geometry
+samples showed all five chart hosts fixed at 290 pixels and an unchanged
+evidence-button position; normal clicks worked. The workflow verified original
+patterns and reasons, causal lines, immutable historical inputs and bookmarks,
+stale market-response isolation, failed-window recovery, changed-progress HTTP
+422 with no substituted candles, an original prospective alert, Accounts
+filter/navigation and mobile layout. All 141 browser API requests were GETs.
+The 184 native requests were served by the declared MockTransport; eight
+explicit QA setup controls are separate from application navigation. All 25
+source/compiled hashes matched before and after. Browser/context closure and
+the token-authorized fixture stop returned successfully. The browser receipt
+SHA-256 is `54fa3adb3237c4ee037971ccf556af7aca4b7ab17b4a5c6447fa964fdea84f6a`.
+
+This fixture processed 360 of 1,000 requested native slots in each of ten dense
+market/timeframe scopes, retaining 640 missing slots per scope. A separate 4h
+case processed 2,190 synthetic candles with a prospective alert; its other four
+timeframes remained missing. Neither case proves a full real-market year,
+all-roster capacity, financial-database acceptance, model coexistence or value.
+
+The existing scanner workflow passed all 14 groups on the final build. The
+separate candle study has 17 distinct cases covered on that build: a full run
+passed 16 and failed its clock-dependent warmed-gap fixture assumption; the two
+affected plot cases passed after correcting only that synthetic sequence.
+This local union is not a single successful final full 17-case run. Hosted
+exact-head checks must separately establish the final combined workflow.
+
+Predecessor failures remain retained. The initial chart setup exhausted its
+finite processing budget. Later normal UI checks exposed unstable chart-host
+geometry: the pinned library's `autoSize` ignores an explicit height unless its
+ResizeObserver fails. Static host heights repaired the actual moving-button
+defect; removing per-series axis titles repaired crowded labels without dropping
+zones. Old screenshot selectors were scoped to their original workspaces.
+The scanner's two-second test delay allowed Start to commit before Pause; a
+finite synthetic latch now establishes the intended opposite order and verifies
+the unchanged stale-revision refusal. An intermediate browser run observed HTTP
+422 but hung reading its response body; the final harness bounds body/cleanup
+waits, tests explicit bookmark reload and records the matching direct API body
+separately. Another run failed an ambiguous empty-state locator before its
+scope was corrected. Earlier abrupt-client cleanup was initially unknown; no
+successful final run rewrites those predecessor receipts.
+
+Independent reviews cover the backend, frontend/integration and affected
+fixture/evidence scopes separately from their authors. No operating installation,
+restart, model dispatch, account cutover, research activation or paid request was
+performed for this source increment. Installed code remains the approved
+`de51151173ae9455521728e5e44ac6fdfac9fdb6` receipt above. The new charts' installed
+workflow, actual operating preparation coverage, unresolved NAT writer identity,
+populated Library/Reviews and native desktop acceptance remain separate gaps.

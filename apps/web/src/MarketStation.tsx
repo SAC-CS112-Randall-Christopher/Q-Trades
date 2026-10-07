@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
-import { Activity, ChevronRight, Search, Wrench } from "lucide-react";
+import { ChevronRight, Search, Wrench } from "lucide-react";
 import { StrategyLab, type Experiments } from "./StrategyLab";
 import "./station.css";
 import { MarketChart, type Candle, type Indicators } from "./MarketChart";
@@ -163,6 +163,12 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
     if (busy) setToolError("The earlier read may have finished; check saved runs before retrying.");
     localStorage.setItem("qtrades-tool-symbol", market); localStorage.setItem("qtrades-tool-account", owner);
     const params = new URLSearchParams({ symbol: market, account: owner });
+    const originalParams = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    const savedCampaign = originalParams.get("scanner_campaign");
+    if (savedCampaign != null) params.set("scanner_campaign", savedCampaign);
+    if (market === symbol) for (const [key, value] of originalParams) {
+      if (key.startsWith("scanner_chart_")) params.set(key, value);
+    }
     if (candleId != null) params.set("candle_run", String(candleId));
     if (selectedReceipt.current != null) params.set("receipt", String(selectedReceipt.current));
     location.hash = `${strategyOnly ? "strategies" : "markets"}?${params}`;
@@ -235,9 +241,22 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
   }, []);
 
   return <section ref={section} id="live-quotes" className="market-station" aria-labelledby="station-title">
-    <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">{strategyOnly ? "Strategy evidence" : "Market command station"}</h2></div>{strategyOnly ? <label>Market <select aria-label="Market" value={symbol} onChange={e => chooseScope(e.target.value, account)}>{[...new Set([symbol, "BTCUSD", "ETHUSD", ...(scanner?.selected ?? [])])].map(s => <option key={s}>{s}</option>)}</select></label> : <span className="station-local"><Activity size={14} /> Local workspace</span>}</header>
+    <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">{strategyOnly ? "Strategy evidence" : "Market command station"}</h2></div>
+      <label>Market <select aria-label="Market" value={symbol} onChange={e => chooseScope(e.target.value, account)}>{[...new Set([symbol, "BTCUSD", "ETHUSD", ...(scanner?.rows.map(row => row.symbol) ?? [])])].map(s => <option key={s}>{s}</option>)}</select></label>
+    </header>
     {!strategyOnly && <>
-    <div className="station-workspace">
+      <nav className="station-workspace-navigation" aria-label="Market workspace views">
+        <button type="button" onClick={() => document.getElementById("pattern-scanner-title")?.scrollIntoView({ block: "start" })}>Analysis &amp; alert charts</button>
+        <button type="button" onClick={() => document.getElementById("candle-workspace-title")?.scrollIntoView({ block: "start" })}>Separate candle study</button>
+        <button type="button" onClick={() => document.getElementById("live-market-feed")?.scrollIntoView({ block: "start" })}>Live market feed</button>
+      </nav>
+      <ScannerWorkspace symbol={symbol} onChooseMarket={market => chooseScope(market, account)} onInspect={market => {
+        chooseScope(market, account);
+        document.getElementById("candle-workspace-title")?.scrollIntoView({ block: "start" });
+      }} />
+    </>}
+    {!strategyOnly && <>
+    <div id="live-market-feed" className="station-workspace">
       <aside className="station-watchlist" aria-label="Market scanner">
         <div className="station-pane-title"><h3>Markets</h3><span>{scanner?.total ?? "—"} screened</span></div>
         <label className="station-search"><Search size={14} /><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Find a market" aria-label="Find a market" /></label>
@@ -268,10 +287,6 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
       <section className="station-events" aria-label="Recent paper activity"><div className="station-pane-title"><h3>Paper activity</h3><span>Primary account</span></div>{detail?.paper_events.slice(0, 5).map(event => <div className="station-event" key={event.id}><div><strong>{event.kind.replaceAll("_", " ")}</strong><time>{time(event.at * 1000)}</time></div><p>{event.body.reason ?? [event.body.side, event.body.quantity, event.body.price].filter(Boolean).join(" · ")}</p></div>)}{!detail?.paper_events.length && <p className="station-empty">No matching activity in the recent account window.</p>}<button className="station-text-button" type="button" disabled={busy || !detail} onClick={() => void runTool("outcome_review")}>Review outcomes <ChevronRight size={14} /></button></section>
     </div>
     </>}
-    {!strategyOnly && <ScannerWorkspace symbol={symbol} onInspect={market => {
-      chooseScope(market, account);
-      document.getElementById("candle-workspace-title")?.scrollIntoView({ block: "start" });
-    }} />}
     {!strategyOnly && <CandleWorkspace symbol={symbol} savedRuns={toolsPoll.data?.runs ?? []} onChooseMarket={(market, id) => chooseScope(market, account, id)} />}
     {strategyOnly && (detail?.experiments ? <StrategyLab data={detail.experiments} symbol={symbol} unavailable={!!detailPoll.error || live?.running !== true || !!live?.error} /> : <p className="station-empty">{detailPoll.error ?? "Waiting for recorded strategy evidence…"}</p>)}
     <section className="station-tools" aria-label="Research tools">

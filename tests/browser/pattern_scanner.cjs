@@ -43,6 +43,7 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     const refresh = async () => workspace().getByRole("button", { name: "Refresh status", exact: true }).click();
     const control = async (button, expectedAction, expectedStatus = 200) => {
       const response = page.waitForResponse(r => r.url() === `${origin}/api/research/pattern-scanner/control` && r.request().method() === "POST");
+      void response.catch(() => {}); // Await below still throws; keep cleanup reachable if the click stalls.
       await workspace().getByRole("button", { name: button, exact: true }).click();
       const actual = await response; const value = await actual.json();
       assert.equal(actual.status(), expectedStatus, JSON.stringify(value));
@@ -50,8 +51,9 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
       save(`control-${groups.length}-${expectedAction}.json`, value);
       return value;
     };
-    const waitPage = async kind => {
+    const waitPage = kind => {
       const response = page.waitForResponse(r => r.url().startsWith(`${origin}/api/research/pattern-scanner/${kind}?`) && r.request().method() === "GET");
+      void response.catch(() => {}); // Observe rejection immediately, then retain it through the normal await.
       return response;
     };
 
@@ -109,6 +111,7 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     assert(firstLevels.rows.every(row => row.source_sha256 && row.first_usable_ms > row.confirmed_at_ms && row.financial_authority === false));
     save("levels-first.json", firstLevels); save("levels-next.json", nextLevels);
     await page.reload(); await workspace().getByRole("button", { name: "Pause scanner", exact: true }).waitFor();
+    await workspace().getByText(new RegExp(`^Current campaign ${prepared.campaign_id} · revision`)).waitFor();
     await workspace().getByLabel("Scanner evidence market").selectOption(scope.symbol);
     await workspace().getByLabel("Scanner evidence interval").selectOption(scope.timeframe);
     read = waitPage("levels"); await workspace().getByRole("button", { name: "Inspect saved evidence", exact: true }).click();
@@ -161,16 +164,35 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     await mode("normal"); await refresh(); groups.push({ name: phase, paused_with_last_known_identity: true });
 
     phase = "delayed-start-cannot-overtake-acknowledged-pause";
-    await mode("delay_start");
-    const startResponse = page.waitForResponse(r => r.url() === `${origin}/api/research/pattern-scanner/control` && r.request().postDataJSON().action === "start");
-    await workspace().getByRole("button", { name: "Start / resume scanner", exact: true }).click();
-    await workspace().getByRole("button", { name: "Find saved start result", exact: true }).waitFor();
     const other = await context.newPage(); await other.goto(`${origin}/#markets`);
     const otherPanel = other.getByRole("region", { name: "Year pattern scanner" });
+    await otherPanel.getByText(new RegExp(`^Current campaign ${prepared.campaign_id} \\u00b7 revision`)).waitFor();
+    await otherPanel.getByRole("button", { name: "Pause scanner", exact: true }).waitFor();
+    await mode("delay_start");
+    const startResponse = page.waitForResponse(r => r.url() === `${origin}/api/research/pattern-scanner/control` && r.request().postDataJSON().action === "start");
+    void startResponse.catch(() => {});
+    await workspace().getByRole("button", { name: "Start / resume scanner", exact: true }).click();
+    await workspace().getByRole("button", { name: "Find saved start result", exact: true }).waitFor();
+    const heldResponse = await page.request.get(`${origin}/__qa/held_start`, { headers, timeout: 3000 });
+    assert.equal(heldResponse.status(), 200, await heldResponse.text());
+    const held = await heldResponse.json(); assert.equal(held.synthetic_fixture_only, true);
+    assert.equal(held.held_start.status, "held");
+    const pendingStart = await page.evaluate(() => JSON.parse(localStorage.getItem("qtrades-year-pattern-scanner-pending-v1")).find(command => command.action === "start"));
+    assert.equal(held.held_start.request_id, pendingStart.request_id);
+    assert.equal(held.held_start.expected_revision, pendingStart.expected_revision);
+    save("delayed-start-held-before-pause.json", held);
     await otherPanel.getByRole("button", { name: "Pause scanner", exact: true }).click();
     await otherPanel.getByText(/pause was acknowledged/).waitFor();
     assert.equal((await startResponse).status(), 409);
-    assert.equal((await probe()).state.enabled, false);
+    const afterHeldPause = await probe(); assert.equal(afterHeldPause.state.enabled, false);
+    assert.equal(afterHeldPause.held_start.status, "released_after_acknowledged_pause");
+    assert.equal(afterHeldPause.held_start.request_id, held.held_start.request_id);
+    assert(afterHeldPause.held_start.pause_revision > held.held_start.expected_revision);
+    const heldPosts = afterHeldPause.posts.filter(row => row.body.request_id === held.held_start.request_id);
+    assert.equal(heldPosts.length, 1); assert.equal(heldPosts[0].http_status, 409);
+    const releasingPause = afterHeldPause.posts.find(row => row.body.request_id === afterHeldPause.held_start.pause_request_id);
+    assert.equal(releasingPause.http_status, 200); assert.equal(releasingPause.saved_receipt.applied, true);
+    save("delayed-start-released-after-pause.json", afterHeldPause);
     assert.equal(await page.evaluate(() => localStorage.getItem("qtrades-year-pattern-scanner-pending-v1")), null);
     await other.close(); await mode("normal");
     groups.push({ name: phase, stale_start: 409, pause_preserved: true });
@@ -241,7 +263,7 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     });
     await workspace().screenshot({ path: path.join(directory, "scanner-mobile.png") });
     await page.setViewportSize({ width: 1440, height: 3200 });
-    await workspace().locator("header").click(); await workspace().screenshot({ path: path.join(directory, "scanner-workspace.png") });
+    await workspace().locator(":scope > header").click(); await workspace().screenshot({ path: path.join(directory, "scanner-workspace.png") });
     groups.push({ name: phase, mobile_width: 390, horizontal_overflow: false, automatic_chart_fetches: 0 });
     const final = await probe(); save("final-probe.json", final);
     assert.equal(final.financial_state_preserved_except_fixture_tick, true);

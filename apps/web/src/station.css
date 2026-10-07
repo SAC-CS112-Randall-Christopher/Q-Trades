@@ -7,6 +7,11 @@
 .station-heading { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 24px; border-bottom: 1px solid var(--station-line); }
 .station-heading p { font-size: 9px; letter-spacing: 1.8px; color: #a2c4be; margin-bottom: 8px; }
 .station-heading h2 { font-size: 25px; font-weight: 500; letter-spacing: -.7px; }
+.station-heading label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--station-muted); }
+.station-heading select { max-width: 190px; border: 1px solid var(--station-line); border-radius: 5px; background: var(--station-pane); color: inherit; padding: 8px; }
+.station-workspace-navigation { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 24px; border-bottom: 1px solid var(--station-line); }
+.station-workspace-navigation button { padding: 9px 12px; border: 1px solid var(--station-line); border-radius: 5px; font-size: 12px; }
+.station-workspace-navigation button:first-child { border-color: var(--station-up); color: var(--station-up); }
 .station-local { display: flex; align-items: center; gap: 7px; color: var(--station-muted); font-size: 11px; }
 .station-workspace { display: grid; grid-template-columns: 235px minmax(0, 1fr); }
 .station-watchlist { border-right: 1px solid var(--station-line); padding: 18px 14px; min-width: 0; }
