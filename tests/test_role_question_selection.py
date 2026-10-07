@@ -153,6 +153,152 @@ def test_first_question_has_actual_causal_cost_basis_and_no_financial_or_model_e
     assert len(selection_rows(worker)) == 1
 
 
+@pytest.mark.parametrize("advance_at", [1, 2], ids=["preparation", "publication"])
+@pytest.mark.parametrize("replace_state", [False, True], ids=["same-state", "published-state"])
+def test_successful_admission_can_advance_tick_without_moving_causal_cutoff(
+    selection, advance_at, replace_state
+):
+    worker, clock, _, inputs = selection
+    paper = worker.controller.paper
+    cutoff = clock[0]
+    state_before = copy.deepcopy(paper.state)
+    source_sha = fingerprint([str(bar) for bar in inputs["bars"]])
+    callbacks = []
+
+    def admitted():
+        callbacks.append(clock[0])
+        if len(callbacks) == advance_at:
+            clock[0] += 0.25
+            if replace_state:
+                paper.state = copy.deepcopy(paper.state)
+            paper.state["last_tick"] = clock[0]
+        return True
+
+    worker.paper_admission = admitted
+    assert worker.select_fresh_question(cutoff) == 1
+    (task,) = selected_tasks(worker)
+    original = copy.deepcopy(task)
+    state = copy.deepcopy(paper.state)
+    assert len(callbacks) == 2 and clock[0] > cutoff
+    assert task["created"] == task["context"]["tool_evidence"]["observed_at"] == cutoff
+    assert task["context"]["question_selection"]["source_sha"] == source_sha
+    assert task["context"]["question_selection"]["source_end"] < cutoff
+    assert task["attempts"] == [] and worker.transport.calls == []
+    assert raw_rows(worker, "role_attempt_allowances") == []
+    assert worker.select_fresh_question(clock[0]) == 0
+    assert selected_tasks(worker) == [original] and len(selection_rows(worker)) == 1
+    assert paper.state == state
+    state_before["last_tick"] = state["last_tick"]  # Only the fixture's paper tick advanced.
+    assert state == state_before
+
+
+def test_current_quote_snapshot_can_advance_without_moving_causal_feature_time(selection):
+    worker, clock, _, inputs = selection
+    paper = worker.controller.paper
+    cutoff = clock[0]
+    state_before = copy.deepcopy(paper.state)
+    policy = paper.state["autonomous_lab"]["policy"]
+    feature = reviewed_feature(
+        inputs["bars"], cutoff, RuleSpec(family="range_reversion"), policy["execution_profile"]
+    )
+    observations = []
+
+    def current_frames():
+        clock[0] += 0.25
+        paper.state["last_tick"] = clock[0]
+        value = causal_frame(cutoff, inputs["bars"], sequence=len(observations) + 1)
+        value["observed"] = clock[0]
+        observations.append(value["observed"])
+        return {"BTCUSD": value}
+
+    paper.control_frames = current_frames
+    assert worker.select_fresh_question(cutoff) == 1
+    (task,) = selected_tasks(worker)
+    assert len(observations) >= 3 and min(observations) > cutoff
+    assert task["context"]["tool_evidence"]["observed_at"] == cutoff
+    assert task["context"]["tool_evidence"]["features"]["r1"] == feature
+    assert task["context"]["question_selection"]["source_end"] < cutoff
+    assert task["context"]["tool_evidence"]["executable_book"]["observed"] > cutoff
+    assert task["attempts"] == [] and worker.transport.calls == []
+    assert raw_rows(worker, "role_attempt_allowances") == []
+    state_before["last_tick"] = clock[0]  # Only the fixture's paper tick advanced.
+    assert paper.state == state_before
+
+
+@pytest.mark.parametrize("owner", ["tick", "book"])
+def test_observation_value_is_captured_before_clock_can_see_a_later_publication(
+    selection, monkeypatch, owner
+):
+    worker, clock, _, inputs = selection
+    paper = worker.controller.paper
+    cutoff = clock[0]
+    policy = paper.state["autonomous_lab"]["policy"]
+    observed = []
+
+    def observation_clock():
+        stamp = clock[0]
+        observed.append(stamp)
+        clock[0] += 0.25
+        paper.state["last_tick"] = clock[0]
+        inputs["frame"]["observed"] = clock[0]
+        return stamp
+
+    monkeypatch.setattr("trading.role_worker.time.time", observation_clock)
+    if owner == "tick":
+        worker._selection_room(worker.transport.authority, policy, cutoff)
+    else:
+        source = worker._selection_source("short", policy, cutoff)
+        assert source["source_end"] < cutoff
+        assert source["source_sha"] == fingerprint([str(bar) for bar in inputs["bars"]])
+    assert observed == [cutoff] and clock[0] > cutoff
+    assert raw_rows(worker, "role_tasks") == raw_rows(worker, "role_requests") == []
+    assert raw_rows(worker, "role_attempt_allowances") == [] and worker.transport.calls == []
+
+
+@pytest.mark.parametrize("owner,limit", [("tick", 10), ("book", 5)])
+@pytest.mark.parametrize(
+    "age,admitted", [(None, False), (-0.001, False), (0, True), ("limit", True), ("stale", False)]
+)
+def test_current_observation_keeps_exact_missing_future_and_age_boundaries(
+    selection, owner, limit, age, admitted
+):
+    worker, clock, _, inputs = selection
+    paper = worker.controller.paper
+    cutoff = clock[0]
+    clock[0] += 1
+    paper.state["last_tick"] = clock[0]
+    inputs["frame"]["observed"] = clock[0]
+    age = limit if age == "limit" else limit + 0.001 if age == "stale" else age
+    observation, key = (
+        (paper.state, "last_tick") if owner == "tick" else (inputs["frame"], "observed")
+    )
+    if age is None:
+        del observation[key]
+    else:
+        observation[key] = clock[0] - age
+    state = copy.deepcopy(paper.state)
+    assert worker.select_fresh_question(cutoff) == int(admitted)
+    assert len(selected_tasks(worker)) == len(selection_rows(worker)) == int(admitted)
+    assert raw_rows(worker, "role_attempt_allowances") == []
+    assert worker.transport.calls == [] and paper.state == state
+
+
+def test_later_current_observation_does_not_adopt_bars_after_original_cutoff(selection):
+    worker, clock, _, inputs = selection
+    paper = worker.controller.paper
+    cutoff = clock[0]
+    clock[0] += 120
+    paper.state["last_tick"] = clock[0]
+    inputs["bars"] = range_bars(clock[0], 60)
+    inputs["frame"] = causal_frame(clock[0], inputs["bars"])
+    state = copy.deepcopy(paper.state)
+    assert worker.select_fresh_question(cutoff) == 0
+    assert "causal coverage" in worker.question_selection_status()["reason"]
+    assert raw_rows(worker, "role_tasks") == raw_rows(worker, "role_requests") == []
+    assert raw_rows(worker, "role_attempt_allowances") == []
+    assert worker.transport.calls == [] and paper.state == state
+
+
 def test_old_grant_cannot_silently_enable_fresh_production(selection):
     worker, clock, _, _ = selection
     worker.transport.authority = None

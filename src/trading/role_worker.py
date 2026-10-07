@@ -1868,16 +1868,21 @@ class RoleWorker:
             or not self._admitted()
             or not c.paper.running
             or c.paper.error
-            or not 0 <= now - c.paper.state.get("last_tick", 0) <= 10
         ):
             raise InputWait(
                 "Fresh investigation waits for protected paper admission and activation"
             )
-        lab = c.paper.state.get("autonomous_lab")
+        state = c.paper.state
+        last_tick = state.get("last_tick", 0)
+        if not 0 <= time.time() - last_tick <= 10:
+            raise InputWait(
+                "Fresh investigation waits for protected paper admission and activation"
+            )
+        lab = state.get("autonomous_lab")
         if (
             not lab
             or fingerprint(lab["policy"]) != fingerprint(policy)
-            or c.paper.state.get("paused")
+            or state.get("paused")
             or lab.get("proposals_paused")
         ):
             raise InputWait("Fresh investigation waits for its unchanged unpaused paper policy")
@@ -1928,10 +1933,12 @@ class RoleWorker:
         paper = self.controller.paper
         bars = paper.lab_history(now, horizon)
         spec = RuleSpec.model_validate({"family": "range_reversion", "holding_horizon": horizon})
-        frame = paper.control_frames().get("BTCUSD")
+        observed_frame = paper.control_frames().get("BTCUSD")
+        frame = dict(observed_frame) if observed_frame else None
+        observed_at = time.time()  # Current executable prerequisite; causal bars still use now.
         book = frame.get("book") if frame else None
         if (
-            not fresh_frame(frame, now)
+            not fresh_frame(frame, observed_at)
             or not book
             or not book.bids
             or not book.asks

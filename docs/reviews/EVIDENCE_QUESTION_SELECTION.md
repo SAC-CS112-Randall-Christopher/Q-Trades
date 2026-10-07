@@ -1,4 +1,24 @@
-# Evidence-backed first and next questions — #66 / draft #73
+# Evidence-backed first and next questions — #66
+
+## Current observation clock repair
+
+The source follow-up to installed PR73 preserves the original question's causal
+bar and feature cutoff. Protected admission can observe a newer paper tick, and
+the executable-book owner can return a newer quote, after that cutoff was saved.
+Their freshness now uses a clock sampled after the respective observation: the
+paper tick value and one committed state are captured after protected admission;
+the returned executable frame is copied before its observation clock is sampled.
+The existing 0–10-second tick and 0–5-second executable-book limits still apply.
+Genuinely future observations and bars beyond the original cutoff remain refused.
+A newer quote is a current executable prerequisite, not historical evidence at
+the earlier causal cutoff.
+
+Matched isolated fixtures demonstrate the source race and repair, including
+ticks advancing during preparation or publication and advancing quote snapshots.
+The retained operating wait reason is compatible with this defect; its actual
+interleaving and exclusive cause have not been established. This source follow-up
+does not install the correction, resume the paused trial or execute a model.
+The proposal and operating-decision text below records the earlier PR73 checkpoint.
 
 An enabled worker previously advanced saved questions and genuine dependencies,
 but could not choose a first investigation when its queue was empty. This source
@@ -84,8 +104,9 @@ Source fixtures, compiled UI behavior and exact-head checks are reported in the
 and financial preservation; they do not establish actual model reasoning,
 coexistence capacity, mature feedback, trading edge or continuous reliability.
 
-This proposal is not installed or activated. The accepted PR72 installation and
-its preservation receipt remain authoritative within their documented scope;
+At that proposal checkpoint, this source was not installed or activated. The
+accepted PR72 installation and its preservation receipt remain authoritative
+within their documented scope;
 the current Local Codex connector and draft PR74 are a separate lane. No
 operating restart, new profile/grant selection or model call occurs here.
 
