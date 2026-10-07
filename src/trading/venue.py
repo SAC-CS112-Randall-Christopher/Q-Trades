@@ -210,3 +210,25 @@ class PublicVenue:
             list[list[Any]],
             await self._get("/api/v3/klines", {"symbol": symbol, "interval": "1m", "limit": limit}),
         )
+
+    async def historical_candles(
+        self, symbol: str, interval: str, start_ms: int, end_ms: int, limit: int
+    ) -> list[list[Any]]:
+        """Native public OHLCV for an explicit bounded UTC interval; no trade endpoint."""
+        if interval not in {"5m", "15m", "30m", "1h", "4h"}:
+            raise ValueError("Unsupported research candle interval")
+        if not 1 <= limit <= 1000 or not 0 <= start_ms <= end_ms:
+            raise ValueError("Invalid historical candle bounds")
+        return cast(
+            list[list[Any]],
+            await self._get(
+                "/api/v3/klines",
+                {
+                    "symbol": symbol,
+                    "interval": interval,
+                    "startTime": start_ms,
+                    "endTime": end_ms,
+                    "limit": limit,
+                },
+            ),
+        )

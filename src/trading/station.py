@@ -13,7 +13,13 @@ from trading.paper_strategy import VARIANTS
 from trading.tiered_runtime import TieredPaperRuntime
 
 VERSION = "scoped-research-tools-v3"
-HISTORICAL_TOOLS = {"input_diagnosis", "cost_diagnosis", "strategy_evidence", "outcome_review"}
+HISTORICAL_TOOLS = {
+    "input_diagnosis",
+    "cost_diagnosis",
+    "strategy_evidence",
+    "outcome_review",
+    "candle_patterns",
+}
 TOOLS = {
     "input_diagnosis": {
         "name": "Diagnose retained input coverage",

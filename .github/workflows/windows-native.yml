@@ -251,6 +251,22 @@ jobs:
           node tests/browser/financial_monitoring.cjs
       - name: Verify account history remains singular across status refreshes
         run: QTRADES_BROWSER_QA_OUTPUT="$RUNNER_TEMP/browser-output/account-history-refresh" node tests/browser/account_history_refresh.cjs
+      - name: Verify native candle workspace and exact saved-study recovery
+        run: |
+          python -B tests/browser/candle_patterns_server.py \
+            --directory "$RUNNER_TEMP/candle-browser-workspace" \
+            --web-dist "$GITHUB_WORKSPACE/apps/web/dist" \
+            > "$RUNNER_TEMP/candle-browser-server.log" 2>&1 &
+          candle_pid=$!
+          trap 'kill "$candle_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:58968/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          QTRADES_BROWSER_QA_OUTPUT="$RUNNER_TEMP/browser-output/candle-patterns" \
+            QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58968 \
+            node tests/browser/candle_patterns.cjs
+          wait "$candle_pid"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -289,4 +305,4 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m mypy --platform win32 src
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -B -m pytest -q -p no:cacheprovider --tb=long tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py
+          python -B -m pytest -q -p no:cacheprovider --tb=long tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py tests/test_candle_patterns.py tests/test_candle_history.py

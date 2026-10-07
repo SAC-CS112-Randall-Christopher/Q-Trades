@@ -26,6 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from trading.account_redesign import StrategyChange
 from trading.autonomous_spec import LabControl, LabPolicy, LabProposal
+from trading.candle_history import analyze_history, load_history, reopen_history, retain_history
 from trading.compact_memory import compact_evidence
 from trading.config import Settings
 from trading.evidence_runtime import feature_reproduction
@@ -82,7 +83,7 @@ from trading.role_worker import Question, RoleWorker
 from trading.runtime import Monitor
 from trading.scoped_tools import disclose, outcome_page, reader
 from trading.scoped_tools import run as scoped_tool
-from trading.station import HISTORICAL_TOOLS, TOOLS, market_detail, market_live
+from trading.station import HISTORICAL_TOOLS, TOOLS, market_detail, market_live, validate_symbol
 from trading.stock_research import StockQuestion, StockResearch
 from trading.storage import MonitorStore
 from trading.tiered_runtime import TieredPaperRuntime as PaperRuntime
@@ -170,6 +171,16 @@ class ToolRequest(BaseModel):
     )
     request_id: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9-]{12,64}$")
     start: float = Field(default=0, ge=0, allow_inf_nan=False)
+    timeframe: Literal["5m", "15m", "30m", "1h", "4h"] = "5m"
+    window: Literal["recent", "week", "month", "six_months", "year"] = "recent"
+
+
+class CandleStudyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    symbol: str = Field(min_length=3, max_length=24, pattern=r"^[A-Z0-9]+$")
+    timeframe: Literal["5m", "15m", "30m", "1h", "4h"]
+    window: Literal["recent", "week", "month", "six_months", "year"]
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,64}$")
 
 
 def create_app(
@@ -1764,6 +1775,12 @@ def create_app(
             result = await asyncio.to_thread(journal.get, run_id) if journal else None
             if result:
                 await asyncio.to_thread(disclose_tool, request, result)
+                if result["tool"] == "candle_patterns" and result.get("result"):
+                    if journal is None or journal.storage_plan is None:
+                        raise ValueError("Candle study retention is unavailable")
+                    await asyncio.to_thread(
+                        reopen_history, journal.storage_plan, journal.namespace, result
+                    )
         except (ValueError, LookupError, OSError, sqlite3.Error) as exc:
             raise HTTPException(
                 503, "Exact saved receipt unavailable; no current-data substitute"
@@ -1771,6 +1788,25 @@ def create_app(
         if result is None:
             raise HTTPException(404, "Tool receipt not found")
         return result
+
+    @app.get("/api/research/candle-patterns/requests/{request_id}")
+    async def candle_request(request: Request, request_id: str) -> dict[str, Any]:
+        if not re.fullmatch(r"[a-zA-Z0-9-]{12,64}", request_id):
+            raise HTTPException(422, "Invalid candle request identity")
+        journal: ToolJournal | None = request.app.state.tool_journal
+        if journal is None:
+            raise HTTPException(503, "Tool receipt storage is unavailable")
+        try:
+            saved = await asyncio.to_thread(journal.find_request, request_id)
+        except (ValueError, OSError, sqlite3.Error) as exc:
+            raise HTTPException(503, "Saved request lookup is unavailable") from exc
+        if saved is None or saved["tool"] != "candle_patterns":
+            raise HTTPException(404, "No saved candle request found yet; dispatch is not repeated")
+        return await tool_run(request, saved["id"])
+
+    @app.post("/api/research/candle-patterns")
+    async def candle_study(command: CandleStudyRequest, request: Request) -> dict[str, Any]:
+        return await run_tool(ToolRequest(tool="candle_patterns", **command.model_dump()), request)
 
     @app.get("/api/research/tools/runs/{run_id}/detail")
     async def tool_detail(
@@ -1849,18 +1885,21 @@ def create_app(
         request.app.state.last_tool_at = time.monotonic()
         try:
             request_id = command.request_id or str(uuid.uuid4())
-            run_id = await asyncio.to_thread(
-                journal.start,
+            run_id, created = await asyncio.to_thread(
+                journal.start_once,
                 command.tool,
                 command.symbol,
                 account=command.account,
                 request_id=request_id,
-                query=command.model_dump(exclude={"request_id"}),
+                query=command.model_dump(
+                    exclude={"request_id"}
+                    if command.tool == "candle_patterns"
+                    else {"request_id", "timeframe", "window"}
+                ),
             )
             existing = await asyncio.to_thread(journal.get, run_id)
-            if existing and existing["status"] != "running":
-                await asyncio.to_thread(disclose_tool, request, existing)
-                return existing
+            if not created or existing and existing["status"] != "running":
+                return await tool_run(request, run_id)
             result = None
             error = None
             try:
@@ -1868,15 +1907,40 @@ def create_app(
                     raise ValueError(
                         "Outcome interval begins after the available observation cutoff"
                     )
-                result = await asyncio.to_thread(
-                    scoped_tool,
-                    paper,
-                    command.tool,
-                    command.symbol,
-                    command.account,
-                    request_id,
-                    start=command.start,
-                )
+                if command.tool == "candle_patterns":
+                    validate_symbol(command.symbol, paper)
+                    if journal.storage_plan is None:
+                        raise ValueError(
+                            "Configure existing research storage before saving candle studies"
+                        )
+                    async with asyncio.timeout(25):
+                        scope, raw = await load_history(
+                            request.app.state.monitor.venue,
+                            command.symbol,
+                            command.timeframe,
+                            command.window,
+                            time.time(),
+                        )
+                    analysis = await asyncio.to_thread(analyze_history, scope, raw)
+                    result = await asyncio.to_thread(
+                        retain_history,
+                        journal.storage_plan,
+                        journal.namespace,
+                        run_id,
+                        analysis,
+                        raw,
+                        command.account,
+                    )
+                else:
+                    result = await asyncio.to_thread(
+                        scoped_tool,
+                        paper,
+                        command.tool,
+                        command.symbol,
+                        command.account,
+                        request_id,
+                        start=command.start,
+                    )
             except (ValueError, KeyError, ArithmeticError) as exc:
                 error = str(exc)
             except Exception as exc:
@@ -1886,8 +1950,7 @@ def create_app(
             await asyncio.to_thread(journal.finish, run_id, result, error)
             saved = await asyncio.to_thread(journal.get, run_id)
             assert saved is not None
-            await asyncio.to_thread(disclose_tool, request, saved)
-            return saved
+            return await tool_run(request, run_id)
         except (sqlite3.Error, OSError, ValueError, psycopg.Error) as exc:
             raise HTTPException(
                 503, "Tool receipt could not be saved; inspect local storage"
