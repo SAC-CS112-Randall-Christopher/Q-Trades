@@ -90,6 +90,17 @@ class LabPolicy(BaseModel):
         return self
 
 
+class OperatorLaunch(BaseModel):
+    """One existing paired proposal, with an explicit optional pressure exception."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+    intent: Literal["finite-paper-account-setup-v1"]
+    expected_proposal_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    expected_policy_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    maximum_accounts: Literal[2] = 2
+    allow_engine_work_recovery: bool = False
+
+
 class MemoryFilter(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
     version: Literal["memory-entry-filter-v1"] = "memory-entry-filter-v1"

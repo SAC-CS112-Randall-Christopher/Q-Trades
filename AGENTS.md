@@ -1,4 +1,22 @@
-# Current source follow-up — October 6, 2026, evidence-backed questions (#66)
+# Current source proposal — October 6, 2026, finite operator account setup (#66)
+
+This dedicated lane starts from exact installed/merged `d36a45a7bee7c79e02cb06ad4fee112b330f5c07`.
+Implement and independently review a finite operator launch of an existing,
+immutable paired proposal through the existing financial writer and inbox.
+Default launch retains complete admission. An explicit candidate option may
+exempt only known engine-work latency recovery, with current complete observed
+coverage; missing, stale, startup or conflicting observations remain closed.
+This option is source/disposable-QA only and needs a separate operating decision.
+Do not install, restart, activate a guard exception, dispatch a model, change
+funding/rules/quotas, create another registry/scheduler or alter private Lab data.
+Source checks, isolated QA, commit/push and an owning draft are authorized.
+PR75's clock repair remains separate and frozen. Preserve original financial
+history, evidence, accounts, twenty slots, storage policy and consumed attempts.
+All ten Codex-selected, user-authorized accounts were funded by the normal owner.
+This optional source candidate is not their prerequisite.
+See `docs/reviews/FINITE_OPERATOR_SETUP.md` for scope and actual proof limits.
+
+# Previous source follow-up — October 6, 2026, evidence-backed questions (#66)
 
 Continue the existing draft PR73 lane within source and isolated-QA permission.
 The explicit v4 paper-pilot selection policy is a source proposal only; existing

@@ -381,7 +381,13 @@ class PaperStore:
             raise RuntimeError("Missing paper account")
         return {**row["body"], "revision": row["revision"]}
 
-    def lab_reserve(self, now: float, proposal: Any) -> dict[str, Any]:
+    def lab_reserve(
+        self,
+        now: float,
+        proposal: Any,
+        *,
+        operator_launch: Callable[[PaperEngine, str], None] | None = None,
+    ) -> dict[str, Any]:
         from trading.autonomous_finance import reserve
 
         result: dict[str, Any] = {}
@@ -398,9 +404,39 @@ class PaperStore:
                 result.update(status="already_reserved", trial_id=prior["body"]["id"])
             else:
                 result.update(reserve(engine, proposal))
+            if operator_launch is not None:
+                # The explicit operator setup is committed with the existing
+                # permanent reservation. A failure rolls back both financial phases.
+                operator_launch(engine, result["trial_id"])
 
         self.transact(now, apply)
         return result
+
+    @_locked
+    def lab_proposal_outcome(self, request_id: str) -> dict[str, Any] | None:
+        """Reopen exact immutable financial evidence, including lost acknowledgments."""
+        row = self.connection.execute(
+            "SELECT body FROM paper_events WHERE kind='lab_trial_reserved' "
+            "AND body->>'proposal_id'=%s LIMIT 1",
+            (request_id,),
+        ).fetchone()
+        if not row:
+            return None
+        trial = row["body"]
+        funded = self.connection.execute(
+            "SELECT account,body FROM paper_events WHERE kind='lab_account_funded' "
+            "AND body->>'proposal_id'=%s ORDER BY id LIMIT 3",
+            (request_id,),
+        ).fetchall()
+        accounts = [item["account"] for item in funded]
+        return {
+            "trial_id": trial["id"],
+            "proposal": trial["contract"]["proposal"],
+            "funded_accounts": accounts,
+            "funding_complete": len(accounts) == 2
+            and set(accounts) == {trial["candidate"], trial["reference"]}
+            and all(item["body"]["trial_id"] == trial["id"] for item in funded),
+        }
 
     @_locked
     def lab_history(self, before: int = 0, limit: int = 20) -> dict[str, Any]:
