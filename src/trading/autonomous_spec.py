@@ -9,6 +9,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from trading.execution_profiles import LEGACY_EXECUTION, PROFILES
 from trading.experiment_registry import fingerprint
 from trading.paper_strategy import Bar, features
+from trading.redesign_strategy import REDESIGN_VERSION, STRATEGIES
+from trading.redesign_strategy import features as replacement_features
 
 ORIGINALS = frozenset(
     {
@@ -116,9 +118,22 @@ class MemoryFilter(BaseModel):
 
 class RuleSpec(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
-    version: Literal["reviewed-lab-rules-v2", "reviewed-lab-rules-v3"] = "reviewed-lab-rules-v2"
+    version: Literal["reviewed-lab-rules-v2", "reviewed-lab-rules-v3", "reviewed-lab-rules-v4"] = (
+        "reviewed-lab-rules-v2"
+    )
     entry_filter: MemoryFilter | None = Field(default=None, exclude_if=lambda value: value is None)
-    family: Literal["breakout", "range_reversion"] = "breakout"
+    family: Literal[
+        "breakout",
+        "range_reversion",
+        "cost-breakout-v1",
+        "breakout-retest-v1",
+        "trend-pullback-v1",
+        "vwap-reclaim-v1",
+        "range-fade-v1",
+        "momentum-followthrough-v1",
+        "compression-breakout-v1",
+        "washout-rebound-v1",
+    ] = "breakout"
     lookback: int = Field(default=10, ge=5, le=30)
     volume_multiple: Literal["2"] = "2"
     stop_atr: Literal["1.5"] = "1.5"
@@ -141,6 +156,20 @@ class RuleSpec(BaseModel):
 
     @model_validator(mode="after")
     def coherent(self) -> Self:
+        if self.version == "reviewed-lab-rules-v4":
+            if (
+                self.family not in STRATEGIES
+                or self.holding_horizon != "medium"
+                or self.lookback != 10
+                or self.entry_filter is not None
+            ):
+                raise ValueError(
+                    "Replacement v4 uses one fixed bank mechanism and its complete medium horizon"
+                )
+        elif self.family in STRATEGIES:
+            raise ValueError(
+                "Replacement mechanisms require the explicit reviewed-lab-rules-v4 contract"
+            )
         if self.entry_filter is not None and (
             self.version != "reviewed-lab-rules-v3" or self.holding_horizon != "short"
         ):
@@ -161,7 +190,10 @@ class RuleSpec(BaseModel):
         # The original short-term fields retain their literal compatibility. New
         # horizon behavior is versioned by this frozen preset, not independently
         # adjustable hold/progress knobs.
-        return dict(TIMING[self.holding_horizon])
+        timing = dict(TIMING[self.holding_horizon])
+        if self.version == "reviewed-lab-rules-v4":
+            timing["warmup_minutes"] = 305
+        return timing
 
 
 class LabProposal(BaseModel):
@@ -227,7 +259,7 @@ def changes(parent: RuleSpec, child: RuleSpec) -> dict[str, Any]:
 
 def contract(proposal: LabProposal, policy: LabPolicy) -> dict[str, Any]:
     strategy = proposal.strategy.model_dump()
-    return {
+    result: dict[str, Any] = {
         "proposal": proposal.model_dump(),
         "changed": changes(proposal.reference, proposal.strategy),
         "unchanged": {
@@ -238,7 +270,9 @@ def contract(proposal: LabProposal, policy: LabPolicy) -> dict[str, Any]:
         "inputs": (
             "Contiguous observed closed minute candles, valid metadata and subsequent fresh book"
         ),
-        "entry": "Closed-bar breakout with volume/uptrend"
+        "entry": STRATEGIES[proposal.strategy.family]
+        if proposal.strategy.version == "reviewed-lab-rules-v4"
+        else "Closed-bar breakout with volume/uptrend"
         if proposal.strategy.family == "breakout"
         else "Negative excursion inside the reviewed range gate above modeled round-trip costs",
         "exit": {
@@ -270,9 +304,50 @@ def contract(proposal: LabProposal, policy: LabPolicy) -> dict[str, Any]:
         ),
         "qualification": "Exploratory paper only; CP7 28-day/human role policy unchanged",
     }
+    if proposal.strategy.version == "reviewed-lab-rules-v4":
+        # Retain the serialized RuleSpec compatibility fields without presenting
+        # them as active controls of the separately versioned fixed algorithm.
+        for key in ("lookback", "volume_multiple"):
+            result["unchanged"].pop(key, None)
+        result["inapplicable_compatibility_fields"] = {
+            "lookback": strategy["lookback"],
+            "volume_multiple": strategy["volume_multiple"],
+        }
+        result["fixed_method"] = {
+            "version": REDESIGN_VERSION,
+            "mechanism": proposal.strategy.family,
+            "implementation": "trading/redesign_strategy.py:features",
+            "identity": "Exact source digest required in captured/replayed evidence",
+            "inputs": {
+                "maximum_minute_bars": 600,
+                "minimum_closed_minute_bars": 305,
+                "minimum_complete_five_minute_bars": 60,
+                "prior_range_and_median_volume_bars": 20,
+                "atr": "14-period Wilder, from the retained complete five-minute prefix",
+                "moving_average": "20-period EMA, from the same prefix",
+            },
+            "entry_controls": (
+                "Fixed predicates in the identified algorithm; "
+                "no adjustable lookback or common volume multiple"
+            ),
+            "movement_cost_gate": (
+                "1.5 ATR versus actual fee, slippage and observed spread; "
+                "volatility proxy, not predicted return"
+            ),
+        }
+    return result
 
 
 def rule_feature(bars: list[Bar], now: float, spec: RuleSpec, profile: str) -> dict[str, Any]:
+    if spec.version == "reviewed-lab-rules-v4":
+        from trading.evidence_runtime import frozen_bars
+
+        base = replacement_features(bars[-600:], now, spec.family)
+        base["mechanism"] = spec.family
+        base["version"] = "lab-rule-" + fingerprint(spec.model_dump())[:24]
+        base["input_cutoff"] = now
+        base["input_bars_sha256"] = fingerprint(frozen_bars(bars[-600:], now))
+        return base
     timing = spec.timing
     latest = bars[-1].close_ms / 1000 if bars else None
     if timing["feature_seconds"] > 60:

@@ -16,6 +16,7 @@ from trading.execution_window import diagnostic_admission, replay_preamble, repl
 from trading.market import parse_book
 from trading.paper_economics import sample
 from trading.paper_engine import PaperEngine
+from trading.redesign_strategy import STRATEGIES
 from trading.research_evidence import VERSION as EVIDENCE_VERSION
 from trading.research_evidence import digest
 
@@ -57,6 +58,8 @@ def source_hashes() -> dict[str, str]:
             "paper_diagnostics.py",
             "account_purpose.py",
             "paper_strategy.py",
+            "redesign_strategy.py",
+            "evidence_runtime.py",
             "execution_profiles.py",
             "numerical_candidates.py",
             "memory_quality.py",
@@ -145,6 +148,17 @@ def checked_packet(record: dict[str, Any], current: dict[str, str]) -> dict[str,
         for a in packet["state_before"]["accounts"].values()
     ):
         required.update({"memory_quality.py", "autonomous_spec.py", "rule_components.py"})
+    if any(
+        a["version"] in STRATEGIES
+        or a.get("rule_spec", {}).get("version") == "reviewed-lab-rules-v4"
+        for a in packet["state_before"]["accounts"].values()
+    ):
+        required.add("redesign_strategy.py")
+    if any(
+        a.get("rule_spec", {}).get("version") == "reviewed-lab-rules-v4"
+        for a in packet["state_before"]["accounts"].values()
+    ):
+        required.update({"autonomous_spec.py", "rule_components.py", "evidence_runtime.py"})
     if any(packet["source_files"].get(name) != current[name] for name in required):
         raise ValueError(
             "Recorded engine/artifact source differs; original-version replay required"

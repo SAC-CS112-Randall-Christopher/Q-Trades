@@ -176,7 +176,11 @@ class AutonomousLab:
         p = LabPolicy.model_validate(lab["policy"])
         if proposal.strategy.holding_horizon not in p.holding_horizons:
             raise ValueError("Proposed holding horizon is outside the frozen policy")
-        bars = self.paper.lab_history(now, proposal.strategy.holding_horizon)
+        bars = (
+            self.paper.history.get("BTCUSD", [])[-600:]
+            if proposal.strategy.version == "reviewed-lab-rules-v4"
+            else self.paper.lab_history(now, proposal.strategy.holding_horizon)
+        )
         frames = self.paper.control_frames()
         feature = reviewed_feature(
             bars, now, proposal.strategy, p.execution_profile, self.paper.memory_book("BTCUSD")
@@ -187,7 +191,9 @@ class AutonomousLab:
             or len(bars) < 305
             or "atr" not in feature
             or available is None
-            or not 0 <= now - available <= 90
+            or not 0
+            <= now - available
+            <= (300 if proposal.strategy.version == "reviewed-lab-rules-v4" else 90)
         ):
             raise InputWait("Awaiting contiguous causal candles and a fresh executable book")
         return {
@@ -205,7 +211,9 @@ class AutonomousLab:
                     "close": str(b.close),
                     "volume": str(b.volume),
                 }
-                for b in bars[-9000:]
+                for b in bars[
+                    -600 if proposal.strategy.version == "reviewed-lab-rules-v4" else -9000 :
+                ]
             ],
             "financial_authority": False,
             "profit_required": False,

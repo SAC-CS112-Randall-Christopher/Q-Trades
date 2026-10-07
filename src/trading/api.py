@@ -24,6 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from psycopg.conninfo import make_conninfo
 from pydantic import BaseModel, ConfigDict, Field
 
+from trading.account_redesign import StrategyChange
 from trading.autonomous_spec import LabControl, LabPolicy, LabProposal
 from trading.compact_memory import compact_evidence
 from trading.config import Settings
@@ -40,6 +41,12 @@ from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
 from trading.peft_role_model import PeftPaperPilotRoles, local_role_transport
 from trading.prospective_review import ProspectiveSpec
+from trading.redesign_strategy import (
+    MAXIMUM_HOLD_SECONDS,
+    PROGRESS_SECONDS,
+    REDESIGN_VERSION,
+    STRATEGIES,
+)
 from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
 from trading.research_campaigns import ResearchCampaignSpec
@@ -2045,6 +2052,60 @@ def create_app(
             raise HTTPException(
                 503, "Account control not confirmed; refresh before retrying"
             ) from exc
+
+    @app.get("/api/paper/strategies")
+    def replacement_strategies() -> dict[str, Any]:
+        return {
+            "version": REDESIGN_VERSION,
+            "strategies": [
+                {
+                    "id": identity,
+                    "label": identity.removesuffix("-v1").replace("-", " ").title(),
+                    "hypothesis": hypothesis,
+                    "feature_seconds": 300,
+                    "maximum_hold_seconds": MAXIMUM_HOLD_SECONDS,
+                    "progress_seconds": PROGRESS_SECONDS,
+                    "limitations": (
+                        "Exploratory fixed hypothesis; volatility cost hurdle is not a forecast. "
+                        "Shared markets are correlated; fees, stops and risk are unchanged."
+                    ),
+                }
+                for identity, hypothesis in STRATEGIES.items()
+            ],
+        }
+
+    @app.post("/api/paper/accounts/{account}/strategy")
+    def change_paper_strategy(
+        account: str, spec: StrategyChange, request: Request
+    ) -> dict[str, Any]:
+        paper = campaign_operator(request)
+        if account not in paper.state["accounts"]:
+            raise HTTPException(404, "Paper account not found")
+        try:
+            return paper.strategy_change(account, spec)
+        except (ValueError, ArithmeticError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Rule-change outcome is unconfirmed; reopen this exact request receipt"
+            ) from exc
+
+    @app.get("/api/paper/accounts/{account}/strategy/{request_id}")
+    def paper_strategy_receipt(account: str, request_id: str, request: Request) -> dict[str, Any]:
+        if not re.fullmatch(r"[a-zA-Z0-9-]{12,64}", request_id):
+            raise HTTPException(422, "Invalid rule-change request identity")
+        paper: PaperRuntime | None = request.app.state.paper
+        if paper is None:
+            raise HTTPException(409, "Paper experiment is not enabled")
+        try:
+            receipt = paper.strategy_receipt(account, request_id)
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Rule-change receipt unavailable; no execution conclusion follows"
+            ) from exc
+        if receipt is None:
+            raise HTTPException(404, "No receipt for this account and request in this read")
+        return receipt
 
     @app.post("/api/paper/learning/control/{candidate}")
     async def matched_forward_control(request: Request, candidate: str) -> dict[str, Any]:

@@ -20,6 +20,7 @@ import { PaperCampaignPanel } from "./PaperCampaignPanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
 import { TradeHistory } from "./TradeHistory";
 import { PerformanceDiagnosticPanel } from "./PerformanceDiagnosticPanel";
+import { OriginalStrategyPanel, isOriginalAccount } from "./OriginalStrategyPanel";
 
 const money = (value: string | number | null | undefined) =>
   value == null || !Number.isFinite(Number(value))
@@ -954,6 +955,7 @@ function AccountInspector({
         valuation block. Funding and all earlier losses are preserved.
       </p>
       <PaperCampaignJournal key={name} account={name} />
+      {isOriginalAccount(name) && <OriginalStrategyPanel key={name} name={name} account={a} unavailable={unavailable} />}
     </section>
   );
 }
