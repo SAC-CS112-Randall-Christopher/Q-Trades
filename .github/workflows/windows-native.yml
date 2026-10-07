@@ -43,7 +43,7 @@ jobs:
         run: |
           $PSVersionTable.PSVersion.ToString()
           if ($PSVersionTable.PSEdition -ne 'Desktop') { throw 'Requires Windows PowerShell 5.1' }
-          python -B -m pytest -q -p no:cacheprovider --tb=long `
+          python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 `
             tests/test_simple_health.py tests/test_paper_update_shutdown.py `
             tests/test_windows_supervision.py tests/test_paper_engine.py `
             tests/test_redesign_strategy.py tests/test_account_redesign.py `
@@ -58,7 +58,6 @@ jobs:
             tests/test_research_campaigns.py tests/test_paper_learning.py `
             tests/test_lab_resilience.py tests/test_live_readiness.py tests/test_efficiency_contracts.py `
             tests/test_research_evidence.py tests/test_pattern_memory.py tests/test_execution_replay.py `
-            tests/test_pattern_scanner.py tests/test_live_candle_storage.py `
             tests/test_memory_quality.py tests/test_context_flow.py tests/test_incremental_memory.py `
             tests/test_execution_window.py tests/test_streaming.py `
             tests/test_engine_diagnostics.py tests/test_admission_recovery_candidate.py `
@@ -294,6 +293,8 @@ jobs:
 
   persistent-research:
     # Keep the private-memory/reviewer cases independent of the existing eight-minute job.
+    # New candle/scanner ownership cases run here; keep every original native
+    # selector and both Windows lifecycle budgets intact.
     runs-on: windows-2025
     timeout-minutes: 8
     defaults:
@@ -322,4 +323,4 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m mypy --platform win32 src
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -B -m pytest -q -p no:cacheprovider --tb=long tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py tests/test_candle_patterns.py tests/test_candle_history.py
+          python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py tests/test_candle_patterns.py tests/test_candle_history.py tests/test_pattern_scanner.py tests/test_live_candle_storage.py

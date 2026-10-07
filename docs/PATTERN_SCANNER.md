@@ -164,6 +164,18 @@ The exact disposable process/data-directory/listener was verified before its
 normal stop; no other client connections remained. The owned process and
 listener are gone, and all disposable data and receipts are retained.
 Exact-head hosted results remain a separate check to record on the draft PR.
+The first hosted head `7040c946d8c3d59369a474b53ccb62838e0073c7` passed five
+jobs, including the complete PostgreSQL and compiled browser workflows. Its
+Windows native job was cancelled at the existing eight-minute limit after
+1,271 passes and 189 skips (477.23 seconds of pytest), so that head did not pass
+all gates. That run had no per-case duration report; the new cases are not
+established as the sole timing cause. The follow-up moves only the two new
+scanner/shared-writer selectors to the existing Windows persistent-research
+job, alongside candle history, and adds duration diagnostics to both jobs.
+Every baseline selector, job and lifecycle budget remains unchanged. Final
+hosted completion must verify both the original native selection and the
+additional Windows research coverage; no longer limit or reduced selection
+substitutes for completion.
 Operating installation/activation and a full real year across the eligible
 roster remain separate acceptance. No trading value, complete model coexistence,
 continuous recording or populated Library/Reviews acceptance follows from
