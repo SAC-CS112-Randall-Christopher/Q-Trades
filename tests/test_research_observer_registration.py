@@ -244,7 +244,7 @@ def test_main_never_prints_unrelated_secrets_on_success_or_parse_failure(files, 
 
 
 def test_main_does_not_print_raw_filesystem_error(files, monkeypatch, capsys):
-    def fail(*args):
+    def fail(*args, **kwargs):
         raise OSError("FIXTURE_SECRET_DO_NOT_PRINT")
 
     monkeypatch.setattr(owner, "register", fail)
@@ -253,3 +253,129 @@ def test_main_does_not_print_raw_filesystem_error(files, monkeypatch, capsys):
     output = capsys.readouterr()
     assert not output.out and "FIXTURE_SECRET_DO_NOT_PRINT" not in output.err
     assert json.loads(output.err)["reason"] == "filesystem_operation_failed"
+
+
+def old_entry(files):
+    owner.register(*files)
+    config = files[2]
+    before = config.read_bytes().replace(
+        json.dumps(owner.TOOLS).encode(), json.dumps(owner.READ_TOOLS).encode()
+    )
+    config.write_bytes(before)
+    return before
+
+
+def test_authorized_old_tool_upgrade_preserves_other_raw_entries_and_backup(files):
+    before = old_entry(files)
+    config = files[2]
+    suffix = b'\n# Later independent work\n[mcp_servers.later]\nenabled_tools = ["other"]\n'
+    before += suffix
+    config.write_bytes(before)
+    old_backups = set(backups(config))
+    receipt = owner.register(*files, upgrade_known_tools=True)
+    expected = before.replace(
+        json.dumps(owner.READ_TOOLS).encode(), json.dumps(owner.TOOLS).encode()
+    )
+    assert receipt["status"] == "upgraded_known_tools"
+    assert config.read_bytes() == expected
+    assert expected.startswith(ORIGINAL) and expected.endswith(suffix)
+    new_backup = set(backups(config)) - old_backups
+    assert len(new_backup) == 1 and new_backup.pop().read_bytes() == before
+    assert (
+        tomllib.loads(expected.decode())["mcp_servers"][owner.SERVER]["enabled_tools"]
+        == owner.TOOLS
+    )
+
+
+def test_old_entry_needs_explicit_upgrade_authorization(files):
+    before = old_entry(files)
+    saved = backups(files[2])
+    with pytest.raises(owner.RegistrationError, match="different_existing_entry_refused"):
+        owner.register(*files)
+    assert files[2].read_bytes() == before and backups(files[2]) == saved
+
+
+def test_upgrade_preserves_inline_comment_with_bracketed_context(files):
+    before = old_entry(files).replace(
+        json.dumps(owner.READ_TOOLS).encode(),
+        json.dumps(owner.READ_TOOLS).encode() + b" # keep [context] and [other]",
+    )
+    files[2].write_bytes(before)
+    owner.register(*files, upgrade_known_tools=True)
+    expected = before.replace(
+        json.dumps(owner.READ_TOOLS).encode(), json.dumps(owner.TOOLS).encode()
+    )
+    assert files[2].read_bytes() == expected
+
+
+@pytest.mark.parametrize(
+    "key,value",
+    [("command", "different"), ("tool_timeout_sec", 21), ("enabled_tools", ["unknown"])],
+)
+def test_upgrade_flag_never_accepts_an_arbitrary_changed_entry(files, key, value):
+    before = old_entry(files)
+    current = tomllib.loads(before.decode())["mcp_servers"][owner.SERVER][key]
+    before = before.replace(
+        f"{key} = {json.dumps(current)}".encode(), f"{key} = {json.dumps(value)}".encode()
+    )
+    files[2].write_bytes(before)
+    saved = backups(files[2])
+    with pytest.raises(owner.RegistrationError, match="different_existing_entry_refused"):
+        owner.register(*files, upgrade_known_tools=True)
+    assert files[2].read_bytes() == before and backups(files[2]) == saved
+
+
+def test_unknown_multiline_tool_layout_refused_without_rewriting_config(files):
+    before = old_entry(files).replace(
+        json.dumps(owner.READ_TOOLS).encode(),
+        ("[\n" + ",\n".join(json.dumps(name) for name in owner.READ_TOOLS) + "\n]").encode(),
+    )
+    files[2].write_bytes(before)
+    saved = backups(files[2])
+    with pytest.raises(owner.RegistrationError, match="selected_entry_layout_refused"):
+        owner.register(*files, upgrade_known_tools=True)
+    assert files[2].read_bytes() == before and backups(files[2]) == saved
+
+
+def test_upgrade_retains_intervening_unrelated_work_and_never_restores_backup(files, monkeypatch):
+    before = old_entry(files)
+    config = files[2]
+    newer = before + b"\n# Concurrent independent edit\n"
+    writer = owner.private_file
+
+    def write_then_edit(path, value):
+        writer(path, value)
+        if path.suffix == ".stage":
+            config.write_bytes(newer)
+
+    monkeypatch.setattr(owner, "private_file", write_then_edit)
+    with pytest.raises(owner.RegistrationError, match="configuration_changed_before_publication"):
+        owner.register(*files, upgrade_known_tools=True)
+    assert config.read_bytes() == newer
+    assert not list(config.parent.glob("*.stage"))
+
+
+def test_upgraded_entry_is_idempotent_even_with_explicit_flag(files):
+    old_entry(files)
+    owner.register(*files, upgrade_known_tools=True)
+    config = files[2]
+    before = config.read_bytes(), config.stat().st_mtime_ns, backups(config)
+    assert owner.register(*files, upgrade_known_tools=True)["status"] == "already_registered"
+    assert (config.read_bytes(), config.stat().st_mtime_ns, backups(config)) == before
+
+
+def test_cli_explicit_upgrade_is_bounded_and_does_not_disclose_configuration(files, capsys):
+    old_entry(files)
+    argv = [
+        "--python",
+        str(files[0]),
+        "--artifact",
+        str(files[1]),
+        "--config",
+        str(files[2]),
+        "--upgrade-known-tools",
+    ]
+    assert owner.main(argv) == 0
+    output = capsys.readouterr()
+    assert not output.err and "FIXTURE_SECRET_DO_NOT_PRINT" not in output.out
+    assert json.loads(output.out)["status"] == "upgraded_known_tools"

@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import stat
 import sys
 import tomllib
@@ -15,12 +16,18 @@ from typing import Any
 
 MAX_CONFIG_BYTES = 262144
 SERVER = "qtrades_research"
-TOOLS = [
+READ_TOOLS = [
     "research_status",
     "research_task",
     "research_lessons",
     "research_quality",
     "research_capabilities",
+]
+TOOLS = READ_TOOLS + [
+    "research_run_diagnostic",
+    "research_diagnostic_result",
+    "research_pause",
+    "research_paper_trials",
 ]
 
 
@@ -86,7 +93,27 @@ def private_file(path: Path, raw: bytes) -> None:
         os.fsync(destination.fileno())
 
 
-def register(python: Path, artifact: Path, config: Path) -> dict[str, Any]:
+def upgrade_tool_line(original: bytes) -> bytes:
+    """Replace only the reviewed existing entry's single-line allowlist."""
+    headers = list(re.finditer(rb"(?m)^\[mcp_servers\.qtrades_research\][ \t]*\r?$", original))
+    if len(headers) != 1:
+        raise RegistrationError("selected_entry_layout_refused")
+    start = headers[0].end()
+    following = re.search(rb"(?m)^[ \t]*\[", original[start:])
+    end = start + following.start() if following else len(original)
+    block, replacements = re.subn(
+        rb"(?m)^(enabled_tools[ \t]*=[ \t]*)\[[^\]\r\n]*\]([ \t]*(?:#[^\r\n]*)?)(\r?$)",
+        lambda match: match[1] + json.dumps(TOOLS).encode() + match[2] + match[3],
+        original[start:end],
+    )
+    if replacements != 1:
+        raise RegistrationError("selected_entry_layout_refused")
+    return original[:start] + block + original[end:]
+
+
+def register(
+    python: Path, artifact: Path, config: Path, *, upgrade_known_tools: bool = False
+) -> dict[str, Any]:
     python, artifact = regular(python), regular(artifact)
     original = read_config(config)
     original_sha = hashlib.sha256(original).hexdigest()
@@ -101,19 +128,27 @@ def register(python: Path, artifact: Path, config: Path) -> dict[str, Any]:
     servers = parsed.get("mcp_servers", {})
     if not isinstance(servers, dict):
         raise RegistrationError("server_table_refused")
+    status = "registered"
     if SERVER in servers:
-        if not equal(servers[SERVER], selected):
+        if equal(servers[SERVER], selected):
+            return {"status": "already_registered", "server": SERVER, "config_sha256": original_sha}
+        old_selected = {**selected, "enabled_tools": READ_TOOLS}
+        if not upgrade_known_tools or not equal(servers[SERVER], old_selected):
             raise RegistrationError("different_existing_entry_refused")
-        return {"status": "already_registered", "server": SERVER, "config_sha256": original_sha}
-
-    newline = "\r\n" if b"\r\n" in original else "\n"
-    entry = newline.join(
-        [f"[mcp_servers.{SERVER}]"]
-        + [f"{key} = {json.dumps(value, ensure_ascii=False)}" for key, value in selected.items()]
-        + [""]
-    ).encode("utf-8")
-    suffix = b"" if original.endswith(b"\n") or not original else newline.encode()
-    updated = original + suffix + newline.encode() + entry
+        updated = upgrade_tool_line(original)
+        status = "upgraded_known_tools"
+    else:
+        newline = "\r\n" if b"\r\n" in original else "\n"
+        entry = newline.join(
+            [f"[mcp_servers.{SERVER}]"]
+            + [
+                f"{key} = {json.dumps(value, ensure_ascii=False)}"
+                for key, value in selected.items()
+            ]
+            + [""]
+        ).encode("utf-8")
+        suffix = b"" if original.endswith(b"\n") or not original else newline.encode()
+        updated = original + suffix + newline.encode() + entry
     if len(updated) > MAX_CONFIG_BYTES:
         raise RegistrationError("configuration_size_refused")
     expected = copy.deepcopy(parsed)
@@ -149,7 +184,7 @@ def register(python: Path, artifact: Path, config: Path) -> dict[str, Any]:
         if stage.exists():
             stage.unlink()
     return {
-        "status": "registered",
+        "status": status,
         "server": SERVER,
         "original_sha256": original_sha,
         "config_sha256": hashlib.sha256(updated).hexdigest(),
@@ -166,9 +201,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--artifact", type=Path, required=True, help="Frozen standalone observer")
     parser.add_argument("--config", type=Path, default=Path.home() / ".codex" / "config.toml")
+    parser.add_argument(
+        "--upgrade-known-tools",
+        action="store_true",
+        help="Upgrade only the exact old observer entry",
+    )
     args = parser.parse_args(argv)
     try:
-        result = register(args.python, args.artifact, args.config)
+        result = register(
+            args.python, args.artifact, args.config, upgrade_known_tools=args.upgrade_known_tools
+        )
     except RegistrationError as exc:
         print(json.dumps({"status": "refused", "reason": str(exc)}), file=sys.stderr)
         return 1

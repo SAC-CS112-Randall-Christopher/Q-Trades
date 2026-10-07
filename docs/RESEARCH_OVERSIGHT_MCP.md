@@ -1,8 +1,9 @@
-# Local Codex research observation
+# Local Codex research oversight and diagnostics
 
 The tools-only observer connects local Codex to the existing installed Q-Trades
 paper service at `http://127.0.0.1:8780`. It reads saved scientific status through
-ordinary APIs. It does not construct an application, database, model transport,
+ordinary APIs and exposes the existing bounded operator diagnostics and Pause.
+It does not construct an application, database, model transport,
 actor grant, review schedule or financial writer.
 
 This is separate from the existing `/api/research/mcp` scheduled-review adapter.
@@ -18,9 +19,13 @@ it is not an oversight connection for the local experimental researcher.
 | `research_lessons` | At most 20 supported lessons; continue with `next_before`. Original scientific support stays distinct from access frequency. |
 | `research_quality` | Recorded attempts/activity and explicitly unmeasured matched research/economic value. Activity is not a strategy-quality score. |
 | `research_capabilities` | Descriptions of the six registered evidence-inspection tools. Listing a tool does not execute it or establish its readiness or installation authority. |
+| `research_run_diagnostic` | One existing diagnostic: `input_diagnosis`, `cost_diagnosis`, `market_evidence`, `cost_hurdle`, `strategy_evidence`, or `outcome_review`. Required explicit `symbol`, `account`, `start` and stable `request_id`; creates/reopens only the ordinary saved tool receipt. |
+| `research_diagnostic_result` | Read one exact positive integer `run_id` from the existing saved receipt owner; never substitute current data for unavailable original evidence. |
+| `research_pause` | Fixed existing operator Pause action with no arguments. Disables the pilot; never Resume, enqueue, retry or change financial state. Acknowledgment is separate from verified child cleanup. |
+| `research_paper_trials` | Existing `/api/autonomous` snapshot: Lab policy/budgets, twenty-slot capacity, account IDs and original funding/value strings, fixed matched trial contracts/reviews, data-blocked scores and at most 20 proposal status rows. This Lab owner is separate from the language-model worker. |
 
-Each tool reads installed code identity through `/api/health`, then its fixed GET
-route. It returns observation time, code identity, paper-health observations and
+Each tool reads installed code identity through `/api/health`, then its fixed
+route. Read tools return observation time, code identity, paper-health observations and
 the canonical hash of the complete fetched payload. These are sequential reads,
 not one atomic snapshot or an uninterrupted trace. Current readiness/applicability
 does not rewrite the saved answer, original reason, contract or scientific result.
@@ -51,7 +56,9 @@ Its retained operating observations used the older history-coupled API at core
 now uses `d36a45a7bee7c79e02cb06ad4fee112b330f5c07`; this source reconciliation
 retains the earlier capability errors and makes no fresh operating acceptance
 claim. Installing the catalog-only core route and updating the observer to this
-later source proposal need a separate reviewed operating-update decision.
+later source proposal have separate authorities: the reviewed standalone oversight
+and diagnostic connector can be published under the human's local connection
+permission; the catalog-only core API change still requires its own update decision.
 No cached catalog, timeout increase or repeated live request establishes repair.
 
 The response is a selected scientific projection, not a complete model packet.
@@ -67,6 +74,35 @@ outcomes can legitimately record evidence embargo windows and lesson access.
 This observation does not reserve an inference attempt, change financial state,
 advance a task, retry an answer or trigger an experiment.
 
+The two operator tools advertise `readOnlyHint:false`; the seven observation tools
+advertise `readOnlyHint:true`. Both operator routes send the existing local
+operator header. Diagnostic scope is exactly the API's six registered tool IDs,
+uppercase market symbol, explicit account, finite nonnegative interval start and
+12–64-character request ID. The API's ordinary accounting, input/storage availability,
+disclosure, quota and receipt rules remain authoritative. A tool request is not a
+trade, new strategy, model call or research question.
+
+Diagnostic responses distinguish a committed receipt from a successful diagnosis.
+A saved failed/interrupted/running receipt remains that outcome. Selected facts
+retain original same-cohort gross/fees/net, explicit incomplete input coverage,
+cost-hurdle assumptions, unknowns and falsification questions where recorded.
+Hashes bind the complete fetched receipt/result. A bounded projection is not the
+full original source packet; unknown/private fields are omitted. If facts exceed
+the nesting/list/wire bound, the acknowledged run ID and request/result hashes
+remain available with `result_projection_available:false` and a tool error.
+
+Each call sends at most one POST and never automatically repeats it. HTTP 503,
+timeout, invalid acknowledgment or disclosure failure can occur after a write;
+they remain `committed:null` rather than a claim that nothing happened. Inspect
+the exact saved `run_id` if known. Recent history exposes run metadata, not a
+request-ID search; an unknown ID remains unresolved until the existing history
+and detail owner identifies it and verifies its saved request ID and scope.
+Only an explicit later operator request may reuse the same ID after reconciliation;
+the existing journal binds it to its original scope. Pause uses a fixed empty
+schema and `action:pause` on the wire; a response must explicitly report
+`configured_enabled:false` to acknowledge it. Lost Pause acknowledgment requires
+a status read, not an automatic retry or guessed process kill.
+
 ## Reviewable next work
 
 Use the saved task ID, contract/mode/grant, context/response/evidence hashes and
@@ -76,6 +112,22 @@ is needed. The observer's handoff label is guidance. It cannot approve a tool,
 change a grant/profile, resolve a wait or create a replacement preferred answer.
 Existing worker ownership, causal eligibility, budgets and once-only allowances
 remain authoritative. There is no background polling or additional scheduler.
+
+For v7 records, `research_status` also preserves the owner's question-selection
+state and any recorded evidence. Waiting, disabled and unavailable stay distinct
+from readiness and useful research. `research_task` exposes only the recorded
+selection's source/strategy/reference/scope hashes, causal window/count, lesson,
+reason, falsification, limitations and six public selection-authority identities.
+It adds no authority to an older record that lacks these fields. Unknown/private
+keys are omitted; malformed recorded identities and excess lists fail the read.
+
+The v7 comparison view verifies the strategy/reference hashes using the existing
+registry's JSON encoding before disclosing their six frozen controls. Its basis
+is `recorded_catalog`; it is not a reconstruction of the private issued packet or
+a new selectable experiment. The raw fetched record and context remain bound by
+separate hashes. These passive projections use data already returned by the
+ordinary roles/task APIs and require no new core API route, model call or paper
+restart. The catalog-only API proposal retains its separate update decision.
 
 ## Durable local installation
 
@@ -95,14 +147,18 @@ while preserving the existing configuration's raw bytes and parsed values.
 Verify the interpreter and frozen artifact before replacing the placeholders:
 
 ```powershell
-& "<verified installed Q-Trades Python>" -I -B -u "C:\Projects\Q-Trades-MCP\register_research_observer.py" --python "<verified installed Q-Trades Python>" --artifact "C:\Projects\Q-Trades-MCP\research_observer_mcp.py"
+& "<verified installed Q-Trades Python>" -I -B -u "C:\Projects\Q-Trades-MCP\register_research_observer.py" --python "<verified installed Q-Trades Python>" --artifact "C:\Projects\Q-Trades-MCP\research_observer_mcp.py" --upgrade-known-tools
 ```
 
 The configuration defaults to the existing `~/.codex/config.toml`; `--config`
 can select another explicit existing local file. The helper refuses missing,
 redirected, oversized or invalid files. It does not execute the supplied
 interpreter or artifact. A matching entry is idempotent; a differing entry
-requires separate review. It keeps an exclusive byte-for-byte backup in the
+requires separate review. The opt-in `--upgrade-known-tools` accepts only the
+exact old five-tool entry with the same interpreter, artifact arguments and
+timeouts, replacing its selected `enabled_tools` array alone. Unknown layouts,
+changed settings and unrelated entries are never accepted as a known predecessor.
+It keeps an exclusive byte-for-byte backup in the
 private config directory, fsyncs a fresh staging file, and checks the original
 hash immediately before atomic replacement. This is not an interprocess
 compare-and-swap: avoid concurrent configuration edits, and retain exact
@@ -119,7 +175,7 @@ In the retained installed setup, that command rewrote existing server entries
 and omitted four unrelated fields. Its successful exit did not establish
 preservation; the failure and separately reviewed guarded repair are retained.
 Do not use the bare CLI command as a preservation procedure. It applies default
-client settings, whereas the helper adds the explicit five-tool allowlist and
+client settings, whereas the helper adds the explicit nine-tool allowlist and
 15/20-second client settings below. `-I` isolates Python from the current checkout
 and user environment, `-B` avoids bytecode writes, and `-u` provides unbuffered
 stdio. The helper's fixed entry has this shape:
@@ -128,19 +184,21 @@ stdio. The helper's fixed entry has this shape:
 [mcp_servers.qtrades_research]
 command = "<verified installed Q-Trades Python>"
 args = ["-I", "-B", "-u", 'C:\Projects\Q-Trades-MCP\research_observer_mcp.py']
-enabled_tools = ["research_status", "research_task", "research_lessons", "research_quality", "research_capabilities"]
+enabled_tools = ["research_status", "research_task", "research_lessons", "research_quality", "research_capabilities", "research_run_diagnostic", "research_diagnostic_result", "research_pause", "research_paper_trials"]
 startup_timeout_sec = 15
 tool_timeout_sec = 20
 ```
 
-No credentials or local-operator header are needed. The server has no configurable
+No credentials are stored. Only the fixed operator POSTs send the local-operator
+header; reads omit it. The server has no configurable
 origin or arbitrary-fetch tool; redirects and compressed responses are refused.
-Each call has at most two GETs, a 10-second observation deadline checked between
+Each read has at most two GETs; each write has one identity GET and at most one
+POST with a body bounded to 4 KiB. Every call has a 10-second deadline checked between
 chunks and a two-second HTTP operation timeout (a blocked read may finish after
 the checked deadline). Responses are bounded to 256 KiB each, output to 96 KiB,
 input lines to 16 KiB, scientific nesting to 12 and scientific lists to 128.
 An oversized input line exits rather than draining unbounded data. Codex owns
-the passive stdio process lifetime; EOF closes its HTTP client.
+the stdio process lifetime; EOF closes its HTTP client.
 
 The protocol uses UTF-8 newline-delimited JSON, `initialize`, the initialized
 notification, `ping`, fixed `tools/list`, and `tools/call`. Supported compatible
@@ -166,7 +224,11 @@ A local connection does not establish ChatGPT-web or remote-account access.
 
 Offline protocol/HTTP fixtures prove parsing, strict argument refusal, projection,
 privacy, bounds and error semantics. They do not establish an installed Codex
-connection, model usefulness, autonomous continuation or financial coexistence.
+connection, actual operator-route acceptance, model usefulness, autonomous
+continuation or financial coexistence. Successful isolated diagnostic fixtures
+do not establish that installed retained storage is available. In particular,
+the installed history/storage-dependent API may still refuse a diagnostic or
+catalog read; retain that actual error without bypassing its owner.
 Installed standalone stdio verification reopened status, lessons, quality, and
 both the historical v5 and new v6 saved tasks at installed code
 `4466ebb4495e8b63b2ef89fcc024d8ca8c35ad06`. The capability call first returned a

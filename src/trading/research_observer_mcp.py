@@ -7,7 +7,7 @@ import re
 import sys
 import time
 from collections.abc import Mapping
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, Literal, get_args
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -18,10 +18,14 @@ LINE_BYTES = 16384
 HTTP_BYTES = 262144
 OUTPUT_BYTES = 98304
 INSTRUCTIONS = (
-    "Read-only Q-Trades research observation. Saved answers, failures and evidence remain "
+    "Q-Trades research oversight and bounded operator diagnostics. Saved answers, failures "
+    "and evidence remain "
     "historical facts; readiness is a current prerequisite, not research quality. Tool/data "
     "waits require their existing owners and new evidence. No model dispatch, retries, "
     "financial commands, training, paid/external review or automatic tool installation. "
+    "The six bounded diagnostics may write existing tool receipts; Pause only disables the "
+    "existing pilot. Both use fixed operator routes, never resume or enqueue research. "
+    "Unknown write acknowledgments must be reconciled without automatic POST retries. "
     "Use observed task IDs and evidence hashes for a reviewable source-work handoff."
 )
 
@@ -46,6 +50,32 @@ class LessonArguments(Arguments):
     family: str = Field(default="", max_length=100)
     horizon: str = Field(default="", max_length=20)
     outcome: str = Field(default="", max_length=100)
+
+
+DiagnosticTool = Literal[
+    "input_diagnosis",
+    "cost_diagnosis",
+    "market_evidence",
+    "cost_hurdle",
+    "strategy_evidence",
+    "outcome_review",
+]
+DIAGNOSTIC_IDS = frozenset(get_args(DiagnosticTool))
+
+
+class DiagnosticArguments(Arguments):
+    tool: DiagnosticTool
+    symbol: str = Field(min_length=3, max_length=24, pattern=r"^[A-Z0-9]+$")
+    account: str = Field(min_length=1, max_length=96, pattern=r"^[a-zA-Z0-9_-]+$")
+    start: float = Field(ge=0, allow_inf_nan=False)
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,64}$")
+
+
+class DiagnosticResultArguments(Arguments):
+    run_id: int = Field(ge=1, le=9223372036854775807)
+
+
+WRITE_TOOLS = {"research_run_diagnostic", "research_pause"}
 
 
 TOOLS: dict[str, tuple[type[Arguments], str, str]] = {
@@ -73,6 +103,29 @@ TOOLS: dict[str, tuple[type[Arguments], str, str]] = {
         Arguments,
         "/api/research/tools",
         "Inspect current read-only tool descriptions; no execution or installation authority.",
+    ),
+    "research_run_diagnostic": (
+        DiagnosticArguments,
+        "/api/research/tools/run",
+        "Run one of six existing bounded evidence diagnostics with explicit scope and a stable "
+        "request_id. Writes a tool receipt; no model or financial command. Never auto-retry.",
+    ),
+    "research_diagnostic_result": (
+        DiagnosticResultArguments,
+        "/api/research/tools/runs/",
+        "Reopen one exact saved diagnostic run_id, including retained failures; no new run.",
+    ),
+    "research_pause": (
+        Arguments,
+        "/api/lab/roles/control",
+        "Pause the existing paper pilot. Does not resume, kill processes or create research. "
+        "Acknowledgment is separate from child cleanup; inspect current status afterward.",
+    ),
+    "research_paper_trials": (
+        Arguments,
+        "/api/autonomous",
+        "Observe existing paper Lab policy, slots, account IDs, trials and bounded proposal queue. "
+        "Recorded funding/results remain exploratory; no financial or proposal commands.",
     ),
 }
 
@@ -149,6 +202,336 @@ def scientific(value: Any, depth: int = 0) -> Any:
     raise ValueError("Scientific record contains an unsupported value")
 
 
+AUTHORITY_FIELDS = "question_policy grant_id grant_sha profile_sha contract_version contract_sha"
+CONTROL_FIELDS = (
+    "volume_multiple holding_horizon exit_seconds progress_seconds stop_atr input_version"
+)
+
+
+def selection_authority(value: Any) -> dict[str, Any]:
+    """Disclose the recorded six public identities, never a grant/profile payload."""
+    result = fields(value, AUTHORITY_FIELDS)
+    if len(result) != 6 or any(
+        not isinstance(v, str) or not v or len(v) > 128 for v in result.values()
+    ):
+        raise ValueError("Recorded selection authority is incomplete or invalid")
+    for key in ("grant_sha", "profile_sha", "contract_sha"):
+        if re.fullmatch(r"[a-f0-9]{64}", result[key]) is None:
+            raise ValueError("Recorded selection authority identity is invalid")
+    for key in ("question_policy", "grant_id", "contract_version"):
+        if re.fullmatch(r"[A-Za-z0-9_-]{1,128}", result[key]) is None:
+            raise ValueError("Recorded selection authority identifier is invalid")
+    return {key: scientific(v) for key, v in result.items()}
+
+
+def question_selection(value: Any) -> dict[str, Any]:
+    result = flat(
+        value,
+        "method horizon source_sha source_start source_end source_count source_basis "
+        "strategy_sha reference_sha scope_sha selection_sha prior_selection "
+        "excursion_bps modeled_hurdle_bps reason falsification",
+    )
+    for key in (
+        "source_sha",
+        "strategy_sha",
+        "reference_sha",
+        "scope_sha",
+        "selection_sha",
+        "prior_selection",
+    ):
+        if (
+            key in result
+            and result[key] is not None
+            and (
+                not isinstance(result[key], str)
+                or re.fullmatch(r"[a-f0-9]{64}", result[key]) is None
+            )
+        ):
+            raise ValueError("Recorded selection evidence identity is invalid")
+    if "source_count" in result and (
+        type(result["source_count"]) is not int or result["source_count"] < 0
+    ):
+        raise ValueError("Recorded selection source count is invalid")
+    for key in ("source_start", "source_end", "excursion_bps", "modeled_hurdle_bps"):
+        if key in result and type(result[key]) not in {int, float}:
+            raise ValueError("Recorded selection measurement is invalid")
+    if "authority" in value:
+        result["authority"] = selection_authority(value["authority"])
+    if "lesson" in value:
+        result["lesson"] = None if value["lesson"] is None else flat(value["lesson"], "id sha256")
+    if "limitations" in value:
+        limitations = value["limitations"]
+        if (
+            not isinstance(limitations, list)
+            or len(limitations) > 8
+            or any(not isinstance(item, str) for item in limitations)
+        ):
+            raise ValueError("Recorded selection limitations exceed their bound")
+        result["limitations"] = scientific(limitations)
+    return result
+
+
+def fixed_comparison(value: Any) -> dict[str, Any]:
+    """Project verified recorded controls; this is not the private issued packet."""
+    value = fields(value, "strategy reference strategy_sha256 reference_sha256")
+    result: dict[str, Any] = {"basis": "recorded_catalog"}
+    for arm in ("strategy", "reference"):
+        original = value.get(arm)
+        expected = value.get(arm + "_sha256")
+        # Catalog identities use the registry's original JSON spacing, unlike
+        # this observer's compact fetched-payload digest. No engine import.
+        recorded_sha = hashlib.sha256(
+            json.dumps(original, sort_keys=True, allow_nan=False).encode()
+        ).hexdigest()
+        if not isinstance(original, dict) or expected != recorded_sha:
+            raise ValueError("Recorded comparison identity is unavailable or invalid")
+        controls = flat(original, CONTROL_FIELDS)
+        if len(controls) != 6:
+            raise ValueError("Recorded comparison controls are incomplete")
+        result[arm] = controls
+        result[arm + "_sha256"] = expected
+    return result
+
+
+DIAGNOSTIC_KEYS = SCIENCE_KEYS | frozenset(
+    "result envelope interval snapshot account actor query cutoff revision maximum_event_id "
+    "event_id event_ids total missing gaps observed coverage expected duration_seconds "
+    "gross_usd gross_pnl_usd net_usd net_pnl_usd cost_usd costs slippage_usd "
+    "price quantity quote_notional_usd spread round_trip_bps minimum_required_move_bps "
+    "cost_hurdle_bps last_decision decision inputs_available last_tick stale error "
+    "detail live book metrics charts candles candle_gaps indicators points points_omitted "
+    "calculation_history_bars observed_trades best_bid best_ask spread_percent "
+    "freshness input_coverage fee_assumption slippage_assumption instrument "
+    "summary_state after_cost cohort gross after_cost_usd recorded_cost_usd "
+    "observation_cutoff source_available_at retrieved_at facts_basis coverage_fraction "
+    "receipt_limit_bytes model_tokens token_basis coverage references type "
+    "diagnosis summary population measured facts hypotheses unresolved next_question rows "
+    "retained_samples_inspected evaluable not_evaluable_or_unknown later_available_excluded "
+    "more_retained_records total_engine_ticks source_bytes maximum_records maximum_bytes "
+    "byte_basis maximum_query_seconds problem_counts problems could_evaluate original_scope "
+    "original_input_eligibility original_frame_source candle_status original_book_measurements "
+    "spread_depth_basis recorded_decision prior_decision decision_at_this_tick decision_meaning "
+    "frame_present candle_error continuous retained_bars last_close_ms computed_at available_at "
+    "ready_at rule_spec entries_paused closed_trades shown_original_events more_original_events "
+    "winner_only_selection shown_cost_groups more_cost_groups gross_before_recorded_fees_usd "
+    "recorded_fees_usd net_closed_pnl_usd net_basis gross_basis whole_account account_totals_basis "
+    "accounting_at closed_trade_cohort open_holdings pending_orders original_cost_groups "
+    "matched_trial_comparison policy_basis market_totals account_totals comparison_basis "
+    "first_opened_at queried_at has_more events body next_cursor groups more_groups maximum_groups "
+    "reserved available_cash units realized unrealized net_pnl equity cash funding nav "
+    "valuation_at execution_drag "
+    "liquidation_fee liquidation_drag settings_version starting_capital flat closed wins "
+    "valuation_issues purpose final final_at accounting_basis position pending feature_basis "
+    "primary_market next_review total_cost cost exit_proceeds quantity_remaining created_at "
+    "round_trip_loss_percent required_bid required_bid_move_percent fee_per_side "
+    "adverse_price_per_side participation_cap price_tick position_hurdle "
+    "original_cost_including_entry_fees partial_exit_net_proceeds remaining_required_net_proceeds "
+    "remaining_quantity selected_symbol markets markets_omitted levels_shown trade_gaps "
+    "trade_tape_limit trade_tape_scope generated_at scan omitted selected constrained "
+    "open_ms close_ms open high low volume candles_stale history_scope vwap_anchor_ms "
+    "ema vwap rsi strategy experiments paper_events confirmed "
+    "candidate net_after_operating_usd delta_usd passive_usd cash_usd operating_each_usd "
+    "candidate_sample reference_sample window_start window_end inputs_valid "
+    "dependence qualification "
+    "capital drawdown peak start covered_seconds coverage_seconds observed_decisions".split()
+)
+
+
+def diagnostic_facts(value: Any, depth: int = 0) -> Any:
+    if depth > 12:
+        raise ValueError("Diagnostic record exceeds its nesting bound")
+    if isinstance(value, dict):
+        result = {}
+        for key, item in value.items():
+            if key not in DIAGNOSTIC_KEYS:
+                continue
+            if key in {"open_holdings", "pending_orders", "valuation_issues"}:
+                if (
+                    not isinstance(item, dict)
+                    or len(item) > 128
+                    or any(re.fullmatch(r"[A-Z0-9]{3,24}", symbol) is None for symbol in item)
+                ):
+                    raise ValueError("Diagnostic market mapping is invalid")
+                result[key] = {
+                    symbol: diagnostic_facts(row, depth + 1) for symbol, row in item.items()
+                }
+            elif key == "problem_counts":
+                if (
+                    not isinstance(item, dict)
+                    or len(item) > 128
+                    or any(
+                        re.fullmatch(r"[a-z0-9_]{1,96}", problem) is None
+                        or type(count) is not int
+                        or count < 0
+                        for problem, count in item.items()
+                    )
+                ):
+                    raise ValueError("Diagnostic problem counts are invalid")
+                result[key] = item.copy()
+            else:
+                result[key] = diagnostic_facts(item, depth + 1)
+        return result
+    if isinstance(value, list):
+        if len(value) > 128:
+            raise ValueError("Diagnostic list exceeds its bound; use the existing detail owner")
+        return [diagnostic_facts(item, depth + 1) for item in value]
+    return scientific(value, depth)
+
+
+def diagnostic_projection(body: dict[str, Any], values: dict[str, Any]) -> dict[str, Any]:
+    if (
+        type(body.get("id")) is not int
+        or body["id"] <= 0
+        or body.get("status") not in {"running", "completed", "failed", "interrupted"}
+        or body.get("tool") not in DIAGNOSTIC_IDS
+        or body.get("actor") != "local_operator"
+    ):
+        raise ValueError("Saved diagnostic receipt identity is invalid")
+    query = body.get("query")
+    query = decode(query.encode()) if isinstance(query, str) else query
+    if "run_id" in values:
+        if body["id"] != values["run_id"]:
+            raise ValueError("Saved diagnostic run identity differs")
+    elif (
+        body.get("request_id") != values["request_id"]
+        or query != {key: value for key, value in values.items() if key != "request_id"}
+        or any(body.get(key) != values[key] for key in ("tool", "symbol", "account"))
+    ):
+        raise ValueError("Saved diagnostic request scope differs")
+    result = flat(
+        body,
+        "id started finished tool symbol actor account status error version request_id "
+        "result_sha256",
+    )
+    result["query"] = flat(query, "tool symbol account start") if isinstance(query, dict) else None
+    error = result.get("error")
+    result["error_sha256"] = digest(body["error"]) if body.get("error") is not None else None
+    if isinstance(error, str) and len(error.encode()) > 2048:
+        result["error"] = None
+        result["error_projection_available"] = False
+    raw = body.get("result")
+    if raw is not None and body.get("result_sha256") != digest(raw):
+        raise ValueError("Saved diagnostic result checksum differs")
+    try:
+        result["result"] = diagnostic_facts(raw)
+        result["result_projection_available"] = True
+    except (ValueError, TypeError, RecursionError):
+        # The exact acknowledged receipt remains usable even when its facts need
+        # the ordinary detail reader. Never retry a POST to repair presentation.
+        result["result"] = None
+        result["result_projection_available"] = False
+    return result
+
+
+def paper_trials_projection(body: dict[str, Any]) -> dict[str, Any]:
+    """Observe existing Lab facts without creating accounts, funds or proposals."""
+    result = flat(body, "enabled last_error provider_required qualification financial_authority")
+    lab = body.get("lab")
+    if not isinstance(lab, dict):
+        raise ValueError("Existing paper Lab state is unavailable")
+    result["lab"] = flat(
+        lab,
+        "phase reason entries_paused proposals_paused policy_sha256 sequence started_at "
+        "last_work_at last_score_at next_action_at initial_hypothetical_funding historical_trials "
+        "retired_count retired_net_usd horizon_cursor",
+    )
+    result["lab"]["budget"] = flat(
+        lab.get("budget", {}), "day hour steps trials compute_seconds measured_seconds"
+    )
+    policy = lab.get("policy")
+    result["lab"]["policy"] = None
+    if isinstance(policy, dict):
+        result["lab"]["policy"] = flat(
+            policy,
+            "version request_id slots family_slots independent_slots daily_trials "
+            "hourly_steps hourly_compute_seconds starting_cash horizon_seconds cooldown_seconds "
+            "coverage_fraction daily_operating_usd paid_usd execution_profile "
+            "minimum_disk_gib registry_mib",
+        )
+        result["lab"]["policy"]["holding_horizons"] = scientific(policy.get("holding_horizons"))
+    result["slots"] = flat(
+        body.get("slots"), "managed reserved draining used available capacity protected_originals"
+    )
+    result["accounts"] = {}
+    result["lab"]["trials"] = {}
+    rule_fields = CONTROL_FIELDS + " family lookback symbol version risk_envelope"
+    for key, source in (("accounts", body.get("accounts")), ("trials", lab.get("trials"))):
+        if not isinstance(source, dict) or len(source) > 20:
+            raise ValueError("Paper account/trial map exceeds its bounded owner scope")
+        for identity, value in source.items():
+            if re.fullmatch(r"[A-Za-z0-9_-]{1,96}", identity) is None or not isinstance(
+                value, dict
+            ):
+                raise ValueError("Paper account/trial identity is invalid")
+            if key == "accounts":
+                saved = flat(
+                    value,
+                    "equity cash reserved available_cash funding units fees realized "
+                    "unrealized net_pnl nav fresh valuation_at execution_drag liquidation_fee "
+                    "liquidation_drag execution_profile risk_policy strategy_version "
+                    "settings_version "
+                    "operating_daily_usd starting_capital flat closed wins protected draining "
+                    "risk_stop_id entries_paused purpose",
+                )
+                saved["rule_spec"] = (
+                    flat(value["rule_spec"], rule_fields)
+                    if value.get("rule_spec") is not None
+                    else None
+                )
+                result["accounts"][identity] = saved
+            else:
+                saved = flat(
+                    value,
+                    "id proposal_id candidate reference status reason branched "
+                    "reserved_at started_at review_at covered_seconds last_observation "
+                    "observed_decisions outcome retired_at retirement_reason",
+                )
+                contract = value.get("contract")
+                saved["contract"] = None
+                if isinstance(contract, dict):
+                    saved["contract"] = flat(
+                        contract, "entry inputs no_trade sizing criteria qualification"
+                    )
+                    for field in ("costs", "evaluation", "exit", "unchanged"):
+                        saved["contract"][field] = flat(
+                            contract.get(field, {}),
+                            "daily_usd fees funding_each profile coverage review seconds "
+                            "feature_seconds "
+                            "maximum_hold outcome progress protection warmup_minutes "
+                            + rule_fields,
+                        )
+                    proposal = contract.get("proposal")
+                    if not isinstance(proposal, dict):
+                        raise ValueError("Recorded paper trial proposal is unavailable")
+                    saved["contract"]["proposal"] = flat(
+                        proposal,
+                        "request_id kind mechanism question policy_id source parent_trial "
+                        "parent_strategy_sha256 replication_of evidence_bundle_sha256",
+                    )
+                    for arm in ("strategy", "reference"):
+                        saved["contract"]["proposal"][arm] = flat(proposal.get(arm), rule_fields)
+                for field in ("score", "passive"):
+                    if field in value:
+                        saved[field] = diagnostic_facts(value[field])
+                result["lab"]["trials"][identity] = saved
+    inbox = body.get("inbox")
+    if (
+        not isinstance(inbox, dict)
+        or not isinstance(inbox.get("proposals"), list)
+        or len(inbox["proposals"]) > 20
+    ):
+        raise ValueError("Paper proposal queue is unavailable or exceeds its page bound")
+    result["inbox"] = flat(inbox, "has_more next_before")
+    result["inbox"]["proposals"] = [
+        flat(row, "seq request_id status reason trial_id created") for row in inbox["proposals"]
+    ]
+    counts = inbox.get("counts", [])
+    if not isinstance(counts, list) or len(counts) > 20:
+        raise ValueError("Paper proposal counts exceed their bound")
+    result["inbox"]["counts"] = [flat(row, "status count") for row in counts]
+    return result
+
+
 def task_projection(body: dict[str, Any], identity: str) -> dict[str, Any]:
     context, attempts = body.get("context"), body.get("attempts")
     if (
@@ -175,11 +558,20 @@ def task_projection(body: dict[str, Any], identity: str) -> dict[str, Any]:
         )
     )
     result["context"]["question"] = flat(context.get("question", {}), "question horizon parent")
+    if "selection_authority" in context:
+        result["context"]["selection_authority"] = selection_authority(
+            context["selection_authority"]
+        )
+    if "question_selection" in context:
+        result["context"]["question_selection"] = question_selection(context["question_selection"])
     result["context"]["catalog"] = {
         key: scientific(value)
         for key, value in context.get("catalog", {}).items()
         if re.fullmatch(r"r[0-9]{1,2}", key)
     }
+    if context.get("contract") == "reviewed-rule-role-v7":
+        for key, value in result["context"]["catalog"].items():
+            value["fixed_comparison"] = fixed_comparison(context["catalog"][key])
     evidence = context.get("tool_evidence", {})
     result["context"]["tool_evidence"] = scientific(evidence)
     result["context"]["tool_evidence"]["features"] = {
@@ -266,27 +658,112 @@ class Observer:
         self.ready = False
 
     def get(self, path: str, params: Mapping[str, Any], deadline: float) -> dict[str, Any]:
+        status, body = self.fetch("GET", path, params, deadline)
+        if status >= 300:
+            response = httpx.Response(status, request=httpx.Request("GET", ORIGIN + path))
+            response.raise_for_status()
+        return body
+
+    def fetch(
+        self, method: str, path: str, values: Mapping[str, Any], deadline: float
+    ) -> tuple[int, dict[str, Any]]:
         if time.monotonic() >= deadline:
             raise ValueError("Observation deadline elapsed")
+        headers = {"Accept-Encoding": "identity", "Accept": "application/json"}
+        if method == "POST":
+            headers["X-Local-Operator"] = "1"
+            if len(json.dumps(dict(values), allow_nan=False).encode()) > 4096:
+                raise ValueError("Operator request exceeds its body bound")
         with self.client.stream(
-            "GET",
+            method,
             ORIGIN + path,
-            params=params,
+            params=values if method == "GET" else None,
+            json=dict(values) if method == "POST" else None,
             timeout=2,
-            headers={"Accept-Encoding": "identity", "Accept": "application/json"},
+            follow_redirects=False,
+            headers=headers,
         ) as response:
-            response.raise_for_status()
+            status = response.status_code
+            if method == "GET":
+                response.raise_for_status()
             if response.headers.get("content-encoding", "identity").lower() != "identity":
                 raise ValueError("Compressed observation refused before decoding")
             raw = bytearray()
-            for chunk in response.iter_bytes(chunk_size=65536):
+            for chunk in response.iter_bytes():
                 if time.monotonic() >= deadline or len(raw) + len(chunk) > HTTP_BYTES:
                     raise ValueError("Observation response exceeds its byte/time bound")
                 raw.extend(chunk)
         body = decode(raw)
         if not isinstance(body, dict):
             raise ValueError("Observed response is not an object")
-        return body
+        return status, body
+
+    def operator_write(
+        self, name: str, path: str, values: dict[str, Any], health: dict[str, Any], deadline: float
+    ) -> dict[str, Any]:
+        command = {"action": "pause"} if name == "research_pause" else values
+        operation: dict[str, Any] = {
+            "state": "unknown",
+            "committed": None,
+            "automatic_retry": False,
+            "request": command,
+            "child_cleanup_verified": None,
+        }
+        body: dict[str, Any] | None = None
+        observed: dict[str, Any] | None = None
+        try:
+            status, body = self.fetch("POST", path, command, deadline)
+            operation["http_status"] = status
+            if status in {403, 409, 422, 429}:
+                operation.update(state="refused", committed=False)
+            elif 200 <= status < 300:
+                if name == "research_run_diagnostic":
+                    observed = diagnostic_projection(body, values)
+                    operation.update(
+                        state="committed",
+                        committed=True,
+                        run_id=observed["id"],
+                        diagnostic_succeeded=observed["status"] == "completed",
+                    )
+                else:
+                    observed = flat(
+                        body, "enabled paper_pilot experimental execution_mode contract"
+                    )
+                    observed["readiness"] = flat(
+                        body.get("readiness"),
+                        "configured_enabled enabled ready qualified qualification_valid grant_id",
+                    )
+                    observed["activity"] = flat(
+                        body.get("activity"),
+                        "state reason checked_at pending_tools pending_data pending_outcomes "
+                        "queued",
+                    )
+                    if observed["readiness"].get("configured_enabled") is False:
+                        operation.update(state="paused", committed=True)
+            # Server503 can occur after saving a receipt or disabling the pilot.
+            # It is never evidence that the write did not happen.
+        except (ValueError, TypeError, KeyError, RecursionError, httpx.HTTPError) as exc:
+            operation["error_type"] = type(exc).__name__
+        if operation["state"] == "unknown":
+            operation["next_action"] = (
+                "Inspect the exact saved run_id if known or existing tool history; "
+                "do not auto-retry"
+                if name == "research_run_diagnostic"
+                else "Read current researcher status; acknowledgment does not establish "
+                "child cleanup"
+            )
+        result = {
+            "observed_at": time.time(),
+            "installed_commit": health["code_commit"],
+            "operation": operation,
+            "observed": observed,
+            "observed_payload_sha256": digest(body) if body is not None else None,
+            "authority": "Existing operator diagnostic/Pause routes only; no model, finance "
+            "or research enqueue",
+            "projection": "Selected receipt/status facts; full fetched values are hash-bound, "
+            "private data omitted",
+        }
+        return result
 
     def observe(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         model, path, _ = TOOLS[name]
@@ -299,12 +776,22 @@ class Observer:
             r"[a-f0-9]{40}", health["code_commit"]
         ):
             raise ValueError("Installed source identity unavailable")
+        if name in WRITE_TOOLS:
+            return self.operator_write(name, path, values, health, deadline)
         identity = values.pop("task_id", "")
+        if name == "research_diagnostic_result":
+            identity = str(values["run_id"])
         if name == "research_capabilities":
             values["include_history"] = False
-        body = self.get(path + identity, values, deadline)
+        body = self.get(
+            path + identity, {} if name == "research_diagnostic_result" else values, deadline
+        )
         if name == "research_task":
             observed = task_projection(body, identity)
+        elif name == "research_diagnostic_result":
+            observed = diagnostic_projection(body, values)
+        elif name == "research_paper_trials":
+            observed = paper_trials_projection(body)
         elif name == "research_status":
             if not isinstance(body.get("tasks"), list) or len(body["tasks"]) > 20:
                 raise ValueError("Observed history page is unavailable")
@@ -325,6 +812,17 @@ class Observer:
                 "state reason checked_at pending_tools pending_data pending_outcomes queued",
             )
             observed["history"] = flat(body.get("history"), "retained archived active hot_limit")
+            if "question_selection" in body:
+                selected = body["question_selection"]
+                observed["question_selection"] = flat(
+                    selected, "policy state reason experimental task"
+                )
+                if "evidence" in selected:
+                    observed["question_selection"]["evidence"] = (
+                        None
+                        if selected["evidence"] is None
+                        else question_selection(selected["evidence"])
+                    )
             readiness = flat(
                 body.get("readiness"),
                 "qualified qualification_valid ready enabled "
@@ -468,7 +966,8 @@ class Observer:
                         "description": description,
                         "inputSchema": model.model_json_schema(),
                         "annotations": {
-                            "readOnlyHint": True,
+                            "readOnlyHint": name not in WRITE_TOOLS,
+                            "idempotentHint": True,
                             "destructiveHint": False,
                             "openWorldHint": False,
                         },
@@ -489,8 +988,45 @@ class Observer:
             except ValidationError:
                 return error(-32602, "Arguments do not match the strict tool schema")
             try:
-                text = json.dumps(self.observe(name, args), ensure_ascii=False, allow_nan=False)
-                result = {"content": [{"type": "text", "text": text}], "isError": False}
+                value = self.observe(name, args)
+                text = json.dumps(value, ensure_ascii=False, allow_nan=False)
+                operation = value.get("operation", {})
+                result = {
+                    "content": [{"type": "text", "text": text}],
+                    "isError": name in WRITE_TOOLS
+                    and (
+                        operation.get("committed") is not True
+                        or name == "research_run_diagnostic"
+                        and (
+                            operation.get("diagnostic_succeeded") is not True
+                            or value.get("observed", {}).get("result_projection_available")
+                            is not True
+                        )
+                    ),
+                }
+                wire = {"jsonrpc": "2.0", "id": identity, "result": result}
+                if name in WRITE_TOOLS and (
+                    len(json.dumps(result).encode()) > OUTPUT_BYTES - 256
+                    or len(json.dumps(wire, ensure_ascii=False).encode()) + 1 > OUTPUT_BYTES
+                ):
+                    # Acknowledged writes retain their exact receipt/control identity
+                    # even when escaped facts do not fit the complete MCP envelope.
+                    observed = value.get("observed")
+                    if isinstance(observed, dict):
+                        value["observed"] = fields(
+                            observed,
+                            "id status tool symbol actor account request_id result_sha256 "
+                            "enabled paper_pilot experimental execution_mode contract",
+                        )
+                        if name == "research_run_diagnostic":
+                            value["observed"]["result_projection_available"] = False
+                            value["observed"]["result"] = None
+                        else:
+                            value["observed"] = {
+                                "readiness": fields(observed.get("readiness"), "configured_enabled")
+                            }
+                    text = json.dumps(value, ensure_ascii=False, allow_nan=False)
+                    result = {"content": [{"type": "text", "text": text}], "isError": True}
                 if len(json.dumps(result).encode()) > OUTPUT_BYTES - 256:
                     raise ValueError("Projected result exceeds its output bound")
             except (

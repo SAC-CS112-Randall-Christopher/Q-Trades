@@ -1,11 +1,34 @@
 # Current source follow-up — October 6, 2026, Local Codex observation (#66)
 
 Chris selected Local Codex first for the research oversight MCP connection.
+Chris subsequently authorized write access through Q-Trades for diagnosis and
+optimization. In this source increment, expose only the six existing bounded
+station diagnostics through their normal operator route, exact saved diagnostic
+receipt reads, and the existing research Pause action. Require explicit
+tool/symbol/account/start and a stable request ID for each diagnostic. Retain
+refused, failed and uncertain acknowledgments without automatic POST retries;
+Pause acknowledgment does not establish model-child cleanup. No Resume, question
+enqueue, financial mutation, SQL, arbitrary file/URL, grant/profile, training or
+model command belongs in this connector.
+
+Extend the passive views with recorded v7 question-selection evidence, its six
+public authority identities and hash-verified frozen comparison controls. Keep
+unknown, historical, unavailable and unqualified states truthful. The local
+connection owner may publish the independently reviewed standalone connector and
+upgrade only the exact known five-tool selected entry to its nine-tool successor,
+preserving unrelated configuration bytes. That connection setup does not require
+or authorize the separate catalog-only core API update or a paper-service restart.
+The source agent does not invoke operating APIs or publish installed artifacts.
+The additional read-only `research_paper_trials` view uses only the existing
+`/api/autonomous` snapshot to expose Lab policy/slots/account IDs, fixed trial
+contracts/results and bounded proposal status. It adds no proposal or financial
+control. Accepted proposals awaiting admission are not funded accounts.
+
 Reconcile this source draft with the approved main revision
 `d36a45a7bee7c79e02cb06ad4fee112b330f5c07`. Its separately approved prospective
 paper trial remains under its operating owner. This follow-up permits source,
-isolated QA and commit/push in PR #74; it does not authorize operating API calls,
-an installation/restart, installed observer/configuration changes, profile/grant
+isolated QA and commit/push in PR #74. Operating connection actions above remain
+with their authorized owner; no core installation/restart, profile/grant
 changes, model dispatch or external research/review activation.
 
 Keep source and isolated QA in the owning draft PR #74. Retain actual host
