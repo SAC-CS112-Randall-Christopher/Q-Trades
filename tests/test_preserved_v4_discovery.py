@@ -2,6 +2,7 @@
 
 import copy
 import json
+import time
 from collections import Counter
 from dataclasses import replace
 from decimal import Decimal as D
@@ -167,7 +168,9 @@ def test_supervisor_pause_and_resource_gates_precede_discovery(native_lab, monke
         native_lab.paper.state["paused"] = True
     else:
         native_lab.paper.state["autonomous_lab"]["proposals_paused"] = True
-    assert native_lab._step(START) is False
+    assert (
+        native_lab._step(START, copy.deepcopy(native_lab.paper.state), time.perf_counter()) is False
+    )
     assert phases == ["waiting" if gate == "resource" else "paused"]
 
 

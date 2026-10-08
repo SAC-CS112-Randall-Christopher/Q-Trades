@@ -25,6 +25,7 @@ def main():
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--web-dist", type=Path, required=True)
     parser.add_argument("--port", type=int, default=58975)
+    parser.add_argument("--audit-recovery", action="store_true")
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535 or args.port in {8780, 5432, 54544}:
         raise ValueError("A separate disposable QA port is required")
@@ -43,6 +44,7 @@ def main():
         "src/trading/pattern_scanner.py",
         "src/trading/pattern_charts.py",
         "src/trading/autonomous_lab.py",
+        "src/trading/paper_learning.py",
         "src/trading/autonomous_spec.py",
         "src/trading/redesign_strategy.py",
         "src/trading/rule_components.py",
@@ -51,6 +53,7 @@ def main():
         "src/trading/evidence_runtime.py",
         "src/trading/experiment_registry.py",
         "tests/test_pattern_role_worker.py",
+        "tests/test_pattern_next_method_worker.py",
         "tests/test_pattern_comparisons.py",
         "tests/test_pattern_scanner.py",
         "tests/test_daily_pattern_analyzer.py",
@@ -62,6 +65,7 @@ def main():
         "tests/browser/role_pattern_evidence_server.py",
         "tests/browser/role_pattern_evidence.cjs",
         "apps/web/src/RoleResearchPanel.tsx",
+        "apps/web/src/LearningPanel.tsx",
         "apps/web/src/PatternComparisonPanel.tsx",
         "apps/web/src/ScannerWorkspace.tsx",
         "apps/web/src/DailyAnalyzer.tsx",
@@ -96,6 +100,16 @@ def main():
     source = args.directory / "source"
     source.mkdir()
     f, worker, selection = build_pattern_worker_fixture(source, monkeypatch)
+    if args.audit_recovery:
+        from test_pattern_next_method_worker import MethodTransport
+
+        worker.transport = MethodTransport()
+        bars = f.paper.history["BTCUSD"]
+        f.paper.history["BTCUSD"] = []
+        assert worker.select_fresh_question(f.now) == 0
+        f.paper.history["BTCUSD"] = bars
+        f.now += 61
+        f.paper.state["last_tick"] = f.now
     pattern_transport = worker.transport
     financial_before = copy.deepcopy(f.paper.state)
     assert worker.select_fresh_question(f.now) == 1
@@ -112,6 +126,21 @@ def main():
     auxiliary = args.directory / "dashboard"
     auxiliary.mkdir()
     paper = runtime.__wrapped__(auxiliary, book.__wrapped__())
+    if args.audit_recovery:
+        from trading.autonomous_spec import RuleSpec
+
+        candidate = copy.deepcopy(paper.state["accounts"]["primary"])
+        candidate.update(
+            rule_spec=RuleSpec().model_dump(),
+            campaign_id="autonomous-lab",
+            lab_role="candidate",
+            lab_trial="qa-synthetic-scored-rule",
+            label="Synthetic rule QA",
+        )
+        paper.state["accounts"]["qa-rule"] = candidate
+        paper.state["autonomous_lab"] = {
+            "trials": {"qa-synthetic-scored-rule": {"score": {"outcome": "promising"}}}
+        }
     dashboard_before = copy.deepcopy(paper.state)
     calls_before = copy.deepcopy(f.calls)
     reads, posts = [], []
@@ -154,6 +183,7 @@ def main():
             "current_contract": worker._contract_version(),
             "role_status_unavailable": role_status_unavailable,
             "financial_database": False,
+            "audit_recovery": args.audit_recovery,
             "model_calls": 0,
             "source_hashes": before,
             "source_hashes_after": hashes(),

@@ -8,6 +8,7 @@ export type Learning = {incumbent:string;role_version:number;
   reports:Report[];promotions:{rolled_back:boolean;prior_incumbent:string;incumbent:string}[];
   accounts:{account:string;label:string;version:string;control:string|null;drift:string[];
     latest_decisions:Record<string,{reason?:string}>}[];
+  unavailable_handoffs?:{account:string;label:string;trial_id:string;rule_sha256:string;state:string;reason:string}[];
   changes:Record<string,string>};
 
 export function LearningPanel({data,unavailable}:{data?:Learning;unavailable:boolean}) {
@@ -40,6 +41,10 @@ export function LearningPanel({data,unavailable}:{data?:Learning;unavailable:boo
     <p>Exploratory results stay separate from qualified prospective comparisons. Paper incumbent role: {data?.incumbent ?? "primary"}. A designation changes the research role only; each account keeps its money, positions, policy and losses.</p>
     <p>The frozen policy requires 28 complete subsequent daily blocks, matched incumbent/cash/exposure controls, known costs, drawdown and stability limits, and a dependence/selection margin. Earlier inspected windows cannot become new validation. No trade-count quota.</p>
     {error && <p role="alert">{error}</p>}
+    {data?.unavailable_handoffs?.map(h=><article className="lab-result" key={h.account} aria-label="Unavailable qualification handoff">
+      <h4>{h.label}: qualification handoff unavailable</h4><p>{h.reason}</p>
+      <p>Trial {h.trial_id}. Frozen rule identity: {h.rule_sha256}.</p>
+    </article>)}
     {!a ? <p>No frozen prospective candidate has been admitted. The original trial and its history continue.</p> : <>
       <label>Forward candidate<select value={a.account} disabled={busy || !!retry} onChange={e=>setSelected(e.target.value)}>
         {data?.accounts.map(a=><option key={a.account} value={a.account}>{a.label}</option>)}</select></label>

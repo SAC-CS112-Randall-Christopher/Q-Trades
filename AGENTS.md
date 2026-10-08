@@ -1,3 +1,16 @@
+# Current audit repair — October 8, 2026, PR88 closed research loop
+
+Chris asks to pursue, verify and fix the supplied PR88 closed-loop audit. This
+isolated source lane is `codex/closed-loop-audit-88`, starting at audited PR88
+`9ac64e09d04b2fd4e055b8a8d26066172e6fc5f4`. Preserve PR88 and its parent stack.
+Use `docs/reviews/CLOSED_LOOP_AUDIT.md` for finding status and current verification.
+Repair through existing worker/comparison/financial owners and ordinary UI; keep
+original waits, rejections, evidence, attempts, policies and account history.
+Source/disposable checks, independent review, commit/push and a draft PR are in
+scope. New merge/install/restart, operating model dispatch or research activation
+retain their applicable explicit approval boundaries. Existing installation and
+old consumed operating grants do not supply authority for this successor.
+
 # Code-to-product map — current development entry point
 
 Chris requests a comprehensive Q-Trades code map usable as a development and

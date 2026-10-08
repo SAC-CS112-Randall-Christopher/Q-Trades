@@ -3,6 +3,8 @@
 import copy
 import json
 import sqlite3
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal as D
 from types import SimpleNamespace
@@ -297,6 +299,180 @@ def test_lost_ack_contention_and_no_retired_resurrection(pg_store, tmp_path):
     assert trial_id not in store.read()["autonomous_lab"]["trials"]
     assert store.reconcile()["balanced"]
     lab.registry.close()
+
+
+@pytest.mark.parametrize("stage", ["reserve", "fund"])
+@pytest.mark.parametrize("change", ["none", "pause", "resources", "stale_inputs", "policy"])
+def test_slow_optional_evaluation_yields_writer_and_rechecks_admission(
+    pg_store, tmp_path, monkeypatch, stage, change
+):
+    store, _ = pg_store
+    lab = make_lab(store, tmp_path)
+    proposal = lab.propose(START)
+    lab.submit(proposal, START)
+    if stage == "fund":
+        receipt = store.lab_reserve(START, proposal)
+        lab.inbox.update(proposal.request_id, "reserved", receipt["trial_id"])
+    initial_accounts = set(store.read()["accounts"])
+    entered, release = threading.Event(), threading.Event()
+    evaluate = lab.evaluate
+    holds = []
+    original_lock = store.transaction_lock
+
+    class MeasuredWriterLock:
+        """Measure outer acquisitions of the actual writer in this disposable test."""
+
+        local = threading.local()
+
+        def __enter__(self):
+            original_lock.acquire()
+            depth = getattr(self.local, "depth", 0)
+            if depth == 0:
+                self.local.started = time.perf_counter()
+            self.local.depth = depth + 1
+            return self
+
+        def __exit__(self, *error):
+            self.local.depth -= 1
+            if self.local.depth == 0:
+                holds.append(time.perf_counter() - self.local.started)
+            original_lock.release()
+
+    monkeypatch.setattr(store, "transaction_lock", MeasuredWriterLock())
+
+    def delayed(proposal, now):
+        result = evaluate(proposal, now)
+        entered.set()
+        assert release.wait(10), "Main test did not release its optional evaluation"
+        return result
+
+    monkeypatch.setattr(lab, "evaluate", delayed)
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            optional = pool.submit(lab.step, START + 1)
+            try:
+                assert entered.wait(5)
+                # A second optional call cannot consume work or inference allowance.
+                assert not lab.step(START + 1)
+
+                def financial():
+                    def apply(engine):
+                        engine.tick({"BTCUSD": frame(START + 1)}, {})
+                        if change == "pause":
+                            finance.control(engine, "pause_proposals")
+                        elif change == "policy":
+                            engine.state["autonomous_lab"]["policy"]["daily_trials"] += 1
+                        engine.emit("audit_concurrent_tick", "system", {"synthetic_qa": True})
+
+                    lab.paper._transact_state(START + 1, apply)
+
+                started = time.perf_counter()
+                pool.submit(financial).result(timeout=3)
+                tick_seconds = time.perf_counter() - started
+                assert not optional.done(), "Financial completion must precede optional release"
+                if change == "resources":
+                    lab.can_research = lambda: False
+                elif change == "stale_inputs":
+                    lab.paper.books = {"BTCUSD": frame(START - 10)}
+            finally:
+                release.set()
+            worked = optional.result(timeout=5)
+        assert worked is (change == "none"), lab.last_error
+        state = store.read()
+        # read() adds database revision metadata; transact() publishes engine state.
+        assert lab.paper.state == {k: v for k, v in state.items() if k != "revision"}
+        assert state["last_tick"] == START + 1
+        if change != "none":
+            assert set(state["accounts"]) == initial_accounts
+            assert lab.inbox.get(proposal.request_id)["status"] == (
+                "blocked" if stage == "reserve" else "reserved"
+            )
+            assert not state["autonomous_lab"]["trials"] if stage == "reserve" else True
+        else:
+            assert lab.inbox.get(proposal.request_id)["status"] == (
+                "reserved" if stage == "reserve" else "funded"
+            )
+        assert store.reconcile()["balanced"]
+        (tmp_path / "writer-continuity.json").write_text(
+            json.dumps(
+                {
+                    "optional_stage": stage,
+                    "changed": change,
+                    "financial_tick_seconds": tick_seconds,
+                    "writer_lock_holds_seconds": holds,
+                    "financial_commit_before_optional_release": True,
+                    "balanced": True,
+                    "synthetic_qa": True,
+                    "operating_acceptance": False,
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+    finally:
+        release.set()
+        lab.registry.close()
+
+
+def test_operator_retirement_during_optional_read_does_not_kill_supervisor(
+    pg_store, tmp_path, monkeypatch
+):
+    store, _ = pg_store
+    lab = make_lab(store, tmp_path, horizon_seconds=3600)
+    trial = admit(lab, START)
+    at = trial["review_at"]
+    tick_lab(lab, at, coverage=True)
+    assert lab.paper.state["autonomous_lab"]["trials"][trial["id"]]["sealed"]
+    original = lab.inbox.unfinished_funded
+
+    def retired_between_snapshot_and_review():
+        def retire(engine):
+            finance.retire_trial(engine, trial["id"], "synthetic concurrent operator")
+            engine.tick({"BTCUSD": frame(at)}, {})
+
+        lab.paper._transact_state(at, retire)
+        assert trial["id"] not in store.read()["autonomous_lab"]["trials"]
+        return []  # The earlier read did not yet observe the retirement acknowledgment.
+
+    monkeypatch.setattr(lab.inbox, "unfinished_funded", retired_between_snapshot_and_review)
+    try:
+        assert lab.step(at), lab.last_error
+        assert "changed before review" in lab.paper.state["autonomous_lab"]["reason"]
+        monkeypatch.setattr(lab.inbox, "unfinished_funded", original)
+        tick_lab(lab, at + 2)
+        assert lab.step(at + 2), lab.last_error
+        assert lab.inbox.get(trial["proposal_id"])["status"] == "completed"
+        assert lab.paper.state == {k: v for k, v in store.read().items() if k != "revision"}
+        assert store.reconcile()["balanced"]
+    finally:
+        lab.registry.close()
+
+
+def test_pause_during_slow_proposal_preparation_prevents_publication(
+    pg_store, tmp_path, monkeypatch
+):
+    store, _ = pg_store
+    lab = make_lab(store, tmp_path)
+    proposal = lab.propose(START)
+    original = lab.evaluate
+
+    def pause_after_evaluation(proposal, now):
+        result = original(proposal, now)
+        lab.control("pause_proposals", None)
+        return result
+
+    monkeypatch.setattr("trading.autonomous_lab.time.time", lambda: START)
+    monkeypatch.setattr(lab, "evaluate", pause_after_evaluation)
+    try:
+        from trading.autonomous_lab import InputWait
+
+        with pytest.raises(InputWait, match="pause"):
+            lab.submit(proposal, START)
+        assert not lab.inbox.page()["proposals"]
+        assert lab.paper.state["autonomous_lab"]["proposals_paused"]
+        assert store.reconcile()["balanced"]
+    finally:
+        lab.registry.close()
 
 
 def test_protection_pauses_budget_periods_and_missing_data_are_durable(pg_store, tmp_path):

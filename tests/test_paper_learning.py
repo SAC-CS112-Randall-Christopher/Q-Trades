@@ -6,6 +6,7 @@ from test_numerical_candidates import fixture_artifact
 from test_paper_engine import START
 from test_paper_store import pg_store as _pg_store
 
+from trading.autonomous_spec import RuleSpec
 from trading.experiment_registry import fingerprint
 from trading.paper_challengers import admit
 from trading.paper_economics import new_benchmark
@@ -17,6 +18,7 @@ from trading.paper_learning import (
     matched_control,
     retain_report,
     rollback,
+    snapshot,
 )
 
 pg_store = _pg_store
@@ -75,6 +77,33 @@ def test_matched_control_is_cash_isolated_idempotent_and_uses_declared_universe(
     }
     assert engine.state["accounts"][control]["cash"] == "100"
     engine.assert_invariants()
+
+
+def test_scored_rule_candidate_exposes_missing_handoff_without_qualification():
+    engine, numerical, _ = candidate_state()
+    rule = copy.deepcopy(engine.state["accounts"]["primary"])
+    rule.update(
+        rule_spec=RuleSpec().model_dump(),
+        campaign_id="autonomous-lab",
+        lab_role="candidate",
+        lab_trial="fixture-rule-trial",
+        label="Retained rule fixture",
+    )
+    engine.state["accounts"]["rule-fixture"] = rule
+    engine.state["autonomous_lab"] = {
+        "trials": {"fixture-rule-trial": {"score": {"outcome": "promising"}}}
+    }
+    before = copy.deepcopy(engine.state)
+    view = snapshot(engine.state)
+    assert [a["account"] for a in view["accounts"]] == [numerical]
+    handoff = view["unavailable_handoffs"][0]
+    assert handoff["account"] == "rule-fixture"
+    assert handoff["state"] == "qualification_handoff_not_implemented"
+    assert handoff["rule_sha256"] == fingerprint(rule["rule_spec"])
+    assert "More elapsed time cannot" in handoff["reason"]
+    with pytest.raises(ValueError, match="numerical"):
+        matched_control(engine, "rule-fixture")
+    assert engine.state == before
 
 
 def test_insufficient_synthetic_reused_negative_and_exceptional_data_never_promotes():

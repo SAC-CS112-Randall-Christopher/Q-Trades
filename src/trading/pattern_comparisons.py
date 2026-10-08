@@ -34,6 +34,8 @@ RESEARCH_ONLY_REASON = (
 )
 MAX_REQUESTS = 512
 MAX_REFERENCES = 16
+MAX_CANDIDATE_DAYS = 7
+MAX_CANDIDATES = 32
 TRAINING_ORIGINS = (
     "Native historical pattern-map disclosure",
     "Exact retained native pattern input slice, including continuing observations",
@@ -443,38 +445,53 @@ class PatternComparisons:
         }
 
     def candidate(self, now: float) -> PatternFindingSelection | None:
-        """One bounded original native finding from the latest published daily capture."""
+        """Compatibility reader for the first retained research candidate."""
+        candidates = self.candidates(now)
+        return candidates[0] if candidates else None
+
+    def candidates(self, now: float) -> list[PatternFindingSelection]:
+        """Bounded historical motivations, never a claim of current signal eligibility."""
         if not math.isfinite(now) or now <= 0:
             raise ValueError("Invalid candidate observation time")
         with self.registry.lock:
-            row = self.registry.db.execute(
-                "SELECT body FROM pattern_daily_days ORDER BY seq DESC LIMIT 1"
-            ).fetchone()
-        if row is None:
-            return None
-        day = json.loads(row["body"])
-        if day["generated_at"] > now:
-            return None
-        choices = [
-            evidence
-            for pick in day["picks"]
-            if pick["symbol"] == "BTCUSD" and pick["basis"] == "recognized_setup"
-            for evidence in pick["evidence"]
-            if evidence["timeframe"] == "5m"
-            and evidence["kind"] in {"patterns", "alerts"}
-            and evidence["body"]["kind"] in MAPPING["detector_kinds"]
-            and evidence["body"].get("volume_confirmed") is True
-        ]
-        if not choices:
-            return None
-        chosen = max(choices, key=lambda item: item["seq"])
-        return PatternFindingSelection(
-            daily_id=day["id"],
-            symbol="BTCUSD",
-            timeframe="5m",
-            event_kind=chosen["kind"],
-            event_seq=chosen["seq"],
-        )
+            days = self.registry.db.execute(
+                "SELECT body FROM pattern_daily_days WHERE day BETWEEN ? AND ? "
+                "ORDER BY seq DESC LIMIT ?",
+                (int(now // 86400) - MAX_CANDIDATE_DAYS + 1, int(now // 86400), MAX_CANDIDATE_DAYS),
+            ).fetchall()
+        result: list[PatternFindingSelection] = []
+        seen: set[tuple[str, str, int]] = set()
+        for row in days:
+            day = json.loads(row["body"])
+            if day["generated_at"] > now:
+                continue
+            choices = [
+                evidence
+                for pick in day["picks"]
+                if pick["symbol"] == "BTCUSD" and pick["basis"] == "recognized_setup"
+                for evidence in pick["evidence"]
+                if evidence["timeframe"] == "5m"
+                and evidence["kind"] in {"patterns", "alerts"}
+                and evidence["body"]["kind"] in MAPPING["detector_kinds"]
+                and evidence["body"].get("volume_confirmed") is True
+            ]
+            for chosen in sorted(choices, key=lambda item: item["seq"], reverse=True):
+                identity = (day["campaign_id"], chosen["kind"], chosen["seq"])
+                if identity in seen:
+                    continue
+                seen.add(identity)
+                result.append(
+                    PatternFindingSelection(
+                        daily_id=day["id"],
+                        symbol="BTCUSD",
+                        timeframe="5m",
+                        event_kind=chosen["kind"],
+                        event_seq=chosen["seq"],
+                    )
+                )
+                if len(result) == MAX_CANDIDATES:
+                    return result
+        return result
 
     def current_observation(
         self,

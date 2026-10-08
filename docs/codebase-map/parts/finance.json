@@ -283,7 +283,25 @@
       "id": "lab-step",
       "path": "src/trading/autonomous_lab.py",
       "symbol": "AutonomousLab._step",
-      "description": "Guarded recovery, reserve/fund, score and discovery loop."
+      "description": "Optional evaluation outside the financial writer; guarded recovery, reserve/fund and score publication."
+    },
+    {
+      "id": "lab-financial-admission",
+      "path": "src/trading/autonomous_lab.py",
+      "symbol": "AutonomousLab._financial_admission",
+      "description": "Fresh policy, pause, resource, input and finite guards at financial commit boundaries."
+    },
+    {
+      "id": "paper-qualification-handoffs",
+      "path": "src/trading/paper_learning.py",
+      "symbol": "snapshot",
+      "description": "Numerical qualification plus explicit unavailable RuleSpec handoff disclosure."
+    },
+    {
+      "id": "pattern-candidates",
+      "path": "src/trading/pattern_comparisons.py",
+      "symbol": "PatternComparisons.candidates",
+      "description": "At most 32 distinct supported events across seven recent daily captures."
     },
     {
       "id": "paper-forward-comparison",
@@ -677,7 +695,7 @@
     {
       "id": "autonomous-lab-tests",
       "path": "tests/test_autonomous_lab.py",
-      "description": "Financial trials, adverse outcomes, retention, contention and gating tests."
+      "description": "Financial trials, measured writer continuity, stale admission, retirement and publication races."
     },
     {
       "id": "preserved-v4-discovery-tests",
@@ -912,6 +930,7 @@
         "lab-policy",
         "lab-slots",
         "lab-finite-dispatch",
+        "lab-financial-admission",
         "autonomous-lab-tests"
       ],
       "symptoms": [
@@ -967,6 +986,7 @@
       "section": "fixed-scanner-motivated-methods",
       "references": [
         "pattern-describe",
+        "pattern-candidates",
         "pattern-prepare",
         "pattern-current-observation",
         "pattern-methods",
@@ -989,6 +1009,7 @@
         "paper-economics",
         "paper-forward-comparison",
         "paper-learning-report",
+        "paper-qualification-handoffs",
         "paper-designate",
         "paper-designation-rollback",
         "paper-learning-tests"
