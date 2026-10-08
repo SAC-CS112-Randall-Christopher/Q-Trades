@@ -74,6 +74,7 @@ configuration, operating data and model files are excluded from Git.
 | Qualification/accounting and archive checks | 85 passed in `pg-01/qualification-03.xml` | Real disposable PostgreSQL; synthetic inputs and clocks, original identities, archive refusal, separate cash, capacity, changed configuration/implementation and exact admission recovery. |
 | Broad Windows native gate | 1,995 passed, one skipped, two explicitly deselected; 686.53 seconds in `pg-01/native-complete-02.xml` | Exact first job selectors in `windows-native.yml`, with explicit disposable PostgreSQL and Windows PowerShell. This is distinct from slower recovery/browser/packaging jobs. |
 | Compiled browser workflow | All six acceptance groups passed in `browser-11/workflow.json`; desktop/narrow screenshots inspected | Normal local polling enabled; independently driven financial/research owners; native PostgreSQL/scanner/registry, synthetic model callbacks/inputs/clock/resources. Original journal prefix preserved, balanced journal, zero model/tokenizer calls, unchanged run inputs. |
+| Existing saved-chart browser recovery | All 16 groups passed in `scanner-charts-01/receipt.json` after updating the old navigation expectation | Compiled UI and actual scanner registry with synthetic native inputs, no financial database. Exact retained-history destination, narrow geometry, original coverage and zero browser writes remain checked; owned server and browser closure confirmed. |
 | Static/frontend/map checks | Frontend build passed; whole-repository Ruff passed; mypy passed for 120 source/tool files; 18 map-tool tests passed with one Windows symlink-privilege skip; reviewed map refresh/check passed | Map contains 422 source files, 467 reviewed references and 61 tasks. Build retains its >500 KiB chunk warning. The broad native skip also requires Windows symlink privilege. |
 | Independent source review | No remaining material finding after repaired findings | Read-only Codex review of controls, archival/concurrency, financial qualification, exact context and Overview. Test execution is separate. |
 | Draft/exact-head hosted checks | Publication and hosted status are reported separately with the exact published revision | Neither local proof nor an earlier branch's CI substitutes for hosted checks of the published head. |
@@ -92,6 +93,20 @@ an assertion expecting the existing disabled designation button to be absent.
 Later passing runs do not relabel these failures. The new independent
 `coherent-product-browser` CI job uses owned disposable PostgreSQL and normal
 polling; its hosted result remains a separate proof stage.
+
+Initial published revision `b773354870338ab864f26c844d16ebc869d03bc5`
+passed eight hosted checks, including the coherent-product browser, PostgreSQL,
+native, persistent-research and ownership gates. The existing browser-monitoring
+job failed because its saved-chart test expected retained trial history at the
+former `#research` route. The compiled destination is now
+`#accounts?view=comparisons`, which contains that history. Independent review
+confirmed the routing, the exact-link expectation and receipt were corrected,
+and the fresh local 16-group rerun passed without writes, external requests or
+model calls. The original hosted failure is retained; the corrected published
+head still requires its own complete hosted checks. The initial Windows hosted
+native job reported 1,733 passed, 263 skipped and two deselected; PostgreSQL-only
+cases are covered by the separate hosted database job and the local native run
+with its explicit disposable database, rather than counted as Windows CI passes.
 
 Independent review also corrected the QA driver's native-work cancellation and
 the hosted job's failure cleanup: native work drains before its owners close;

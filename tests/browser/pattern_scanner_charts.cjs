@@ -398,9 +398,9 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     const table = page.getByRole("table", { name: "Current paper accounts", exact: true });
     await table.getByText("QA lab candidate", { exact: true }).waitFor(); await table.getByText("QA lab reference", { exact: true }).waitFor();
     assert.equal(await table.locator("tbody tr").count(), 2);
-    assert.equal(await page.getByRole("link", { name: "Retained trial history", exact: true }).getAttribute("href"), "#research");
+    assert.equal(await page.getByRole("link", { name: "Retained trial history", exact: true }).getAttribute("href"), "#accounts?view=comparisons");
     assert(await page.getByText(/retire after becoming flat/).isVisible());
-    groups.push({ name: phase, synthetic_autonomous_lab_projection_count: 2, archived_financial_payload_acceptance: false, existing_navigation: "#research" });
+    groups.push({ name: phase, synthetic_autonomous_lab_projection_count: 2, archived_financial_payload_acceptance: false, existing_navigation: "#accounts?view=comparisons" });
 
     phase = "bounded-mobile-and-zero-browser-writes";
     await page.setViewportSize({ width: 390, height: 844 }); await page.goto(`${origin}/#markets`); await grid().waitFor();
