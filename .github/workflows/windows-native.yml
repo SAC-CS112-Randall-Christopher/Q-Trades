@@ -22,7 +22,8 @@ concurrency:
 jobs:
   native:
     runs-on: windows-2025
-    timeout-minutes: 8
+    # Measured pytest is 485s; retain setup/cleanup room within a finite CI budget.
+    timeout-minutes: 12
     defaults:
       run:
         shell: powershell
