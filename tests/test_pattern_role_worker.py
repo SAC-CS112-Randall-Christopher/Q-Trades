@@ -11,6 +11,8 @@ from test_autonomous_lab import bars_at, close_window, make_lab, tick_lab
 from test_daily_pattern_analyzer import advance, finish
 from test_experiment_registry import plan
 from test_paper_pilot_worker import PilotFixture
+from test_paper_pilot_worker import question as legacy_question
+from test_paper_pilot_worker import workspace as workspace
 from test_paper_store import pg_store as pg_store
 from test_pattern_comparisons import build_fixture
 from test_pattern_scanner import row
@@ -29,8 +31,11 @@ from trading.lab_role_contract import (
     validate,
 )
 from trading.local_role_model import LocalRoles
+from trading.paper_economics import sample
+from trading.paper_engine import account
 from trading.pattern_comparisons import PatternComparisons
 from trading.research_storage import reopen_evidence, save_plan
+from trading.role_evidence import outcome_summary, pattern_followup_outcome
 from trading.role_worker import PATTERN_QUESTION_POLICY, RoleWorker
 
 
@@ -193,6 +198,129 @@ def test_actual_v8_packet_fits_unchanged_9000_conservative_context_guard(fixture
     assert measured["reserved_total"] <= 9000
 
 
+def restore_scored_body(projected):
+    body = copy.deepcopy(projected["body"])
+    if "execution_samples" in body:
+        samples = body.pop("execution_samples")
+        body["candidate_sample"] = samples["common"] | samples["candidate"]
+        body["reference_sample"] = samples["common"] | samples["reference"]
+    return body
+
+
+def test_v8_followup_preserves_execution_unknowns_and_exact_method_without_context_mutation(
+    fixture,
+):
+    f, worker, _ = fixture
+    worker.transport.action = "propose_experiment"
+    selected = select(f, worker)
+    assert asyncio.run(worker.step(f.now))
+    saved = worker.get(selected["id"])
+    # Actual native selection/idea callback supplies the frozen proposal. The
+    # following scored body is explicitly a projection fixture, not a trial.
+    candidate = account("projection-candidate", f.now)
+    reference = account("projection-reference", f.now)
+    candidate["fees"], reference["fees"] = "0.12", "0.08"
+    reference["valuation_issues"] = {"BTCUSD": "Synthetic missing executable mark"}
+    body = {
+        "trial_id": "projection-only-trial",
+        "proposal_id": saved["proposal"]["request_id"],
+        "outcome": "data_blocked",
+        "reason": "Incomplete coverage is not economic failure",
+        "available_at": f.now + 86400,
+        "window_start": f.now,
+        "window_end": f.now + 86400,
+        "coverage_seconds": 2.0,
+        "net_after_operating_usd": {"candidate": None, "reference": None},
+        "delta_usd": None,
+        "passive_usd": None,
+        "cash_usd": None,
+        "operating_each_usd": "0.5",
+        "candidate_sample": sample(candidate, f.now),
+        "reference_sample": sample(reference, f.now),
+        "dependence": "Related trials are correlated",
+        "qualification": "Exploration only; no promotion",
+        "fees_treatment": "Executable equity embeds fees once",
+        "additional_unknown": None,
+    }
+    saved["stage"] = "followup"
+    saved["result"] = {"outcome": {"id": 1, "at": body["available_at"], "body": body}}
+    original = copy.deepcopy(saved)
+    attempts, state = rows(worker, "role_attempts"), copy.deepcopy(f.paper.state)
+    role, packet = worker._packet(saved)
+    projected = packet["evidence"]["e1"]
+    assert packet_json(restore_scored_body(projected)) == packet_json(body)
+    assert projected["source_sha256"] == fingerprint(saved["result"]["outcome"])
+    controls = packet["fixed_comparison"]["p0"]
+    assert controls["candidate"] == "breakout-retest-v1"
+    assert controls["reference"] == "cost-breakout-v1"
+    assert controls["method_sha256"] == fingerprint(saved["proposal"])
+    assert controls["detail_sha256"] == fingerprint(saved["context"]["fixed_comparison"]["p0"])
+    assert (
+        worker.transport.preflight(role, packet, worker.transport.admit(role))["reserved_total"]
+        <= 9000
+    )
+    answer = abstention()
+    answer["evidence_ids"] = ["e1", "e3"]
+    assert validate(role, answer, packet, PATTERN_VERSION)
+    assert saved == original and worker.get(saved["id"])["context"] == original["context"]
+    assert rows(worker, "role_attempts") == attempts and f.paper.state == state
+    assert not rows(worker, "lab_proposals") and len(worker.transport.calls) == 1
+
+
+@pytest.mark.parametrize("missing", ["candidate", "reference", "both", "reserved_key"])
+def test_v8_followup_keeps_missing_samples_and_existing_scored_fields_literal(missing):
+    body = {"outcome": "data_blocked", "dependence": None, "unknown": None}
+    if missing != "candidate" and missing != "both":
+        body["candidate_sample"] = {"fresh": False, "net_pnl": None}
+    if missing != "reference" and missing != "both":
+        body["reference_sample"] = None
+    if missing == "reserved_key":
+        body["reference_sample"] = {"fresh": False, "net_pnl": None}
+        body["execution_samples"] = {"original_recorded_field": None}
+    original = {"id": 2, "at": 1800000000.0, "body": body}
+    saved = copy.deepcopy(original)
+    projected = pattern_followup_outcome(original)
+    assert projected["body"] == body and original == saved
+    assert projected["source_sha256"] == fingerprint(original)
+
+
+def test_v8_followup_sample_sharing_preserves_json_types_and_absent_fields():
+    body = {
+        "candidate_sample": {"fresh": False, "value": 1, "only_candidate": None},
+        "reference_sample": {"fresh": False, "value": True},
+        "outcome": "data_blocked",
+    }
+    projected = pattern_followup_outcome({"id": 3, "at": 1800000000.0, "body": body})
+    assert packet_json(restore_scored_body(projected)) == packet_json(body)
+    assert projected["body"]["execution_samples"]["common"] == {"fresh": False}
+
+
+@pytest.mark.parametrize("version", [VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION])
+def test_old_followup_packets_keep_original_outcome_projection(workspace, monkeypatch, version):
+    worker, clock, _ = workspace
+    worker.transport.role_contract = version
+    original = worker.enqueue(legacy_question(), clock[0])
+    saved = copy.deepcopy(original)
+    saved["stage"] = "followup"
+    outcome = {
+        "id": 1,
+        "at": clock[0],
+        "body": {
+            "outcome": "data_blocked",
+            "candidate_sample": {"fresh": False, "net_pnl": None},
+            "reference_sample": None,
+            "dependence": "Related trials are correlated",
+        },
+    }
+    saved["result"] = {"outcome": outcome}
+    for name in ("pattern_followup_controls", "pattern_followup_outcome"):
+        monkeypatch.setattr("trading.role_worker." + name, lambda *a: pytest.fail("v8-only hook"))
+    _, packet = worker._packet(saved)
+    assert packet["evidence"]["e1"] == outcome_summary(outcome)
+    assert "execution_samples" not in packet["evidence"]["e1"]["body"]
+    assert worker.get(original["id"]) == original and not rows(worker, "role_attempts")
+
+
 def test_republished_same_event_identity_ignores_new_daily_snapshot_identity(fixture):
     f, worker, selection = fixture
     finding = worker.pattern_comparisons.describe(selection)["finding"]
@@ -309,6 +437,7 @@ def test_actual_disposable_engine_trial_outcome_and_followup_without_model(
     f, worker, _ = build_pattern_worker_fixture(
         tmp_path / "native", monkeypatch, "propose_experiment"
     )
+    (tmp_path / "financial").mkdir()
     financial = make_lab(
         store, tmp_path / "financial", now=f.now, holding_horizons=("medium",), horizon_seconds=3600
     )
@@ -342,9 +471,26 @@ def test_actual_disposable_engine_trial_outcome_and_followup_without_model(
         submitted = worker.get(saved["id"])
         assert submitted["stage"] == "outcome"
         assert len(rows(worker, "lab_proposals")) == 1
+        # A configured archive has to publish an observed recording receipt;
+        # preparation alone grants no trial admission. Exercise that refusal.
+        tick_lab(controller, f.now)
+        assert controller.step(f.now) is False
+        blocked = paper.state["autonomous_lab"]
+        assert blocked["phase"] == "capture_blocked"
+        assert not blocked["trials"]
+        f.now = max(f.now + 2, blocked["next_action_at"])
         for _ in range(32):
             tick_lab(controller, f.now)
-            controller.step(f.now)
+            # The disposable archive is the actual already-initialized owner.
+            # Publish its measured snapshot using the recorder's cached shape,
+            # without inventing coverage or bypassing the admission guard.
+            recording = f.storage.snapshot()
+            assert recording["state"] == "recording"
+            assert recording["plan"] == f.plan.model_dump()
+            (f.registry.path.parent / "research-storage-status.json").write_text(
+                json.dumps(recording | {"receipt_at": f.now}), encoding="utf-8"
+            )
+            worked = controller.step(f.now)
             active = [
                 t
                 for t in paper.state["autonomous_lab"]["trials"].values()
@@ -352,8 +498,17 @@ def test_actual_disposable_engine_trial_outcome_and_followup_without_model(
             ]
             if active:
                 break
-            f.now += 2
-        assert len(active) == 1, controller.last_error
+            assert not controller.last_error, controller.last_error
+            f.now = (
+                f.now + 2
+                if worked
+                else max(f.now + 2, paper.state["autonomous_lab"]["next_action_at"])
+            )
+        assert len(active) == 1, {
+            "error": controller.last_error,
+            "lab": paper.state["autonomous_lab"],
+            "inbox": controller.inbox.page(),
+        }
         trial = active[0]
         assert trial["contract"]["proposal"]["strategy"]["family"] == "breakout-retest-v1"
         assert trial["contract"]["proposal"]["reference"]["family"] == "cost-breakout-v1"
@@ -361,12 +516,19 @@ def test_actual_disposable_engine_trial_outcome_and_followup_without_model(
         outcome = close_window(controller, trial, "data_blocked")
         f.now = outcome["available_at"] + 2
         assert asyncio.run(worker.step(f.now))
+        original_outcome = copy.deepcopy(worker.get(saved["id"])["result"]["outcome"])
         f.now += 1
         assert asyncio.run(worker.step(f.now)), worker.get(saved["id"])
         completed = worker.get(saved["id"])
         assert completed["status"] == "done" and completed["stage"] == "complete"
         assert completed["result"]["outcome"]["body"]["outcome"] == "data_blocked"
         assert completed["result"]["followup"]["action"] == "no_change"
+        assert completed["result"]["outcome"] == original_outcome
+        followup_packet = worker.transport.calls[-1][1]
+        assert packet_json(restore_scored_body(followup_packet["evidence"]["e1"])) == packet_json(
+            original_outcome["body"]
+        )
+        assert completed["context"] == saved["context"]
         assert len(rows(worker, "role_attempts")) == 3  # Three deterministic software callbacks.
         assert rows(worker, "research_lessons")
         assert worker.select_followups()["selected"] == 0

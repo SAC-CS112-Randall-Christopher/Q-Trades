@@ -53,6 +53,8 @@ from trading.role_evidence import (
     outcome_summary,
     pattern_controls,
     pattern_feature,
+    pattern_followup_controls,
+    pattern_followup_outcome,
     pattern_packet,
     pattern_summary,
 )
@@ -1568,8 +1570,16 @@ class RoleWorker:
             packet["question_selection"] = task["context"]["question_selection"]
         if version == PATTERN_VERSION:
             packet["fixed_comparison"] = {
-                "p0": pattern_controls(task["context"]["fixed_comparison"]["p0"])
+                "p0": (
+                    pattern_followup_controls(
+                        task["context"]["fixed_comparison"]["p0"], task["proposal"]
+                    )
+                    if task["stage"] == "followup"
+                    else pattern_controls(task["context"]["fixed_comparison"]["p0"])
+                )
             }
+            if task["stage"] == "followup":
+                packet["evidence"]["e1"] = pattern_followup_outcome(task["result"]["outcome"])
             packet["evidence"]["e3"] = pattern_packet(task["context"]["pattern_comparison"])
             if role == "reviewer":
                 evaluation = task["evaluation"]

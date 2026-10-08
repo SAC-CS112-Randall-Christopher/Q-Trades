@@ -49,6 +49,15 @@ or place an order. The recorded outcome, including low information or data block
 drives existing followup and teaching; a successful software fixture is not a
 successful trading hypothesis.
 
+The v8 followup references the exact frozen comparison and proposal instead of
+repeating the earlier preparation controls. Its scored evidence preserves the
+original outcome, null economic values, costs, coverage, candidate/reference
+execution samples, qualification and dependence disclosures. The complete scored
+event stays unchanged in the task and lesson; its identity and hash bind the
+model-facing projection. A matched before/after packet check uses the same retained
+event and unchanged context guard. This is a packet repair, not a measured runtime
+speedup or a trading-capacity result.
+
 ## Explicit contract and preserved authority
 
 The successor is `reviewed-rule-role-v8` with explicit
@@ -66,9 +75,10 @@ transport dispatch. Activation, financial monitoring, balance, paper freshness,
 input eligibility, storage/recording reserves, ownership and model resource limits
 remain protected. The real PEFT profile retains its 8,192-token context and
 1,024-token output limit. Its existing conservative byte preflight and the native
-runner's token guard remain authoritative. A synthetic 9,000-byte fixture separately
-checks the compact model-facing summary with output/template reserves; it references
-retained full evidence instead of transmitting raw archives. That fixture does not
+runner's token guard remain authoritative. A synthetic 9,000-context fixture uses
+UTF-8 bytes as a conservative input-token bound, plus output/template reserves. It
+checks the compact model-facing summary, which references retained full evidence
+instead of transmitting raw archives. That fixture does not
 measure actual tokenizer fit, model capacity or coexistence. Those remain a separate
 proof stage.
 

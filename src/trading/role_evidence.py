@@ -174,6 +174,49 @@ def pattern_controls(fixed: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def pattern_followup_controls(fixed: dict[str, Any], proposal: dict[str, Any]) -> dict[str, Any]:
+    """Identify the executed method; full fixed controls remain in the original task."""
+    return {
+        "candidate": fixed["candidate"]["proposal"]["strategy"]["family"],
+        "reference": fixed["reference"]["proposal"]["strategy"]["family"],
+        "proposal_id": proposal["request_id"],
+        "method_sha256": fingerprint(proposal),
+        "detail_sha256": fingerprint(fixed),
+        "detail": "Original fixed controls and implementation hashes retained in task context",
+    }
+
+
+def pattern_followup_outcome(outcome: dict[str, Any]) -> dict[str, Any]:
+    """Preserve every scored fact, sharing only exactly equal execution-sample fields."""
+    body = dict(outcome["body"])
+    candidate, reference = body.get("candidate_sample"), body.get("reference_sample")
+    if (
+        isinstance(candidate, dict)
+        and isinstance(reference, dict)
+        and "execution_samples" not in body
+    ):
+        common = {
+            key: value
+            for key, value in candidate.items()
+            if key in reference and fingerprint(value) == fingerprint(reference[key])
+        }
+        body.pop("candidate_sample")
+        body.pop("reference_sample")
+        body["execution_samples"] = {
+            "common": common,
+            "candidate": {key: value for key, value in candidate.items() if key not in common},
+            "reference": {key: value for key, value in reference.items() if key not in common},
+            "encoding": "Each original sample is common overlaid by its named fields",
+        }
+    return {
+        "id": outcome["id"],
+        "at": outcome["at"],
+        "body": body,
+        "source_sha256": fingerprint(outcome),
+        "detail": "Full scored event retained in task/lesson; no scored fields omitted",
+    }
+
+
 def pattern_feature(feature: dict[str, Any]) -> dict[str, Any]:
     keys = ("eligible", "reason", "atr", "modeled_hurdle_bps", "cost_gate")
     return {key: feature[key] for key in keys if key in feature} | {
