@@ -1,4 +1,45 @@
-# Current source follow-up — October 7, 2026, saved scanner charts (#66)
+# Current source follow-up — October 7, 2026, pattern research and preparation (#66)
+
+Chris asks which chart patterns Q-Trades should recognize. Verify primary
+research, distinguish study results from this project's detector definitions,
+and continue the existing daily-analyzer lane toward a genuine supported
+experiment. A bounded preparation may bind an immutable BTCUSD/native-5m
+breakout or retest finding to the existing fixed v4 retest-versus-breakout
+comparison, with original archive verification and separately captured current
+numerical inputs. The scanner detector and trading-bank mechanism differ;
+preparation does not establish a trading edge or run a comparison.
+
+Use the existing registry, issued Lab bundles, storage owner and numerical
+evaluation. Preparation must not enqueue a model, submit an experiment to the
+inbox, fund accounts, change a policy or consume attempts. Preserve original
+questions, grants, profiles, packets, adverse answers and financial decisions.
+Source/disposable checks, independent review, commit/push and draft PR delivery
+remain authorized. New installation, restart, scanner/research activation and
+actual model or prospective comparison require their applicable authorization.
+
+# Previous source follow-up — October 7, 2026, daily automated chart analysis (#66)
+
+Chris requests hands-off daily history analysis and five next research candidates
+from eligible USD crypto markets, with recognized patterns and five native candle
+charts. Reuse the existing scanner, registry, retained inputs, resource/storage
+owner and Lab loop. Enroll new scopes once, then process new closed candles;
+do not redownload a year or create a new frozen campaign every day.
+
+Keep daily picks immutable with actual eligibility, ranking inputs, coverage,
+source identity and detector definitions. Pending history is a research priority,
+not a detected pattern or a win-probability score. Preserve original v1 campaigns,
+controls, financial decisions, accounts/history, every adverse result and attempt.
+Daily policy source/isolated QA, independent review, commits/push and an owning
+draft PR are authorized. No installation, restart, model dispatch, changed guard,
+account funding or strategy promotion follows from this implementation.
+
+The installed chart target remains 3d26941652efa72b20a7b532da1994e45b76c2cb.
+Root completed the separately approved first BTCUSD fixed-year/five-frame run
+once: Prepare, Start, then Pause within ten minutes. Retained coverage is partial;
+that consumed bounded approval does not activate the proposed daily policy or
+authorize another operating scan.
+
+# Previous source follow-up — October 7, 2026, saved scanner charts (#66)
 
 Chris expects an analyzed crypto to have five native candle charts (5m, 15m,
 30m, 1h and 4h), a breakdown of its recorded findings, named pattern annotations,

@@ -10,7 +10,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from decimal import Decimal
 from pathlib import Path
-from threading import RLock
+from threading import Lock, RLock
 from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -105,6 +105,10 @@ class ExperimentRegistry:
     def __init__(self, path: Path):
         self.path = path.resolve()
         self.lock = RLock()
+        # Optional comparison preparation may borrow the recorder outside SQL
+        # ownership. Serialize it separately so paper/scanner reads never wait
+        # behind that storage borrow while trying to enter the registry lock.
+        self.pattern_comparison_lock = Lock()
         self.db = sqlite3.connect(path, check_same_thread=False, timeout=2, isolation_level=None)
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA journal_mode=WAL")

@@ -36,7 +36,10 @@ def main():
     parser.add_argument("--web-dist", type=Path, required=True)
     parser.add_argument("--port", type=int, default=58969)
     parser.add_argument("--chart-check", action="store_true")
+    parser.add_argument("--daily-check", action="store_true")
     args = parser.parse_args()
+    if args.chart_check and args.daily_check:
+        raise ValueError("Choose one explicit disposable workflow")
     if not 1024 <= args.port <= 65535 or args.port in {8780, 5432, 54544, 58968}:
         raise ValueError("A separate isolated QA port is required")
     token = os.environ["QTRADES_BROWSER_QA_TOKEN"]
@@ -59,6 +62,8 @@ def main():
         "apps/web/src/candle-workspace.css",
         "tests/browser/pattern_scanner_server.py",
     ]
+    if args.daily_check:
+        names.append("apps/web/src/DailyAnalyzer.tsx")
 
     def current_hashes():
         source = {name: hashlib.sha256((repo / name).read_bytes()).hexdigest() for name in names}
@@ -94,6 +99,8 @@ def main():
     clock_offset = 0
     prospective_cutoff = None
     chart_setup = None
+    daily_roster_changed = False
+    daily_roster_unavailable = False
     held_start = None
     held_start_event = None
     held_start_entered = asyncio.Event()
@@ -101,7 +108,7 @@ def main():
     scanner_module.time = SimpleNamespace(
         time=lambda: time.time() + clock_offset, perf_counter=time.perf_counter
     )
-    if args.chart_check:
+    if args.chart_check or args.daily_check:
         # The synthetic prospective close clock belongs to both the scanner and
         # its read projection. Global and financial runtime clocks stay real.
         charts_module.time = SimpleNamespace(time=lambda: time.time() + clock_offset)
@@ -117,7 +124,11 @@ def main():
                     "symbol": symbol,
                     "bidPrice": "100",
                     "askPrice": "100.1",
-                    "quoteVolume": "1" if symbol == "THINUSD" else "1000000",
+                    "quoteVolume": "1"
+                    if symbol == "THINUSD" or daily_roster_changed and symbol == "BTCUSD"
+                    else "2000000"
+                    if daily_roster_changed and symbol == "ETHUSD"
+                    else "1000000",
                     "lowPrice": "99",
                     "highPrice": "101",
                     "priceChangePercent": "0",
@@ -131,6 +142,8 @@ def main():
         )
         paper._fallback["BTCUSD"]["observed"] = now
         paper._fallback["BTCUSD"]["received_mono"] = time.monotonic()
+        if daily_roster_unavailable:
+            paper.universe.metadata_at = now - 901
 
     # Explicitly synthetic resource admission; this is UI/worker behavior, not
     # financial-health, operating-guard, market-capacity or profitability proof.
@@ -154,6 +167,8 @@ def main():
             raise httpx.ReadError("Synthetic native source unavailable", request=request)
         step = INTERVALS[query["interval"]] * 1000
         start, end = int(query["startTime"]), int(query["endTime"])
+        if args.daily_check and query["interval"] != "4h":
+            return httpx.Response(200, json=[])
         if mode in {"sparse_4h", "future_4h"} and query["interval"] != "4h":
             return httpx.Response(200, json=[])
         rows = []
@@ -164,6 +179,11 @@ def main():
             # other slots as missing. Default scanner QA remains unchanged.
             row_limit = min(row_limit, 360)
         for at in list(range(start, end + 1, step))[:row_limit]:
+            daily_cutoff = int((time.time() + clock_offset) * 1000) // step * step
+            if args.daily_check and at < daily_cutoff - 32 * step:
+                # A genuine sparse synthetic year: older requested slots are
+                # absent, explicitly counted by the unchanged scanner.
+                continue
             if mode == "gap" and at == start + step:
                 continue
             index = (at // step) % 1000
@@ -175,6 +195,12 @@ def main():
             low = base - (Decimal(2) if phase == 2 else Decimal("0.3"))
             volume = Decimal(30) if phase in {2, 4} else Decimal(10)
             close = base + (Decimal("0.1") if phase == 2 else Decimal(0))
+            if args.daily_check:
+                base, high, low, close, volume = map(Decimal, (100, 101, 99, 100, 10))
+                if at == daily_cutoff - 5 * step:
+                    high = Decimal(103)
+                if at >= daily_cutoff - 2 * step:
+                    high, close, volume = map(Decimal, (105, 104, 20))
             if mode in {"sparse_4h", "future_4h"}:
                 base, high, low, close, volume = map(Decimal, (100, 101, 99, 100, 10))
                 if at == prospective_cutoff - 4 * step:
@@ -206,6 +232,7 @@ def main():
         background=False,
         venue=venue,
         web_dist=args.web_dist,
+        paper_database=None,
     )
     old_lifespan = app.router.lifespan_context
     server = uvicorn.Server(
@@ -245,6 +272,7 @@ def main():
                             ),
                             "financial_database": False,
                             "model_calls": 0,
+                            "daily_check": args.daily_check,
                             "financial_state_preserved_except_fixture_tick": financial_unchanged(),
                             "posts": posts,
                             "setup_controls": setup_controls,
@@ -268,6 +296,8 @@ def main():
     @app.middleware("http")
     async def failures(request, call_next):
         nonlocal held_start, held_start_event
+        if args.daily_check:
+            tick()  # Explicitly synthetic current paper/screen, not operating health.
         if args.chart_check and request.method == "GET" and request.url.path.startswith("/api/"):
             reads.append({"path": request.url.path, "query": str(request.url.query)})
             if len(reads) > 2000:
@@ -402,6 +432,7 @@ def main():
             "state": scanner.snapshot(),
             "financial_database": False,
             "model_calls": 0,
+            "daily_check": args.daily_check,
             "synthetic_clock_offset_seconds": clock_offset,
             "financial_state_preserved_except_fixture_tick": financial_unchanged(),
             "source_hashes": hashes,
@@ -426,6 +457,31 @@ def main():
         receipt = scanner.control(command)
         setup_controls.append({"command": command, "receipt": receipt})
         return receipt
+
+    @app.post("/__qa/daily_advance")
+    async def daily_advance(x_qa_token: str = Header()):
+        authorize(x_qa_token)
+        if not args.daily_check:
+            raise HTTPException(409, "Explicit daily workflow required")
+        scanner = app.state.pattern_scanner
+        steps = 0
+        started = time.monotonic()
+        async with asyncio.timeout(12):
+            for _ in range(120):
+                tick()
+                if not await scanner.step():
+                    break
+                steps += 1
+                if time.monotonic() - started >= 5:
+                    break
+        result = {
+            "synthetic_fixture_only": True,
+            "steps": steps,
+            "state": scanner.snapshot(),
+            "native_requests": len(calls),
+        }
+        advances.append({"daily": True, "steps": steps, "native_requests": len(calls)})
+        return result
 
     @app.post("/__qa/chart_setup")
     async def prepare_charts(x_qa_token: str = Header()):
@@ -603,6 +659,7 @@ def main():
     @app.post("/__qa/{action}")
     def control(action: str, x_qa_token: str = Header()):
         nonlocal mode, blocked, clock_offset, prospective_cutoff
+        nonlocal daily_roster_changed, daily_roster_unavailable
         authorize(x_qa_token)
         if action == "stop":
             server.should_exit = True
@@ -616,6 +673,30 @@ def main():
                 "existing_owner_reconstructed": True,
                 "state": app.state.pattern_scanner.snapshot(),
             }
+        if action in {
+            "daily_next_day",
+            "daily_roster_change",
+            "daily_unavailable",
+            "daily_restore",
+        }:
+            if not args.daily_check:
+                raise HTTPException(409, "Explicit daily workflow required")
+            if action == "daily_next_day":
+                current = time.time() + clock_offset
+                clock_offset += (int(current // 86400) + 1) * 86400 - current + 1
+            elif action == "daily_roster_change":
+                daily_roster_changed = True
+            else:
+                daily_roster_unavailable = action == "daily_unavailable"
+            tick()
+            setup_controls.append(
+                {
+                    "action": action,
+                    "synthetic_fixture_only": True,
+                    "clock_offset_seconds": clock_offset,
+                }
+            )
+            return {"synthetic_fixture_only": True, "state": app.state.pattern_scanner.snapshot()}
         if action in {"block", "unblock"}:
             blocked = action == "block"
             return {"synthetic_admission_blocked": blocked}

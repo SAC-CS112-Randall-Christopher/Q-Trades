@@ -41,6 +41,11 @@ from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
 from trading.pattern_charts import saved_chart
+from trading.pattern_comparisons import (
+    PatternComparisonCommand,
+    PatternComparisons,
+    PatternFindingSelection,
+)
 from trading.pattern_scanner import PatternScanner
 from trading.peft_role_model import PeftPaperPilotRoles, local_role_transport
 from trading.prospective_review import ProspectiveSpec
@@ -187,7 +192,7 @@ class CandleStudyRequest(BaseModel):
 
 class PatternControl(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
-    action: Literal["prepare", "start", "pause"]
+    action: Literal["prepare", "start", "pause", "daily_enable", "daily_pause"]
     request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,64}$")
     symbols: list[str] = Field(default_factory=list, max_length=2000)
     campaign_id: str | None = Field(default=None, pattern=r"^patterns-[a-f0-9]{24}$")
@@ -1851,6 +1856,98 @@ def create_app(
             return await asyncio.to_thread(scanner_owner(request).campaigns)
         except (sqlite3.Error, OSError, ValueError) as exc:
             raise HTTPException(503, "Retained campaign identities unavailable") from exc
+
+    @app.get("/api/research/pattern-scanner/daily/shortlists")
+    async def scanner_daily_pages(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(scanner_owner(request).daily_pages, before)
+        except (sqlite3.Error, OSError, ValueError) as exc:
+            raise HTTPException(503, "Saved daily shortlist history unavailable") from exc
+
+    @app.get("/api/research/pattern-scanner/daily/shortlists/{identity}")
+    async def scanner_daily_snapshot(request: Request, identity: str) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(scanner_owner(request).daily_snapshot, identity)
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (sqlite3.Error, OSError) as exc:
+            raise HTTPException(503, "Exact daily shortlist unavailable") from exc
+
+    def pattern_comparison_owner(request: Request) -> PatternComparisons:
+        scanner = scanner_owner(request)
+        lab = request.app.state.lab
+        return PatternComparisons(scanner, lab.autonomous if lab else None)
+
+    @app.get("/api/research/pattern-scanner/comparison-source")
+    def scanner_comparison_source(
+        request: Request,
+        daily_id: str = Query(pattern=r"^daily-[a-f0-9]{24}$"),
+        symbol: str = Query(pattern=r"^[A-Z0-9]{3,24}$"),
+        timeframe: Literal["5m", "15m", "30m", "1h", "4h"] = Query(),
+        event_kind: Literal["patterns", "alerts"] = Query(),
+        event_seq: int = Query(ge=1, le=9223372036854775807),
+    ) -> dict[str, Any]:
+        try:
+            return pattern_comparison_owner(request).describe(
+                PatternFindingSelection(
+                    daily_id=daily_id,
+                    symbol=symbol,
+                    timeframe=timeframe,
+                    event_kind=event_kind,
+                    event_seq=event_seq,
+                )
+            )
+        except (sqlite3.Error, OSError, KeyError, TypeError) as exc:
+            raise HTTPException(
+                503, "Original pattern comparison source unavailable; no current substitute"
+            ) from exc
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+
+    @app.post("/api/research/pattern-scanner/comparisons")
+    def scanner_prepare_comparison(
+        command: PatternComparisonCommand, request: Request
+    ) -> dict[str, Any]:
+        lab_operator(request)
+        try:
+            return pattern_comparison_owner(request).prepare(command)
+        except (sqlite3.Error, OSError, KeyError, TypeError) as exc:
+            raise HTTPException(
+                503, "Preparation acknowledgment unavailable; recover the original request"
+            ) from exc
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.get("/api/research/pattern-scanner/comparisons")
+    def scanner_comparison_history(
+        request: Request, before: str = Query("", max_length=64)
+    ) -> dict[str, Any]:
+        if before and not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", before):
+            raise HTTPException(422, "Invalid saved preparation cursor")
+        try:
+            return pattern_comparison_owner(request).page(before)
+        except (ValueError, sqlite3.Error, OSError, KeyError, TypeError) as exc:
+            raise HTTPException(503, "Saved preparations unavailable; no empty success") from exc
+
+    @app.get("/api/research/pattern-scanner/comparisons/{request_id}")
+    def scanner_prepared_comparison(request_id: str, request: Request) -> dict[str, Any]:
+        if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
+            raise HTTPException(422, "Invalid original preparation identity")
+        try:
+            result = pattern_comparison_owner(request).get(request_id)
+            if result is None:
+                raise HTTPException(404, "No retained preparation acknowledgment")
+            return result
+        except (ValueError, sqlite3.Error, OSError, KeyError, TypeError) as exc:
+            raise HTTPException(
+                503, "Original preparation unavailable; do not replace uncertain work"
+            ) from exc
 
     @app.post("/api/research/pattern-scanner/control")
     async def scanner_control(command: PatternControl, request: Request) -> dict[str, Any]:
