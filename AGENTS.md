@@ -1,3 +1,22 @@
+# Current source successor - October 8, 2026, preserved v4 discovery (#66)
+
+Continue the same Goal/worktree on `codex/preserved-v4-discovery-66`, stacked on
+PR86 head `60c30f162fffe2f9962ff8cbc3d296fb603e9945`, including its separately
+reviewed scanner refusal repair. Preserve the original `9e60f3` review and QA
+receipts; the rebase does not relabel them as executions of a later head. The actual legacy
+proposer's lookback variation fails strict fixed-v4 validation after a v4 parent
+is preserved. Skip only those fixed v4 parents in the generic lookback-child
+loop, preserving the parent and allowing the existing discovery paths to run.
+Keep v2/v3 variation, strict v4 controls, duplicate/capacity/stop/pause gates,
+financial parent semantics and all current admission/resource/storage owners.
+Verify actual native proposer behavior and the normal existing financial owner
+with disposable inputs, retained outcome/history and cold reopening. Reuse the
+existing disposable PostgreSQL owner; preserve its old failed evidence and
+verify exact start/stop identity. No operating installation/restart, acquisition,
+actual model/tokenizer/provider call, research activation, rule change or
+attempt reset follows from this source repair. Treat synthetic coverage/outcomes
+as software evidence, not prospective performance or improved economics.
+
 # Current source successor - October 8, 2026, measured model admission (#66)
 
 Continue the same Goal/worktree on `codex/model-token-admission-66`, stacked on

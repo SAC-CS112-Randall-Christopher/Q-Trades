@@ -310,6 +310,9 @@ class AutonomousLab:
             ):
                 continue
             reference = RuleSpec.model_validate(parent["contract"]["proposal"]["strategy"])
+            if reference.version == "reviewed-lab-rules-v4":
+                # Fixed bank mechanisms have no supported lookback-child variation.
+                continue
             if not self._family_available(reference.family):
                 continue
             labels = issued["bundle"]["evidence"]["training_episodes"]
