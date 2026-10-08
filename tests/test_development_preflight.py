@@ -9,6 +9,7 @@ from unittest.mock import Mock
 import pytest
 
 from trading.experiment_registry import ExperimentRegistry, fingerprint
+from trading.lab_role_contract import packet_json, prompt
 from trading.peft_profile import PROFILE
 from trading.peft_role_model import PeftDevelopmentRoles
 from trading.role_worker import RoleWorker
@@ -62,23 +63,25 @@ def test_rag_packet_is_refused_before_development_attempt_or_allowance(
         with pytest.raises(ValueError, match="RAG development packet requires"):
             asyncio.run(worker.development_answer(TASK, model))
         assert worker.get(TASK) == before
-        assert worker.registry.db.execute(
-            "SELECT count(*) FROM role_attempt_allowances"
-        ).fetchone()[0] == 0
+        assert (
+            worker.registry.db.execute("SELECT count(*) FROM role_attempt_allowances").fetchone()[0]
+            == 0
+        )
     launched.assert_not_called()
     declaration.assert_not_called()
 
 
-def test_oversize_packet_is_refused_before_development_attempt_or_allowance(development):
+def test_large_compatible_packet_preflight_preserves_task_and_allowances(development):
     worker, model, packet = development
     packet["question"] = "Procedural oversized input " * 2000
     before = worker.get(TASK)
-    with pytest.raises(ValueError, match="transport allowance"):
-        asyncio.run(worker.development_answer(TASK, model))
+    assert len(packet_json(packet).encode()) + len(prompt("researcher").encode()) > 32768
+    model.preflight("researcher", packet, PROFILE)
     assert worker.get(TASK) == before
-    assert worker.registry.db.execute(
-        "SELECT count(*) FROM role_attempt_allowances"
-    ).fetchone()[0] == 0
+    assert (
+        worker.registry.db.execute("SELECT count(*) FROM role_attempt_allowances").fetchone()[0]
+        == 0
+    )
 
 
 def test_compatible_original_packet_is_reserved_once_and_reopened_without_dispatch(
@@ -97,9 +100,10 @@ def test_compatible_original_packet_is_reserved_once_and_reopened_without_dispat
 
     def procedural_response(role, supplied, profile):
         assert role == "researcher" and supplied == packet and profile == PROFILE
-        assert worker.registry.db.execute(
-            "SELECT count(*) FROM role_attempt_allowances"
-        ).fetchone()[0] == 1
+        assert (
+            worker.registry.db.execute("SELECT count(*) FROM role_attempt_allowances").fetchone()[0]
+            == 1
+        )
         return {"answer": answer, "complete": True, "raw_answer": "Procedural QA only"}
 
     transport = Mock(side_effect=procedural_response)

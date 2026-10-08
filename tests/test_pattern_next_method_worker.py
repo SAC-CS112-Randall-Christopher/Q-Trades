@@ -2,6 +2,7 @@
 
 import asyncio
 import copy
+import hashlib
 import json
 import sys
 from collections import Counter
@@ -33,18 +34,46 @@ from trading.lab_role_contract import (
     validate,
 )
 from trading.pattern_comparisons import PatternComparisonCommand, PatternComparisons
+from trading.peft_role_model import PeftPaperPilotRoles
 from trading.role_evidence import pattern_feature, pattern_followup_outcome, pattern_packet
 from trading.role_worker import RoleWorker
 
 
 class MethodTransport(LearningTransport):
-    """Software callback, unchanged conservative 9000 input/reserve fixture guard."""
+    """Software callback with PEFT contract checks and diagnostic byte measurements."""
 
     def __init__(self, action="propose_experiment"):
         super().__init__(action)
         self.authority["question_policy"] = PATTERN_METHOD_QUESTION_POLICY
         self.authority["method_policy_sha256"] = pattern_method_policy_sha()
         self.matched_packets = []
+
+    def preflight(self, role, packet, profile):
+        assert packet["contract"] == profile["role_contract"] == PATTERN_VERSION
+        assert packet["selection_authority"] == self.authority
+        PeftPaperPilotRoles.preflight(role, packet, profile)
+        encoded = packet_json(packet)
+        system = prompt(role, PATTERN_VERSION)
+        packet_sha = hashlib.sha256(encoded.encode()).hexdigest()
+        measured = {
+            "packet_bytes": len(encoded.encode()),
+            "system_bytes": len(system.encode()),
+            "token_capacity_measured": False,
+        }
+        self.measured.append(measured)
+        self.packets.setdefault(
+            packet_sha,
+            {
+                "role": role,
+                "packet": copy.deepcopy(packet),
+                "packet_json": encoded,
+                "packet_sha256": packet_sha,
+                "system": system,
+                "profile": copy.deepcopy(profile),
+                **measured,
+                "basis": "Diagnostic UTF-8 sizes; actual model tokens are not measured",
+            },
+        )
 
     def infer(self, role, packet, profile):
         self.calls.append((role, copy.deepcopy(packet)))
@@ -193,10 +222,11 @@ def verify_matched_prior_packet(worker, task, packet):
             "packet_json": encoded,
             "packet_bytes": len(encoded.encode()),
             "system_bytes": len(system.encode()),
-            "reserved_total": len(encoded.encode()) + len(system.encode()) + 1536,
         }
-    assert measurements["expanded_equivalent"]["reserved_total"] > 9000
-    assert measurements["current"]["reserved_total"] <= 9000
+    assert (
+        measurements["current"]["packet_bytes"]
+        < measurements["expanded_equivalent"]["packet_bytes"]
+    )
     assert fingerprint(task) == original
     worker.transport.matched_packets.append(
         {
@@ -211,6 +241,27 @@ def verify_matched_prior_packet(worker, task, packet):
             "full original text remains in the exact task/preparation, not this model packet.",
         }
     )
+
+
+def test_method_preflight_retains_large_packet_identity_without_byte_admission(fixture):
+    f, worker, _ = fixture
+    task = select(f, worker)
+    original = copy.deepcopy(task)
+    role, packet = worker._packet(task)
+    # Synthetic preflight input only; the original task is not edited or dispatched.
+    packet["question"] += " diagnostic input" * 3000
+    encoded = packet_json(packet)
+    assert len(encoded.encode()) > 32768
+    worker.transport.preflight(role, packet, worker.transport.admit(role))
+    digest = hashlib.sha256(encoded.encode()).hexdigest()
+    retained = worker.transport.packets[digest]
+    assert retained["packet_sha256"] == digest
+    assert retained["packet_json"] == encoded and retained["packet"] == packet
+    assert retained["packet_bytes"] == len(encoded.encode())
+    assert retained["token_capacity_measured"] is False
+    assert "reserved_total" not in retained and "sizing_options" not in retained
+    assert worker.get(task["id"]) == original
+    assert not rows(worker, "role_attempts") and not worker.transport.calls
 
 
 def test_first_unused_p0_is_captured_in_all_owners(fixture):
@@ -293,7 +344,6 @@ def test_own_mature_p0_motivates_independent_p1_with_lossless_prior(fixture, out
     assert second["evaluation"]["pattern_method"] == context["pattern_method"]
     assert worker.get(first["id"])["result"] == preserved["result"]
     assert len(rows(worker, "lab_proposals")) == 2
-    assert all(item["reserved_total"] <= 9000 for item in worker.transport.measured)
 
 
 def test_shared_score_projection_preserves_different_types_nulls_and_unknown_fields():
@@ -609,12 +659,12 @@ def test_actual_engine_shaped_two_score_packets_remain_lossless(fixture, monkeyp
             "packet_json": packet_json(value),
             "packet_bytes": len(packet_json(value).encode()),
             "system_bytes": len(system.encode()),
-            "reserved_total": len(packet_json(value).encode()) + len(system.encode()) + 1536,
         }
         for label, value in (("expanded_same_task", expanded), ("current", packet))
     }
-    assert measurements["expanded_same_task"]["reserved_total"] > 9000
-    assert measurements["current"]["reserved_total"] <= 9000
+    assert (
+        measurements["current"]["packet_bytes"] < measurements["expanded_same_task"]["packet_bytes"]
+    )
     worker.transport.matched_packets.append(
         {
             "task_id": second["id"],
@@ -696,12 +746,7 @@ def test_full_followup_packet_preserves_unavailable_or_original_sample_fields(
         original["result"]["outcome"]["body"]
     )
     assert task == original and worker.get(saved["id"]) == saved
-    total = len(packet_json(packet).encode()) + len(prompt(role, PATTERN_VERSION).encode()) + 1536
-    if total > 9000:
-        with pytest.raises(ValueError, match="Packet exceeds conservative context allowance"):
-            worker.transport.preflight(role, packet, worker.transport.admit(role))
-    else:
-        worker.transport.preflight(role, packet, worker.transport.admit(role))
+    worker.transport.preflight(role, packet, worker.transport.admit(role))
     worker.transport.matched_packets.append(
         {
             "kind": "full_caller_sample_regression",
@@ -709,8 +754,9 @@ def test_full_followup_packet_preserves_unavailable_or_original_sample_fields(
             "task": original,
             "packet": packet,
             "task_sha256": fingerprint(original),
-            "reserved_total": total,
-            "guard_admitted": total <= 9000,
+            "packet_bytes": len(packet_json(packet).encode()),
+            "contract_preflight_passed": True,
+            "token_capacity_measured": False,
         }
     )
 
@@ -922,7 +968,6 @@ def test_actual_two_independent_comparisons_preserve_mature_source_and_accounts(
         assert third["context"]["lesson"]["source"] == completed[1]["result"]["outcome"]
         assert asyncio.run(new.step(f.now)), new.get(third["id"])["reason"]
         assert rows(worker, "lab_proposals") == before and len(worker.transport.calls) == 7
-        assert all(p["reserved_total"] <= 9000 for p in worker.transport.measured)
         assert store.reconcile()["balanced"] is True
         final_audit = store.export(0, 10000)
         assert final_audit["has_more"] is False

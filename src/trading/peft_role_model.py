@@ -200,13 +200,11 @@ class PeftDevelopmentRoles:
     @staticmethod
     def preflight(role: str, packet: dict[str, Any], profile: dict[str, Any]) -> None:
         """Refuse incompatible inputs before reserving an actual development attempt."""
-        version = check_role_contract(packet, profile)
+        check_role_contract(packet, profile)
         if packet.get("retrieval_contract") and (
             profile.get("rag_contract") != packet["retrieval_contract"]
         ):
             raise ValueError("RAG development packet requires its separately reviewed profile")
-        if len(packet_json(packet).encode()) + len(prompt(role, version).encode()) > 32768:
-            raise ValueError("Role packet exceeds the development transport allowance")
 
     def _dispatch_checkpoint(self, phase: str) -> None:
         """Optional finite pilot fence; historical transports have no new guard."""

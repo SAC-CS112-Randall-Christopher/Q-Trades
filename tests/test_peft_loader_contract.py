@@ -18,7 +18,19 @@ from trading.peft_role_runner import generate
 
 @pytest.mark.parametrize(
     "fault",
-    [None, "inactive", "gpu", "precision", "context", "template", "packages", "missing", "weights"],
+    [
+        None,
+        "inactive",
+        "gpu",
+        "precision",
+        "context",
+        "template",
+        "packages",
+        "missing",
+        "weights",
+        "token_limit",
+        "token_overflow",
+    ],
 )
 def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
     declared, monkeypatch, fault
@@ -70,11 +82,12 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
 
     frozen.generate.return_value = Output()
     loader = Mock(return_value=frozen)
+    token_count = {"context": 9000, "token_limit": 7168, "token_overflow": 7169}.get(fault, 3)
     tokenizer = NS(
         chat_template="changed" if fault == "template" else "procedural-template",
         pad_token_id=0,
         eos_token_id=2,
-        apply_chat_template=Mock(return_value=[1] * (9000 if fault == "context" else 3)),
+        apply_chat_template=Mock(return_value=[1] * token_count),
         decode=Mock(return_value='{"action":"no_change"}'),
     )
     environment = PROFILE["packages"] | {"python": PROFILE["python"]}
@@ -144,10 +157,25 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
         "trading.peft_role_runner.own_limits",
         lambda: {"processors_allowed": 2, "priority_class": 64},
     )
-    if fault:
-        with pytest.raises(ValueError):
+    assert (PROFILE["max_context"], PROFILE["max_new_tokens"]) == (8192, 1024)
+    if fault and fault != "token_limit":
+        with pytest.raises(ValueError) as refused:
             generate(request)
         frozen.generate.assert_not_called()
+        if fault in {"context", "token_overflow"}:
+            assert "exceeds tokenized context; no truncation" in str(refused.value)
+            load_base.assert_not_called()
+            loader.assert_not_called()
+            saved_tensors.assert_not_called()
+            tokenizer.apply_chat_template.assert_called_once_with(
+                [
+                    {"role": "system", "content": request["system"]},
+                    {"role": "user", "content": request["packet_json"]},
+                ],
+                tokenize=True,
+                add_generation_prompt=True,
+                enable_thinking=False,
+            )
         return
     response = generate(request)
     placement.assert_called_once_with(os.getpid(), distinct_cores=True)
@@ -163,4 +191,7 @@ def test_direct_loader_contract_is_frozen_cpu_active_adapter_without_training(
     frozen.set_adapter.assert_called_once_with("default")
     frozen.requires_grad_.assert_called_once_with(False)
     assert frozen.generate.call_args.kwargs["do_sample"] is False
+    assert recipe.max_length == 8192
+    assert frozen.generate.call_args.kwargs["max_new_tokens"] == 1024
+    assert response["tokens"]["prompt_eval_count"] == token_count
     assert tokenizer.apply_chat_template.call_args.kwargs["enable_thinking"] is False
