@@ -14,6 +14,7 @@ import httpx
 
 from trading.lab_role_contract import (
     CAPABILITY_VERSION,
+    PATTERN_VERSION,
     TOOL_REQUEST_VERSION,
     VERSION,
     contract_hash,
@@ -510,6 +511,8 @@ PAPER_PILOT_TOOL_FORMAT = "qtrades-peft-paper-pilot-v2"
 PAPER_PILOT_CAPABILITY_FORMAT = "qtrades-peft-paper-pilot-v3"
 PAPER_PILOT_SELECTION_FORMAT = "qtrades-peft-paper-pilot-v4"
 QUESTION_SELECTION_POLICY = "evidence-question-selection-v1"
+PAPER_PILOT_PATTERN_FORMAT = "qtrades-peft-paper-pilot-v5"
+PATTERN_QUESTION_POLICY = "pattern-question-selection-v1"
 
 
 def _role_policy(path: Path) -> dict[str, Any]:
@@ -551,9 +554,10 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             PAPER_PILOT_TOOL_FORMAT,
             PAPER_PILOT_CAPABILITY_FORMAT,
             PAPER_PILOT_SELECTION_FORMAT,
+            PAPER_PILOT_PATTERN_FORMAT,
         ):
             expected.add("role_contract")
-        if grant.get("format") == PAPER_PILOT_SELECTION_FORMAT:
+        if grant.get("format") in (PAPER_PILOT_SELECTION_FORMAT, PAPER_PILOT_PATTERN_FORMAT):
             expected.add("question_policy")
         if set(grant) != expected or (
             grant.get("format")
@@ -562,6 +566,7 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                 PAPER_PILOT_TOOL_FORMAT,
                 PAPER_PILOT_CAPABILITY_FORMAT,
                 PAPER_PILOT_SELECTION_FORMAT,
+                PAPER_PILOT_PATTERN_FORMAT,
             )
             or (
                 grant.get("format") == PAPER_PILOT_TOOL_FORMAT
@@ -574,6 +579,13 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             or (
                 grant.get("format") == PAPER_PILOT_SELECTION_FORMAT
                 and grant.get("question_policy") != QUESTION_SELECTION_POLICY
+            )
+            or (
+                grant.get("format") == PAPER_PILOT_PATTERN_FORMAT
+                and (
+                    grant.get("role_contract") != PATTERN_VERSION
+                    or grant.get("question_policy") != PATTERN_QUESTION_POLICY
+                )
             )
             or type(grant.get("enabled")) is not bool
             or grant.get("scope") != "prospective-paper-only"
@@ -598,18 +610,22 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
         """Only an explicit selection grant authorizes prospective question production."""
         with self._policy_lock:
             grant = self._grant()
-            if grant["format"] != PAPER_PILOT_SELECTION_FORMAT:
+            if grant["format"] not in (PAPER_PILOT_SELECTION_FORMAT, PAPER_PILOT_PATTERN_FORMAT):
                 return None
             self.declaration()
             if self._grant() != grant:
                 raise ValueError("Question-selection grant changed while verifying authority")
+            pattern = grant["format"] == PAPER_PILOT_PATTERN_FORMAT
+            version = PATTERN_VERSION if pattern else CAPABILITY_VERSION
             return {
-                "question_policy": QUESTION_SELECTION_POLICY,
+                "question_policy": PATTERN_QUESTION_POLICY
+                if pattern
+                else QUESTION_SELECTION_POLICY,
                 "grant_id": grant["grant_id"],
                 "grant_sha": digest(grant),
                 "profile_sha": grant["profile_sha256"],
-                "contract_version": CAPABILITY_VERSION,
-                "contract_sha": contract_hash(CAPABILITY_VERSION),
+                "contract_version": version,
+                "contract_sha": contract_hash(version),
             }
 
     def declaration(self) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
@@ -623,7 +639,11 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             self.directory = private
             try:
                 result = super().declaration()
-                if grant.get("role_contract") in (TOOL_REQUEST_VERSION, CAPABILITY_VERSION):
+                if grant.get("role_contract") in (
+                    TOOL_REQUEST_VERSION,
+                    CAPABILITY_VERSION,
+                    PATTERN_VERSION,
+                ):
                     result = (
                         result[0],
                         result[1],
@@ -868,7 +888,10 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                     or any(type(value) is not str for value in supplied.values())
                     or digest(profile) != authority["profile_sha"]
                 ):
-                    raise ValueError("Question selection requires its exact current v4 authority")
+                    version = "v5" if packet.get("contract") == PATTERN_VERSION else "v4"
+                    raise ValueError(
+                        f"Question selection requires its exact current {version} authority"
+                    )
                 if self.policy()["enabled"] is not True:
                     raise ValueError("Question-selection grant is paused or cancelled")
         self.preflight(role, packet, profile)

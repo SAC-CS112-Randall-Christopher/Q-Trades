@@ -359,6 +359,93 @@ class PatternComparisons:
             "financial_authority": False,
         }
 
+    def candidate(self, now: float) -> PatternFindingSelection | None:
+        """One bounded original native finding from the latest published daily capture."""
+        if not math.isfinite(now) or now <= 0:
+            raise ValueError("Invalid candidate observation time")
+        with self.registry.lock:
+            row = self.registry.db.execute(
+                "SELECT body FROM pattern_daily_days ORDER BY seq DESC LIMIT 1"
+            ).fetchone()
+        if row is None:
+            return None
+        day = json.loads(row["body"])
+        if day["generated_at"] > now:
+            return None
+        choices = [
+            evidence
+            for pick in day["picks"]
+            if pick["symbol"] == "BTCUSD" and pick["basis"] == "recognized_setup"
+            for evidence in pick["evidence"]
+            if evidence["timeframe"] == "5m"
+            and evidence["kind"] in {"patterns", "alerts"}
+            and evidence["body"]["kind"] in MAPPING["detector_kinds"]
+            and evidence["body"].get("volume_confirmed") is True
+        ]
+        if not choices:
+            return None
+        chosen = max(choices, key=lambda item: item["seq"])
+        return PatternFindingSelection(
+            daily_id=day["id"],
+            symbol="BTCUSD",
+            timeframe="5m",
+            event_kind=chosen["kind"],
+            event_seq=chosen["seq"],
+        )
+
+    def current_observation(self, request_id: str, now: float) -> dict[str, Any]:
+        """Fresh matched inputs retained by the same owner; original preparation stays frozen."""
+        if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
+            raise ValueError("Invalid current comparison observation identity")
+        if not math.isfinite(now) or now <= 0:
+            raise ValueError("Invalid current comparison observation time")
+        proposal, evaluation, windows = self._evaluation(request_id, now)
+        if evaluation["status"] == "supported_exploratory_configuration":
+            with self.registry.transaction():
+                self._permitted(windows)
+                for index, (start, end) in enumerate(windows):
+                    self.registry.db.execute(
+                        "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,?)",
+                        (
+                            f"pattern-role-input:{request_id}:{index}",
+                            start,
+                            end,
+                            "Pattern comparison preparation disclosure",
+                        ),
+                    )
+        return {"proposal_without_bundle_digest": proposal, "evaluation": evaluation}
+
+    def execution_inputs(self, proof: dict[str, Any], request_id: str) -> list[dict[str, Any]]:
+        """Reopen the exact bounded current-input archive; metadata alone is insufficient."""
+        plan = self.scanner.plan
+        references = proof.get("references")
+        if plan is None or not isinstance(references, list) or not 1 <= len(references) <= 2:
+            raise ValueError("Saved execution input archive identity is unavailable")
+        rows: list[dict[str, Any]] = []
+        for reference in references:
+            packet = reopen_evidence(plan, reference)
+            chunk = packet.get("rows")
+            if (
+                packet.get("kind") != "pattern_comparison_execution_inputs"
+                or packet.get("version") != VERSION
+                or packet.get("request_id") != request_id
+                or packet.get("offset") != len(rows)
+                or packet.get("inputs_sha256") != proof["sha256"]
+                or not isinstance(chunk, list)
+                or not 1 <= len(chunk) <= 500
+            ):
+                raise ValueError("Saved execution input chunk differs from its original identity")
+            rows.extend(chunk)
+        if (
+            not 305 <= len(rows) <= 600
+            or len(rows) != proof["count"]
+            or digest(rows) != proof["sha256"]
+            or rows[0]["open_ms"] != proof["start_ms"]
+            or rows[-1]["close_ms"] != proof["end_ms"]
+        ):
+            raise ValueError("Saved matched execution input proof differs")
+        return rows
+
     def get(self, request_id: str) -> dict[str, Any] | None:
         if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
             raise ValueError("Invalid comparison request identity")

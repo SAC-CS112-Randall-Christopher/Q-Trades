@@ -222,6 +222,7 @@ class RoleHistory:
                                                         "policy_sha256",
                                                         "question_selection",
                                                         "selection_authority",
+                                                        "predecessor_task",
                                                     )
                                                     if key in context
                                                 }

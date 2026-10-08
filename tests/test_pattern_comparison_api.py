@@ -4,6 +4,7 @@ import copy
 from types import SimpleNamespace
 
 import pytest
+from fastapi.encoders import jsonable_encoder
 from fastapi.testclient import TestClient
 from test_pattern_comparisons import build_fixture, command
 
@@ -112,6 +113,45 @@ def test_unknown_request_remains_unknown_and_reads_create_no_work(client_fixture
     assert client.get(BASE + "/comparisons/never-created-0001").status_code == 404
     assert client.get(BASE + "/comparisons/bad!").status_code == 422
     assert f.registry.db.execute("SELECT count(*) FROM lab_bundles").fetchone()[0] == 0
+    assert f.registry.db.execute("SELECT count(*) FROM lab_proposals").fetchone()[0] == 0
+
+
+def test_normal_startup_shares_worker_and_http_preparation_owner(tmp_path):
+    app = create_app(Settings(), tmp_path / "monitor.sqlite3", background=False)
+    with TestClient(app):
+        lab = app.state.lab
+        owner = lab.roles.pattern_comparisons
+        assert isinstance(owner, PatternComparisons)
+        assert owner.scanner is app.state.pattern_scanner is lab.pattern_scanner
+        assert owner.registry is lab.roles.registry is lab.registry
+        assert owner.controller is lab.autonomous
+        assert lab.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0] == 0
+        assert lab.autonomous is None
+        assert (
+            lab.registry.db.execute(
+                "SELECT name FROM sqlite_master WHERE name='lab_proposals'"
+            ).fetchone()
+            is None
+        )
+
+
+def test_http_reuses_actual_worker_owner_and_refuses_foreign_identity(client_fixture, monkeypatch):
+    client, f, bridge, selection = client_fixture
+    client.app.state.lab.registry = f.registry
+    client.app.state.lab.roles = SimpleNamespace(pattern_comparisons=bridge)
+    expected = jsonable_encoder(bridge.describe(selection))
+
+    def refuse_duplicate_owner(*args, **kwargs):
+        raise AssertionError("HTTP must reuse its worker's existing preparation owner")
+
+    monkeypatch.setattr(PatternComparisons, "__init__", refuse_duplicate_owner)
+    read = client.get(BASE + "/comparison-source", params=selection.model_dump())
+    assert read.status_code == 200 and read.json() == expected
+    client.app.state.lab.registry = object()
+    foreign = client.get(BASE + "/comparison-source", params=selection.model_dump())
+    assert foreign.status_code == 503
+    assert foreign.json()["detail"] == "Pattern comparison owner identity unavailable"
+    assert f.paper.state == f.original
     assert f.registry.db.execute("SELECT count(*) FROM lab_proposals").fetchone()[0] == 0
 
 

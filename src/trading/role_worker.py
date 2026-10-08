@@ -8,6 +8,7 @@ import sqlite3
 import time
 from collections.abc import Callable
 from contextlib import AbstractContextManager, nullcontext
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any, Literal
 
 import psycopg
@@ -15,11 +16,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from trading import autonomous_finance as finance
 from trading.autonomous_lab import AutonomousLab, InputWait
-from trading.autonomous_spec import LabProposal, MemoryFilter, RuleSpec
+from trading.autonomous_spec import LabPolicy, LabProposal, MemoryFilter, RuleSpec, contract
 from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
 from trading.lab_role_contract import (
     CAPABILITY_VERSION,
+    PATTERN_VERSION,
     TOOL_REQUEST_VERSION,
     VERSION,
     Idea,
@@ -29,11 +31,17 @@ from trading.lab_role_contract import (
 )
 from trading.local_role_model import LocalRoles
 from trading.paper_engine import fresh_frame
+from trading.pattern_comparisons import (
+    PatternComparisonCommand,
+    PatternComparisons,
+    PatternFindingSelection,
+)
 from trading.peft_role_model import DevelopmentTransportFailure
 from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
 
 if TYPE_CHECKING:
     from trading.research_reviews import ResearchReviews
+from trading.research_evidence import digest
 from trading.research_lessons import ResearchLessons
 from trading.research_storage import ResearchStorage, StoragePlan
 from trading.role_evidence import (
@@ -43,6 +51,10 @@ from trading.role_evidence import (
     feature_summary,
     method_summary,
     outcome_summary,
+    pattern_controls,
+    pattern_feature,
+    pattern_packet,
+    pattern_summary,
 )
 from trading.role_history import HOT_TASKS, HistoryUnavailable, RoleHistory
 from trading.rule_components import reviewed_feature
@@ -51,6 +63,7 @@ from trading.scoped_tools import reader
 RETRIEVAL_CONTRACT = "source-rag-v1"
 PAPER_RESEARCH_PILOT = "paper_research_pilot"
 QUESTION_POLICY = "evidence-question-selection-v1"
+PATTERN_QUESTION_POLICY = "pattern-question-selection-v1"
 
 
 class Question(BaseModel):
@@ -70,8 +83,13 @@ class RoleWorker:
         transport: Any = None,
         storage_owner: Callable[[StoragePlan], AbstractContextManager[ResearchStorage]]
         | None = None,
+        *,
+        pattern_comparisons: PatternComparisons | None = None,
     ):
         self.registry, self.controller, self.transport = registry, controller, transport
+        if pattern_comparisons is not None and pattern_comparisons.registry is not registry:
+            raise ValueError("Pattern research must use the existing shared registry")
+        self.pattern_comparisons = pattern_comparisons
         self.lessons = ResearchLessons(registry)
         self.knowledge: ResearchKnowledge | None = None
         self.reviews: ResearchReviews | None = None
@@ -150,7 +168,7 @@ class RoleWorker:
 
     def _contract_version(self) -> str:
         version = getattr(self.transport, "role_contract", VERSION)
-        if version not in (VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION):
+        if version not in (VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION, PATTERN_VERSION):
             raise ValueError("Role contract needs an explicitly reviewed supported profile")
         return str(version)
 
@@ -255,6 +273,218 @@ class RoleWorker:
                 return receipt | {"outcome": "intent_conflict"}
             return receipt | {"outcome": "not_created", "message": rejection["reason"]}
 
+    def _pattern_original(self, source: dict[str, str]) -> dict[str, Any]:
+        bridge = self.pattern_comparisons
+        if bridge is None:
+            raise InputWait("Saved pattern comparison owner is unavailable")
+        if set(source) != {"request_id", "finding_sha256", "issued_bundle_sha256"}:
+            raise ValueError("Pattern source requires its exact immutable preparation identities")
+        original = bridge.get(source["request_id"])
+        if original is None:
+            raise InputWait("Original pattern preparation is unavailable; no replacement inferred")
+        if any(original[key] != source[key] for key in ("finding_sha256", "issued_bundle_sha256")):
+            raise ValueError("Pattern preparation identity differs")
+        if original["status"] != "supported":
+            raise InputWait("Original pattern preparation is waiting; it is never upgraded")
+        described = bridge.describe(
+            PatternFindingSelection.model_validate(original["finding"]["selection"])
+        )
+        if described["finding_sha256"] != original["finding_sha256"] or (
+            described["mapping"] != original["mapping"]
+        ):
+            raise ValueError("Original native proof or fixed comparison implementation changed")
+        return original
+
+    def _pattern_ready(self, policy: dict[str, Any], now: float) -> dict[str, Any]:
+        c = self.controller
+        if c is None or self._contract_version() != PATTERN_VERSION:
+            raise InputWait("Pattern comparison needs its explicit successor owner and contract")
+        authority = self._selection_authority()
+        if authority is None or authority["question_policy"] != PATTERN_QUESTION_POLICY:
+            raise InputWait("Pattern comparison requires its explicit selection authority")
+        paper = c.paper
+        if not self._activation_enabled() or not self._admitted():
+            raise InputWait("Pattern comparison waits for protected paper admission")
+        last_tick = paper.state.get("last_tick", 0)
+        observed = time.time()
+        frame = paper.control_frames().get("BTCUSD")
+        frame_observed = time.time()
+        book = frame.get("book") if frame else None
+        bars = paper.history.get("BTCUSD", [])[-600:]
+        if (
+            not paper.running
+            or paper.error
+            or paper.state.get("paused")
+            or not 0 <= observed - last_tick <= 10
+            or not paper.state.get("autonomous_lab")
+            or paper.state["autonomous_lab"].get("proposals_paused")
+            or fingerprint(paper.state["autonomous_lab"]["policy"]) != fingerprint(policy)
+            or not fresh_frame(frame, frame_observed)
+            or not frame
+            or frame.get("diagnostic_risk_input_valid") is not True
+            or frame.get("entry_allowed") is not True
+            or not book
+            or not book.bids
+            or not book.asks
+            or any(
+                not p.is_finite() or not q.is_finite() or p <= 0 or q <= 0
+                for p, q in (*book.bids, *book.asks)
+            )
+            or book.bids[0][0] >= book.asks[0][0]
+            or len(bars) < 305
+            or bars[-1].close_ms >= now * 1000
+            or bars[-1].open_ms + 60000 < getattr(paper, "ready_at", math.inf) * 1000
+            or getattr(paper, "_candle_errors", {}).get("BTCUSD")
+            or any(b.open_ms - a.open_ms != 60000 for a, b in zip(bars, bars[1:], strict=False))
+        ):
+            raise InputWait("Pattern comparison waits for protected current executable BTC inputs")
+        return frame
+
+    def _pattern_inputs(
+        self, source: dict[str, str], question: Question, policy: dict[str, Any], now: float
+    ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+        if question.horizon != "medium" or question.parent or question.lesson:
+            raise ValueError("Pattern comparison is one fixed independent medium hypothesis")
+        original = self._pattern_original(source)
+        self._pattern_ready(policy, now)
+        if original["current_policy_sha256"] != digest(policy):
+            raise ValueError("Saved comparison belongs to a different frozen Lab policy")
+        c, bridge = self.controller, self.pattern_comparisons
+        assert c is not None and bridge is not None
+        proposal = LabProposal.model_validate(original["proposal"])
+        if (
+            proposal.kind != "independent"
+            or proposal.strategy.version != "reviewed-lab-rules-v4"
+            or proposal.strategy.family != "breakout-retest-v1"
+            or proposal.reference.family != "cost-breakout-v1"
+            or proposal.reference.version != "reviewed-lab-rules-v4"
+            or proposal.strategy.holding_horizon != "medium"
+        ):
+            raise ValueError("Prepared proposal differs from the fixed supported pattern mapping")
+        self._pattern_admission(proposal, now)
+        reversed_proposal = LabProposal.model_validate(
+            {
+                **proposal.model_dump(),
+                "strategy": proposal.reference.model_dump(),
+                "reference": proposal.strategy.model_dump(),
+            }
+        )
+        candidate = c.evaluate(proposal, now)
+        reference = c.evaluate(reversed_proposal, now)
+        inputs = candidate.pop("inputs")
+        if reference.pop("inputs") != inputs or not 305 <= len(inputs) <= 600:
+            raise ValueError("Current matched pattern inputs differ")
+        proof = original["evaluation"]["matched_inputs"]
+        bridge.execution_inputs(proof, original["request_id"])
+        if digest(inputs) != proof["sha256"]:
+            observation_id = "role-input-" + digest(inputs)[:32]
+            observation = bridge.current_observation(observation_id, now)
+            evaluation = observation["evaluation"]
+            if evaluation["status"] != "supported_exploratory_configuration":
+                raise InputWait(evaluation["reason"])
+            proof = evaluation["matched_inputs"]
+            if proof["sha256"] != digest(inputs):
+                raise InputWait("Current causal input changed during archive observation")
+            if bridge.execution_inputs(proof, observation_id) != inputs:
+                raise ValueError("Current retained execution inputs differ")
+        catalog = {
+            "p0": {
+                "kind": proposal.kind,
+                "strategy": proposal.strategy.model_dump(),
+                "reference": proposal.reference.model_dump(),
+            }
+        }
+        frame = self._pattern_ready(policy, now)
+        book = frame["book"]
+        causal = {
+            "tool": "reviewed_rule_inputs",
+            "security": "BTCUSD",
+            "holding_horizon": "medium",
+            "source_basis": c.paper.state.get("evidence_kind", "observed_public_market"),
+            "closed_bar_count": len(inputs),
+            "closed_bar_sha256": digest(inputs),
+            "source_start": inputs[0]["open_ms"] / 1000,
+            "source_end": inputs[-1]["close_ms"] / 1000,
+            "observed_at": now,
+            "features": {"p0": candidate["feature"]},
+            "reference_features": {"p0": reference["feature"]},
+            "matched_inputs": proof,
+            "executable_book": plain({k: v for k, v in (frame or {}).items() if k != "book"})
+            | {
+                "bids": [[str(p), str(q)] for p, q in book.bids[:3]] if book else [],
+                "asks": [[str(p), str(q)] for p, q in book.asks[:3]] if book else [],
+                "update_id": book.update_id if book else None,
+            },
+            "scope": (
+                "Current separate v4 minute inputs; native recognition is hypothesis motivation"
+            ),
+        }
+        summary = pattern_summary(original)
+        old_evaluation = original["evaluation"]
+        summary["original_evaluation"] = {
+            "status": original["status"],
+            "evaluated_at": old_evaluation["candidate"]["evaluated_at"],
+            "expires_at": old_evaluation["candidate"]["expires_at"],
+            "matched_inputs": {
+                key: old_evaluation["matched_inputs"][key]
+                for key in ("count", "sha256", "cutoff", "archive_verified")
+            },
+        }
+        fixed = {
+            "p0": {
+                "candidate": contract(proposal, LabPolicy.model_validate(policy)),
+                "reference": contract(reversed_proposal, LabPolicy.model_validate(policy)),
+                "source_sha256": original["mapping"]["source_sha256"],
+                "current_inputs": {
+                    key: proof[key]
+                    for key in (
+                        "count",
+                        "sha256",
+                        "cutoff",
+                        "start_ms",
+                        "end_ms",
+                        "archive_verified",
+                    )
+                }
+                | {"retained_at": proof["cutoff"]},
+            }
+        }
+        issued = {"sha256": original["issued_bundle_sha256"], "kind": "saved-pattern-preparation"}
+        return catalog, issued, causal, summary, fixed
+
+    def _pattern_admission(
+        self, proposal: LabProposal, now: float, task_proposal: dict[str, Any] | None = None
+    ) -> None:
+        bridge, c = self.pattern_comparisons, self.controller
+        assert bridge is not None and c is not None
+        roster = bridge.scanner.roster(now, full=True)
+        if roster["available"] is not True or not any(
+            item["symbol"] == "BTCUSD" and item["eligible"] is True for item in roster["rows"]
+        ):
+            raise InputWait("Current BTC market eligibility is unavailable")
+        existing = None
+        if task_proposal is not None:
+            try:
+                existing = c.inbox.get(task_proposal["request_id"])
+            except ValueError:
+                pass
+            if existing and fingerprint(existing["body"]) != fingerprint(task_proposal):
+                raise ValueError("Original proposal acknowledgment identity differs")
+        if not existing and (
+            not c.inbox.has_capacity() or c.inbox.used(fingerprint(proposal.strategy.model_dump()))
+        ):
+            raise InputWait(
+                "Existing proposal capacity or equivalent used-rule gate blocks this test"
+            )
+
+    def _pattern_permitted(self, original: dict[str, Any], start: float, end: float) -> None:
+        assert self.pattern_comparisons is not None
+        with self.registry.lock:
+            self.pattern_comparisons._permitted(
+                [tuple(pair) for pair in original["finding"]["native_proof"]["disclosed_intervals"]]
+                + [(start, end)]
+            )
+
     def enqueue(
         self,
         question: Question,
@@ -264,6 +494,7 @@ class RoleWorker:
         _dependency_evidence: dict[str, Any] | None = None,
         _selection: dict[str, Any] | None = None,
         _selection_authority: dict[str, Any] | None = None,
+        _pattern_comparison: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         now = time.time() if now is None else now
         question_body = question.model_dump(exclude={"request_id"})
@@ -281,138 +512,166 @@ class RoleWorker:
         policy = c.paper.state["autonomous_lab"]["policy"]
         if question.horizon not in policy["holding_horizons"]:
             raise ValueError("Question horizon is outside the active policy")
-        base = RuleSpec(holding_horizon=question.horizon)
-        catalog: dict[str, Any] = {}
-        if question.parent:
-            parent = c.paper.state["autonomous_lab"]["trials"].get(question.parent)
-            if not parent or parent["status"] != "preserved":
-                raise ValueError("A variation needs a preserved supported parent")
-            base = RuleSpec.model_validate(parent["contract"]["proposal"]["strategy"])
-            if base.holding_horizon != question.horizon:
-                raise ValueError("Parent and child require the same frozen horizon")
-            for lookback in (base.lookback - 1, base.lookback + 1):
-                if 5 <= lookback <= 30:
-                    catalog[f"r{len(catalog)}"] = {
-                        "kind": "variation",
-                        "strategy": base.model_copy(update={"lookback": lookback}).model_dump(),
-                        "reference": base.model_dump(),
-                        "parent_trial": question.parent,
-                        "parent_strategy_sha256": fingerprint(base.model_dump()),
-                    }
+        if self._contract_version() == PATTERN_VERSION and _pattern_comparison is None:
+            if _resume_from and "pattern_comparison" in _resume_from["context"]:
+                saved = _resume_from["context"]["pattern_comparison"]
+                _pattern_comparison = {
+                    "request_id": saved["preparation_request_id"],
+                    "finding_sha256": saved["finding_sha256"],
+                    "issued_bundle_sha256": saved["issued_bundle_sha256"],
+                }
+            else:
+                raise ValueError("Pattern research requires its exact verified saved preparation")
+        pattern = None
+        fixed_comparison = None
+        catalog: dict[str, Any]
+        waits: dict[str, Any]
+        if _pattern_comparison is not None:
+            catalog, issued, causal_inputs, pattern, fixed_comparison = self._pattern_inputs(
+                _pattern_comparison, question, policy, now
+            )
+            prior = None
+            waits = {
+                "new_closed_bars": {
+                    "kind": "closed_bars",
+                    "horizon": question.horizon,
+                    "source_sha256": causal_inputs["closed_bar_sha256"],
+                    "last_closed_at": causal_inputs["source_end"],
+                }
+            }
         else:
-            catalog["r0"] = {
-                "kind": "replication",
-                "strategy": base.model_dump(),
-                "reference": base.model_dump(),
-                "replication_of": "reviewed-breakout-v1"
-                if question.horizon == "short"
-                else f"reviewed-breakout-{question.horizon}-v2",
-            }
-            catalog["r1"] = {
-                "kind": "independent",
-                "strategy": base.model_copy(update={"family": "range_reversion"}).model_dump(),
-                "reference": base.model_dump(),
-            }
-        if question.parent and question.horizon == "short" and base.entry_filter is None:
-            with self.registry.lock:
-                fitted = self.registry.db.execute(
-                    "SELECT result,plan FROM experiments WHERE status='completed' AND "
-                    "json_extract(plan,'$.experiment_mode')='memory_entry' "
-                    "ORDER BY seq DESC LIMIT 4"
-                ).fetchall()
-            for fitted_row in fitted:
-                for arm in json.loads(fitted_row["result"])["candidate_group"]:
-                    artifact = arm.get("artifact")
-                    if (
-                        not artifact
-                        or max(artifact["train_end"], artifact["calibration_end"]) >= now
-                    ):
-                        continue
-                    synthetic = "synthetic" in c.paper.state.get("evidence_kind", "")
-                    if (artifact["evidence_kind"] == "synthetic_qa") != synthetic:
-                        continue
-                    # Require explicit component pricing in the frozen experiment plan.
-                    fitted_plan = json.loads(fitted_row["plan"])
-                    numerical_cost = fitted_plan.get("numerical_daily_usd")
-                    context_cost = fitted_plan.get("contextual_daily_usd")
-                    if numerical_cost is None or arm["arm"] == "C" and context_cost is None:
-                        continue
-                    from decimal import Decimal
-
-                    cost = str(
-                        Decimal(numerical_cost)
-                        + (Decimal(context_cost) if arm["arm"] == "C" else Decimal(0))
-                    )
-                    component = MemoryFilter(artifact=artifact, marginal_daily_usd=cost)
-                    strategy = RuleSpec.model_validate(
-                        base.model_dump()
-                        | {
-                            "version": "reviewed-lab-rules-v3",
-                            "entry_filter": component.model_dump(),
+            base = RuleSpec(holding_horizon=question.horizon)
+            catalog = {}
+            if question.parent:
+                parent = c.paper.state["autonomous_lab"]["trials"].get(question.parent)
+                if not parent or parent["status"] != "preserved":
+                    raise ValueError("A variation needs a preserved supported parent")
+                base = RuleSpec.model_validate(parent["contract"]["proposal"]["strategy"])
+                if base.holding_horizon != question.horizon:
+                    raise ValueError("Parent and child require the same frozen horizon")
+                for lookback in (base.lookback - 1, base.lookback + 1):
+                    if 5 <= lookback <= 30:
+                        catalog[f"r{len(catalog)}"] = {
+                            "kind": "variation",
+                            "strategy": base.model_copy(update={"lookback": lookback}).model_dump(),
+                            "reference": base.model_dump(),
+                            "parent_trial": question.parent,
+                            "parent_strategy_sha256": fingerprint(base.model_dump()),
                         }
+            else:
+                catalog["r0"] = {
+                    "kind": "replication",
+                    "strategy": base.model_dump(),
+                    "reference": base.model_dump(),
+                    "replication_of": "reviewed-breakout-v1"
+                    if question.horizon == "short"
+                    else f"reviewed-breakout-{question.horizon}-v2",
+                }
+                catalog["r1"] = {
+                    "kind": "independent",
+                    "strategy": base.model_copy(update={"family": "range_reversion"}).model_dump(),
+                    "reference": base.model_dump(),
+                }
+            if question.parent and question.horizon == "short" and base.entry_filter is None:
+                with self.registry.lock:
+                    fitted = self.registry.db.execute(
+                        "SELECT result,plan FROM experiments WHERE status='completed' AND "
+                        "json_extract(plan,'$.experiment_mode')='memory_entry' "
+                        "ORDER BY seq DESC LIMIT 4"
+                    ).fetchall()
+                for fitted_row in fitted:
+                    for arm in json.loads(fitted_row["result"])["candidate_group"]:
+                        artifact = arm.get("artifact")
+                        if (
+                            not artifact
+                            or max(artifact["train_end"], artifact["calibration_end"]) >= now
+                        ):
+                            continue
+                        synthetic = "synthetic" in c.paper.state.get("evidence_kind", "")
+                        if (artifact["evidence_kind"] == "synthetic_qa") != synthetic:
+                            continue
+                        # Require explicit component pricing in the frozen experiment plan.
+                        fitted_plan = json.loads(fitted_row["plan"])
+                        numerical_cost = fitted_plan.get("numerical_daily_usd")
+                        context_cost = fitted_plan.get("contextual_daily_usd")
+                        if numerical_cost is None or arm["arm"] == "C" and context_cost is None:
+                            continue
+                        from decimal import Decimal
+
+                        cost = str(
+                            Decimal(numerical_cost)
+                            + (Decimal(context_cost) if arm["arm"] == "C" else Decimal(0))
+                        )
+                        component = MemoryFilter(artifact=artifact, marginal_daily_usd=cost)
+                        strategy = RuleSpec.model_validate(
+                            base.model_dump()
+                            | {
+                                "version": "reviewed-lab-rules-v3",
+                                "entry_filter": component.model_dump(),
+                            }
+                        )
+                        catalog["r2"] = {
+                            "kind": "variation",
+                            "strategy": strategy.model_dump(),
+                            "reference": base.model_dump(),
+                            "parent_trial": question.parent,
+                            "parent_strategy_sha256": fingerprint(base.model_dump()),
+                        }
+                        break
+                    if "r2" in catalog:
+                        break
+            issued = c.bundle(now)
+            prior = self.lessons.get(question.lesson) if question.lesson else None
+            if prior:
+                if prior["context"]["horizon"] != question.horizon:
+                    raise ValueError("Lesson and new comparison require the same declared horizon")
+                catalog = {
+                    k: v
+                    for k, v in catalog.items()
+                    if fingerprint(v["strategy"])
+                    != prior["context"].get(
+                        "strategy_sha256", fingerprint(prior["context"]["strategy"])
                     )
-                    catalog["r2"] = {
-                        "kind": "variation",
-                        "strategy": strategy.model_dump(),
-                        "reference": base.model_dump(),
-                        "parent_trial": question.parent,
-                        "parent_strategy_sha256": fingerprint(base.model_dump()),
-                    }
-                    break
-                if "r2" in catalog:
-                    break
-        issued = c.bundle(now)
-        prior = self.lessons.get(question.lesson) if question.lesson else None
-        if prior:
-            if prior["context"]["horizon"] != question.horizon:
-                raise ValueError("Lesson and new comparison require the same declared horizon")
-            catalog = {
-                k: v
-                for k, v in catalog.items()
-                if fingerprint(v["strategy"])
-                != prior["context"].get(
-                    "strategy_sha256", fingerprint(prior["context"]["strategy"])
-                )
+                }
+                if not catalog:
+                    raise ValueError("No supported different capability; wait for new evidence")
+            bars = c.paper.lab_history(now, question.horizon)
+            frame = c.paper.control_frames().get("BTCUSD")
+            book = frame.get("book") if frame else None
+            causal_inputs = {
+                "tool": "reviewed_rule_inputs",
+                "security": "BTCUSD",
+                "holding_horizon": question.horizon,
+                "source_basis": c.paper.state.get("evidence_kind", "observed_public_market"),
+                "closed_bar_count": len(bars),
+                "closed_bar_sha256": fingerprint([str(b) for b in bars]),
+                "observed_at": now,
+                "features": {
+                    key: reviewed_feature(
+                        bars,
+                        now,
+                        RuleSpec.model_validate(value["strategy"]),
+                        policy["execution_profile"],
+                        c.paper.memory_book("BTCUSD"),
+                    )
+                    for key, value in catalog.items()
+                },
+                "executable_book": plain({k: v for k, v in (frame or {}).items() if k != "book"})
+                | {
+                    "bids": [[str(p), str(q)] for p, q in book.bids[:3]] if book else [],
+                    "asks": [[str(p), str(q)] for p, q in book.asks[:3]] if book else [],
+                    "update_id": book.update_id if book else None,
+                },
+                "scope": "Current causal features; historical fills/returns unavailable",
             }
-            if not catalog:
-                raise ValueError("No supported different capability; wait for new evidence")
-        bars = c.paper.lab_history(now, question.horizon)
-        frame = c.paper.control_frames().get("BTCUSD")
-        book = frame.get("book") if frame else None
-        causal_inputs = {
-            "tool": "reviewed_rule_inputs",
-            "security": "BTCUSD",
-            "holding_horizon": question.horizon,
-            "source_basis": c.paper.state.get("evidence_kind", "observed_public_market"),
-            "closed_bar_count": len(bars),
-            "closed_bar_sha256": fingerprint([str(b) for b in bars]),
-            "observed_at": now,
-            "features": {
-                key: reviewed_feature(
-                    bars,
-                    now,
-                    RuleSpec.model_validate(value["strategy"]),
-                    policy["execution_profile"],
-                    c.paper.memory_book("BTCUSD"),
-                )
-                for key, value in catalog.items()
-            },
-            "executable_book": plain({k: v for k, v in (frame or {}).items() if k != "book"})
-            | {
-                "bids": [[str(p), str(q)] for p, q in book.bids[:3]] if book else [],
-                "asks": [[str(p), str(q)] for p, q in book.asks[:3]] if book else [],
-                "update_id": book.update_id if book else None,
-            },
-            "scope": "Current causal features; historical fills/returns unavailable",
-        }
-        waits: dict[str, Any] = {
-            "new_closed_bars": {
-                "kind": "closed_bars",
-                "horizon": question.horizon,
-                "source_sha256": causal_inputs["closed_bar_sha256"],
-                "last_closed_at": max((b.close_ms / 1000 for b in bars), default=0),
+            waits = {
+                "new_closed_bars": {
+                    "kind": "closed_bars",
+                    "horizon": question.horizon,
+                    "source_sha256": causal_inputs["closed_bar_sha256"],
+                    "last_closed_at": max((b.close_ms / 1000 for b in bars), default=0),
+                }
             }
-        }
         pending = sorted(
             (
                 t
@@ -454,6 +713,9 @@ class RoleWorker:
             "predecessor_task": _resume_from["id"] if _resume_from else None,
             "dependency_evidence": _dependency_evidence,
         }
+        if pattern is not None:
+            context["pattern_comparison"] = pattern
+            context["fixed_comparison"] = fixed_comparison
         if _selection is not None:
             _selection_authority = _selection["authority"]
             context["question_selection"] = _selection
@@ -474,7 +736,9 @@ class RoleWorker:
                     "question": question_body,
                     "policy": policy,
                     "catalog": catalog,
-                    "evidence": issued["bundle"]["novelty_sha256"],
+                    "evidence": issued["sha256"]
+                    if pattern is not None
+                    else issued["bundle"]["novelty_sha256"],
                     "source": causal_inputs["closed_bar_sha256"],
                     "waits": waits,
                     "dependency_evidence": _dependency_evidence,
@@ -1099,7 +1363,7 @@ class RoleWorker:
                     int(not task.get("_claimed_owner")),
                 ]
             )
-            return bool(
+            changed = bool(
                 self.registry.db.execute(
                     "UPDATE role_tasks SET " + ",".join(assignments) + " WHERE id=? AND stage=? "
                     "AND (owner=? AND lease_until>=? "
@@ -1107,6 +1371,107 @@ class RoleWorker:
                     params,
                 ).rowcount
             )
+            if (
+                changed
+                and task["context"]["contract"] == PATTERN_VERSION
+                and task["stage"] == "evaluate"
+                and stage == "archive_evaluation"
+            ):
+                self._pattern_numerical_exposure(task, values["evaluation"])
+                self.registry.db.execute(
+                    "UPDATE role_tasks SET evaluation=? WHERE id=?",
+                    (json.dumps(values["evaluation"], sort_keys=True, allow_nan=False), task["id"]),
+                )
+            return changed
+
+    def _pattern_numerical_exposure(self, task: dict[str, Any], evaluation: dict[str, Any]) -> None:
+        """Publish actual v8 numerical exposure in the lease-checked task transaction."""
+        bridge = self.pattern_comparisons
+        if bridge is None:
+            raise ValueError("Original pattern preparation owner is unavailable")
+        source = task["context"]["pattern_comparison"]
+        original = bridge.get(source["preparation_request_id"])
+        if original is None or any(
+            original[key] != source[key] for key in ("finding_sha256", "issued_bundle_sha256")
+        ):
+            raise ValueError("Original pattern numerical preparation identity differs")
+        if evaluation.get("pattern_source") != {
+            key: source[key]
+            for key in ("finding_sha256", "issued_bundle_sha256", "preparation_request_id")
+        }:
+            raise ValueError("Actual pattern numerical source identity is missing or changed")
+        at, inputs, reference = (
+            evaluation.get("evaluated_at"),
+            evaluation.get("inputs"),
+            evaluation.get("reference"),
+        )
+        if (
+            not isinstance(at, (int, float))
+            or isinstance(at, bool)
+            or not math.isfinite(at)
+            or at <= 0
+            or not isinstance(inputs, list)
+            or not 305 <= len(inputs) <= 600
+            or not isinstance(reference, dict)
+            or reference.get("evaluated_at") != at
+            or evaluation.get("financial_authority") is not False
+            or reference.get("financial_authority") is not False
+        ):
+            raise ValueError("Actual matched numerical prefix identity is unavailable")
+        fields = {"open_ms", "close_ms", "open", "high", "low", "close", "volume"}
+        previous = None
+        for row in inputs:
+            if (
+                not isinstance(row, dict)
+                or set(row) != fields
+                or type(row["open_ms"]) is not int
+                or type(row["close_ms"]) is not int
+                or row["open_ms"] % 60000
+                or row["close_ms"] != row["open_ms"] + 59999
+                or row["close_ms"] >= at * 1000
+                or (previous is not None and row["open_ms"] != previous + 60000)
+            ):
+                raise ValueError("Actual numerical prefix must be contiguous closed minute bars")
+            for key in fields - {"open_ms", "close_ms"}:
+                if not isinstance(row[key], str) or not Decimal(row[key]).is_finite():
+                    raise ValueError("Actual numerical prefix scalar identity is unavailable")
+            previous = row["open_ms"]
+        feature_sha = fingerprint([row | {"available_at": at} for row in inputs])
+        for result in (evaluation, reference):
+            feature = result.get("feature")
+            if (
+                not isinstance(feature, dict)
+                or feature.get("input_cutoff") != at
+                or feature.get("input_bars_sha256") != feature_sha
+            ):
+                raise ValueError(
+                    "Actual numerical prefix differs from its evaluated feature identity"
+                )
+        windows = [
+            tuple(pair) for pair in original["finding"]["native_proof"]["disclosed_intervals"]
+        ] + [(inputs[0]["open_ms"] / 1000, (inputs[-1]["close_ms"] + 1) / 1000)]
+        bridge._permitted(windows)
+        identity = fingerprint(inputs)
+        window_ids = []
+        for index, (start, end) in enumerate(windows):
+            window_id = f"role-pattern-numerical:{task['id']}:{identity}:{index}"
+            expected = (start, end, "Pattern comparison preparation disclosure")
+            old = self.registry.db.execute(
+                "SELECT start,end,origin FROM evidence_windows WHERE request_id=?", (window_id,)
+            ).fetchone()
+            if old is not None and tuple(old) != expected:
+                raise ValueError("Original numerical disclosure window identity differs")
+            self.registry.db.execute(
+                "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,?)", (window_id, *expected)
+            )
+            window_ids.append(window_id)
+        evaluation["input_disclosure"] = {
+            "input_count": len(inputs),
+            "input_sha256": identity,
+            "intervals": windows,
+            "window_ids": window_ids,
+            "observed_at": at,
+        }
 
     def _current(self, task: dict[str, Any]) -> AutonomousLab:
         if not self._same_mode(task):
@@ -1139,6 +1504,23 @@ class RoleWorker:
             return c
         if not lab or fingerprint(lab["policy"]) != task["context"]["policy_sha256"]:
             raise ValueError("Paper policy changed after dispatch; create a new scoped task")
+        if task["context"].get("contract") == PATTERN_VERSION:
+            saved = task["context"]["pattern_comparison"]
+            original = self._pattern_original(
+                {
+                    "request_id": saved["preparation_request_id"],
+                    "finding_sha256": saved["finding_sha256"],
+                    "issued_bundle_sha256": saved["issued_bundle_sha256"],
+                }
+            )
+            self._pattern_ready(task["context"]["policy"], time.time())
+            self._pattern_admission(
+                LabProposal.model_validate(original["proposal"]), time.time(), task["proposal"]
+            )
+            bars = c.paper.history["BTCUSD"][-600:]
+            self._pattern_permitted(
+                original, bars[0].open_ms / 1000, (bars[-1].close_ms + 1) / 1000
+            )
         if task["proposal"]:
             finance.validate_parent(c.paper.state, LabProposal.model_validate(task["proposal"]))
         if task["context"]["contract"] != self._contract_version():
@@ -1148,12 +1530,17 @@ class RoleWorker:
     def _packet(self, task: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         role, packet = self._base_packet(task)
         version = task["context"].get("contract", VERSION)
-        if version in (TOOL_REQUEST_VERSION, CAPABILITY_VERSION):
+        if version in (TOOL_REQUEST_VERSION, CAPABILITY_VERSION, PATTERN_VERSION):
             packet["contract"] = version
             if role == "researcher":
                 packet["tool_inventory"] = {
                     "strategy_family": sorted(
                         {v["family"] for v in packet["capabilities"].values()}
+                        | (
+                            {v["reference_family"] for v in packet["capabilities"].values()}
+                            if version == PATTERN_VERSION
+                            else set()
+                        )
                     ),
                     "feature": sorted(
                         {
@@ -1179,6 +1566,57 @@ class RoleWorker:
             packet["selection_authority"] = task["context"]["selection_authority"]
         if "question_selection" in task["context"]:
             packet["question_selection"] = task["context"]["question_selection"]
+        if version == PATTERN_VERSION:
+            packet["fixed_comparison"] = {
+                "p0": pattern_controls(task["context"]["fixed_comparison"]["p0"])
+            }
+            packet["evidence"]["e3"] = pattern_packet(task["context"]["pattern_comparison"])
+            if role == "reviewer":
+                evaluation = task["evaluation"]
+                packet["evidence"]["e0"] = {
+                    "method_sha256": fingerprint(task["proposal"]),
+                    "issued_bundle_sha256": task["context"]["issued"]["sha256"],
+                }
+                packet["evidence"]["e1"] = {
+                    "status": evaluation["status"],
+                    "evaluated_at": evaluation["evaluated_at"],
+                    "expires_at": evaluation["expires_at"],
+                    "feature": pattern_feature(evaluation["feature"]),
+                    "reference_feature": pattern_feature(evaluation["reference"]["feature"]),
+                    "input_count": evaluation["input_count"],
+                    "input_sha256": evaluation["input_sha256"],
+                    "detail_sha256": fingerprint(evaluation),
+                    "financial_authority": False,
+                }
+            if "question_selection" in packet:
+                packet["question_selection"] = {
+                    key: packet["question_selection"][key] for key in ("selection_sha", "method")
+                }
+            if "e2" in packet["evidence"]:
+                causal = task["context"]["tool_evidence"]
+                packet["evidence"]["e2"] = {
+                    "features": {
+                        key: pattern_feature(value) for key, value in causal["features"].items()
+                    },
+                    "reference_features": {
+                        key: pattern_feature(value)
+                        for key, value in causal["reference_features"].items()
+                    },
+                    "executable_book": {
+                        key: causal["executable_book"][key]
+                        for key in ("observed", "bids", "asks")
+                        if key in causal["executable_book"]
+                    },
+                    "request_data_conditions": {
+                        key: {"kind": v["kind"]}
+                        for key, v in task["context"]["wait_requirements"].items()
+                    },
+                }
+            packet["question"] = "Test fixed p0 prospectively; refute benefit on inadequate "
+            packet["question"] += "coverage or nonpositive matched net after-cost delta."
+            for capability in packet["capabilities"].values():
+                capability.pop("lookback", None)
+                capability.pop("reference_lookback", None)
         return role, packet
 
     def _base_packet(self, task: dict[str, Any]) -> tuple[str, dict[str, Any]]:
@@ -1200,7 +1638,11 @@ class RoleWorker:
                     },
                 },
             }
-        evidence: dict[str, Any] = {"e0": bundle_summary(context["issued"]["bundle"])}
+        evidence: dict[str, Any] = {
+            "e0": {"issued_bundle_sha256": context["issued"]["sha256"]}
+            if context.get("contract") == PATTERN_VERSION
+            else bundle_summary(context["issued"]["bundle"])
+        }
         evidence["e2"] = context["tool_evidence"] | {
             "features": feature_set(context["tool_evidence"]["features"]),
             "executable_book": {
@@ -1766,6 +2208,29 @@ class RoleWorker:
                 evaluation = await asyncio.to_thread(
                     c.evaluate, LabProposal.model_validate(task["proposal"]), now
                 )
+                if task["context"]["contract"] == PATTERN_VERSION:
+                    proposal = LabProposal.model_validate(task["proposal"])
+                    reference = LabProposal.model_validate(
+                        {
+                            **proposal.model_dump(),
+                            "strategy": proposal.reference.model_dump(),
+                            "reference": proposal.strategy.model_dump(),
+                        }
+                    )
+                    reference_evaluation = await asyncio.to_thread(c.evaluate, reference, now)
+                    if reference_evaluation.pop("inputs") != evaluation["inputs"]:
+                        raise ValueError(
+                            "Current candidate/reference numerical input identities differ"
+                        )
+                    evaluation["reference"] = reference_evaluation
+                    evaluation["pattern_source"] = {
+                        key: task["context"]["pattern_comparison"][key]
+                        for key in (
+                            "finding_sha256",
+                            "issued_bundle_sha256",
+                            "preparation_request_id",
+                        )
+                    }
                 self._update(task, "archive_evaluation", evaluation=evaluation)
             elif stage == "archive_evaluation":
                 await self._owned(self._archive_evaluation, task)
@@ -2060,6 +2525,247 @@ class RoleWorker:
         ).fetchone()
         return dict(row) if row else None
 
+    @staticmethod
+    def _pattern_event_identity(finding: dict[str, Any]) -> str:
+        selection = finding["selection"]
+        return fingerprint(
+            {
+                "campaign_id": finding["campaign_id"],
+                "selection": {
+                    k: selection[k] for k in ("symbol", "timeframe", "event_kind", "event_seq")
+                },
+                "original_event": finding["original_event"],
+                "native_input_sha256": finding["native_proof"]["input_window_sha256"],
+            }
+        )
+
+    def _pattern_source(
+        self, original: dict[str, Any], policy: dict[str, Any], now: float
+    ) -> dict[str, Any]:
+        self._pattern_ready(policy, now)
+        assert self.controller is not None
+        proposal = LabProposal.model_validate(original["proposal"])
+        self._pattern_admission(proposal, time.time())
+        # The original cutoff remains causal while the executable frame uses its
+        # current observation clock. This check is input identity, not evaluation.
+        inputs: list[dict[str, Any]] = [
+            {
+                "open_ms": b.open_ms,
+                "close_ms": b.close_ms,
+                "open": str(b.open),
+                "high": str(b.high),
+                "low": str(b.low),
+                "close": str(b.close),
+                "volume": str(b.volume),
+            }
+            for b in self.controller.paper.history.get("BTCUSD", [])[-600:]
+        ]
+        return {
+            "method": "p0",
+            "horizon": "medium",
+            "source_sha": digest(inputs),
+            "source_start": inputs[0]["open_ms"] / 1000,
+            "source_end": inputs[-1]["close_ms"] / 1000,
+            "source_count": len(inputs),
+            "source_basis": self.controller.paper.state.get(
+                "evidence_kind", "observed_public_market"
+            ),
+            "strategy_sha": fingerprint(proposal.strategy.model_dump()),
+            "reference_sha": fingerprint(proposal.reference.model_dump()),
+            "original_event_sha": self._pattern_event_identity(original["finding"]),
+            "method_source_sha": fingerprint(original["mapping"]["source_sha256"]),
+            "comparison": {
+                k: original[k] for k in ("request_id", "finding_sha256", "issued_bundle_sha256")
+            },
+        }
+
+    def _check_pattern_selection(
+        self,
+        selection: dict[str, Any],
+        question: Question,
+        policy: dict[str, Any],
+        inputs: dict[str, Any],
+        catalog: dict[str, Any],
+        now: float,
+    ) -> None:
+        bridge = self.pattern_comparisons
+        if bridge is None:
+            raise InputWait("Pattern comparison owner is unavailable")
+        # Publication only reads the bounded immutable bundle and current minute
+        # owner. Archive verification/borrow has already completed outside this lock.
+        original = bridge.get(selection["comparison"]["request_id"])
+        if original is None or original["status"] != "supported":
+            raise InputWait("Original supported preparation is unavailable")
+        source = self._pattern_source(original, policy, now)
+        self._pattern_permitted(original, source["source_start"], source["source_end"] + 0.001)
+        if (
+            question.parent is not None
+            or question.lesson is not None
+            or question.horizon != "medium"
+            or question.request_id != "auto-" + selection["selection_sha"][:32]
+            or selection["authority"] != self._selection_authority()
+            or selection["scope_sha"]
+            != fingerprint({"authority": selection["authority"], "policy_sha": fingerprint(policy)})
+            or any(selection[key] != value for key, value in source.items())
+            or source["source_sha"] != inputs["closed_bar_sha256"]
+            or source["source_count"] != inputs["closed_bar_count"]
+            or source["strategy_sha"] != catalog["p0"]["strategy_sha256"]
+            or source["reference_sha"] != catalog["p0"]["reference_sha256"]
+            or original["mapping"]["source_sha256"] != bridge._method_sources()
+            or original["current_policy_sha256"] != digest(policy)
+        ):
+            raise InputWait("Pattern finding, method, policy or current causal input changed")
+
+    def _pattern_terminal(self, identity: str, authority: dict[str, Any]) -> dict[str, Any]:
+        """Follow only the exact bounded dependency lineage, without changing old answers."""
+        seen: set[str] = set()
+        original: dict[str, Any] | None = None
+        for _ in range(20):
+            if identity in seen:
+                raise InputWait("Pattern dependency lineage contains a cycle")
+            seen.add(identity)
+            task = self.get(identity)
+            context = task["context"]
+            if (
+                context.get("contract") != PATTERN_VERSION
+                or context.get("selection_authority") != authority
+            ):
+                raise InputWait("Pattern dependency lineage authority differs")
+            preparation = context.get("pattern_comparison")
+            if not isinstance(preparation, dict):
+                raise InputWait("Pattern dependency lineage preparation is unavailable")
+            proof = {
+                key: preparation[key]
+                for key in ("preparation_request_id", "finding_sha256", "issued_bundle_sha256")
+            }
+            if original is None:
+                original = proof
+            elif proof != original:
+                raise InputWait("Pattern dependency lineage original preparation differs")
+            with self.registry.lock:
+                children = self.registry.db.execute(
+                    "SELECT id FROM role_tasks WHERE "
+                    "json_extract(context,'$.predecessor_task')=? ORDER BY id LIMIT 2",
+                    (identity,),
+                ).fetchall()
+            if not children:
+                return task
+            if (
+                len(children) != 1
+                or task["status"] != "done"
+                or task["stage"] != "complete"
+                or (task["result"] or {}).get("action") != "request_data"
+            ):
+                raise InputWait("Pattern dependency lineage is not an exact completed wait")
+            identity = children[0]["id"]
+        raise InputWait("Pattern dependency lineage exceeds its bounded review")
+
+    def _select_pattern_question(
+        self, authority: dict[str, Any], policy: dict[str, Any], scope: str, now: float
+    ) -> int:
+        bridge = self.pattern_comparisons
+        if bridge is None or "medium" not in policy["holding_horizons"]:
+            raise InputWait("Pattern comparison awaits its declared medium owner")
+        if self._contract_version() != PATTERN_VERSION:
+            raise InputWait("Pattern selection needs its exact v8 contract")
+        with self.registry.lock:
+            previous = self.registry.db.execute(
+                "SELECT task,source_end,selection_sha,body FROM role_question_selections "
+                "WHERE scope_sha=? AND horizon='medium' ORDER BY source_end DESC LIMIT 1",
+                (scope,),
+            ).fetchone()
+        if previous:
+            task = self._pattern_terminal(previous["task"], authority)
+            result = task["result"] or {}
+            if (
+                task["status"] != "done"
+                or task["stage"] != "complete"
+                or result.get("followup", result).get("action") != "no_change"
+            ):
+                raise InputWait("Original adverse/wait/result needs reviewed capability or scope")
+        selection = bridge.candidate(now)
+        if selection is None:
+            raise InputWait("No supported saved BTC/native-5m daily finding")
+        described = bridge.describe(selection)
+        event_sha = self._pattern_event_identity(described["finding"])
+        with self.registry.lock:
+            duplicate = self.registry.db.execute(
+                "SELECT 1 FROM role_question_selections WHERE scope_sha=? "
+                "AND json_extract(body,'$.original_event_sha')=? LIMIT 1",
+                (scope, event_sha),
+            ).fetchone()
+        if duplicate:
+            raise InputWait("This original native event was already investigated; no repeat")
+        if previous and (
+            described["finding"]["original_event"]["bar_close_ms"] / 1000
+            - json.loads(previous["body"])["original_event_end"]
+            < max(policy["horizon_seconds"], RuleSpec(holding_horizon="medium").timing["review"])
+        ):
+            raise InputWait("Distinct later native evidence has not matured for another question")
+        preparation_id = "role-pattern-" + fingerprint({"scope": scope, "event": event_sha})[:32]
+        original = bridge.get(preparation_id)
+        if original is None:
+            original = bridge.prepare(
+                PatternComparisonCommand(
+                    **selection.model_dump(),
+                    request_id=preparation_id,
+                    expected_finding_sha256=described["finding_sha256"],
+                ),
+                now,
+            )
+        elif (
+            self._pattern_event_identity(original["finding"]) != event_sha
+            or original["mapping"] != described["mapping"]
+            or original["current_policy_sha256"] != digest(policy)
+        ):
+            raise ValueError("Stable preparation differs from this original event/method/policy")
+        if original["status"] != "supported":
+            raise InputWait(
+                "Original deterministic preparation remains waiting: "
+                + original["evaluation"]["reason"]
+            )
+        source = self._pattern_source(original, policy, now)
+        key = fingerprint({"scope_sha": scope, **source})
+        selected = {
+            **source,
+            "authority": authority,
+            "scope_sha": scope,
+            "selection_sha": key,
+            "lesson": None,
+            "prior_selection": previous["selection_sha"] if previous else None,
+            "original_event_end": original["finding"]["original_event"]["bar_close_ms"] / 1000,
+            "reason": "Verified saved native breakout/retest motivates the fixed p0 comparison.",
+            "falsification": "Reject benefit when mature matched net after-cost delta is "
+            "nonpositive or the declared outcome coverage is inadequate.",
+            "limitations": [
+                "The native pivot detector and trading-bank predicate are distinct.",
+                "Only the relevant recognition window and current minute prefix are contiguous; "
+                "full-year and medium outcome coverage are not inferred.",
+                "Maximum six-hour holding is not minimum 24-hour outcome review.",
+                "Software support is not profit, model quality or qualification; "
+                "operating/inference costs remain uncertain.",
+            ],
+        }
+        question = Question(
+            question="Does fixed p0 breakout-retest improve future matched net after-cost "
+            "outcomes versus cost-breakout? The saved native pattern motivates this "
+            "distinct bank hypothesis; refute benefit or choose a typed wait/no_change "
+            "when supported evidence is insufficient.",
+            horizon="medium",
+            request_id="auto-" + key[:32],
+        )
+        created = self.enqueue(
+            question, now, _selection=selected, _pattern_comparison=source["comparison"]
+        )
+        self._supervision(
+            "questions",
+            "Selected " + created["id"] + "; prospective hypothesis, no edge claim",
+            now + 60,
+            "selected",
+            scope_sha=scope,
+        )
+        return int(created["_selection_created"])
+
     def _check_selection(
         self,
         selection: dict[str, Any],
@@ -2069,6 +2775,9 @@ class RoleWorker:
         catalog: dict[str, Any],
         now: float,
     ) -> None:
+        if selection["authority"]["question_policy"] == PATTERN_QUESTION_POLICY:
+            self._check_pattern_selection(selection, question, policy, inputs, catalog, now)
+            return
         authority = selection["authority"]
         if (
             question.parent is not None
@@ -2125,6 +2834,8 @@ class RoleWorker:
             scope = fingerprint({"authority": authority, "policy_sha": fingerprint(policy)})
             with self.registry.lock:
                 self._selection_room(authority, policy, now)
+            if authority["question_policy"] == PATTERN_QUESTION_POLICY:
+                return self._select_pattern_question(authority, policy, scope, now)
             reasons = []
             for horizon in policy["holding_horizons"]:
                 with self.registry.lock:
@@ -2236,7 +2947,7 @@ class RoleWorker:
             }
         if not self._activation_enabled():
             return {
-                "policy": QUESTION_POLICY,
+                "policy": authority["question_policy"],
                 "state": "disabled",
                 "reason": "Fresh investigation selection is paused; saved provenance is unchanged",
             }
@@ -2258,7 +2969,7 @@ class RoleWorker:
         if state and state["scope_sha"] != scope and state["scope_sha"] is not None:
             state = None
         return {
-            "policy": QUESTION_POLICY,
+            "policy": authority["question_policy"],
             "state": (
                 state["status"]
                 if state and state["status"] in {"selected", "waiting"}
@@ -2524,8 +3235,27 @@ class RoleWorker:
         outcome = None
         if requirement["kind"] == "closed_bars":
             assert self.controller is not None
-            bars = self.controller.paper.lab_history(now, requirement["horizon"])
-            if (
+            if task["context"].get("contract") == PATTERN_VERSION:
+                saved = task["context"]["pattern_comparison"]
+                original = self._pattern_original(
+                    {
+                        "request_id": saved["preparation_request_id"],
+                        "finding_sha256": saved["finding_sha256"],
+                        "issued_bundle_sha256": saved["issued_bundle_sha256"],
+                    }
+                )
+                inputs = self.controller.evaluate(
+                    LabProposal.model_validate(original["proposal"]), now
+                )["inputs"]
+                if (
+                    digest(inputs) == requirement["source_sha256"]
+                    or inputs[-1]["close_ms"] / 1000 <= requirement["last_closed_at"]
+                ):
+                    return 0
+                bars = []
+            else:
+                bars = self.controller.paper.lab_history(now, requirement["horizon"])
+            if task["context"].get("contract") != PATTERN_VERSION and (
                 fingerprint([str(b) for b in bars]) == requirement["source_sha256"]
                 or max((b.close_ms / 1000 for b in bars), default=0)
                 <= requirement["last_closed_at"]

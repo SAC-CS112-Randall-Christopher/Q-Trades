@@ -3,7 +3,7 @@
 ## Current archive owner and recovery repair
 
 PR75 is reconciled with the accepted current source at
-`3d26941652efa72b20a7b532da1994e45b76c2cb`. The clock correction below remains;
+`c653b136f4f0d4fac3f9855bbbb4c40b21a3c8a9`. The clock correction below remains;
 the native scanner, account redesign and financial/storage owners from that base
 are retained. This is a source proposal, with no operating update or activation.
 
@@ -44,10 +44,12 @@ explicit recovery, cancellation drain and explicit standalone use. Executed
 counts, setup/fixture failures, browser results and hosted checks belong to the
 current #66 ledger; they are separate from installed coexistence acceptance.
 
-The daily chart analyzer in PR83 is a separate source proposal. Its historical
-pattern findings do not yet become supported autonomous model experiments in
-this worker's frozen method catalog. No scanner evidence is silently added to
-an original model packet, profile or grant by this repair.
+The daily chart analyzer and immutable preparation in PR83 are now installed.
+The explicit successor connection is described in
+[Pattern research connection](PATTERN_RESEARCH_CONNECTION.md). It preserves the
+earlier frozen method catalogs and requires a separately selected v8/v5 contract
+and grant; no scanner evidence is added to an original packet, profile or grant.
+Installed PR83 acceptance is separate from this uninstalled source continuation.
 
 ## Current observation clock repair
 
@@ -68,6 +70,8 @@ The retained operating wait reason is compatible with this defect; its actual
 interleaving and exclusive cause have not been established. This source follow-up
 does not install the correction, resume the paused trial or execute a model.
 The proposal and operating-decision text below records the earlier PR73 checkpoint.
+
+## Preserved earlier v7 question policy
 
 An enabled worker previously advanced saved questions and genuine dependencies,
 but could not choose a first investigation when its queue was empty. This source

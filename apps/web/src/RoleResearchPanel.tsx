@@ -8,7 +8,7 @@ import { FrozenComponentPanel } from "./FrozenComponentPanel";
 
 type RoleState = {
   enabled: boolean;
-  contract: string;
+  contract: string | null;
   reason: string;
   paper_pilot?: boolean;
   experimental?: boolean;
@@ -24,7 +24,7 @@ type RoleState = {
     queued: number;
   };
   question_selection?: {
-    policy: "evidence-question-selection-v1" | null;
+    policy: string | null;
     state: "selected" | "waiting" | "disabled" | "unavailable";
     reason: string;
     task?: string;
@@ -67,7 +67,7 @@ type QuestionSelection = {
   };
   scope_sha: string;
   selection_sha?: string;
-  method: "r1";
+  method: "r1" | "p0";
   horizon: string;
   source_sha: string;
   source_start: number;
@@ -81,6 +81,24 @@ type QuestionSelection = {
   falsification: string;
   limitations: string[];
 };
+type PatternComparison = {
+  preparation_request_id: string;
+  issued_bundle_sha256: string;
+  finding_sha256: string;
+  selection: { daily_id: string; symbol: string; timeframe: string; event_kind: "patterns" | "alerts"; event_seq: number };
+  campaign_id: string;
+  captured_at: number;
+  prepared_at: number;
+  original_event: { id: string; kind: string; bar_open_ms: number; bar_close_ms?: number; level_id: string; level_price: string; volume_confirmed: boolean | null; volume_ratio: string | null; reason: string };
+  coverage: { timeframe: string; status: string; observed_bars?: number; expected_bars?: number; missing_bars?: number; gap_count?: number; progress_sha256: string | null }[];
+  native_proof: { archive_verified: boolean; recognition_rows: number; pivot_rows: number; contiguous_relevant_window: boolean; recognition_start_ms: number; recognition_end_ms: number; input_window_sha256: string; pivot_sha256: string; coverage_claim: string };
+  mapping: { strategy: string; reference: string; rule_version: string; holding_horizon: string; limits: string[]; source_sha256: Record<string, string> };
+  original_evaluation: { status: string; evaluated_at?: number; expires_at?: number; matched_inputs?: Pick<CurrentInputs, "count" | "sha256" | "cutoff" | "archive_verified"> };
+  financial_authority: false;
+};
+type CurrentInputs = { count: number; sha256: string; cutoff: number; start_ms: number; end_ms: number; archive_verified: boolean; retained_at?: number };
+type FixedControls = Record<string, unknown> & { entry: string; exit: { feature_seconds: number; maximum_hold: number; review: number }; evaluation: { seconds: number } };
+type FixedMethod = { candidate: FixedControls; reference: FixedControls; source_sha256: Record<string, string>; current_inputs: CurrentInputs };
 type Task = {
   id: string; stage: string; status: string; updated: number; reason: string | null;
   contract_applicability?: {
@@ -90,8 +108,8 @@ type Task = {
     selected_contract: string | null;
   };
   execution: {kind: string; actor?: string; lease_until: number | null};
-  context: { execution_mode?: string; experimental?: boolean; question_selection?: QuestionSelection; question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
-  proposal: { request_id: string; kind: string; strategy: {family: string; lookback: number; entry_filter?: {kind: string; horizon_seconds: number; marginal_daily_usd: string; fallback: string; artifact: {sha256: string}}}; reference: { family: string; lookback: number } } | null;
+  context: { execution_mode?: string; experimental?: boolean; question_selection?: QuestionSelection; pattern_comparison?: PatternComparison; fixed_comparison?: { p0: FixedMethod }; question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; closed_bar_sha256?: string; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
+  proposal: { request_id: string; kind: string; strategy: {version?: string; family: string; lookback: number; entry_filter?: {kind: string; horizon_seconds: number; marginal_daily_usd: string; fallback: string; artifact: {sha256: string}}}; reference: { family: string; lookback: number } } | null;
   evaluation: { input_count: number; evaluated_at: number; feature: { eligible?: boolean; reason?: string }; replay: string; detail_reference?: string } | null;
   result: { action?: string; tool_request?: ToolRequest | null; evidence_ids?: string[]; rationale?: string; falsification?: string; proposal_id?: string; trial_id?: string; review?: { action: string; rationale: string }; outcome?: {body: {outcome: string; reason: string; window_start: number; window_end: number; available_at: number; delta_usd: string | null; net_after_operating_usd: {candidate: string; reference: string}; qualification: string}}; followup?: { action: string; rationale: string; dependency: string | null } } | null;
   attempts: { attempt: number; stage: string; status: string; started: number; finished: number | null; profile: unknown; response: { answer?: unknown; tokens?: unknown; wall_seconds?: number } | null; reason: string | null }[];
@@ -124,6 +142,56 @@ const toolKinds: Record<ToolRequest["kind"], string> = {
 };
 
 const linkedTask = () => new URLSearchParams(location.hash.split("?")[1] ?? "").get("task");
+
+function patternLinks(pattern: PatternComparison) {
+  const selection = pattern.selection;
+  if (!/^patterns-[a-f0-9]{24}$/.test(pattern.campaign_id) ||
+    !/^daily-[a-f0-9]{24}$/.test(selection.daily_id) || selection.symbol !== "BTCUSD" || selection.timeframe !== "5m" ||
+    !["patterns", "alerts"].includes(selection.event_kind) || !Number.isSafeInteger(selection.event_seq) || selection.event_seq < 1) return null;
+  const finding = new URLSearchParams({ symbol: selection.symbol, scanner_campaign: pattern.campaign_id, daily_shortlist: selection.daily_id });
+  const progress = pattern.coverage.find(row => row.timeframe === selection.timeframe)?.progress_sha256;
+  if (typeof progress === "string" && /^[a-f0-9]{64}$/.test(progress) && Number.isSafeInteger(pattern.original_event.bar_open_ms)) {
+    finding.set("scanner_chart_frame", selection.timeframe);
+    finding.set("scanner_chart_at_ms", String(pattern.original_event.bar_open_ms));
+    finding.set("scanner_chart_kind", selection.event_kind);
+    finding.set("scanner_chart_seq", String(selection.event_seq));
+    finding.set("scanner_chart_progress_sha256", progress);
+  }
+  const preparation = new URLSearchParams({ symbol: selection.symbol });
+  const requestValid = /^[A-Za-z0-9_-]{8,64}$/.test(pattern.preparation_request_id);
+  if (requestValid) preparation.set("pattern_comparison_request", pattern.preparation_request_id);
+  return { finding: `#markets?${finding}`, preparation: requestValid ? `#markets?${preparation}` : null, capturedChart: finding.has("scanner_chart_progress_sha256") };
+}
+
+function PatternTaskEvidence({ pattern, fixed }: { pattern: PatternComparison; fixed?: FixedMethod }) {
+  const links = patternLinks(pattern);
+  const original = pattern.original_evaluation;
+  return <section aria-label="Saved pattern research evidence">
+    <h4>Original native finding and fixed comparison</h4>
+    <p>This saved scanner finding motivates an experimental comparison. The scanner's level detector and the fixed bank method differ; recognition and numerical eligibility do not establish a trading advantage.</p>
+    <p><strong>Original finding:</strong> {pattern.selection.symbol} · {pattern.selection.timeframe} · {pattern.original_event.kind} · {new Date(pattern.original_event.bar_open_ms).toLocaleString()}.</p>
+    <p>{pattern.original_event.reason}</p>
+    <p>Recorded level ${pattern.original_event.level_price} · volume ratio {pattern.original_event.volume_ratio ?? "unknown"} · volume confirmation {pattern.original_event.volume_confirmed === true ? "recorded" : pattern.original_event.volume_confirmed === false ? "not confirmed" : "unknown"}. Daily evidence captured {stamp(pattern.captured_at)}.</p>
+    {links ? <p><a href={links.finding}>Reopen original daily finding</a>{links.preparation && <> · <a href={links.preparation}>Reopen original preparation</a></>}</p> : <p>Original navigation identity is unavailable; the retained evidence remains below.</p>}
+    <p>{links?.capturedChart ? "The historical chart link keeps the captured progress hash. Later scanner progress may refuse that original window; it does not replace the saved finding." : "A captured chart progress hash is unavailable; the finding link opens its original daily record without claiming an exact historical chart window."} Reopening these records does not prepare or submit another comparison.</p>
+    <h5>Original captured coverage</h5>
+    <ul>{pattern.coverage.map(row => <li key={row.timeframe}>{row.timeframe}: {row.status} · {row.observed_bars ?? "unknown"} of {row.expected_bars ?? "unknown"} bars · {row.missing_bars ?? "unknown"} missing · {row.gap_count ?? "unknown"} gaps.</li>)}</ul>
+    <h5>Preparation-time proof and numerical check</h5>
+    <p>Prepared {stamp(pattern.prepared_at)}. Original numerical status: <strong>{original.status}</strong>{original.evaluated_at != null ? ` · evaluated ${stamp(original.evaluated_at)}` : ""}{original.expires_at != null ? ` · original expiry ${stamp(original.expires_at)}` : ""}. This retained check is not current admission or an economic outcome.</p>
+    <p>Native archive verification: {pattern.native_proof.archive_verified === true ? "recorded" : "unverified"} · {pattern.native_proof.recognition_rows} recognition rows · {pattern.native_proof.pivot_rows} pivot rows · relevant window {pattern.native_proof.contiguous_relevant_window === true ? "contiguous" : "unknown or incomplete"}. {pattern.native_proof.coverage_claim}</p>
+    {original.matched_inputs && <p>Original preparation used {original.matched_inputs.count} matched closed-minute inputs · cutoff {stamp(original.matched_inputs.cutoff)} · archive verification {original.matched_inputs.archive_verified === true ? "recorded" : "unverified"}.</p>}
+    <details><summary>Original finding, preparation digests and proof</summary><pre>{JSON.stringify({ selection: pattern.selection, campaign_id: pattern.campaign_id, original_event: pattern.original_event, coverage: pattern.coverage, preparation_request_id: pattern.preparation_request_id, issued_bundle_sha256: pattern.issued_bundle_sha256, finding_sha256: pattern.finding_sha256, native_proof: pattern.native_proof, original_evaluation: original }, null, 2)}</pre></details>
+    <h5>Frozen method and separately captured execution inputs</h5>
+    <p>{pattern.mapping.rule_version}: {pattern.mapping.strategy} compared with {pattern.mapping.reference} · {pattern.mapping.holding_horizon} holding horizon. The exact entry, exit, timing and cost controls are retained below. Legacy lookback and common volume-multiple fields are inapplicable to this fixed v4 method.</p>
+    {fixed ? <>
+      <p>Fixed candidate entry: {fixed.candidate.entry} Reference entry: {fixed.reference.entry}</p>
+      <p>{fixed.candidate.exit.feature_seconds / 60}-minute closed-candle features · maximum holding time {fixed.candidate.exit.maximum_hold / 3600} hours · fixed review {fixed.candidate.exit.review / 3600} hours · comparison evaluation window {fixed.candidate.evaluation.seconds / 3600} hours.</p>
+      <p>At task capture: {fixed.current_inputs.count} separate closed-minute inputs · cutoff {stamp(fixed.current_inputs.cutoff)} · archive verification {fixed.current_inputs.archive_verified === true ? "recorded" : "unverified"}. Native scanner candles were not substituted for these execution inputs.</p>
+      <details><summary>Fixed candidate and reference controls with task input identity</summary><pre>{JSON.stringify(fixed, null, 2)}</pre></details>
+    </> : <p>The task's fixed controls or separate input identity are unavailable. The original preparation does not supply a current check.</p>}
+    <ul>{pattern.mapping.limits.map((limit, index) => <li key={index}>{limit}</li>)}</ul>
+  </section>;
+}
 
 export function RoleResearchPanel() {
   const [state, setState] = useState<RoleState | null>(null);
@@ -241,6 +309,7 @@ export function RoleResearchPanel() {
   };
   const enqueue = (event: FormEvent) => {
     event.preventDefault();
+    if (busy || retry || !manualQuestions) return;
     void submit({ question, horizon, parent: parent || null, request_id: crypto.randomUUID() });
   };
   const retryStage = async () => {
@@ -287,6 +356,8 @@ export function RoleResearchPanel() {
     finally { setControlBusy(false); setRefresh(r => r + 1); }
   };
   const pilot = state?.paper_pilot === true;
+  const patternQuestions = state?.contract === "reviewed-rule-role-v8";
+  const manualQuestions = !statusError && !!state?.contract && ["reviewed-rule-role-v5", "reviewed-rule-role-v6", "reviewed-rule-role-v7"].includes(state.contract);
   const stageLabel = (stage: string) => pilot && stage === "review" ? "Model review" : stages[stage] ?? stage;
   return <section id="role-research" className="panel role-research" aria-labelledby="role-title">
     <h2 id="role-title">Local model research</h2>
@@ -327,11 +398,18 @@ export function RoleResearchPanel() {
     {statusError && <p role="alert">{statusError} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
     {taskError && <p role="alert">{taskError} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry task detail</button></p>}
     {error && <p role="alert">{error.message} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
-    <form onSubmit={enqueue}>
+    {patternQuestions && <section aria-label="Pattern research questions">
+      <h3>{statusError ? "Last observed question mode: saved patterns" : "Questions selected from saved patterns"}</h3>
+      {statusError && <p>The current research mode is unverified. New manual questions remain unavailable until status reconnects.</p>}
+      <p>This research mode selects new questions automatically from saved native pattern findings. It waits when evidence or operating prerequisites are unavailable. Manual questions are not supported in this mode.</p>
+      {retry && <p>Your earlier manual request remains below for recovery. It has not been replaced by an automatic question.</p>}
+    </section>}
+    {(!patternQuestions || retry) && <form onSubmit={enqueue}>
+      {!manualQuestions && !patternQuestions && <p role="status">The current research mode is unverified. Reconnect status before saving a new question. Recovery of an original request remains available.</p>}
       <label>Research question <textarea disabled={busy || !!retry} required minLength={12} maxLength={500} value={retry?.body.question ?? question} onChange={e => setQuestion(e.target.value)} /></label>
       <label>Holding horizon <select disabled={busy || !!retry} value={retry?.body.horizon ?? horizon} onChange={e => setHorizon(e.target.value)}><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select></label>
       <label>Preserved parent trial (optional) <input disabled={busy || !!retry} value={retry ? retry.body.parent ?? "" : parent} maxLength={100} onChange={e => setParent(e.target.value)} /></label>
-      <button disabled={busy || !!retry} type="submit">{busy ? "Saving…" : "Save research question"}</button>
+      <button disabled={busy || !!retry || !manualQuestions} type="submit">{busy ? "Saving…" : "Save research question"}</button>
       {retry?.phase === "unknown" && <>
         <p role="status">We do not know whether this question was saved. Reconcile this original request before changing it.</p>
         <button disabled={busy} type="button" onClick={() => void submit(retry.body)}>Reconcile saved request</button>
@@ -340,10 +418,10 @@ export function RoleResearchPanel() {
         <p role="status">Your question was not saved. {retry.message} You can correct or discard it.</p>
         <button disabled={busy} type="button" onClick={() => { setQuestion(retry.body.question); setHorizon(retry.body.horizon); setParent(retry.body.parent ?? ""); forget(); setError(null); }}>Edit rejected question</button>
         <button disabled={busy} type="button" onClick={() => { forget(); setError(null); }}>Discard rejected question</button>
-        <button disabled={busy} type="button" onClick={() => void submit({ ...retry.body, request_id: crypto.randomUUID() })}>Try rejected question again</button>
+        {!patternQuestions && <button disabled={busy || !manualQuestions} type="button" onClick={() => { if (manualQuestions) void submit({ ...retry.body, request_id: crypto.randomUUID() }); }}>Try rejected question again</button>}
       </>}
-    </form>
-    <p>{pilot ? "Saved and evidence-driven questions use the approved experimental paper pilot. Each request rechecks its permissions, current inputs and resource limits; unavailable inputs remain a recorded wait." : "Saving a question does not enable inference. A declared paper policy, current role qualification and separate activation are required."}</p>
+    </form>}
+    <p>{patternQuestions ? "Automatic selection does not enable model inference. Each dispatch still requires its declared permissions, activation, current inputs and resource limits." : pilot ? "Saved and evidence-driven questions use the approved experimental paper pilot. Each request rechecks its permissions, current inputs and resource limits; unavailable inputs remain a recorded wait." : "Saving a question does not enable inference. A declared paper policy, current role qualification and separate activation are required."}</p>
     {state?.history && <p>{state.history.retained} retained questions · {state.history.active} active · {state.history.archived} archived. Completed details reopen from their verified original record.</p>}
     <form onSubmit={e => { e.preventDefault(); setSearch(searchDraft.trim()); setBefore(0); setBeforeId(""); }}>
       <label>Search saved questions <input value={searchDraft} maxLength={100} onChange={e => setSearchDraft(e.target.value)} /></label>
@@ -369,6 +447,7 @@ export function RoleResearchPanel() {
         {!!task.context.question_selection.limitations.length && <><h5>Uncertainties and limits</h5><ul>{task.context.question_selection.limitations.map((limit, index) => <li key={index}>{limit}</li>)}</ul></>}
         <details><summary>Saved selection provenance and frozen comparison identities</summary><pre>{JSON.stringify(task.context.question_selection, null, 2)}</pre></details>
       </section>}
+      {task.context.pattern_comparison && <PatternTaskEvidence pattern={task.context.pattern_comparison} fixed={task.context.fixed_comparison?.p0} />}
       {task.result?.action === "request_tool" && task.result.tool_request && <section aria-label="Requested research tool">
         <h4>Tool requested · pending implementation review</h4>
         <p><strong>{toolKinds[task.result.tool_request.kind]}:</strong> {task.result.tool_request.identifier}</p>
@@ -384,13 +463,13 @@ export function RoleResearchPanel() {
       </section>}
       {task.status === "failed" && task.stage === "archive_evaluation" && (!pilot || task.context.execution_mode === "paper_research_pilot") && <button disabled={busy} type="button" onClick={() => void retryStage()}>Retry saved evidence archive</button>}
       {task.status === "failed" && ["idea", "review", "followup"].includes(task.stage) && task.attempts.length > 0 && !task.attempts.at(-1)?.response && (!pilot || task.context.execution_mode === "paper_research_pilot") && <button disabled={busy} type="button" onClick={() => void retryStage()}>Authorize one recorded transport retry</button>}
-      <h4>Captured causal evidence</h4><p>{task.context.tool_evidence.security} · {task.context.tool_evidence.closed_bar_count} closed bars · captured {stamp(task.context.tool_evidence.observed_at)} · {task.context.tool_evidence.source_basis}</p>
+      <h4>{task.context.pattern_comparison ? "Separate execution evidence at task capture" : "Captured causal evidence"}</h4><p>{task.context.tool_evidence.security} · {task.context.tool_evidence.closed_bar_count} closed bars · captured {stamp(task.context.tool_evidence.observed_at)} · {task.context.tool_evidence.source_basis}</p>
       <FrozenComponentPanel task={task.id} catalog={task.context.catalog} />
       <ul>{Object.entries(task.context.tool_evidence.features).map(([key, feature]) => <li key={key}>{key}: {feature.eligible ? "Entry qualified at capture" : "No eligible entry at capture"}. {feature.reason} {feature.close ? `Close $${feature.close}.` : ""}</li>)}</ul>
-      <details><summary>Exact evidence, executed input tool and permitted capabilities</summary><pre>{JSON.stringify({ inputs: task.context.tool_evidence, issued: task.context.issued, capabilities: task.context.catalog }, null, 2)}</pre></details>
-      {task.evaluation && <><h4>Computed method check</h4><p>{task.evaluation.input_count} causal input bars checked at {stamp(task.evaluation.evaluated_at)}. {task.evaluation.feature.reason} {task.evaluation.replay}</p><details><summary>Exact calculated result and saved input reference</summary><pre>{JSON.stringify(task.evaluation, null, 2)}</pre></details></>}
+      <details><summary>{task.context.pattern_comparison ? "Execution evidence summary and permitted capabilities" : "Exact evidence, executed input tool and permitted capabilities"}</summary>{task.context.pattern_comparison && <p>The complete inputs remain retained with this task. This display preserves the captured count and digest without exposing archive file paths.</p>}<pre>{JSON.stringify({ inputs: task.context.pattern_comparison ? { security: task.context.tool_evidence.security, source_basis: task.context.tool_evidence.source_basis, closed_bar_count: task.context.tool_evidence.closed_bar_count, closed_bar_sha256: task.context.tool_evidence.closed_bar_sha256, observed_at: task.context.tool_evidence.observed_at, features: task.context.tool_evidence.features, matched_inputs: task.context.fixed_comparison?.p0.current_inputs } : task.context.tool_evidence, issued: task.context.issued, capabilities: task.context.catalog }, null, 2)}</pre></details>
+      {task.evaluation && <><h4>{task.context.pattern_comparison ? "Numerical evaluation for this task" : "Computed method check"}</h4><p>{task.evaluation.input_count} causal input bars checked at {stamp(task.evaluation.evaluated_at)}. {task.evaluation.feature.reason} {task.evaluation.replay}</p>{task.context.pattern_comparison && <p>This task-stage calculation is separate from the original preparation-time check. Its recorded time does not establish current readiness or a measured trading result.</p>}<details><summary>Exact calculated result and saved input reference</summary><pre>{JSON.stringify(task.evaluation, null, 2)}</pre></details></>}
       {task.result?.review && <p>{task.context.execution_mode === "paper_research_pilot" ? "Experimental model review" : "Independent review"}: {task.result.review.action} · {task.result.review.rationale}</p>}
-      {task.proposal && <><p>Proposed {task.proposal.kind}: {task.proposal.strategy.family} with {task.proposal.strategy.lookback} bars, compared with {task.proposal.reference.family} using {task.proposal.reference.lookback} bars.</p><details><summary>Validated ordinary paper proposal</summary><pre>{JSON.stringify(task.proposal, null, 2)}</pre></details></>}
+      {task.proposal && <><p>{task.proposal.strategy.version === "reviewed-lab-rules-v4" ? `Proposed ${task.proposal.kind}: fixed ${task.proposal.strategy.family}, compared with fixed ${task.proposal.reference.family}.` : `Proposed ${task.proposal.kind}: ${task.proposal.strategy.family} with ${task.proposal.strategy.lookback} bars, compared with ${task.proposal.reference.family} using ${task.proposal.reference.lookback} bars.`}</p><details><summary>Validated ordinary paper proposal</summary><pre>{JSON.stringify(task.proposal, null, 2)}</pre></details></>}
       {task.result?.proposal_id && <p>Ordinary inbox: {task.result.proposal_id} · pair {task.result.trial_id ?? "awaiting capacity, funding or outcome maturity"}</p>}
       {task.proposal?.strategy.entry_filter && <p>Entry component: frozen historical memory · {task.proposal.strategy.entry_filter.horizon_seconds / 60} minutes · artifact {task.proposal.strategy.entry_filter.artifact.sha256} · marginal ${task.proposal.strategy.entry_filter.marginal_daily_usd}/day · fallback {task.proposal.strategy.entry_filter.fallback}. Baseline exits and financial risk remain authoritative.</p>}
       {task.result?.outcome && <section><h4>Recorded comparison: {task.result.outcome.body.outcome}</h4><p>{task.result.outcome.body.reason}</p><p>Window {stamp(task.result.outcome.body.window_start)} to {stamp(task.result.outcome.body.window_end)} · outcome available {stamp(task.result.outcome.body.available_at)}.</p><p>Whole-account result after declared operating costs: candidate ${task.result.outcome.body.net_after_operating_usd?.candidate ?? "unknown"}; reference ${task.result.outcome.body.net_after_operating_usd?.reference ?? "unknown"}; difference ${task.result.outcome.body.delta_usd ?? "unknown"}. Execution fees remain counted once.</p><p>{task.result.outcome.body.qualification}</p><details><summary>Recorded comparison outcome</summary><pre>{JSON.stringify(task.result.outcome, null, 2)}</pre></details></section>}
