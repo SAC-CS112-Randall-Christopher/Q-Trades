@@ -124,6 +124,158 @@ def bundle_summary(bundle: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def pattern_packet(summary: dict[str, Any]) -> dict[str, Any]:
+    """Bounded wire facts; the exact full preparation remains in the task context."""
+    return {
+        "finding_sha256": summary["finding_sha256"],
+        "original_event": {
+            k: summary["original_event"][k]
+            for k in (
+                "kind",
+                "bar_close_ms",
+                "level_price",
+                "volume_confirmed",
+                "volume_ratio",
+                "reason",
+            )
+        },
+        "coverage_columns": ["timeframe", "observed_bars", "expected_bars", "missing_bars"],
+        "coverage": [
+            [row.get(k) for k in ("timeframe", "observed_bars", "expected_bars", "missing_bars")]
+            for row in summary["coverage"]
+        ],
+        "native_proof": {
+            k: summary["native_proof"][k]
+            for k in ("archive_verified", "recognition_rows", "contiguous_relevant_window")
+        },
+        "verification_at": summary["prepared_at"],
+        "detail_sha256": fingerprint(summary),
+        "detail": "Original local proof/coverage retained; historical motivation only",
+    }
+
+
+def pattern_controls(fixed: dict[str, Any]) -> dict[str, Any]:
+    candidate, reference = fixed["candidate"], fixed["reference"]
+    return {
+        "candidate": candidate["proposal"]["strategy"]["family"],
+        "reference": reference["proposal"]["strategy"]["family"],
+        "unchanged": candidate["unchanged"],
+        "entry": {"candidate": candidate["entry"], "reference": reference["entry"]},
+        "exit": {k: v for k, v in candidate["exit"].items() if k != "protection"},
+        "costs": candidate["costs"],
+        "evaluation": candidate["evaluation"],
+        "inapplicable_compatibility_fields": candidate["inapplicable_compatibility_fields"],
+        "fixed_inputs": {
+            k: v for k, v in candidate["fixed_method"]["inputs"].items() if isinstance(v, int)
+        },
+        "source_sha256": fixed["source_sha256"],
+        "current_inputs": fixed["current_inputs"],
+        "detail_sha256": fingerprint(fixed),
+    }
+
+
+def pattern_followup_controls(fixed: dict[str, Any], proposal: dict[str, Any]) -> dict[str, Any]:
+    """Identify the executed method; full fixed controls remain in the original task."""
+    return {
+        "candidate": fixed["candidate"]["proposal"]["strategy"]["family"],
+        "reference": fixed["reference"]["proposal"]["strategy"]["family"],
+        "proposal_id": proposal["request_id"],
+        "method_sha256": fingerprint(proposal),
+        "detail_sha256": fingerprint(fixed),
+        "detail": "Original fixed controls and implementation hashes retained in task context",
+    }
+
+
+def pattern_followup_outcome(outcome: dict[str, Any]) -> dict[str, Any]:
+    """Preserve every scored fact, sharing only exactly equal execution-sample fields."""
+    body = dict(outcome["body"])
+    candidate, reference = body.get("candidate_sample"), body.get("reference_sample")
+    if (
+        isinstance(candidate, dict)
+        and isinstance(reference, dict)
+        and "execution_samples" not in body
+    ):
+        common = {
+            key: value
+            for key, value in candidate.items()
+            if key in reference and fingerprint(value) == fingerprint(reference[key])
+        }
+        body.pop("candidate_sample")
+        body.pop("reference_sample")
+        body["execution_samples"] = {
+            "common": common,
+            "candidate": {key: value for key, value in candidate.items() if key not in common},
+            "reference": {key: value for key, value in reference.items() if key not in common},
+            "encoding": "Each original sample is common overlaid by its named fields",
+        }
+    return {
+        "id": outcome["id"],
+        "at": outcome["at"],
+        "body": body,
+        "source_sha256": fingerprint(outcome),
+        "detail": "Full scored event retained in task/lesson; no scored fields omitted",
+    }
+
+
+def pattern_feature(feature: dict[str, Any]) -> dict[str, Any]:
+    keys = ("eligible", "reason", "atr", "modeled_hurdle_bps", "cost_gate")
+    return {key: feature[key] for key in keys if key in feature} | {
+        "detail_sha256": fingerprint(feature),
+    }
+
+
+def pattern_summary(receipt: dict[str, Any]) -> dict[str, Any]:
+    """Native motivation is distinct from subsequent executable comparison inputs."""
+    finding = receipt["finding"]
+    native = finding["native_proof"]
+    event = finding["original_event"]
+    return {
+        "preparation_request_id": receipt["request_id"],
+        "issued_bundle_sha256": receipt["issued_bundle_sha256"],
+        "finding_sha256": receipt["finding_sha256"],
+        "selection": finding["selection"],
+        "campaign_id": finding["campaign_id"],
+        "captured_at": finding["captured_at"],
+        "prepared_at": receipt["prepared_at"],
+        "original_event": {
+            key: event[key]
+            for key in (
+                "id",
+                "kind",
+                "bar_open_ms",
+                "bar_close_ms",
+                "level_id",
+                "level_price",
+                "volume_confirmed",
+                "volume_ratio",
+                "reason",
+            )
+            if key in event
+        },
+        "coverage": finding["coverage"],
+        "native_proof": {
+            key: native[key]
+            for key in (
+                "archive_verified",
+                "recognition_rows",
+                "pivot_rows",
+                "contiguous_relevant_window",
+                "recognition_start_ms",
+                "recognition_end_ms",
+                "input_window_sha256",
+                "pivot_sha256",
+                "coverage_claim",
+            )
+        },
+        "mapping": receipt["mapping"],
+        "scope": (
+            "Preparation-time native verification; historical recognition motivates a distinct "
+            "fixed v4 hypothesis. Current numerical inputs/admission are separate."
+        ),
+        "financial_authority": False,
+    }
+
+
 def outcome_summary(outcome: dict[str, Any]) -> dict[str, Any]:
     body = outcome["body"]
     keys = {

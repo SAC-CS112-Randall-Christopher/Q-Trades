@@ -12,6 +12,7 @@ import httpx
 from trading.experiment_registry import fingerprint
 from trading.lab_role_contract import (
     CAPABILITY_VERSION,
+    PATTERN_VERSION,
     TOOL_REQUEST_VERSION,
     VERSION,
     contract_hash,
@@ -135,11 +136,11 @@ def development_latency_observation(status: dict[str, Any]) -> dict[str, Any]:
 def check_role_contract(packet: dict[str, Any], profile: dict[str, Any]) -> str:
     """Select only the contract explicitly bound to the admitted profile."""
     version = profile.get("role_contract", VERSION)
-    if version not in (VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION):
+    if version not in (VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION, PATTERN_VERSION):
         raise ValueError("Unknown declared role contract; reviewed profile required")
     if packet.get("contract", VERSION) != version:
         raise ValueError("Packet role contract differs from the approved profile")
-    if version in (TOOL_REQUEST_VERSION, CAPABILITY_VERSION) and (
+    if version in (TOOL_REQUEST_VERSION, CAPABILITY_VERSION, PATTERN_VERSION) and (
         profile.get("role_contract") != version
         or profile.get("contract_sha256") != contract_hash(version)
     ):
@@ -183,7 +184,7 @@ class LocalRoles:
             raise ValueError("Separate role allowance must be explicitly declared and bounded")
         value["token_allowance"] = options["num_ctx"]
         version = value.get("role_contract", VERSION)
-        if version not in (VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION):
+        if version not in (VERSION, TOOL_REQUEST_VERSION, CAPABILITY_VERSION, PATTERN_VERSION):
             raise ValueError("Unknown declared role contract; reviewed profile required")
         value["contract_sha256"] = contract_hash(version)
         return value

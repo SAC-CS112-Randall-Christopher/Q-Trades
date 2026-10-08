@@ -1,3 +1,53 @@
+# Current source follow-up - October 8, 2026, pattern-driven research (#66)
+
+Chris authorized the reviewed PR83 merge/install and continuing the autonomous
+research Goal. PR83 merged at c653b136f4f0d4fac3f9855bbbb4c40b21a3c8a9;
+its separately recorded installation is not a new research/model grant.
+Continue the existing PR75 worker/archive owner on that exact main content.
+
+Connect saved native-pattern motivation to one supported fixed v4 comparison
+through an explicit successor role contract and selection-policy source branch.
+Reuse the scanner/comparison owner, existing worker loop, Lab inbox, shared
+storage, deterministic evaluation, independent review and outcome/lesson owners.
+Original v5-v7 contracts, packets, profiles, grants, questions and every attempt,
+answer, wait and adverse outcome remain unchanged. New source authority must be
+explicit and disabled until its separately reviewed operating decision.
+
+Source implementation, disposable QA, independent review, commit/push and the
+existing draft PR/ledger are authorized. Stubbed model responses are software
+evidence only. Do not select an operating successor profile/grant, dispatch a
+model, enable scanner/research, fund/promote a strategy, consume holdouts or alter
+financial rules from this source increment. Preserve financial/data ownership,
+twenty slots, 400/100-GB policy, resource guards and private Lab separation.
+The optional finite pilot-v6 source binds one saved BTCUSD/native-5m finding,
+one permanent research chain and proposal, and three total requests within its
+original window of at most thirty hours. It remains an uninstalled source
+candidate. It does not expand the old single-attempt permission. Queued funding
+must refuse after expiry or Stop/Pause; exact committed acknowledgment recovery
+and existing position/outcome management may continue without fresh inference.
+The dated directions below retain their original scope and evidence.
+
+For isolated Windows pytest, use a fresh task-owned `--basetemp` and disable the
+cache provider. If the managed sandbox denies fixture creation/cleanup with
+WinError 5, retain that failure and rerun only the affected scope with ordinary
+user access. Do not change ACLs, force cleanup, or reuse the failed directory.
+
+# Current source follow-up — October 7, 2026, researcher archive ownership (#66)
+
+Continue the existing draft PR75 lane on the accepted current main source.
+Preserve its causal/current observation clock correction. Live role archive and
+history operations must use the existing recorder's storage owner; unavailable
+configured ownership must refuse without a second constructor. Verify exact
+retention, lock order, cancellation drain, rollback and explicit archive-only
+recovery through the normal panel. Existing model retry and allowance authority
+must remain unchanged. See `docs/reviews/EVIDENCE_QUESTION_SELECTION.md`.
+
+This follow-up permits source, disposable QA, independent review, commit/push and
+checkpoint publication. It does not install/restart, resume research, dispatch a
+model, change packets/profiles/grants or financial rules, or activate daily public
+candle work. PR83 remains a separate reviewed source proposal awaiting its own
+exact-target operating decision. Preserve installed receipts and original adverse
+answers; do not repeat completed acceptance or consumed attempts.
 # Current source follow-up — October 7, 2026, pattern research and preparation (#66)
 
 Chris asks which chart patterns Q-Trades should recognize. Verify primary

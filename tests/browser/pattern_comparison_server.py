@@ -17,6 +17,7 @@ from starlette.responses import JSONResponse
 
 from trading.api import create_app
 from trading.config import Settings
+from trading.role_worker import RoleWorker
 
 
 def main():
@@ -46,6 +47,7 @@ def main():
         "src/trading/research_storage.py",
         "src/trading/research_evidence.py",
         "src/trading/experiment_registry.py",
+        "src/trading/role_worker.py",
         "tests/test_pattern_comparisons.py",
         "tests/test_pattern_scanner.py",
         "tests/test_daily_pattern_analyzer.py",
@@ -86,6 +88,7 @@ def main():
     source_folder.mkdir()
     monkeypatch = pytest.MonkeyPatch()
     f, bridge, selection = build_fixture(source_folder, monkeypatch)
+    original_controller = bridge.controller
     original = copy.deepcopy(f.paper.state)
     original_history = copy.deepcopy(f.paper.history)
     original_plan = f.scanner.plan
@@ -121,6 +124,13 @@ def main():
                 )
             ]
             inbox_count = f.registry.db.execute("SELECT count(*) FROM lab_proposals").fetchone()[0]
+            role_tasks = f.registry.db.execute("SELECT count(*) FROM role_tasks").fetchone()[0]
+            role_attempts = f.registry.db.execute("SELECT count(*) FROM role_attempts").fetchone()[
+                0
+            ]
+        lab = app.state.lab
+        worker = lab.roles
+        owner = worker.pattern_comparisons
         return {
             "fixture": "real_native_finding_and_current_lab_check_synthetic_inputs",
             "selection": selection.model_dump(),
@@ -135,6 +145,16 @@ def main():
             "auxiliary_dashboard_state_unchanged": paper.state == auxiliary_state,
             "lab_inbox_count": inbox_count,
             "model_calls": 0,
+            "role_tasks": role_tasks,
+            "role_attempts": role_attempts,
+            "comparison_owner": {
+                "same_bridge": owner is bridge,
+                "scanner_matches": owner.scanner is app.state.pattern_scanner,
+                "registry_matches": owner.registry is lab.registry is worker.registry,
+                "controller_matches": owner.controller is lab.autonomous is worker.controller,
+                "worker_enabled": worker.enabled,
+                "transport_configured": worker.transport is not None,
+            },
             "financial_database": False,
             "source_hashes": before,
             "source_hashes_after": hashes(),
@@ -145,17 +165,34 @@ def main():
         async with old_lifespan(application):
             lab = application.state.lab
             old_registry, old_controller = lab.registry, lab.autonomous
+            old_worker, old_lab_scanner = lab.roles, lab.pattern_scanner
+            old_paper, old_scanner = application.state.paper, application.state.pattern_scanner
+            worker = RoleWorker(
+                f.registry,
+                original_controller,
+                storage_owner=f.scanner.storage_owner,
+                pattern_comparisons=bridge,
+            )
             application.state.paper = paper
             application.state.pattern_scanner = f.scanner
             lab.pattern_scanner = f.scanner
-            lab.registry, lab.autonomous = f.registry, bridge.controller
+            lab.registry, lab.autonomous = f.registry, original_controller
+            lab.roles = worker
             try:
                 yield
             finally:
-                (args.directory / "shutdown.json").write_text(
-                    json.dumps(probe(), indent=2), encoding="utf-8"
-                )
-                lab.registry, lab.autonomous = old_registry, old_controller
+                try:
+                    (args.directory / "shutdown.json").write_text(
+                        json.dumps(probe(), indent=2), encoding="utf-8"
+                    )
+                finally:
+                    bridge.controller = original_controller
+                    lab.registry, lab.autonomous = old_registry, old_controller
+                    lab.roles, lab.pattern_scanner = old_worker, old_lab_scanner
+                    application.state.paper, application.state.pattern_scanner = (
+                        old_paper,
+                        old_scanner,
+                    )
 
     app.router.lifespan_context = lifespan
 
@@ -230,6 +267,7 @@ def main():
             f.scanner.plan = None
             f.paper.history.clear()
             app.state.lab.autonomous = None
+            bridge.controller = app.state.lab.roles.controller = None
             return {
                 "synthetic_current_inputs_unavailable": True,
                 "original_immutable_receipts_retained": True,
@@ -237,10 +275,12 @@ def main():
         if action == "restore_source":
             f.scanner.plan = original_plan
             f.paper.history = copy.deepcopy(original_history)
-            app.state.lab.autonomous = bridge.controller
+            bridge.controller = app.state.lab.roles.controller = original_controller
+            app.state.lab.autonomous = original_controller
             return {"restored_original_fixture_inputs": True}
         if action == "waiting_inputs":
             app.state.lab.autonomous = None
+            bridge.controller = app.state.lab.roles.controller = None
             return {"current_controller_unavailable": True, "original_findings_retained": True}
         if action in {"normal", "lost_ack", "corrupt_ack", "delay_ack", "unknown"}:
             mode = action

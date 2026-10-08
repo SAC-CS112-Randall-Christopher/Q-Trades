@@ -3,10 +3,12 @@
 import json
 import sqlite3
 import time
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, closing, contextmanager
 from typing import Any
 
 from trading.experiment_registry import ExperimentRegistry, fingerprint
-from trading.research_storage import ResearchStorage, load_plan
+from trading.research_storage import ResearchStorage, StoragePlan, load_plan
 
 HOT_TASKS = 512
 WRITE_HEADROOM = 256 * 1024
@@ -18,8 +20,14 @@ class HistoryUnavailable(ValueError):
 
 
 class RoleHistory:
-    def __init__(self, registry: ExperimentRegistry):
+    def __init__(
+        self,
+        registry: ExperimentRegistry,
+        storage_owner: Callable[[StoragePlan], AbstractContextManager[ResearchStorage]]
+        | None = None,
+    ):
         self.registry = registry
+        self.storage_owner = storage_owner
         with registry.transaction():
             columns = {r[1] for r in registry.db.execute("PRAGMA table_info(role_tasks)")}
             for name in ("archive_reference", "archive_sha256", "question_text"):
@@ -133,13 +141,20 @@ class RoleHistory:
                 "coalesce(NEW.question_text,json_extract(NEW.context,'$.question.question'))); END"
             )
 
-    def _storage(self) -> ResearchStorage:
+    @contextmanager
+    def storage(self) -> Iterator[ResearchStorage]:
         plan = load_plan(self.registry.path.parent)
         if plan is None:
             raise HistoryUnavailable(
                 "Role history continuation requires the configured G: research tiers"
             )
-        return ResearchStorage(plan)
+        access = (
+            self.storage_owner(plan)
+            if self.storage_owner is not None
+            else closing(ResearchStorage(plan))
+        )
+        with access as store:
+            yield store
 
     def _snapshot(self, row: sqlite3.Row) -> dict[str, Any]:
         attempts = self.registry.db.execute(
@@ -172,93 +187,96 @@ class RoleHistory:
                 "ORDER BY created,id LIMIT 8"
             ).fetchall()
             if rows:
-                store = self._storage()
                 try:
-                    for row in rows:
-                        saved = self._snapshot(row)
-                        packet = {"kind": "role_task_history_v1", "at": time.time(), **saved}
-                        reference = store.append([packet], time.time())[0]
-                        if store.reopen(reference) != packet:
-                            raise ValueError(
-                                "Role history archive verification failed; hot work retained"
-                            )
-                        with self.registry.transaction():
-                            current = self.registry.db.execute(
-                                "SELECT * FROM role_tasks WHERE id=?", (row["id"],)
-                            ).fetchone()
-                            if current is None or self._snapshot(current) != saved:
-                                continue  # Another owner progressed; preserve its hot record.
-                            context = json.loads(row["context"])
-                            self.registry.db.execute(
-                                "UPDATE role_tasks SET context=?,proposal=NULL,evaluation=NULL,"
-                                "result=NULL,archive_reference=?,archive_sha256=? WHERE id=?",
-                                (
-                                    json.dumps(
-                                        {"question": context["question"]}
-                                        | (
-                                            {"contract": context["contract"]}
-                                            if "contract" in context
-                                            else {}
-                                        )
-                                        | (
-                                            {
-                                                key: context[key]
-                                                for key in (
-                                                    "policy_sha256",
-                                                    "question_selection",
-                                                    "selection_authority",
-                                                )
-                                                if key in context
-                                            }
-                                        )
-                                        | (
-                                            {
-                                                key: context[key]
-                                                for key in ("execution_mode", "pilot_grant_id")
-                                                if key in context
-                                            }
-                                            if "execution_mode" in context
-                                            else {}
-                                        )
-                                    ),
-                                    reference,
-                                    fingerprint(packet),
-                                    row["id"],
-                                ),
-                            )
-                            self.registry.db.execute(
-                                "DELETE FROM role_attempts WHERE task=?", (row["id"],)
-                            )
-                            for attempt in saved["attempts"]:
-                                response = (
-                                    json.loads(attempt["response"]) if attempt["response"] else {}
+                    with self.storage() as store:
+                        for row in rows:
+                            saved = self._snapshot(row)
+                            packet = {"kind": "role_task_history_v1", "at": time.time(), **saved}
+                            reference = store.append([packet], time.time())[0]
+                            if store.reopen(reference) != packet:
+                                raise ValueError(
+                                    "Role history archive verification failed; hot work retained"
                                 )
-                                tokens = response.get("tokens") or {}
+                            with self.registry.transaction():
+                                current = self.registry.db.execute(
+                                    "SELECT * FROM role_tasks WHERE id=?", (row["id"],)
+                                ).fetchone()
+                                if current is None or self._snapshot(current) != saved:
+                                    continue  # Another owner progressed; preserve its hot record.
+                                context = json.loads(row["context"])
                                 self.registry.db.execute(
-                                    "INSERT INTO role_archive_attempts(task,stage,attempt,started,"
-                                    "wall_reserved,tokens_reserved,actor,status,input_tokens,"
-                                    "output_tokens,measured_wall_seconds) "
-                                    "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                                    "UPDATE role_tasks SET context=?,proposal=NULL,evaluation=NULL,"
+                                    "result=NULL,archive_reference=?,archive_sha256=? WHERE id=?",
                                     (
+                                        json.dumps(
+                                            {"question": context["question"]}
+                                            | (
+                                                {"contract": context["contract"]}
+                                                if "contract" in context
+                                                else {}
+                                            )
+                                            | (
+                                                {
+                                                    key: context[key]
+                                                    for key in (
+                                                        "policy_sha256",
+                                                        "question_selection",
+                                                        "selection_authority",
+                                                        "predecessor_task",
+                                                        "finite_test",
+                                                    )
+                                                    if key in context
+                                                }
+                                            )
+                                            | (
+                                                {
+                                                    key: context[key]
+                                                    for key in ("execution_mode", "pilot_grant_id")
+                                                    if key in context
+                                                }
+                                                if "execution_mode" in context
+                                                else {}
+                                            )
+                                        ),
+                                        reference,
+                                        fingerprint(packet),
                                         row["id"],
-                                        attempt["stage"],
-                                        attempt["attempt"],
-                                        attempt["started"],
-                                        attempt["wall_reserved"],
-                                        attempt["tokens_reserved"],
-                                        json.loads(attempt["profile"]).get("actor"),
-                                        attempt["status"],
-                                        tokens.get("prompt_eval_count"),
-                                        tokens.get("eval_count"),
-                                        response.get("wall_seconds"),
                                     ),
                                 )
+                                self.registry.db.execute(
+                                    "DELETE FROM role_attempts WHERE task=?", (row["id"],)
+                                )
+                                for attempt in saved["attempts"]:
+                                    response = (
+                                        json.loads(attempt["response"])
+                                        if attempt["response"]
+                                        else {}
+                                    )
+                                    tokens = response.get("tokens") or {}
+                                    self.registry.db.execute(
+                                        "INSERT INTO role_archive_attempts"
+                                        "(task,stage,attempt,started,"
+                                        "wall_reserved,tokens_reserved,actor,status,input_tokens,"
+                                        "output_tokens,measured_wall_seconds) "
+                                        "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                                        (
+                                            row["id"],
+                                            attempt["stage"],
+                                            attempt["attempt"],
+                                            attempt["started"],
+                                            attempt["wall_reserved"],
+                                            attempt["tokens_reserved"],
+                                            json.loads(attempt["profile"]).get("actor"),
+                                            attempt["status"],
+                                            tokens.get("prompt_eval_count"),
+                                            tokens.get("eval_count"),
+                                            response.get("wall_seconds"),
+                                        ),
+                                    )
                 except (sqlite3.Error, OSError, LookupError) as exc:
                     raise HistoryUnavailable(
                         "Role history continuation unavailable; original work retained"
                     ) from exc
-                finally:
-                    store.close()
             if (
                 self.registry.db.execute(
                     "SELECT count(*) FROM role_tasks WHERE archive_reference IS NULL"
@@ -275,15 +293,13 @@ class RoleHistory:
                 )
 
     def read(self, row: sqlite3.Row) -> dict[str, Any]:
-        store = self._storage()
         try:
-            packet = store.reopen(row["archive_reference"])
+            with self.storage() as store:
+                packet = store.reopen(row["archive_reference"])
         except (OSError, LookupError, sqlite3.Error) as exc:
             raise HistoryUnavailable(
                 "Saved role history unavailable; no replacement inferred"
             ) from exc
-        finally:
-            store.close()
         if fingerprint(packet) != row["archive_sha256"] or packet["kind"] != "role_task_history_v1":
             raise ValueError("Saved role history hash differs")
         saved = packet["record"]
@@ -351,7 +367,7 @@ class RoleHistory:
             return found
 
     def restore(self, identity: str) -> None:
-        """Explicit transport retry restores the same answers and charged attempts."""
+        """Explicit operational retry restores the same answers and charged attempts."""
         with self.registry.lock:
             row = self.registry.db.execute(
                 "SELECT * FROM role_tasks WHERE id=?", (identity,)

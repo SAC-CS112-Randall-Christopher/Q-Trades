@@ -353,11 +353,8 @@ def create_app(
                             lab.registry, app.state.paper, lambda: lab.can_research()
                         )
                     local_roles = local_role_transport(database.parent)
-                    lab.roles = RoleWorker(lab.registry, lab.autonomous, local_roles)
-                    lab.roles.activation = lambda: bool(local_roles.policy().get("enabled", False))
-                    if isinstance(local_roles, PeftPaperPilotRoles):
-                        lab.roles.paper_admission = local_roles.can_research
                     plan = load_plan(database.parent)
+                    comparisons = None
                     try:
                         scanner = PatternScanner(
                             lab.registry,
@@ -368,8 +365,21 @@ def create_app(
                         )
                         lab.pattern_scanner = scanner
                         app.state.pattern_scanner = scanner
+                        comparisons = PatternComparisons(scanner, lab.autonomous)
                     except (sqlite3.Error, OSError, ValueError):
                         app.state.pattern_error = "Pattern preparation storage unavailable"
+                    lab.roles = RoleWorker(
+                        lab.registry,
+                        lab.autonomous,
+                        local_roles,
+                        storage_owner=(
+                            app.state.paper.evidence.research_store if app.state.paper else None
+                        ),
+                        pattern_comparisons=comparisons,
+                    )
+                    lab.roles.activation = lambda: bool(local_roles.policy().get("enabled", False))
+                    if isinstance(local_roles, PeftPaperPilotRoles):
+                        lab.roles.paper_admission = local_roles.can_research
                     if plan is not None:
                         try:
                             knowledge_storage = ResearchStorage(plan)
@@ -1878,6 +1888,16 @@ def create_app(
     def pattern_comparison_owner(request: Request) -> PatternComparisons:
         scanner = scanner_owner(request)
         lab = request.app.state.lab
+        worker = getattr(lab, "roles", None)
+        owner = getattr(worker, "pattern_comparisons", None)
+        if owner is not None:
+            if (
+                not isinstance(owner, PatternComparisons)
+                or owner.scanner is not scanner
+                or owner.registry is not lab.registry
+            ):
+                raise HTTPException(503, "Pattern comparison owner identity unavailable")
+            return owner
         return PatternComparisons(scanner, lab.autonomous if lab else None)
 
     @app.get("/api/research/pattern-scanner/comparison-source")

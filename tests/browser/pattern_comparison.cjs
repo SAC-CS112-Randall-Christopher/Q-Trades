@@ -7,6 +7,7 @@ const { chromium } = require("playwright");
 const origin = process.env.QTRADES_BROWSER_QA_ORIGIN || "http://127.0.0.1:58974";
 const directory = process.env.QTRADES_BROWSER_QA_OUTPUT;
 const token = process.env.QTRADES_BROWSER_QA_TOKEN;
+const readOnly = process.env.QTRADES_PATTERN_COMPARISON_QA_READ_ONLY === "1";
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 const bounded = async (work, ms, label) => {
   let timer;
@@ -24,6 +25,7 @@ const bounded = async (work, ms, label) => {
   const receipt = { evidence_kind: "compiled_actual_preparation_api_real_native_proof_synthetic_market_inputs",
     operating_acceptance: false, model_calls: 0, financial_database: false,
     trading_edge_or_full_year_coverage: false, submission_or_funding: false,
+    read_only_affected_group: readOnly,
     harness_sha256: sha(fs.readFileSync(__filename)), groups, pageErrors, apiRequests, externalRequests, cleanupFailures };
   const headers = { "x-qa-token": token };
   const save = (name, value) => fs.writeFileSync(path.join(directory, name), JSON.stringify(value, null, 2));
@@ -63,7 +65,11 @@ const bounded = async (work, ms, label) => {
     if (await detail.getAttribute("open") === null) await detail.locator(":scope > summary").click();
     const response = waitApi("GET", url => url.pathname.endsWith("/comparison-source") && url.searchParams.get("event_seq") === String(selection.event_seq));
     await detail.getByRole("button", { name: "Review prospective comparison", exact: true }).click();
-    const actual = await response; assert.equal(actual.status(), 200); const body = await actual.json();
+    const actual = await response;
+    save("last-comparison-source-status.json", { status: actual.status(), url: actual.url() });
+    assert.equal(actual.status(), 200);
+    const body = await bounded(actual.json(), 5000, "Comparison source body deadline reached");
+    save("last-comparison-source-response.json", { status: actual.status(), body });
     assert.deepEqual(body.finding.selection, selection); assert.equal(body.financial_authority, false);
     await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).waitFor();
     return body;
@@ -108,6 +114,7 @@ const bounded = async (work, ms, label) => {
       assert(await panel().innerText().then(text => text.includes("different mechanisms") && text.includes("six hours") && text.includes("24-hour")));
       groups.push({ name: phase, automatic_posts: 0, recognition_rows: 21, original_native_candles: 32 });
 
+      if (!readOnly) {
       phase = "one-explicit-supported-preparation-no-inbox-effect";
       const supported = await prepare(200); assertSupported(supported.value); save("supported-preparation.json", supported.value);
       await panel().getByText("Preparation supported by the captured numerical check", { exact: true }).waitFor();
@@ -195,12 +202,20 @@ const bounded = async (work, ms, label) => {
       await panel().getByText(/absence does not establish/).waitFor();
       assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem("qtrades-pattern-comparison-pending-v1"))), unknown.command);
       assert.equal((await probe()).posts.length, 8); groups.push({ name: phase, retained_uuid: unknown.command.request_id, get_status: 404, total_posts: 8, original_unknown_not_repeated: true });
+      }
 
       phase = "unchanged-financial-and-no-dispatch-final-bind";
       const final = await probe(); save("final-probe.json", final);
       assert.equal(final.financial_state_unchanged, true); assert.equal(final.auxiliary_dashboard_state_unchanged, true);
       assert.equal(final.lab_inbox_count, 0); assert.equal(final.model_calls, 0); assert.equal(final.financial_database, false);
       assert.deepEqual(final.source_hashes_after, final.source_hashes); assert.deepEqual(pageErrors, []); assert.deepEqual(externalRequests, []);
+      if (readOnly) {
+        assert.equal(final.posts.length, 0); assert.equal(final.retained_preparations.length, 0);
+        assert.equal(final.role_tasks, 0); assert.equal(final.role_attempts, 0);
+        assert.deepEqual(final.comparison_owner, { same_bridge: true, scanner_matches: true,
+          registry_matches: true, controller_matches: true, worker_enabled: false, transport_configured: false });
+        assert(apiRequests.every(request => request.method === "GET"));
+      }
       groups.push({ name: phase, retained_preparations: final.retained_preparations.length, native_source_calls: final.native_calls.length,
         financial_state_unchanged: true, lab_inbox_count: 0, model_calls: 0, source_and_compiled_unchanged: true });
       receipt.passed = true;

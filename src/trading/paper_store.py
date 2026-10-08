@@ -220,8 +220,13 @@ class PaperStore:
         self,
         now: float,
         work: Callable[[PaperEngine], None],
+        *,
+        authorize: Callable[[], None] | None = None,
     ) -> dict[str, Any]:
-        state, _ = self.transact_with_receipt(now, work)
+        if authorize is None:
+            state, _ = self.transact_with_receipt(now, work)
+        else:
+            state, _ = self.transact_with_receipt(now, work, authorize=authorize)
         return state
 
     def transact_with_receipt(
@@ -230,13 +235,19 @@ class PaperStore:
         work: Callable[[PaperEngine], None],
         *,
         capture_projection: bool = False,
+        authorize: Callable[[], None] | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Return this commit's state and provenance together under the writer lock."""
         waiting = time.perf_counter()
         with self.transaction_lock:
             self._transaction_lock_wait_ms = (time.perf_counter() - waiting) * 1000
             try:
-                state = self._transact(now, work, capture_projection=capture_projection)
+                if authorize is None:
+                    state = self._transact(now, work, capture_projection=capture_projection)
+                else:
+                    state = self._transact(
+                        now, work, capture_projection=capture_projection, authorize=authorize
+                    )
             except BaseException:
                 # Includes lost commit acknowledgments. The next transaction must
                 # reread authoritative state instead of trusting an uncertain copy.
@@ -251,6 +262,7 @@ class PaperStore:
         work: Callable[[PaperEngine], None],
         *,
         capture_projection: bool = False,
+        authorize: Callable[[], None] | None = None,
     ) -> dict[str, Any]:
         self.require_owner()
         self.last_commit_receipt = None
@@ -272,6 +284,8 @@ class PaperStore:
             ).fetchone()
             if not row:
                 raise RuntimeError("Paper account was not initialized")
+            if authorize is not None:
+                authorize()  # Fresh admission after writer/row-lock acquisition.
             if cache_safe:
                 token = (row["revision"], row["version"], row["location"])
                 cached = self._projection_cache
@@ -314,6 +328,8 @@ class PaperStore:
             checked = time.perf_counter()
             stages["invariant_check"] = (checked - calculated) * 1000
             revision = row["revision"] + 1
+            if authorize is not None:
+                authorize()  # A deadline during calculation rolls back, not funds.
             references = self._append(engine, revision)
             appended = time.perf_counter()
             stages["journal_append"] = (appended - checked) * 1000
@@ -351,6 +367,8 @@ class PaperStore:
             updated = time.perf_counter()
             stages["projection_encode"] = encoding_ms
             stages["projection_update"] = max(0, (updated - appended) * 1000 - encoding_ms)
+            if authorize is not None:
+                authorize()  # Refusal here also rolls back appended journal/projection.
         stages["database_commit"] = (time.perf_counter() - updated) * 1000
         if cache_safe and committed_encoding is not None:
             self._projection_cache = (
@@ -381,7 +399,27 @@ class PaperStore:
             raise RuntimeError("Missing paper account")
         return {**row["body"], "revision": row["revision"]}
 
-    def lab_reserve(self, now: float, proposal: Any) -> dict[str, Any]:
+    @_locked
+    def lab_reservation(self, proposal: Any) -> dict[str, Any] | None:
+        """Reconcile an exact committed intent without a new financial transaction."""
+        prior = self.connection.execute(
+            "SELECT body FROM paper_events WHERE kind='lab_trial_reserved' "
+            "AND body->>'proposal_id'=%s ORDER BY id LIMIT 1",
+            (proposal.request_id,),
+        ).fetchone()
+        if prior is None:
+            return None
+        if prior["body"]["contract"]["proposal"] != proposal.model_dump():
+            raise ValueError("Accepted proposal retry differs from its permanent intent")
+        return {"status": "already_reserved", "trial_id": prior["body"]["id"]}
+
+    def lab_reserve(
+        self,
+        now: float,
+        proposal: Any,
+        *,
+        authorize: Callable[[], None] | None = None,
+    ) -> dict[str, Any]:
         from trading.autonomous_finance import reserve
 
         result: dict[str, Any] = {}
@@ -399,7 +437,10 @@ class PaperStore:
             else:
                 result.update(reserve(engine, proposal))
 
-        self.transact(now, apply)
+        if authorize is None:
+            self.transact(now, apply)
+        else:
+            self.transact(now, apply, authorize=authorize)
         return result
 
     @_locked

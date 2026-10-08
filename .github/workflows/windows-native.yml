@@ -77,10 +77,14 @@ jobs:
             tests/test_cpu_topology.py `
             tests/test_llm_training.py tests/test_training_workflow.py `
             tests/test_role_worker.py tests/test_local_roles.py tests/test_role_history.py `
+            tests/test_role_archive_storage_owner.py `
             tests/test_role_capability_contract.py tests/test_role_tool_requests.py `
             tests/test_role_tool_transport.py `
             tests/test_role_question_selection.py tests/test_role_question_selection_history.py `
             tests/test_peft_question_selection.py `
+            tests/test_peft_pattern_selection.py tests/test_pattern_role_worker.py `
+            tests/test_finite_role_test.py tests/test_finite_lab_authority.py `
+            tests/test_peft_finite_pilot.py `
             tests/test_paper_pilot_worker.py tests/test_paper_pilot_api.py tests/test_peft_paper_pilot.py `
             tests/test_paper_pilot_lifecycle.py `
             tests/test_role_readiness.py tests/test_peft_development.py tests/test_peft_loader_contract.py `
@@ -331,6 +335,22 @@ jobs:
             QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58970 \
             node tests/browser/pattern_scanner_charts.cjs
           wait "$chart_pid"
+      - name: Verify exact role archive retry, lost acknowledgment and task navigation
+        run: |
+          python -B tests/browser/role_archive_retry_server.py \
+            --directory "$RUNNER_TEMP/role-archive-browser-workspace" \
+            --web-dist "$GITHUB_WORKSPACE/apps/web/dist" --port 58973 \
+            > "$RUNNER_TEMP/role-archive-browser-server.log" 2>&1 &
+          archive_pid=$!
+          trap 'kill "$archive_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:58973/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          QTRADES_BROWSER_QA_OUTPUT="$RUNNER_TEMP/browser-output/role-archive-retry" \
+            QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58973 \
+            node tests/browser/role_archive_retry.cjs
+          wait "$archive_pid"
       - name: Verify original finding preparation and immutable comparison recovery
         run: |
           python -B tests/browser/pattern_comparison_server.py \
@@ -347,6 +367,22 @@ jobs:
             QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58974 \
             node tests/browser/pattern_comparison.cjs
           wait "$comparison_pid"
+      - name: Verify researcher original native finding and preparation navigation
+        run: |
+          python -B tests/browser/role_pattern_evidence_server.py \
+            --directory "$RUNNER_TEMP/role-pattern-browser-workspace" \
+            --web-dist "$GITHUB_WORKSPACE/apps/web/dist" --port 58975 \
+            > "$RUNNER_TEMP/role-pattern-browser-server.log" 2>&1 &
+          role_pattern_pid=$!
+          trap 'kill "$role_pattern_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:58975/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          QTRADES_BROWSER_QA_OUTPUT="$RUNNER_TEMP/browser-output/role-pattern-evidence" \
+            QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58975 \
+            node tests/browser/role_pattern_evidence.cjs
+          wait "$role_pattern_pid"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:

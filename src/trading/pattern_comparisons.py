@@ -6,6 +6,7 @@ import math
 import re
 import time
 from collections import deque
+from collections.abc import Callable
 from decimal import ROUND_HALF_EVEN, Context, Decimal, localcontext
 from pathlib import Path
 from typing import Any, Literal
@@ -359,6 +360,101 @@ class PatternComparisons:
             "financial_authority": False,
         }
 
+    def candidate(self, now: float) -> PatternFindingSelection | None:
+        """One bounded original native finding from the latest published daily capture."""
+        if not math.isfinite(now) or now <= 0:
+            raise ValueError("Invalid candidate observation time")
+        with self.registry.lock:
+            row = self.registry.db.execute(
+                "SELECT body FROM pattern_daily_days ORDER BY seq DESC LIMIT 1"
+            ).fetchone()
+        if row is None:
+            return None
+        day = json.loads(row["body"])
+        if day["generated_at"] > now:
+            return None
+        choices = [
+            evidence
+            for pick in day["picks"]
+            if pick["symbol"] == "BTCUSD" and pick["basis"] == "recognized_setup"
+            for evidence in pick["evidence"]
+            if evidence["timeframe"] == "5m"
+            and evidence["kind"] in {"patterns", "alerts"}
+            and evidence["body"]["kind"] in MAPPING["detector_kinds"]
+            and evidence["body"].get("volume_confirmed") is True
+        ]
+        if not choices:
+            return None
+        chosen = max(choices, key=lambda item: item["seq"])
+        return PatternFindingSelection(
+            daily_id=day["id"],
+            symbol="BTCUSD",
+            timeframe="5m",
+            event_kind=chosen["kind"],
+            event_seq=chosen["seq"],
+        )
+
+    def current_observation(
+        self, request_id: str, now: float, *, admission: Callable[[], Any] | None = None
+    ) -> dict[str, Any]:
+        """Fresh matched inputs retained by the same owner; original preparation stays frozen."""
+        if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
+            raise ValueError("Invalid current comparison observation identity")
+        if not math.isfinite(now) or now <= 0:
+            raise ValueError("Invalid current comparison observation time")
+        proposal, evaluation, windows = (
+            self._evaluation(request_id, now, admission=admission)
+            if admission is not None
+            else self._evaluation(request_id, now)
+        )
+        if evaluation["status"] == "supported_exploratory_configuration":
+            with self.registry.transaction():
+                if admission is not None:
+                    admission()
+                self._permitted(windows)
+                for index, (start, end) in enumerate(windows):
+                    self.registry.db.execute(
+                        "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,?)",
+                        (
+                            f"pattern-role-input:{request_id}:{index}",
+                            start,
+                            end,
+                            "Pattern comparison preparation disclosure",
+                        ),
+                    )
+        return {"proposal_without_bundle_digest": proposal, "evaluation": evaluation}
+
+    def execution_inputs(self, proof: dict[str, Any], request_id: str) -> list[dict[str, Any]]:
+        """Reopen the exact bounded current-input archive; metadata alone is insufficient."""
+        plan = self.scanner.plan
+        references = proof.get("references")
+        if plan is None or not isinstance(references, list) or not 1 <= len(references) <= 2:
+            raise ValueError("Saved execution input archive identity is unavailable")
+        rows: list[dict[str, Any]] = []
+        for reference in references:
+            packet = reopen_evidence(plan, reference)
+            chunk = packet.get("rows")
+            if (
+                packet.get("kind") != "pattern_comparison_execution_inputs"
+                or packet.get("version") != VERSION
+                or packet.get("request_id") != request_id
+                or packet.get("offset") != len(rows)
+                or packet.get("inputs_sha256") != proof["sha256"]
+                or not isinstance(chunk, list)
+                or not 1 <= len(chunk) <= 500
+            ):
+                raise ValueError("Saved execution input chunk differs from its original identity")
+            rows.extend(chunk)
+        if (
+            not 305 <= len(rows) <= 600
+            or len(rows) != proof["count"]
+            or digest(rows) != proof["sha256"]
+            or rows[0]["open_ms"] != proof["start_ms"]
+            or rows[-1]["close_ms"] != proof["end_ms"]
+        ):
+            raise ValueError("Saved matched execution input proof differs")
+        return rows
+
     def get(self, request_id: str) -> dict[str, Any] | None:
         if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
             raise ValueError("Invalid comparison request identity")
@@ -434,9 +530,11 @@ class PatternComparisons:
         }
 
     def _evaluation(
-        self, request_id: str, now: float
+        self, request_id: str, now: float, *, admission: Callable[[], Any] | None = None
     ) -> tuple[Any, Any, list[tuple[float, float]]]:
         c = self.controller
+        if admission is not None:
+            admission()
         if c is None:
             return None, {"status": "waiting", "reason": "Current Lab owner unavailable"}, []
         lab = c.paper.state.get("autonomous_lab")
@@ -531,6 +629,8 @@ class PatternComparisons:
             for offset in range(0, len(inputs), 500)
         ]
         with owner(plan) as storage:
+            if admission is not None:
+                admission()
             refs = storage.append(packets, now)
             for packet, ref in zip(packets, refs, strict=True):
                 if reopen_evidence(plan, ref) != packet:
@@ -563,7 +663,11 @@ class PatternComparisons:
         )
 
     def prepare(
-        self, command: PatternComparisonCommand, now: float | None = None
+        self,
+        command: PatternComparisonCommand,
+        now: float | None = None,
+        *,
+        admission: Callable[[], Any] | None = None,
     ) -> dict[str, Any]:
         intent = digest(command.model_dump())
         # Recovery happens first, including after source/eligibility/policy drift.
@@ -573,16 +677,22 @@ class PatternComparisons:
                 raise ValueError("Comparison request identity cannot be rewritten")
             return old
         with self.registry.pattern_comparison_lock:
-            return self._prepare_new(command, now, intent)
+            return self._prepare_new(command, now, intent, admission)
 
     def _prepare_new(
-        self, command: PatternComparisonCommand, now: float | None, intent: str
+        self,
+        command: PatternComparisonCommand,
+        now: float | None,
+        intent: str,
+        admission: Callable[[], Any] | None = None,
     ) -> dict[str, Any]:
         old = self.get(command.request_id)
         if old is not None:
             if old["intent_sha256"] != intent:
                 raise ValueError("Comparison request identity cannot be rewritten")
             return old
+        if admission is not None:
+            admission()
         now = time.time() if now is None else now
         if not math.isfinite(now) or now <= 0:
             raise ValueError("Invalid preparation observation time")
@@ -604,7 +714,11 @@ class PatternComparisons:
         c = self.controller
         policy_sha = digest(c.paper.state.get("autonomous_lab", {}).get("policy")) if c else None
         # Borrowing/appending/reopening the recorder never holds the registry lock.
-        proposal, evaluation, execution_windows = self._evaluation(command.request_id, now)
+        proposal, evaluation, execution_windows = (
+            self._evaluation(command.request_id, now, admission=admission)
+            if admission is not None
+            else self._evaluation(command.request_id, now)
+        )
         body = {
             "version": VERSION,
             "request_id": command.request_id,
@@ -629,6 +743,8 @@ class PatternComparisons:
         bundle_sha = fingerprint(body)
         windows = described["finding"]["native_proof"]["disclosed_intervals"] + execution_windows
         with self.registry.transaction():
+            if admission is not None:
+                admission()
             if self._original(selection) != {
                 k: v for k, v in described["finding"].items() if k != "native_proof"
             }:
@@ -639,6 +755,8 @@ class PatternComparisons:
                 raise ValueError("Current comparison source or policy changed during preparation")
             self.scanner._admission()
             self._permitted(windows)
+            if admission is not None:
+                admission()
             for index, (start, end) in enumerate(windows):
                 self.registry.db.execute(
                     "INSERT INTO evidence_windows VALUES(?,?,?,?)",
