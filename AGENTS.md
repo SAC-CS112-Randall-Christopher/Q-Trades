@@ -1,3 +1,32 @@
+# Current source successor - October 8, 2026, outcome-informed pattern research (#66)
+
+The active autonomous-research Goal exposed a source gap: later pattern questions
+do not receive the preceding mature lesson. Continue source and isolated QA in
+this existing worktree on `codex/pattern-lesson-feedback-66`, stacked on frozen
+PR75 head `0cfa0ded23f0b1f0200ddae1689885654e02bcb5`. Keep that parent branch/head
+available for its unanswered finite operating decision; use a stacked draft PR
+for this increment rather than silently changing the reviewed parent target.
+
+Add only the explicit `outcome-conditioned-pattern-question-v1` selection branch
+and strict optional `qtrades-peft-paper-pilot-v7` source format. Reuse the current
+v8 answer contract/profile, fixed p0 comparison, ResearchLessons, worker, archive,
+storage, resource and financial owners. Bind a distinct later event to the exact
+available predecessor mature outcome/lesson, including adverse, cost, coverage
+and unknown facts. Preserve original v1-v6 grants, policies, packet identities,
+finite limits, accounts and financial rules. This source corrects learning
+context; it does not add a different financial strategy or prove model quality.
+
+Source implementation, isolated tests, independent review and draft publication
+remain within the Goal's source workflow. The successor remains uninstalled and
+disabled without a separately reviewed operating decision. Do not install, select
+an operating profile/grant, acquire scanner data, dispatch a model, alter financial
+policy, consume holdouts, train, download, convert or activate research from this
+increment. The earlier two approval requests remain unanswered; their permissions
+must not be expanded to this successor. Reuse the accepted c653 rollout receipt
+and R10 saved-history observation; no unchanged guard/cooldown or acceptance rerun.
+
+The dated directions below retain their original scope and evidence.
+
 # Current source follow-up - October 8, 2026, pattern-driven research (#66)
 
 Chris authorized the reviewed PR83 merge/install and continuing the autonomous

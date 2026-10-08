@@ -10,9 +10,11 @@ type Finding = PatternComparisonFinding;
 type Description = { version: string; finding_sha256: string; finding: Finding;
   mapping: Record<string, unknown>; financial_authority: false };
 type Receipt = Description & { request_id: string; intent_sha256: string; prepared_at: number;
-  status: "supported" | "waiting"; reason: string | null; evaluation: Record<string, unknown>;
-  proposal: Record<string, unknown> | null; issued_bundle_sha256: string | null; submitted: false };
-type PreparationSummary = { request_id: string; finding_sha256: string; status: "supported" | "waiting";
+  status: "supported" | "waiting" | "research_only"; reason: string | null; evaluation: Record<string, unknown>;
+  proposal: Record<string, unknown> | null; issued_bundle_sha256: string | null; submitted: false;
+  research_only?: true; dispatch_available?: false; dispatch_reason?: string;
+  readonly_comparison_template?: Record<string, unknown> | null };
+type PreparationSummary = { request_id: string; finding_sha256: string; status: "supported" | "waiting" | "research_only";
   prepared_at: number; issued_bundle_sha256: string; selection: PatternComparisonSelection };
 type PreparationPage = { version: string; items: PreparationSummary[]; next_before: string | null; order: string; financial_authority: false };
 const endpoint = "/api/research/pattern-scanner/comparisons";
@@ -79,17 +81,22 @@ function validateReceipt(value: unknown, command: Command): asserts value is Rec
   if (!object(value)) throw new Error("Preparation acknowledgment is incomplete. Its outcome remains unknown.");
   const row: Record<string, unknown> = value;
   validateDescription(value, command);
+  const readonly = row.research_only === true;
   if (row.request_id !== command.request_id || value.finding_sha256 !== command.expected_finding_sha256 ||
     !hash(row.intent_sha256) || typeof row.prepared_at !== "number" || !Number.isFinite(row.prepared_at) ||
-    !["supported", "waiting"].includes(String(row.status)) || !(row.reason === null || typeof row.reason === "string") || !object(row.evaluation) ||
+    !(readonly ? ["research_only", "waiting"] : ["supported", "waiting"]).includes(String(row.status)) || !(row.reason === null || typeof row.reason === "string") || !object(row.evaluation) ||
     !(row.proposal === null || object(row.proposal)) || !(row.issued_bundle_sha256 === null || hash(row.issued_bundle_sha256)) ||
     row.status === "supported" && (row.evaluation.status !== "supported_exploratory_configuration" || !object(row.proposal) || !hash(row.issued_bundle_sha256)) ||
     row.status === "waiting" && row.evaluation.status !== "waiting" ||
+    readonly && (row.proposal !== null || row.dispatch_available !== false || typeof row.dispatch_reason !== "string" || !row.dispatch_reason ||
+      !(row.readonly_comparison_template === null || object(row.readonly_comparison_template)) ||
+      row.status === "research_only" && (row.evaluation.status !== "supported_research_observation" || !object(row.readonly_comparison_template) || !hash(row.issued_bundle_sha256))) ||
     row.submitted !== false) throw new Error("Preparation acknowledgment does not match the original request and finding. Its outcome remains unknown.");
 }
 async function validateIntent(value: Receipt, command: Command) {
   // All command keys/values are bounded ASCII; this matches the server's sorted compact JSON.
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(canonicalCommand(command)));
+  const intent = value.research_only === true ? JSON.stringify({ command: JSON.parse(canonicalCommand(command)), research_only: true }) : canonicalCommand(command);
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(intent));
   const digest = [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, "0")).join("");
   if (value.intent_sha256 !== digest) throw new Error("The saved preparation intent differs from the original exact payload. Its outcome remains unknown.");
 }
@@ -156,10 +163,12 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
     return () => { removeEventListener("hashchange", restore); removeEventListener("popstate", restore); };
   }, []);
 
-  async function adopt(value: unknown, command: Command, expectedScope: string, explicitOriginal = false) {
+  async function adopt(value: unknown, command: Command, expectedScope: string, explicitOriginal = false, isCurrent = () => true) {
     validateReceipt(value, command);
     await validateIntent(value, command);
-    await preparationLock(() => {
+    if (!isCurrent()) return;
+    if (value.research_only === true && !explicitOriginal) throw new Error("A read-only observation cannot acknowledge an ordinary preparation request. Its original identity remains retained.");
+    if (value.research_only !== true) await preparationLock(() => {
       const saved = savedCommand(pendingKey);
       const completed = savedCommand(completedKey);
       if (saved.error || completed.error) {
@@ -173,12 +182,13 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
       }
       if (matchesPending) { localStorage.setItem(completedKey, JSON.stringify(command)); localStorage.removeItem(pendingKey); }
     });
-    if (!mounted.current) return;
+    if (!mounted.current || !isCurrent()) return;
     refreshSaved();
     if (currentScope.current !== expectedScope || !explicitOriginal && expectedScope !== "" && expectedScope !== selectionKey(command)) {
       setNotice("The other original preparation was acknowledged and retained. This selected finding has not been replaced.");
       return;
     }
+    if (explicitOriginal) descriptionRead.cancel();
     setReceipt(value); setDescription(value); setError(null);
     setRequestedOriginal(command.request_id);
     const params = new URLSearchParams(location.hash.split("?")[1] ?? ""); params.set("pattern_comparison_request", command.request_id);
@@ -187,7 +197,7 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
   }
 
   async function prepare() {
-    if (!selection || !description || selectionKey(description.finding.selection) !== scope || dispatching.current || pending || storageError) return;
+    if (receipt?.research_only === true || !selection || !description || selectionKey(description.finding.selection) !== scope || dispatching.current || pending || storageError) return;
     const expectedScope = scope;
     const command: Command = { ...selection, request_id: crypto.randomUUID(), expected_finding_sha256: description.finding_sha256 };
     const signal = AbortSignal.timeout(30000);
@@ -227,7 +237,7 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
       if (!response.ok) throw new Error(`Original preparation unavailable (HTTP ${response.status}). Its UUID remains retained; absence does not establish that a pending POST cannot commit.`);
       const value: unknown = await response.json(); validateReceipt(value, command);
       if (summary && (value.status !== summary.status || value.prepared_at !== summary.prepared_at || value.issued_bundle_sha256 !== summary.issued_bundle_sha256)) throw new Error("Original receipt differs from the retained history row. No newer preparation was substituted.");
-      if (read.isCurrent()) await adopt(value, command, expectedScope, explicitOriginal);
+      if (read.isCurrent()) await adopt(value, command, expectedScope, explicitOriginal, read.isCurrent);
     } catch (cause) { if (read.isCurrent()) setError(cause instanceof Error ? cause.message : "Original preparation unavailable."); }
     finally { if (read.isCurrent()) setReading(false); }
   }
@@ -241,7 +251,7 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
       const value: unknown = await response.json();
       if (!object(value) || !object(value.finding) || !validSelection(value.finding.selection) || !hash(value.finding_sha256)) throw new Error("Original preparation identity is incomplete.");
       const command: Command = { ...value.finding.selection, request_id: id, expected_finding_sha256: value.finding_sha256 };
-      if (read.isCurrent()) await adopt(value, command, expectedScope, true);
+      if (read.isCurrent()) await adopt(value, command, expectedScope, true, read.isCurrent);
     } catch (cause) { if (read.isCurrent()) setError(cause instanceof Error ? cause.message : "Original preparation unavailable."); }
     finally { if (read.isCurrent()) setReading(false); }
   }
@@ -256,7 +266,7 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
         value.financial_authority !== false || new Set(value.items.map(row => row.request_id)).size !== value.items.length ||
         value.order !== "Stable descending request identity, not preparation chronology" || !(value.next_before === null || typeof value.next_before === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(value.next_before)) ||
         value.items.some(row => !requestId(row.request_id) || !validSelection(row.selection) || !hash(row.finding_sha256) || !hash(row.issued_bundle_sha256) ||
-          !["supported", "waiting"].includes(row.status) || !Number.isFinite(row.prepared_at))) throw new Error("Saved preparation history is incomplete or has a different identity.");
+          !["supported", "waiting", "research_only"].includes(row.status) || !Number.isFinite(row.prepared_at))) throw new Error("Saved preparation history is incomplete or has a different identity.");
       if (read.isCurrent()) setPage(value);
     } catch (cause) { if (read.isCurrent()) setPageError(cause instanceof Error ? cause.message : "Saved preparations unavailable."); }
     finally { if (read.isCurrent()) setPageBusy(false); }
@@ -284,15 +294,16 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
       <span>Saved UUID {completed.command.request_id}</span></div>}
     {reviewed && !receipt && <div className="scanner-controls"><button type="button" disabled={reading || sending || alreadyPrepared || !!pending || !!storageError || !!completed.error || !navigator.locks} onClick={() => void prepare()}>Prepare fixed comparison</button></div>}
     {!navigator.locks && <p role="alert">Safe request coordination is unavailable. Original evidence can still be read; no preparation will be sent.</p>}
-    {receipt && <div className="scanner-status" role="status"><strong>{receipt.status === "supported" ? "Preparation supported by the captured numerical check" : "Preparation waiting"}</strong>
-      <p>{receipt.reason ?? "The separate current input check supported this exploratory configuration; no comparison has run."}</p><p>Original UUID {receipt.request_id} · saved {new Date(receipt.prepared_at * 1000).toLocaleString()}.</p>
+    {receipt && <div className="scanner-status" role="status"><strong>{receipt.research_only === true ? receipt.status === "research_only" ? "Read-only research observation" : "Read-only research observation waiting" : receipt.status === "supported" ? "Preparation supported by the captured numerical check" : "Preparation waiting"}</strong>
+      <p>{receipt.research_only === true ? receipt.dispatch_reason : receipt.reason ?? "The separate current input check supported this exploratory configuration; no comparison has run."}</p>
+      {receipt.research_only === true && receipt.reason && <p>{receipt.reason}</p>}<p>Original UUID {receipt.request_id} · saved {new Date(receipt.prepared_at * 1000).toLocaleString()}.</p>
       <p>Lab inbox submission: no. Account funding: no. Model dispatch: no. A supported input check is not a trading outcome.</p>
       <p>This is the original preparation-time check, not current executable readiness. Its evaluation timestamps and expiry remain in the saved numerical evidence below.</p>
       {matched && <p>Separate current execution inputs: {metric(matched.count)} closed minute candles, {nativeTime(matched.start_ms)} to {nativeTime(matched.end_ms)}. Original matched input SHA256 {metric(matched.sha256)}. This is a current deterministic check, not a replay of the scanner event.</p>}
       <details><summary>Separate current numerical check and original issued bundle</summary><pre>{JSON.stringify(receipt.evaluation, null, 2)}</pre><p>Issued bundle SHA256 {receipt.issued_bundle_sha256 ?? "not issued in this wait"}.</p></details>
-      <details><summary>Original prospective proposal</summary><pre>{JSON.stringify(receipt.proposal, null, 2)}</pre></details>
-      <p>The preparation can be inspected before a separately authorized Lab submission through the existing Lab workflow. This panel has no submission or activation control.</p></div>}
-    {receipt?.status === "waiting" && <><button type="button" disabled={reading || sending || !!pending} onClick={() => {
+      <details><summary>{receipt.research_only === true ? "Read-only fixed comparison template" : "Original prospective proposal"}</summary><pre>{JSON.stringify(receipt.research_only === true ? receipt.readonly_comparison_template : receipt.proposal, null, 2)}</pre></details>
+      <p>{receipt.research_only === true ? "Dispatch unavailable. This observation reuses an already-attempted fixed comparison as research evidence. It is not a new Lab submission proposal; this view has no Prepare, submission or activation control." : "The preparation can be inspected before a separately authorized Lab submission through the existing Lab workflow. This panel has no submission or activation control."}</p></div>}
+    {receipt?.status === "waiting" && receipt.research_only !== true && <><button type="button" disabled={reading || sending || !!pending} onClick={() => {
       const original = receipt.finding.selection;
       setSeparateObservation({ scope: selectionKey(original), requestId: receipt.request_id });
       onReviewFinding(original); setReviewNonce(value => value + 1);

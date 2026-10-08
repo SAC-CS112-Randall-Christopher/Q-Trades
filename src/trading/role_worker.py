@@ -33,11 +33,12 @@ from trading.lab_role_contract import (
 from trading.local_role_model import LocalRoles
 from trading.paper_engine import fresh_frame
 from trading.pattern_comparisons import (
+    TRAINING_ORIGINS,
     PatternComparisonCommand,
     PatternComparisons,
     PatternFindingSelection,
 )
-from trading.peft_role_model import DevelopmentTransportFailure
+from trading.peft_role_model import PATTERN_LEARNING_QUESTION_POLICY, DevelopmentTransportFailure
 from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
 
 if TYPE_CHECKING:
@@ -471,7 +472,9 @@ class RoleWorker:
                 return receipt | {"outcome": "intent_conflict"}
             return receipt | {"outcome": "not_created", "message": rejection["reason"]}
 
-    def _pattern_original(self, source: dict[str, str]) -> dict[str, Any]:
+    def _pattern_original(
+        self, source: dict[str, str], *, research_only: bool = False
+    ) -> dict[str, Any]:
         bridge = self.pattern_comparisons
         if bridge is None:
             raise InputWait("Saved pattern comparison owner is unavailable")
@@ -482,10 +485,11 @@ class RoleWorker:
             raise InputWait("Original pattern preparation is unavailable; no replacement inferred")
         if any(original[key] != source[key] for key in ("finding_sha256", "issued_bundle_sha256")):
             raise ValueError("Pattern preparation identity differs")
-        if original["status"] != "supported":
+        if original["status"] != ("research_only" if research_only else "supported"):
             raise InputWait("Original pattern preparation is waiting; it is never upgraded")
         described = bridge.describe(
-            PatternFindingSelection.model_validate(original["finding"]["selection"])
+            PatternFindingSelection.model_validate(original["finding"]["selection"]),
+            **({"research_only": True} if research_only else {}),
         )
         if described["finding_sha256"] != original["finding_sha256"] or (
             described["mapping"] != original["mapping"]
@@ -493,12 +497,30 @@ class RoleWorker:
             raise ValueError("Original native proof or fixed comparison implementation changed")
         return original
 
+    @staticmethod
+    def _pattern_method(original: dict[str, Any], *, research_only: bool = False) -> LabProposal:
+        if not research_only:
+            return LabProposal.model_validate(original["proposal"])
+        if (
+            original["status"] != "research_only"
+            or original["proposal"] is not None
+            or original.get("dispatch_available") is not False
+        ):
+            raise InputWait("Read-only comparison must not expose proposal dispatch authority")
+        return LabProposal.model_validate(
+            original["readonly_comparison_template"]
+            | {"evidence_bundle_sha256": original["issued_bundle_sha256"]}
+        )
+
     def _pattern_ready(self, policy: dict[str, Any], now: float) -> dict[str, Any]:
         c = self.controller
         if c is None or self._contract_version() != PATTERN_VERSION:
             raise InputWait("Pattern comparison needs its explicit successor owner and contract")
         authority = self._selection_authority()
-        if authority is None or authority["question_policy"] != PATTERN_QUESTION_POLICY:
+        if authority is None or authority["question_policy"] not in {
+            PATTERN_QUESTION_POLICY,
+            PATTERN_LEARNING_QUESTION_POLICY,
+        }:
             raise InputWait("Pattern comparison requires its explicit selection authority")
         paper = c.paper
         if not self._activation_enabled() or not self._admitted():
@@ -546,21 +568,41 @@ class RoleWorker:
         now: float,
         *,
         finite_authority: dict[str, Any] | None = None,
+        learning_binding: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
-        admission = (
+        admission: Callable[[], Any] | None = (
             self._finite_admission(finite_authority) if finite_authority is not None else None
         )
+        if learning_binding is not None:
+            admission = self._pattern_learning_admission(
+                learning_binding, learning_binding["authority"], policy
+            )
         if admission is not None:
             admission()
-        if question.horizon != "medium" or question.parent or question.lesson:
+        learning = self._selection_authority()
+        if (
+            question.horizon != "medium"
+            or question.parent
+            or (
+                question.lesson
+                and (
+                    not learning or learning["question_policy"] != PATTERN_LEARNING_QUESTION_POLICY
+                )
+            )
+        ):
             raise ValueError("Pattern comparison is one fixed independent medium hypothesis")
-        original = self._pattern_original(source)
+        research_only = bool(
+            learning_binding
+            and learning_binding["state"] == "mature_outcome"
+            and learning_binding["dispatch_available"] is False
+        )
+        original = self._pattern_original(source, research_only=research_only)
         self._pattern_ready(policy, now)
         if original["current_policy_sha256"] != digest(policy):
             raise ValueError("Saved comparison belongs to a different frozen Lab policy")
         c, bridge = self.controller, self.pattern_comparisons
         assert c is not None and bridge is not None
-        proposal = LabProposal.model_validate(original["proposal"])
+        proposal = self._pattern_method(original, research_only=research_only)
         if (
             proposal.kind != "independent"
             or proposal.strategy.version != "reviewed-lab-rules-v4"
@@ -570,7 +612,9 @@ class RoleWorker:
             or proposal.strategy.holding_horizon != "medium"
         ):
             raise ValueError("Prepared proposal differs from the fixed supported pattern mapping")
-        self._pattern_admission(proposal, now)
+        used = self._pattern_admission(proposal, now, research_only=research_only)
+        if learning_binding is not None and used == learning_binding["dispatch_available"]:
+            raise InputWait("Fixed comparison dispatch availability changed")
         reversed_proposal = LabProposal.model_validate(
             {
                 **proposal.model_dump(),
@@ -595,9 +639,15 @@ class RoleWorker:
                 observation_id,
                 now,
                 admission=admission,
+                **({"research_only": True} if research_only else {}),
             )
             evaluation = observation["evaluation"]
-            if evaluation["status"] != "supported_exploratory_configuration":
+            expected = (
+                "supported_research_observation"
+                if research_only
+                else "supported_exploratory_configuration"
+            )
+            if evaluation["status"] != expected:
                 raise InputWait(evaluation["reason"])
             proof = evaluation["matched_inputs"]
             if proof["sha256"] != digest(inputs):
@@ -611,6 +661,8 @@ class RoleWorker:
                 "reference": proposal.reference.model_dump(),
             }
         }
+        if research_only:
+            catalog = {}
         frame = self._pattern_ready(policy, now)
         book = frame["book"]
         causal = {
@@ -666,12 +718,25 @@ class RoleWorker:
                 | {"retained_at": proof["cutoff"]},
             }
         }
+        if learning_binding is not None:
+            fixed["p0"]["dispatch_available"] = learning_binding["dispatch_available"]
+            fixed["p0"]["dispatch_reason"] = learning_binding["dispatch_reason"]
+            if research_only:
+                for label in ("candidate", "reference"):
+                    template = fixed["p0"][label].pop("proposal")
+                    template.pop("evidence_bundle_sha256")
+                    fixed["p0"][label]["proposal_without_bundle_digest"] = template
         issued = {"sha256": original["issued_bundle_sha256"], "kind": "saved-pattern-preparation"}
         return catalog, issued, causal, summary, fixed
 
     def _pattern_admission(
-        self, proposal: LabProposal, now: float, task_proposal: dict[str, Any] | None = None
-    ) -> None:
+        self,
+        proposal: LabProposal,
+        now: float,
+        task_proposal: dict[str, Any] | None = None,
+        *,
+        research_only: bool = False,
+    ) -> bool:
         bridge, c = self.pattern_comparisons, self.controller
         assert bridge is not None and c is not None
         roster = bridge.scanner.roster(now, full=True)
@@ -687,19 +752,22 @@ class RoleWorker:
                 pass
             if existing and fingerprint(existing["body"]) != fingerprint(task_proposal):
                 raise ValueError("Original proposal acknowledgment identity differs")
-        if not existing and (
-            not c.inbox.has_capacity() or c.inbox.used(fingerprint(proposal.strategy.model_dump()))
-        ):
+        used = c.inbox.used(fingerprint(proposal.strategy.model_dump()))
+        if not existing and (not c.inbox.has_capacity() or used and not research_only):
             raise InputWait(
                 "Existing proposal capacity or equivalent used-rule gate blocks this test"
             )
+        return used
 
-    def _pattern_permitted(self, original: dict[str, Any], start: float, end: float) -> None:
+    def _pattern_permitted(
+        self, original: dict[str, Any], start: float, end: float, *, research_only: bool = False
+    ) -> None:
         assert self.pattern_comparisons is not None
         with self.registry.lock:
             self.pattern_comparisons._permitted(
                 [tuple(pair) for pair in original["finding"]["native_proof"]["disclosed_intervals"]]
-                + [(start, end)]
+                + [(start, end)],
+                **({"research_only": True} if research_only else {}),
             )
 
     def enqueue(
@@ -753,13 +821,33 @@ class RoleWorker:
                 raise ValueError("Pattern research requires its exact verified saved preparation")
         pattern = None
         fixed_comparison = None
+        learning = None
         catalog: dict[str, Any]
         waits: dict[str, Any]
         if _pattern_comparison is not None:
-            catalog, issued, causal_inputs, pattern, fixed_comparison = self._pattern_inputs(
-                _pattern_comparison, question, policy, now, finite_authority=finite
-            )
             prior = None
+            authority = self._selection_authority()
+            if authority and authority["question_policy"] == PATTERN_LEARNING_QUESTION_POLICY:
+                learning = (
+                    _selection.get("learning")
+                    if _selection is not None
+                    else (_resume_from or {}).get("context", {}).get("pattern_learning")
+                )
+                if not isinstance(learning, dict):
+                    raise InputWait(
+                        "Pattern learning requires its exact frozen predecessor binding"
+                    )
+                prior = self._pattern_learning_body(learning)
+                if question.lesson != (prior["id"] if prior else None):
+                    raise ValueError("Pattern question and original supported lesson differ")
+            catalog, issued, causal_inputs, pattern, fixed_comparison = self._pattern_inputs(
+                _pattern_comparison,
+                question,
+                policy,
+                now,
+                finite_authority=finite,
+                learning_binding=learning,
+            )
             waits = {
                 "new_closed_bars": {
                     "kind": "closed_bars",
@@ -945,6 +1033,8 @@ class RoleWorker:
         if pattern is not None:
             context["pattern_comparison"] = pattern
             context["fixed_comparison"] = fixed_comparison
+        if learning is not None:
+            context["pattern_learning"] = learning
         if _selection is not None:
             _selection_authority = _selection["authority"]
             context["question_selection"] = _selection
@@ -1033,6 +1123,14 @@ class RoleWorker:
                 ).fetchone()
                 if (latest["selection_sha"] if latest else None) != _selection["prior_selection"]:
                     raise InputWait("Selection predecessor changed before atomic publication")
+            if learning is not None:
+                self._pattern_learning_admission(learning, learning["authority"], policy)()
+            if learning is not None and learning["lesson"] is not None:
+                # The existing lesson owner joins this transaction: exposure,
+                # question and selection become visible together or roll back.
+                disclosed = self.lessons.get(learning["lesson"]["id"])
+                if disclosed["sha256"] != learning["lesson"]["sha256"]:
+                    raise InputWait("Supported lesson changed before atomic disclosure")
             for sha256, artifact in artifacts.items():
                 self.registry.db.execute(
                     "INSERT OR IGNORE INTO role_components VALUES(?,?)",
@@ -1123,6 +1221,14 @@ class RoleWorker:
                         json.dumps(_selection, sort_keys=True, allow_nan=False),
                     ),
                 )
+                if learning is not None and learning["lesson"] is not None:
+                    self.lessons.selected(
+                        learning["lesson"]["id"],
+                        "selected",
+                        "Distinct later native question uses the mature outcome; "
+                        "the fixed p0 method is unchanged, not a strategy refinement.",
+                        identity,
+                    )
         return self.get(identity) | ({"_selection_created": True} if _selection is not None else {})
 
     def get(self, identity: str) -> dict[str, Any]:
@@ -1767,20 +1873,39 @@ class RoleWorker:
             raise ValueError("Paper policy changed after dispatch; create a new scoped task")
         if task["context"].get("contract") == PATTERN_VERSION:
             saved = task["context"]["pattern_comparison"]
+            learning = task["context"].get("pattern_learning")
+            research_only = bool(learning and learning["dispatch_available"] is False)
+            if learning is not None:
+                self._pattern_learning_admission(
+                    learning, task["context"]["selection_authority"], task["context"]["policy"]
+                )()
             original = self._pattern_original(
                 {
                     "request_id": saved["preparation_request_id"],
                     "finding_sha256": saved["finding_sha256"],
                     "issued_bundle_sha256": saved["issued_bundle_sha256"],
-                }
+                },
+                research_only=research_only,
             )
             self._pattern_ready(task["context"]["policy"], time.time())
-            self._pattern_admission(
-                LabProposal.model_validate(original["proposal"]), time.time(), task["proposal"]
+            if research_only and (task["proposal"] is not None or task["stage"] != "idea"):
+                raise InputWait("Used fixed p0 is read-only; no new experiment dispatch is offered")
+            used = self._pattern_admission(
+                self._pattern_method(original, research_only=research_only),
+                time.time(),
+                task["proposal"],
+                research_only=research_only,
             )
+            if learning is not None:
+                if used == learning["dispatch_available"]:
+                    raise InputWait("Fixed comparison dispatch availability changed")
+                self._pattern_learning_body(learning)
             bars = c.paper.history["BTCUSD"][-600:]
             self._pattern_permitted(
-                original, bars[0].open_ms / 1000, (bars[-1].close_ms + 1) / 1000
+                original,
+                bars[0].open_ms / 1000,
+                (bars[-1].close_ms + 1) / 1000,
+                research_only=research_only,
             )
         if task["proposal"]:
             finance.validate_parent(c.paper.state, LabProposal.model_validate(task["proposal"]))
@@ -1812,6 +1937,18 @@ class RoleWorker:
                     ),
                     "analysis_tool": ["matched_comparison", "reviewed_rule_inputs"],
                 }
+                if (
+                    task["context"].get("selection_authority", {}).get("question_policy")
+                    == PATTERN_LEARNING_QUESTION_POLICY
+                ):
+                    fixed = task["context"]["fixed_comparison"]["p0"]
+                    packet["tool_inventory"]["strategy_family"] = sorted(
+                        (
+                            fixed[label].get("proposal")
+                            or fixed[label]["proposal_without_bundle_digest"]
+                        )["strategy"]["family"]
+                        for label in ("candidate", "reference")
+                    )
         knowledge = task["context"].get("knowledge")
         if task["context"].get("execution_mode") == PAPER_RESEARCH_PILOT and knowledge is not None:
             raise ValueError("Paper pilot packet cannot include separately authorized RAG inputs")
@@ -1828,18 +1965,84 @@ class RoleWorker:
         if "question_selection" in task["context"]:
             packet["question_selection"] = task["context"]["question_selection"]
         if version == PATTERN_VERSION:
-            packet["fixed_comparison"] = {
-                "p0": (
-                    pattern_followup_controls(
-                        task["context"]["fixed_comparison"]["p0"], task["proposal"]
+            fixed = task["context"]["fixed_comparison"]["p0"]
+            if (
+                task["context"].get("selection_authority", {}).get("question_policy")
+                == PATTERN_LEARNING_QUESTION_POLICY
+                and task["context"]["lesson"] is not None
+                and task["stage"] != "followup"
+            ):
+                packet["fixed_comparison"] = {
+                    "p0": {
+                        "candidate": task["context"]["lesson"]["context"]["family"],
+                        "reference": (
+                            fixed["reference"].get("proposal")
+                            or fixed["reference"]["proposal_without_bundle_digest"]
+                        )["strategy"]["family"],
+                        "detail_sha256": fingerprint(fixed),
+                    }
+                }
+            else:
+                packet["fixed_comparison"] = {
+                    "p0": (
+                        pattern_followup_controls(fixed, task["proposal"])
+                        if task["stage"] == "followup"
+                        else pattern_controls(fixed)
                     )
-                    if task["stage"] == "followup"
-                    else pattern_controls(task["context"]["fixed_comparison"]["p0"])
-                )
-            }
+                }
             if task["stage"] == "followup":
                 packet["evidence"]["e1"] = pattern_followup_outcome(task["result"]["outcome"])
             packet["evidence"]["e3"] = pattern_packet(task["context"]["pattern_comparison"])
+            if (
+                task["context"].get("selection_authority", {}).get("question_policy")
+                == PATTERN_LEARNING_QUESTION_POLICY
+            ):
+                learning = task["context"]["pattern_learning"]
+                prior = task["context"]["lesson"]
+                # The full implementation identity remains covered by the exact
+                # retained fixed-controls digest, rather than repeated source prose.
+                packet["fixed_comparison"]["p0"].pop("source_sha256", None)
+                packet["evidence"]["e5"] = {
+                    "state": learning["state"],
+                    "lesson": learning["lesson"],
+                }
+                if learning["predecessor_task"] is not None:
+                    packet["evidence"]["e5"]["predecessor_task"] = learning["predecessor_task"]
+                if prior is not None:
+                    packet["evidence"]["e5"].update(
+                        source_task=learning["source_task"],
+                        cutoff=learning["cutoff"],
+                        dispatch_available=learning["dispatch_available"],
+                        outcome=pattern_followup_outcome(prior["source"]),
+                        cost_policy_sha256=fingerprint(prior["context"]["cost_policy"]),
+                        data_basis=prior["context"]["data_basis"],
+                        unknowns=prior["unknowns"],
+                        support=prior["support"],
+                    )
+                    if learning["predecessor_task"] == learning["source_task"]:
+                        packet["evidence"]["e5"].pop("predecessor_task", None)
+                    # Remove repeated explanatory prose, never scored fields.
+                    scored = packet["evidence"]["e5"]["outcome"]
+                    scored.pop("detail")
+                    if (
+                        "execution_samples" not in prior["source"]["body"]
+                        and "execution_samples" in scored["body"]
+                    ):
+                        scored["body"]["execution_samples"]["encoding"] = "sample=common+named"
+                    packet["evidence"]["e3"].pop("detail")
+                    packet.pop("scope", None)
+                    if prior["unknowns"] == [
+                        "Recognition, lateness, execution, exit and size causes "
+                        "require linked diagnostics",
+                        "Related windows are correlated; retrieval frequency "
+                        "is not statistical support",
+                        "No incumbent qualification or independent market benefit follows",
+                    ]:
+                        packet["evidence"]["e5"]["unknowns"] = [
+                            "Recognition/lateness/execution/exit/size causes need diagnostics",
+                            "Correlated windows; retrieval is not statistical support",
+                            "No qualification or independent market benefit",
+                        ]
             if role == "reviewer":
                 evaluation = task["evaluation"]
                 packet["evidence"]["e0"] = {
@@ -1883,6 +2086,39 @@ class RoleWorker:
                 }
             packet["question"] = "Test fixed p0 prospectively; refute benefit on inadequate "
             packet["question"] += "coverage or nonpositive matched net after-cost delta."
+            if (
+                task["context"].get("selection_authority", {}).get("question_policy")
+                == PATTERN_LEARNING_QUESTION_POLICY
+            ):
+                packet["question"] = (
+                    "Assess fixed p0: refute benefit on inadequate coverage or "
+                    "nonpositive after-cost delta."
+                )
+            if task["context"].get("pattern_learning", {}).get("dispatch_available") is False:
+                packet["question"] = (
+                    "Assess new event using prior outcome. Used p0 unavailable; "
+                    "no_change or typed wait."
+                )
+                # The same false dispatch fact is carried explicitly in e2.
+                packet["evidence"]["e5"].pop("dispatch_available", None)
+                # No method is offered. Its complete current evaluation and
+                # executable snapshot remain in the exact retained context;
+                # these references do not advertise a dispatch-ready feature.
+                causal = task["context"]["tool_evidence"]
+                # e3.detail_sha256 already covers this original preparation,
+                # including its issued-bundle identity; there is no offered p0.
+                packet["evidence"].pop("e0", None)
+                packet["evidence"]["e2"] = {
+                    "current_inputs": {
+                        key: fixed["current_inputs"][key] for key in ("count", "sha256", "cutoff")
+                    },
+                    "evaluation_sha256": fingerprint(causal),
+                    "dispatch_available": False,
+                    "request_data_conditions": {
+                        key: {"kind": value["kind"]}
+                        for key, value in task["context"]["wait_requirements"].items()
+                    },
+                }
             for capability in packet["capabilities"].values():
                 capability.pop("lookback", None)
                 capability.pop("reference_lookback", None)
@@ -2886,12 +3122,18 @@ class RoleWorker:
         )
 
     def _pattern_source(
-        self, original: dict[str, Any], policy: dict[str, Any], now: float
+        self,
+        original: dict[str, Any],
+        policy: dict[str, Any],
+        now: float,
+        *,
+        research_only: bool = False,
+        learning_policy: bool = False,
     ) -> dict[str, Any]:
         self._pattern_ready(policy, now)
         assert self.controller is not None
-        proposal = LabProposal.model_validate(original["proposal"])
-        self._pattern_admission(proposal, time.time())
+        proposal = self._pattern_method(original, research_only=research_only)
+        used = self._pattern_admission(proposal, time.time(), research_only=research_only)
         # The original cutoff remains causal while the executable frame uses its
         # current observation clock. This check is input identity, not evaluation.
         inputs: list[dict[str, Any]] = [
@@ -2906,7 +3148,7 @@ class RoleWorker:
             }
             for b in self.controller.paper.history.get("BTCUSD", [])[-600:]
         ]
-        return {
+        source: dict[str, Any] = {
             "method": "p0",
             "horizon": "medium",
             "source_sha": digest(inputs),
@@ -2924,6 +3166,17 @@ class RoleWorker:
                 k: original[k] for k in ("request_id", "finding_sha256", "issued_bundle_sha256")
             },
         }
+        if learning_policy:
+            source.update(
+                dispatch_available=not used,
+                dispatch_reason=(
+                    "Equivalent fixed p0 was already used; research evidence only, "
+                    "no new proposal or financial dispatch"
+                    if used
+                    else "Fixed p0 remains offered subject to all existing admission gates"
+                ),
+            )
+        return source
 
     def _check_pattern_selection(
         self,
@@ -2940,13 +3193,35 @@ class RoleWorker:
         # Publication only reads the bounded immutable bundle and current minute
         # owner. Archive verification/borrow has already completed outside this lock.
         original = bridge.get(selection["comparison"]["request_id"])
-        if original is None or original["status"] != "supported":
+        research_only = selection.get("learning", {}).get("dispatch_available") is False
+        if original is None or original["status"] != (
+            "research_only" if research_only else "supported"
+        ):
             raise InputWait("Original supported preparation is unavailable")
-        source = self._pattern_source(original, policy, now)
-        self._pattern_permitted(original, source["source_start"], source["source_end"] + 0.001)
+        learning_policy = (
+            selection["authority"]["question_policy"] == PATTERN_LEARNING_QUESTION_POLICY
+        )
+        if learning_policy:
+            self._check_pattern_learning(selection["learning"], question, now)
+        source = self._pattern_source(
+            original,
+            policy,
+            now,
+            research_only=research_only,
+            learning_policy=learning_policy,
+        )
+        self._pattern_permitted(
+            original,
+            source["source_start"],
+            source["source_end"] + 0.001,
+            research_only=research_only,
+        )
         if (
             question.parent is not None
-            or question.lesson is not None
+            or (
+                question.lesson is not None
+                and selection["authority"]["question_policy"] != PATTERN_LEARNING_QUESTION_POLICY
+            )
             or question.horizon != "medium"
             or question.request_id != "auto-" + selection["selection_sha"][:32]
             or selection["authority"] != self._selection_authority()
@@ -2955,14 +3230,29 @@ class RoleWorker:
             or any(selection[key] != value for key, value in source.items())
             or source["source_sha"] != inputs["closed_bar_sha256"]
             or source["source_count"] != inputs["closed_bar_count"]
-            or source["strategy_sha"] != catalog["p0"]["strategy_sha256"]
-            or source["reference_sha"] != catalog["p0"]["reference_sha256"]
+            or (
+                source.get("dispatch_available", True)
+                and source["strategy_sha"] != catalog["p0"]["strategy_sha256"]
+            )
+            or (
+                source.get("dispatch_available", True)
+                and source["reference_sha"] != catalog["p0"]["reference_sha256"]
+            )
+            or (source.get("dispatch_available") is False and bool(catalog))
             or original["mapping"]["source_sha256"] != bridge._method_sources()
             or original["current_policy_sha256"] != digest(policy)
         ):
             raise InputWait("Pattern finding, method, policy or current causal input changed")
+        if selection["authority"]["question_policy"] == PATTERN_LEARNING_QUESTION_POLICY:
+            self._check_pattern_learning(selection["learning"], question, now)
 
-    def _pattern_terminal(self, identity: str, authority: dict[str, Any]) -> dict[str, Any]:
+    def _pattern_terminal(
+        self,
+        identity: str,
+        authority: dict[str, Any],
+        *,
+        records: list[dict[str, str]] | None = None,
+    ) -> dict[str, Any]:
         """Follow only the exact bounded dependency lineage, without changing old answers."""
         seen: set[str] = set()
         original: dict[str, Any] | None = None
@@ -2971,6 +3261,24 @@ class RoleWorker:
                 raise InputWait("Pattern dependency lineage contains a cycle")
             seen.add(identity)
             task = self.get(identity)
+            if records is not None:
+                with self.registry.lock:
+                    row = self._pattern_learning_record(identity)
+                    if (
+                        row["archive_reference"] != task["archive_reference"]
+                        or row["archive_sha256"] != task["archive_sha256"]
+                        or row["stage"] != task["stage"]
+                        or row["status"] != task["status"]
+                        or (
+                            row["archive_reference"] is None
+                            and any(
+                                (json.loads(row[key]) if row[key] else None) != task[key]
+                                for key in ("context", "proposal", "result")
+                            )
+                        )
+                    ):
+                        raise InputWait("Predecessor storage changed during original recovery")
+                    records.append({"task": identity, "sha256": fingerprint(row)})
             context = task["context"]
             if (
                 context.get("contract") != PATTERN_VERSION
@@ -3006,6 +3314,248 @@ class RoleWorker:
             identity = children[0]["id"]
         raise InputWait("Pattern dependency lineage exceeds its bounded review")
 
+    def _pattern_learning_record(self, identity: str) -> dict[str, Any]:
+        row = self.registry.db.execute(
+            "SELECT id,stage,status,context,proposal,result,archive_reference,archive_sha256 "
+            "FROM role_tasks WHERE id=?",
+            (identity,),
+        ).fetchone()
+        if row is None:
+            raise InputWait("Original pattern predecessor is unavailable")
+        return dict(row)
+
+    def _pattern_learning_body(self, binding: dict[str, Any]) -> dict[str, Any] | None:
+        lesson = binding["lesson"]
+        if lesson is None:
+            if binding["state"] not in {"first_question", "unfunded_no_change"}:
+                raise InputWait("Expected mature lesson is unavailable")
+            return None
+        with self.registry.lock:
+            row = self.registry.db.execute(
+                "SELECT body,sha,created FROM research_lessons WHERE id=? AND task=?",
+                (lesson["id"], binding["source_task"]),
+            ).fetchone()
+        if row is None:
+            raise InputWait("Original mature supported lesson is unavailable")
+        body: dict[str, Any] = json.loads(row["body"])
+        if (
+            row["sha"] != lesson["sha256"]
+            or fingerprint(body) != row["sha"]
+            or body["id"] != lesson["id"]
+            or body["task"] != binding["source_task"]
+            or fingerprint(body["source"]) != binding["source_sha256"]
+            or body["source_sha256"] != binding["source_sha256"]
+            or body["source"]["body"]["available_at"] > binding["cutoff"]
+            or body["source"]["at"] > binding["cutoff"]
+            or row["created"] > binding["cutoff"]
+        ):
+            raise InputWait("Original lesson identity/source or causal cutoff differs")
+        if self.pattern_comparisons is None:
+            raise InputWait("Pattern learning disclosure owner is unavailable")
+        with self.registry.lock:
+            start = body["source"]["body"]["window_start"]
+            end = body["source"]["body"]["available_at"]
+            protected = self.registry.db.execute(
+                "SELECT 1 FROM evidence_windows WHERE start<=? AND end>=? AND origin NOT IN "
+                "('role outcome disclosure','lesson disclosure','role dependency disclosure',"
+                "'role task disclosure',?,?,?,?) LIMIT 1",
+                (end, start, *TRAINING_ORIGINS),
+            ).fetchone()
+            prospective = self.registry.db.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='prospective_plans'"
+            ).fetchone()
+            reserved = (
+                prospective
+                and self.registry.db.execute(
+                    "SELECT 1 FROM prospective_plans WHERE start<=? AND end>=? LIMIT 1",
+                    (end, start),
+                ).fetchone()
+            )
+            if protected or reserved:
+                raise InputWait("Prior outcome overlaps protected or prospective evaluation input")
+        return body  # Mutable access, notes and selection annotations are never evidence.
+
+    def _pattern_learning_prior(
+        self,
+        task: dict[str, Any] | None,
+        records: list[dict[str, str]],
+        authority: dict[str, Any],
+        policy: dict[str, Any],
+        source: dict[str, Any],
+        now: float,
+    ) -> dict[str, Any]:
+        binding: dict[str, Any] = {
+            "authority": authority,
+            "policy_sha256": fingerprint(policy),
+            "state": "first_question" if task is None else "unfunded_no_change",
+            "predecessor_task": task["id"] if task else None,
+            "records": records,
+            "lesson": None,
+            "source_sha256": None,
+            "source_task": None,
+            "source_record": None,
+            "cutoff": now,
+            "dispatch_available": source["dispatch_available"],
+            "dispatch_reason": source["dispatch_reason"],
+        }
+        if task is None:
+            return binding
+        context, outcome = task["context"], (task["result"] or {}).get("outcome")
+        if context.get("selection_authority") != authority or context.get(
+            "policy_sha256"
+        ) != fingerprint(policy):
+            raise InputWait("Original predecessor belongs to different authority or cost policy")
+        if outcome is None:
+            if task["proposal"] is not None:
+                raise InputWait("Prepared/submitted predecessor still lacks its mature outcome")
+            inherited = context.get("pattern_learning")
+            if inherited and inherited["lesson"] is not None:
+                if (
+                    inherited["source_task"] == task["id"]
+                    or context["lesson"]["task"] != inherited["source_task"]
+                ):
+                    raise InputWait("Inherited mature source cannot point to an unfunded successor")
+                with self.registry.lock:
+                    before = self._pattern_learning_record(inherited["source_task"])
+                original = self.get(inherited["source_task"])
+                with self.registry.lock:
+                    if before != self._pattern_learning_record(inherited["source_task"]):
+                        raise InputWait("Original mature source storage changed during recovery")
+                if not (original["result"] or {}).get("outcome"):
+                    raise InputWait("Inherited source has no actual mature outcome")
+                carried = self._pattern_learning_prior(original, [], authority, policy, source, now)
+                if (
+                    carried["lesson"] != inherited["lesson"]
+                    or carried["source_sha256"] != inherited["source_sha256"]
+                    or context["lesson"] != self._pattern_learning_body(carried)
+                    or context["question_selection"]["learning"] != inherited
+                    or original["status"] != "done"
+                    or original["stage"] != "complete"
+                    or original["result"].get("followup", {}).get("action") != "no_change"
+                ):
+                    raise InputWait("Inherited mature lesson no longer matches its original source")
+                return carried | {"predecessor_task": task["id"], "records": records}
+            return binding
+        with self.registry.lock:
+            row = self.registry.db.execute(
+                "SELECT id,sha FROM research_lessons WHERE task=?", (task["id"],)
+            ).fetchone()
+        if row is None:
+            raise InputWait("Recorded mature outcome requires its original supported lesson")
+        with self.registry.lock:
+            source_record = self._pattern_learning_record(task["id"])
+            if (
+                source_record["archive_reference"] != task["archive_reference"]
+                or source_record["archive_sha256"] != task["archive_sha256"]
+                or source_record["stage"] != task["stage"]
+                or source_record["status"] != task["status"]
+                or (
+                    source_record["archive_reference"] is None
+                    and any(
+                        (json.loads(source_record[key]) if source_record[key] else None)
+                        != task[key]
+                        for key in ("context", "proposal", "result")
+                    )
+                )
+            ):
+                raise InputWait("Original mature source changed during recovery")
+        binding.update(
+            state="mature_outcome",
+            source_task=task["id"],
+            source_record={
+                "task": task["id"],
+                "sha256": fingerprint(source_record),
+            },
+            lesson={"id": row["id"], "sha256": row["sha"]},
+            source_sha256=fingerprint(outcome),
+            proposal_id=task["proposal"]["request_id"] if task["proposal"] else None,
+            proposal_sha256=fingerprint(task["proposal"]),
+        )
+        prior = self._pattern_learning_body(binding)
+        assert prior is not None
+        proposal, score = task["proposal"], outcome["body"]
+        if (
+            proposal is None
+            or prior["version"] != "supported-lesson-v1"
+            or prior["source"] != outcome
+            or context.get("selection_authority") != authority
+            or context.get("policy_sha256") != fingerprint(policy)
+            or fingerprint(prior["context"]["cost_policy"]) != fingerprint(policy)
+            or prior["context"]["data_basis"] != source["source_basis"]
+            or prior["context"]["horizon"] != "medium"
+            or prior["context"]["strategy_sha256"] != source["strategy_sha"]
+            or prior["context"]["reference_sha256"] != source["reference_sha"]
+            or fingerprint(proposal["strategy"]) != source["strategy_sha"]
+            or fingerprint(proposal["reference"]) != source["reference_sha"]
+            or fingerprint(context["fixed_comparison"]["p0"]["source_sha256"])
+            != source["method_source_sha"]
+            or score["proposal_id"] != proposal["request_id"]
+            or not score["window_start"] < score["window_end"] <= score["available_at"] <= now
+        ):
+            raise InputWait("Mature lesson differs from the exact scoped method/cost/source")
+        return binding
+
+    def _check_pattern_learning(
+        self, binding: dict[str, Any], question: Question, now: float
+    ) -> None:
+        if binding["cutoff"] != now:
+            raise InputWait("Pattern lesson cutoff changed before publication")
+        records = binding["records"]
+        if (
+            len(records) > 20
+            or (records[-1]["task"] if records else None) != binding["predecessor_task"]
+        ):
+            raise InputWait("Original pattern predecessor lineage differs")
+        for index, record in enumerate(records):
+            with self.registry.lock:
+                if fingerprint(self._pattern_learning_record(record["task"])) != record["sha256"]:
+                    raise InputWait("Original predecessor changed before publication")
+                children = self.registry.db.execute(
+                    "SELECT id FROM role_tasks WHERE json_extract(context,'$.predecessor_task')=? "
+                    "ORDER BY id LIMIT 2",
+                    (record["task"],),
+                ).fetchall()
+            expected = [records[index + 1]["task"]] if index + 1 < len(records) else []
+            if [row["id"] for row in children] != expected:
+                raise InputWait("Original predecessor lineage changed before publication")
+        prior = self._pattern_learning_body(binding)
+        if question.lesson != (prior["id"] if prior else None):
+            raise InputWait("Question no longer binds its original mature lesson")
+        if binding["source_record"] is not None:
+            record = binding["source_record"]
+            with self.registry.lock:
+                if fingerprint(self._pattern_learning_record(record["task"])) != record["sha256"]:
+                    raise InputWait(
+                        "Original mature source task/archive changed before publication"
+                    )
+
+    def _pattern_learning_admission(
+        self, binding: dict[str, Any], authority: dict[str, Any], policy: dict[str, Any]
+    ) -> Callable[[], None]:
+        def check() -> None:
+            c = self.controller
+            if (
+                c is None
+                or not self._activation_enabled()
+                or self._selection_authority() != authority
+                or binding["authority"] != authority
+                or binding["policy_sha256"] != fingerprint(policy)
+                or fingerprint(c.paper.state.get("autonomous_lab", {}).get("policy"))
+                != fingerprint(policy)
+            ):
+                raise InputWait("Original learning authority or policy changed before disclosure")
+            self._check_pattern_learning(
+                binding,
+                Question(
+                    question="Inspect exact original mature source",
+                    horizon="medium",
+                    lesson=binding["lesson"]["id"] if binding["lesson"] else None,
+                ),
+                binding["cutoff"],
+            )
+
+        return check
+
     def _select_pattern_question(
         self, authority: dict[str, Any], policy: dict[str, Any], scope: str, now: float
     ) -> int:
@@ -3020,8 +3570,14 @@ class RoleWorker:
                 "WHERE scope_sha=? AND horizon='medium' ORDER BY source_end DESC LIMIT 1",
                 (scope,),
             ).fetchone()
+        learning_policy = authority["question_policy"] == PATTERN_LEARNING_QUESTION_POLICY
+        records: list[dict[str, str]] = []
+        predecessor = None
         if previous:
-            task = self._pattern_terminal(previous["task"], authority)
+            task = self._pattern_terminal(
+                previous["task"], authority, records=records if learning_policy else None
+            )
+            predecessor = task
             result = task["result"] or {}
             if (
                 task["status"] != "done"
@@ -3040,7 +3596,41 @@ class RoleWorker:
             selection = bridge.candidate(now)
         if selection is None:
             raise InputWait("No supported saved BTC/native-5m daily finding")
-        described = bridge.describe(selection)
+        learning = None
+        research_only = False
+        if learning_policy:
+            assert self.controller is not None
+            candidate = RuleSpec(
+                version="reviewed-lab-rules-v4",
+                family="breakout-retest-v1",
+                holding_horizon="medium",
+            )
+            reference = RuleSpec(
+                version="reviewed-lab-rules-v4", family="cost-breakout-v1", holding_horizon="medium"
+            )
+            used = self.controller.inbox.used(fingerprint(candidate.model_dump()))
+            prior_source = {
+                "source_basis": self.controller.paper.state.get(
+                    "evidence_kind", "observed_public_market"
+                ),
+                "strategy_sha": fingerprint(candidate.model_dump()),
+                "reference_sha": fingerprint(reference.model_dump()),
+                "method_source_sha": fingerprint(bridge._method_sources()),
+                "dispatch_available": not used,
+                "dispatch_reason": (
+                    "Equivalent fixed p0 was already used; research evidence only, "
+                    "no new proposal or financial dispatch"
+                    if used
+                    else "Fixed p0 remains offered subject to all existing admission gates"
+                ),
+            }
+            learning = self._pattern_learning_prior(
+                predecessor, records, authority, policy, prior_source, now
+            )
+            research_only = (
+                learning["state"] == "mature_outcome" and not learning["dispatch_available"]
+            )
+        described = bridge.describe(selection, **({"research_only": True} if research_only else {}))
         if (
             finite is not None
             and described["finding_sha256"] != finite["finite_test"]["finding_sha256"]
@@ -3071,7 +3661,14 @@ class RoleWorker:
                     expected_finding_sha256=described["finding_sha256"],
                 ),
                 now,
-                admission=self._finite_admission(finite) if finite is not None else None,
+                admission=(
+                    self._finite_admission(finite)
+                    if finite is not None
+                    else self._pattern_learning_admission(learning, authority, policy)
+                    if learning is not None
+                    else None
+                ),
+                **({"research_only": True} if research_only else {}),
             )
         elif (
             self._pattern_event_identity(original["finding"]) != event_sha
@@ -3079,19 +3676,45 @@ class RoleWorker:
             or original["current_policy_sha256"] != digest(policy)
         ):
             raise ValueError("Stable preparation differs from this original event/method/policy")
-        if original["status"] != "supported":
+        if original["status"] != ("research_only" if research_only else "supported"):
             raise InputWait(
                 "Original deterministic preparation remains waiting: "
                 + original["evaluation"]["reason"]
             )
-        source = self._pattern_source(original, policy, now)
-        key = fingerprint({"scope_sha": scope, **source})
+        source = self._pattern_source(
+            original,
+            policy,
+            now,
+            research_only=research_only,
+            learning_policy=learning_policy,
+        )
+        if learning is not None and (
+            learning["dispatch_available"] != source["dispatch_available"]
+            or learning["dispatch_reason"] != source["dispatch_reason"]
+        ):
+            raise InputWait(
+                "Original fixed-method dispatch availability changed during preparation"
+            )
+        key = fingerprint(
+            {"scope_sha": scope, **source}
+            | (
+                {
+                    "learning": {
+                        k: v
+                        for k, v in learning.items()
+                        if k not in {"records", "source_record", "cutoff"}
+                    }
+                }
+                if learning is not None
+                else {}
+            )
+        )
         selected = {
             **source,
             "authority": authority,
             "scope_sha": scope,
             "selection_sha": key,
-            "lesson": None,
+            "lesson": learning["lesson"] if learning is not None else None,
             "prior_selection": previous["selection_sha"] if previous else None,
             "original_event_end": original["finding"]["original_event"]["bar_close_ms"] / 1000,
             "reason": "Verified saved native breakout/retest motivates the fixed p0 comparison.",
@@ -3106,6 +3729,8 @@ class RoleWorker:
                 "operating/inference costs remain uncertain.",
             ],
         }
+        if learning is not None:
+            selected["learning"] = learning
         question = Question(
             question="Does fixed p0 breakout-retest improve future matched net after-cost "
             "outcomes versus cost-breakout? The saved native pattern motivates this "
@@ -3113,6 +3738,9 @@ class RoleWorker:
             "when supported evidence is insufficient.",
             horizon="medium",
             request_id="auto-" + key[:32],
+            lesson=learning["lesson"]["id"]
+            if learning is not None and learning["lesson"]
+            else None,
         )
         created = self.enqueue(
             question, now, _selection=selected, _pattern_comparison=source["comparison"]
@@ -3135,7 +3763,10 @@ class RoleWorker:
         catalog: dict[str, Any],
         now: float,
     ) -> None:
-        if selection["authority"]["question_policy"] == PATTERN_QUESTION_POLICY:
+        if selection["authority"]["question_policy"] in {
+            PATTERN_QUESTION_POLICY,
+            PATTERN_LEARNING_QUESTION_POLICY,
+        }:
             self._check_pattern_selection(selection, question, policy, inputs, catalog, now)
             return
         authority = selection["authority"]
@@ -3194,7 +3825,10 @@ class RoleWorker:
             scope = fingerprint({"authority": authority, "policy_sha": fingerprint(policy)})
             with self.registry.lock:
                 self._selection_room(authority, policy, now)
-            if authority["question_policy"] == PATTERN_QUESTION_POLICY:
+            if authority["question_policy"] in {
+                PATTERN_QUESTION_POLICY,
+                PATTERN_LEARNING_QUESTION_POLICY,
+            }:
                 return self._select_pattern_question(authority, policy, scope, now)
             reasons = []
             for horizon in policy["holding_horizons"]:
