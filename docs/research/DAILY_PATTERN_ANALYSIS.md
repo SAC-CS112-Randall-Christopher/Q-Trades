@@ -31,7 +31,7 @@ variable moving-average rules than fixed crossover or range-break rules on
 high-frequency Bitcoin. Their paper leaves liquidity and transaction costs for
 further consideration; its carried-forward no-trading prices are not authority
 to fabricate missing native candles here.
-[Author manuscript, 2019](https://doras.dcu.ie/25053/1/The_effectiveness_of_technical_trading_rules_in_cryptocurrency_markets%5B1%5D.pdf)
+[Author manuscript](https://doras.dcu.ie/25053/1/The_effectiveness_of_technical_trading_rules_in_cryptocurrency_markets%5B1%5D.pdf)
 
 Hudson and Urquhart found favorable historical technical-rule results, but their
 selected Bitcoin rules had negative subsequent out-of-sample returns. Their
@@ -44,6 +44,38 @@ They report some improvement over buy-and-hold, especially in risk-adjusted
 performance. This supports prospective, cost-aware evaluation; it does not make
 an individual detected setup a verified profitable trade.
 [Ghent University publication and manuscript, 2024](https://biblio.ugent.be/publication/01HY3C3S169G1N6QNYR55NZMFB)
+
+Osler's order-level study supplies a possible explanation for both reversal at
+known levels and continuation beyond them: take-profit and stop-loss orders
+cluster differently in the sampled FX bank. It does not observe this project's
+crypto order flow or test its retest and volume definitions.
+[New York Fed staff report, 2001; published 2003](https://www.newyorkfed.org/research/staff_reports/sr125.html)
+
+## Evidence strength and engineering priority
+
+The primary sources were rechecked for this increment. There is no universal
+best pattern or transferable standalone win rate. Known-level interruptions have
+direct intraday FX evidence. Crypto moving-average, filter, volume and channel
+rule studies offer broader, mixed evidence under different samples, costs and
+selection procedures. Deprez and Frömmel report stronger results for OBV and,
+to a lesser extent, moving-average and filter rules, with performance changing
+by period and frequency. That is not evidence that our specific retest ranks
+above those families.
+[Accepted manuscript, conclusion and rule definitions](https://backoffice.biblio.ugent.be/download/01HY3C3S169G1N6QNYR55NZMFB/01HY60XZGZYHNQ6188MSVJT0SG)
+
+| Research family | Evidence relevant to the family | Project priority and limit |
+| --- | --- | --- |
+| Known-level bounce / range reversion | Osler's advance-published FX levels support some intraday interruptions; this is not a test of a generic range-reversion rule. [Osler 2000](https://www.newyorkfed.org/medialibrary/media/research/epr/00v06n2/0007osle.pdf) | Retain the existing causal `support_bounce` detector. The engine's range mechanisms are different rules; no exact support-bounce RuleSpec is implied. |
+| Resistance breakout | FX order clustering motivates continuation beyond known levels; crypto support/resistance and channel rules have mixed cost and out-of-sample results. [Osler 2001](https://www.newyorkfed.org/research/staff_reports/sr125.html), [Hudson–Urquhart](https://link.springer.com/article/10.1007/s10479-019-03357-1) | Use existing `cost-breakout-v1` as the first fixed comparison reference. A scanner pivot-zone crossing does not equal its rolling-range entry predicate. |
+| Breakout retest | The reviewed papers do not directly validate this project's separate-visit retest, ten-candle expiry or volume settings. | Prepare `breakout-retest-v1` versus `cost-breakout-v1` first because both fixed v4 methods already exist. This is an engineering priority, not an empirical superiority claim. |
+| Trend pullback / moving-average reclaim | Moving-average rule research motivates studying trend context; it does not establish a pullback-specific or VWAP-reclaim effect. [Corbet et al.](https://doras.dcu.ie/25053/1/The_effectiveness_of_technical_trading_rules_in_cryptocurrency_markets%5B1%5D.pdf) | Fixed engine trend-pullback and VWAP-reclaim methods exist. Additional scanner recognizers and their exact source mappings need their own definitions and evaluation. |
+| Compression / range breakout | Channel-breakout studies examine constrained ranges, with mixed results; they do not validate our six-bar compression and ATR thresholds. [Deprez–Frömmel, Appendix B](https://backoffice.biblio.ugent.be/download/01HY3C3S169G1N6QNYR55NZMFB/01HY60XZGZYHNQ6188MSVJT0SG) | The fixed engine compression method exists. A scanner compression recognizer remains a separate addition. |
+| Failed breakout / reclaim | None of the reviewed sources directly tests the proposed project definition. | Keep as a later, explicitly defined hypothesis. Existing washout-rebound or VWAP-reclaim methods must not be relabeled as an exact failed-breakout detector. |
+
+All pivot widths, moving-average periods, volume multiples, ATR tolerances and
+expiry windows below or in the engine are frozen project definitions. These
+papers supply research rationale and evaluation methods, not calibrated values
+for this venue, timeframe or implementation.
 
 ## Initial recognizers and their causal meaning
 
@@ -131,19 +163,38 @@ new information creates a new assessment instead of rewriting the old one.
 Financial execution, funding, risk limits and model/research admission retain
 their existing owners and protections.
 
-## Future hypotheses are separate versions
+## Scanner extensions and implemented bank methods
 
-Compression breakout could use a frozen prior range/volatility definition and
-a later close beyond that range. Low activity, zero volume and gaps can mimic
-compression. Trend pullback/reclaim could use recorded SMA ordering/slopes and
-a later closed reclaim of a named level, average or explicitly scoped VWAP.
-Neither hypothesis is implemented or validated merely by displaying indicators.
+The scanner currently recognizes support bounce, resistance breakout and
+breakout retest. Trend pullback/reclaim and compression are future **scanner
+recognizers**; displaying SMA or VWAP does not implement them. Separately, the
+existing engine's v4 strategy bank already implements fixed `trend-pullback-v1`,
+`vwap-reclaim-v1` and `compression-breakout-v1` predicates in
+[`redesign_strategy.py`](../../src/trading/redesign_strategy.py). Their source
+implementation is not evidence of profitability or an exact match to a scanner
+finding.
+
+A scanner compression extension could use a frozen prior range/volatility
+definition and a later close beyond it. Low activity, zero volume and gaps can
+mimic compression. A trend pullback/reclaim extension could use recorded average
+ordering/slopes and a later closed reclaim of a named level, average or scoped
+VWAP. Keep those definitions separate from existing bank predicates.
 
 Before either addition, specify its windows, threshold, confirmation delay,
 invalidation, source segment and parameter identity. Freeze those choices before
 evaluation. Do not select whichever level, average, window or pattern happened
 to make a consumed historical event look successful. More elaborate geometric
 labels require equally reproducible definitions and their own validation.
+
+The first proposed finding-to-research slice is narrower: prepare an immutable
+issued Lab bundle, a fixed BTCUSD v4 retest-versus-breakout proposal, and the
+existing deterministic current-input evaluation or an explicit retained wait.
+Preparation does not submit the proposal to the inbox, dispatch a model, reserve
+slots or fund accounts. Its source mapping and required separate executable
+inputs are specified in
+[`PATTERN_RESEARCH_COMPARISON.md`](PATTERN_RESEARCH_COMPARISON.md). It does not
+complete autonomous strategy development, a prospective trial or an economic
+learning cycle.
 
 ## Verification and economic evidence
 

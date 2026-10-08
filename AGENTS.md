@@ -1,4 +1,23 @@
-# Current source follow-up — October 7, 2026, daily automated chart analysis (#66)
+# Current source follow-up — October 7, 2026, pattern research and preparation (#66)
+
+Chris asks which chart patterns Q-Trades should recognize. Verify primary
+research, distinguish study results from this project's detector definitions,
+and continue the existing daily-analyzer lane toward a genuine supported
+experiment. A bounded preparation may bind an immutable BTCUSD/native-5m
+breakout or retest finding to the existing fixed v4 retest-versus-breakout
+comparison, with original archive verification and separately captured current
+numerical inputs. The scanner detector and trading-bank mechanism differ;
+preparation does not establish a trading edge or run a comparison.
+
+Use the existing registry, issued Lab bundles, storage owner and numerical
+evaluation. Preparation must not enqueue a model, submit an experiment to the
+inbox, fund accounts, change a policy or consume attempts. Preserve original
+questions, grants, profiles, packets, adverse answers and financial decisions.
+Source/disposable checks, independent review, commit/push and draft PR delivery
+remain authorized. New installation, restart, scanner/research activation and
+actual model or prospective comparison require their applicable authorization.
+
+# Previous source follow-up — October 7, 2026, daily automated chart analysis (#66)
 
 Chris requests hands-off daily history analysis and five next research candidates
 from eligible USD crypto markets, with recognized patterns and five native candle

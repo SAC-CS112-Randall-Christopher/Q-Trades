@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useEvidenceRead } from "./useEvidenceRead";
 import { ScannerChartGrid, type ScannerChartFocus } from "./CandleWorkspace";
 import { DailyAnalyzer, validDaily, type DailySelection } from "./DailyAnalyzer";
+import { PatternComparisonPanel, type PatternComparisonSelection, type PatternComparisonFinding } from "./PatternComparisonPanel";
 import "./scanner-workspace.css";
 
 type Frame = "5m" | "15m" | "30m" | "1h" | "4h";
@@ -94,6 +95,7 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
   const [market, setMarket] = useState(symbol);
   const [frame, setFrame] = useState<Frame>("5m");
   const [chartFocus, setChartFocus] = useState<ScannerChartFocus | null>(null);
+  const [comparison, setComparison] = useState<PatternComparisonSelection | null>(null);
   const [page, setPage] = useState<Page | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [pageBusy, setPageBusy] = useState(false);
@@ -334,6 +336,23 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
     document.getElementById("scanner-chart-grid")?.scrollIntoView({ block: "start" });
   }
 
+  function reviewComparison(selection: PatternComparisonSelection) {
+    const params = new URLSearchParams(location.hash.split("?")[1] ?? ""); params.delete("pattern_comparison_request");
+    history.replaceState(null, "", `#markets?${params}`);
+    setComparison({ daily_id: selection.daily_id, symbol: selection.symbol, timeframe: selection.timeframe,
+      event_kind: selection.event_kind, event_seq: selection.event_seq });
+    // This is a read-only source review; preparation remains a separate explicit button.
+    requestAnimationFrame(() => document.getElementById("pattern-comparison-panel")?.scrollIntoView({ block: "start" }));
+  }
+  function openComparisonFinding(finding: PatternComparisonFinding) {
+    const original = finding.selection;
+    openDaily(finding.campaign_id, original.symbol, original.daily_id, { timeframe: original.timeframe,
+      kind: original.event_kind, seq: original.event_seq, body: finding.original_event,
+      progress_sha256: finding.coverage.find(row => row.timeframe === original.timeframe)?.progress_sha256 ?? undefined });
+    // replaceState alone does not notify the daily shortlist's ordinary URL restore.
+    dispatchEvent(new HashChangeEvent("hashchange"));
+  }
+
   const daily = validDaily(state?.daily_selection) ? state.daily_selection : null;
   const dailyCampaign = state?.campaign?.version === "year-pattern-scanner-v2";
   const roster = state?.roster.rows ?? [];
@@ -354,7 +373,9 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
     <DailyAnalyzer selection={daily} statusError={statusError} checked={checked}
       enableDisabled={setupBusy || !!statusError || !!state?.enabled && !dailyCampaign}
       pauseDisabled={busy || !!storageError || !navigator.locks || pending.some(command => isPause(command.action))}
-      onEnable={() => void control("daily_enable")} onPause={() => void control("daily_pause")} onOpen={openDaily} />
+      onEnable={() => void control("daily_enable")} onPause={() => void control("daily_pause")} onOpen={openDaily}
+      onReviewComparison={reviewComparison} onSnapshotChange={id => setComparison(old => old?.daily_id === id ? old : null)} />
+    <PatternComparisonPanel selection={comparison} onOpenFinding={openComparisonFinding} onReviewFinding={reviewComparison} />
     <div className="scanner-filters"><label>Analysis market <select aria-label="Analysis chart market" value={market} onChange={event => onChooseMarket(event.target.value)}>{[...new Set([market, ...(campaign?.symbols ?? []), ...roster.map(row => row.symbol)])].map(name => <option key={name}>{name}</option>)}</select></label></div>
     <ScannerChartGrid campaignId={campaign?.id ?? null} symbol={market} focus={chartFocus} />
     <div className="scanner-controls"><button type="button" disabled={setupBusy || !prepareAllowed} onClick={() => void control("prepare")}>Prepare selected markets</button>

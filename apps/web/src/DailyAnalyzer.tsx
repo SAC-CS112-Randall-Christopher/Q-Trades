@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useEvidenceRead } from "./useEvidenceRead";
+import type { PatternComparisonSelection } from "./PatternComparisonPanel";
 
 type Frame = "5m" | "15m" | "30m" | "1h" | "4h";
 type Coverage = { timeframe: Frame; status: string; requested_start_ms?: number; cutoff_ms?: number;
@@ -62,10 +63,11 @@ function validateSnapshot(value: Snapshot, id: string) {
   }
 }
 
-export function DailyAnalyzer({ selection, statusError, checked, enableDisabled, pauseDisabled, onEnable, onPause, onOpen }:
+export function DailyAnalyzer({ selection, statusError, checked, enableDisabled, pauseDisabled, onEnable, onPause, onOpen, onReviewComparison, onSnapshotChange }:
   { selection: DailySelection | null; statusError: string | null; checked: number | null;
     enableDisabled: boolean; pauseDisabled: boolean; onEnable: () => void; onPause: () => void;
-    onOpen: (campaign: string, symbol: string, snapshot: string, evidence?: Evidence) => void }) {
+    onOpen: (campaign: string, symbol: string, snapshot: string, evidence?: Evidence) => void;
+    onReviewComparison?: (selection: PatternComparisonSelection) => void; onSnapshotChange?: (id: string | null) => void }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [requested, setRequested] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +83,7 @@ export function DailyAnalyzer({ selection, statusError, checked, enableDisabled,
 
   async function open(id: string, remember = true) {
     explicit.current = remember || explicit.current;
+    onSnapshotChange?.(id);
     setRequested(id); setSnapshot(null); setError(null);
     const read = detailRead.begin(7000); setBusy(true);
     if (remember) {
@@ -103,7 +106,7 @@ export function DailyAnalyzer({ selection, statusError, checked, enableDisabled,
       explicit.current = id !== null;
       if (id !== null) openRef.current(id, false);
       else if (latestRef.current) openRef.current(latestRef.current, false);
-      else { detailRead.cancel(); setRequested(null); setSnapshot(null); setError(null); setBusy(false); }
+      else { onSnapshotChange?.(null); detailRead.cancel(); setRequested(null); setSnapshot(null); setError(null); setBusy(false); }
     };
     restore(); addEventListener("hashchange", restore); addEventListener("popstate", restore);
     return () => { removeEventListener("hashchange", restore); removeEventListener("popstate", restore); };
@@ -159,7 +162,15 @@ export function DailyAnalyzer({ selection, statusError, checked, enableDisabled,
             <p>{typeof event.body.reason === "string" ? event.body.reason : "No original explanation recorded."}</p>
             <p>The original record below remains frozen. Its captured-progress chart may be unavailable after processing advances; no current window will be substituted. Use Inspect current saved charts explicitly to read newer progress.</p>
             <p>Native candle {nativeTime(event.body.bar_open_ms)} · volume confirmation {event.body.volume_confirmed === true ? "recorded" : event.body.volume_confirmed === false ? "not met" : "unknown"} · volume ratio {metric(event.body.volume_ratio)}.</p>
-            <button type="button" onClick={() => onOpen(snapshot.campaign_id, pick.symbol, snapshot.id, { ...event, progress_sha256: pick.coverage.find(row => row.timeframe === event.timeframe)?.progress_sha256 ?? undefined })}>Try captured chart for original pattern</button><pre>{JSON.stringify(event, null, 2)}</pre></details>)}
+            <button type="button" onClick={() => onOpen(snapshot.campaign_id, pick.symbol, snapshot.id, { ...event, progress_sha256: pick.coverage.find(row => row.timeframe === event.timeframe)?.progress_sha256 ?? undefined })}>Try captured chart for original pattern</button>
+            {onReviewComparison && pick.basis === "recognized_setup" && pick.symbol === "BTCUSD" && event.timeframe === "5m" &&
+              ["resistance_breakout", "breakout_retest"].includes(String(event.body.kind)) &&
+              event.body.symbol === "BTCUSD" && event.body.timeframe === "5m" &&
+              event.body.volume_confirmed === true && event.body.financial_authority === false &&
+              typeof event.body.bar_open_ms === "number" && Number.isSafeInteger(event.body.bar_open_ms) &&
+              typeof event.body.id === "string" && typeof event.body.level_id === "string" &&
+              <button type="button" onClick={() => onReviewComparison({ daily_id: snapshot.id, symbol: "BTCUSD", timeframe: "5m", event_kind: event.kind, event_seq: event.seq })}>Review prospective comparison</button>}
+            <pre>{JSON.stringify(event, null, 2)}</pre></details>)}
           <details><summary>Original candidate inputs and source identities</summary><pre>{JSON.stringify(pick, null, 2)}</pre></details>
         </article>;
       })}</div>
