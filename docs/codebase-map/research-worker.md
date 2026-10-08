@@ -77,6 +77,8 @@ Actual mature lessons keep their existing exact source/cost/protection checks.
 Legacy repeated unfunded selections consume their method rather than hiding the
 other method. Legacy active bindings can also resume after an independent method
 publishes; their own method availability and frozen controls remain checked.
+The unchanged-source retry delay belongs only to this nonfinite method policy;
+legacy and finite dependency recovery keep their immediate event behavior.
 
 Automatic selection examines at most 32 distinct retained candidate events across
 seven recent daily captures. It skips unusable or duplicate top candidates while

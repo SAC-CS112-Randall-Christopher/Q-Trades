@@ -34,9 +34,9 @@ hashes can be inspected there; operating data was not copied into this repositor
 
 | Check | Observed result | Proof limit |
 | --- | --- | --- |
-| Final affected native/database group, `pg-03/engine-01.xml` | **334 passed, zero skipped**, 156.01 seconds. Ten affected test files, including actual disposable engine/registry/inbox continuations, finite authority and the revised concurrency cases. | PostgreSQL and native software proof with synthetic inputs and deterministic role callbacks. No actual model inference or prospective strategy result. |
+| Final expanded native/database group, `pg-04/engine-01.xml` | **370 passed, zero skipped**, 191.76 seconds. Twelve affected test files, including actual disposable engine/registry/inbox continuations, finite authority, concurrency, preserved-v4 discovery and legacy lesson recovery. | PostgreSQL and native software proof with synthetic inputs and deterministic role callbacks. No actual model inference or prospective strategy result. |
 | Disposable before/after identity audit | Same 269 Python source files, two prior schemas and retained prior failed-state fingerprint; zero unrelated clients. Exact cluster on local port 54544 stopped afterward with process/listener/PID-file absence verified. | This is the owned QA database; it is not the installed financial database. |
-| Compiled dashboard browser, `browser-02/browser/receipt.json` | **Eight groups passed**, zero page errors or automatic application API writes. Original wait/finding links, exact current evidence, desktop/mobile/reload, profile/outage behavior and missing RuleSpec handoff checked. Server and browser exited 0; owned port released. | Synthetic native/current inputs and scored-rule display fixture. No financial database, model calls, inbox submission or qualification. |
+| Compiled dashboard browser, `browser-03/browser/receipt.json` | **Eight groups passed**, zero page errors or automatic application API writes. Original wait/finding links, exact current evidence, desktop/mobile/reload, profile/outage behavior and missing RuleSpec handoff checked. Server and browser exited 0; owned port released. | Synthetic native/current inputs and scored-rule display fixture. No financial database, model calls, inbox submission or qualification. |
 | Dashboard TypeScript/Vite build | Passed, with before/after source hashes unchanged and compiled artifact bound to those sources. | Existing pinned local dependencies; no installation or operating update. |
 | Repository Ruff | Passed. | Static lint. |
 | Strict mypy | Passed for all **118 source files**. | Static types. |
@@ -47,15 +47,16 @@ hashes can be inspected there; operating data was not copied into this repositor
 The ten delayed-evaluation cases cover both reserve and fund with unchanged
 admission, pause, resource refusal, stale inputs and policy drift. The actual
 financial transaction completed before optional work was released in every case.
-Measured financial commit time was 3.8–5.2 ms; the largest recorded writer hold was
-9.51 ms. These are local controlled measurements, not installed-service targets.
+In the retained `pg-03` measurement, financial commit time was 3.8–5.2 ms; the
+largest recorded writer hold was 9.51 ms. These are local controlled measurements,
+not installed-service targets.
 The assertion establishing continuity is the transaction ordering, not a timing
 threshold. Account preservation and balanced journal assertions accompany it.
 
 Final database stdout SHA256:
-`b2e6ce2ce6945b68a1eacdaccb75084722b571ae9627473c531d2a85b6cf5854`.
+`746f1c6eae2e488f1ebaba4b96b65421307008468e0c2e1faa6678ae016d94d0`.
 Final browser receipt SHA256:
-`69121a441dc4585f4a0d58098d1ee50d6a8e584490edfc0d877f18cf728b587c`.
+`4fd3f71ed40467e3914083143587088bebddc43248fd17348b70990c87d5d954`.
 
 Earlier failures remain preserved. Initial launches encountered a missing output
 parent and Windows sandbox temp-directory permissions. Intermediate new tests
@@ -65,7 +66,25 @@ packet; one read-only continuation fixture prepared its foreign comparison after
 its inputs were stale. Those fixtures were corrected without weakening source
 admission. The earlier `pg-01` result was 67 passed/11 failed; `roles-01` was
 283 passed/one failed/four database skips. They are not relabeled as successful.
-The final combined 334-case run covers those corrected cases with no skips.
+The combined 334-case run covered those corrected cases with no skips; the final
+expanded 370-case run also covers the subsequent hosted findings below.
+
+The first full hosted run at `28e5c2382153dc73920bf235e0c7ceb5931765b5` then
+found two missed integration points: three preserved-v4 guard cases still called
+the private Lab helper's old signature, and the new unchanged-source retry delay
+also affected legacy recovery. Its PostgreSQL job recorded 2,457 passed, five
+failed and 98 skipped; native Windows recorded 1,694 passed, three failed,
+262 skipped and two deselected. Six other hosted jobs passed. These failed jobs
+are retained as [run 37810197664](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/37810197664).
+
+The correction restricts retry deferral to the saved nonfinite method policy and
+updates the private helper test call without relaxing its guard assertions. The
+original legacy recovery tests remain unchanged; a new actual method-policy wait
+test verifies the positive deferral path preserves its result and attempts. Both
+missed suites are included in the expanded local database group. Independent
+review found no material issue in that correction. A later hosted run must pass
+at the corrected head; the earlier focused success does not make this failed full
+run green.
 
 ## Next authorized checkpoint
 

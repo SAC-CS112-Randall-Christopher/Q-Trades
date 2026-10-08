@@ -592,6 +592,20 @@ def test_due_or_unreconciled_work_keeps_priority_over_new_question(fixture, stat
     assert len(rows(worker, "role_tasks")) == 1 and not rows(worker, "role_attempts")
 
 
+def test_unchanged_method_dependency_defers_without_spending_another_attempt(fixture):
+    f, worker, _ = fixture
+    worker.transport.action = "request_data"
+    first = select(f, worker)
+    assert asyncio.run(worker.step(f.now))
+    original = worker.get(first["id"])
+    assert worker.resume_sources(f.now) == 0
+    waiting = worker.get(first["id"])
+    assert waiting["retry_at"] == f.now + 30
+    assert waiting["result"] == original["result"]
+    assert waiting["attempts"] == original["attempts"]
+    assert len(rows(worker, "role_tasks")) == 1
+
+
 def test_foreign_used_p0_starts_p1_without_foreign_lesson(fixture):
     f, worker, _ = fixture
     foreign = mark_used(worker, "p0")

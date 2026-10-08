@@ -18142,7 +18142,7 @@
         },
         {
           "kind": "function",
-          "line": 4969,
+          "line": 4972,
           "name": "RoleWorker.selection_metrics"
         }
       ],
@@ -18277,7 +18277,7 @@
       ],
       "path": "src/trading/role_worker.py",
       "routes": [],
-      "sha256": "d9aea29cade804c9e97ce066bfd2d8f3dd3a568ebba914b59cef13536c360064"
+      "sha256": "36167dea8f4f39afe8af78289fefeb7c9ee6f75e37969e3e913cce4424d3e35a"
     },
     {
       "area": "finance-strategy-experiments",
@@ -29942,96 +29942,101 @@
         {
           "kind": "function",
           "line": 595,
+          "name": "test_unchanged_method_dependency_defers_without_spending_another_attempt"
+        },
+        {
+          "kind": "function",
+          "line": 609,
           "name": "test_foreign_used_p0_starts_p1_without_foreign_lesson"
         },
         {
           "kind": "function",
-          "line": 622,
+          "line": 636,
           "name": "test_own_mature_p0_motivates_independent_p1_with_lossless_prior"
         },
         {
           "kind": "function",
-          "line": 659,
+          "line": 673,
           "name": "test_shared_score_projection_preserves_different_types_nulls_and_unknown_fields"
         },
         {
           "kind": "function",
-          "line": 728,
+          "line": 742,
           "name": "test_p1_data_wait_hot_and_cold_resume_keeps_exact_method"
         },
         {
           "kind": "function",
-          "line": 763,
+          "line": 777,
           "name": "test_changed_during_preparation_refuses_publication_before_model"
         },
         {
           "kind": "function",
-          "line": 768,
+          "line": 782,
           "name": "test_changed_during_preparation_refuses_publication_before_model.changed"
         },
         {
           "kind": "function",
-          "line": 787,
+          "line": 801,
           "name": "test_all_foreign_used_is_honest_wait_with_no_source_adoption"
         },
         {
           "kind": "function",
-          "line": 796,
+          "line": 810,
           "name": "test_used_state_changes_before_model_refuse_uncharged"
         },
         {
           "kind": "function",
-          "line": 806,
+          "line": 820,
           "name": "test_restart_archived_mature_source_preserves_next_method_and_dedup"
         },
         {
           "kind": "function",
-          "line": 821,
+          "line": 835,
           "name": "test_p1_unoffered_p0_answer_is_rejected_without_proposal"
         },
         {
           "kind": "function",
-          "line": 832,
+          "line": 846,
           "name": "engine_shaped_score"
         },
         {
           "kind": "function",
-          "line": 888,
+          "line": 902,
           "name": "restore_prior_projection"
         },
         {
           "kind": "function",
-          "line": 912,
+          "line": 926,
           "name": "restore_prior_score"
         },
         {
           "kind": "function",
-          "line": 916,
+          "line": 930,
           "name": "test_actual_engine_shaped_two_score_packets_remain_lossless"
         },
         {
           "kind": "function",
-          "line": 921,
+          "line": 935,
           "name": "test_actual_engine_shaped_two_score_packets_remain_lossless.shaped_update"
         },
         {
           "kind": "function",
-          "line": 1014,
+          "line": 1028,
           "name": "test_full_followup_packet_preserves_unavailable_or_original_sample_fields"
         },
         {
           "kind": "function",
-          "line": 1074,
+          "line": 1088,
           "name": "retain_engine_proof"
         },
         {
           "kind": "function",
-          "line": 1080,
+          "line": 1094,
           "name": "retain_engine_proof.saved"
         },
         {
           "kind": "function",
-          "line": 1160,
+          "line": 1174,
           "name": "test_actual_two_independent_comparisons_preserve_mature_source_and_accounts"
         }
       ],
@@ -30110,7 +30115,7 @@
       ],
       "path": "tests/test_pattern_next_method_worker.py",
       "routes": [],
-      "sha256": "9a25a55a57e6788ddb28d78daf10d8cf8c4d60d536db7fc2d8039f4a74b27218"
+      "sha256": "8e5fad985f9a83fe72436442316853fb16991bfebbf9a84140c9ecd312fcf1f2"
     },
     {
       "area": "verification-verification",
@@ -33089,82 +33094,82 @@
       "declarations": [
         {
           "kind": "function",
-          "line": 26,
+          "line": 27,
           "name": "fixed_spec"
         },
         {
           "kind": "function",
-          "line": 35,
+          "line": 36,
           "name": "native_lab"
         },
         {
           "kind": "function",
-          "line": 54,
+          "line": 55,
           "name": "seed_parent"
         },
         {
           "kind": "function",
-          "line": 73,
+          "line": 74,
           "name": "test_fixed_v4_parent_is_unchanged_and_later_baseline_discovery_runs"
         },
         {
           "kind": "function",
-          "line": 87,
+          "line": 88,
           "name": "test_fixed_v4_does_not_hide_later_legacy_lookback_variation"
         },
         {
           "kind": "function",
-          "line": 107,
+          "line": 108,
           "name": "test_legacy_used_child_is_not_reissued_and_original_ack_reopens"
         },
         {
           "kind": "function",
-          "line": 123,
+          "line": 124,
           "name": "test_fixed_v4_skip_reaches_existing_independent_discovery"
         },
         {
           "kind": "function",
-          "line": 135,
+          "line": 136,
           "name": "test_existing_parent_ineligibility_still_skips_legacy_child"
         },
         {
           "kind": "function",
-          "line": 144,
+          "line": 145,
           "name": "test_existing_capacity_and_strict_fixed_schema_are_not_relaxed"
         },
         {
           "kind": "function",
-          "line": 156,
+          "line": 157,
           "name": "test_supervisor_pause_and_resource_gates_precede_discovery"
         },
         {
           "kind": "function",
-          "line": 174,
+          "line": 177,
           "name": "synthetic_tick"
         },
         {
           "kind": "function",
-          "line": 196,
+          "line": 199,
           "name": "synthetic_tick.apply"
         },
         {
           "kind": "function",
-          "line": 209,
+          "line": 212,
           "name": "test_actual_engine_refuses_reused_bar_then_enters_on_later_synthetic_bar"
         },
         {
           "kind": "function",
-          "line": 221,
+          "line": 224,
           "name": "test_actual_engine_refuses_reused_bar_then_enters_on_later_synthetic_bar.transact"
         },
         {
           "kind": "function",
-          "line": 260,
+          "line": 263,
           "name": "test_actual_preserved_v4_parent_keeps_accounting_and_normal_discovery"
         },
         {
           "kind": "function",
-          "line": 394,
+          "line": 397,
           "name": "test_actual_preserved_v4_parent_keeps_accounting_and_normal_discovery.retain"
         }
       ],
@@ -33194,6 +33199,7 @@
         "test_redesign_strategy.fixture",
         "test_rule_component",
         "test_rule_component.component",
+        "time",
         "trading",
         "trading.autonomous_finance",
         "trading.autonomous_lab",
@@ -33225,7 +33231,7 @@
       ],
       "path": "tests/test_preserved_v4_discovery.py",
       "routes": [],
-      "sha256": "c1991d2a324a937482beb380b3a8e93e14624f98b26958992b8070f057dd0d9a"
+      "sha256": "3867a55dc7053065cc509bd71d4086c3fc48ba4bbde9ebbdb3312747044d3831"
     },
     {
       "area": "verification-verification",
@@ -39300,7 +39306,7 @@
     "docs/codebase-map/model-admission.md": "2a448479693509c564f96d0ac8f05e13d10c5459a012fb6ed9c1a379cd02de2a",
     "docs/codebase-map/oversight-tools.md": "1482c52ee88b8090a33752f0734d6af4438ecd883199dfd03adcf458c339da2b",
     "docs/codebase-map/paper-accounting.md": "b6c250540be90b46bab2b04c5ee72143fc7018e6d10ac82436f0c5d079759a89",
-    "docs/codebase-map/research-worker.md": "bc0f41b0e18648610a39f3b9416073e507c0f8f73a5f9b1368e514ba87068b3b",
+    "docs/codebase-map/research-worker.md": "b87173a1bb634139162fe018c7a9d60c4025297fd140ab6d47c107dbcf0ec809",
     "docs/codebase-map/runtime-updates.md": "934878e0476e582e257832ea188fe49cfdad13a0150f940e8a5e192358a4a7f2",
     "docs/codebase-map/scanner-charts.md": "0349a834d3c5d4b32ca17b91753164b8a9efd22456dc26c21796713d736ee83e",
     "docs/codebase-map/secondary-research.md": "2d1e61f2f8e6c3ae2e8aa3da1255ec2834d05c1920f6c30315a85634aee0448a",

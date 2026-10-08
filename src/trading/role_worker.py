@@ -4958,12 +4958,15 @@ class RoleWorker:
         return 1
 
     def _defer_source(self, identity: str, now: float) -> None:
-        # An unchanged dependency owns a bounded retry, not the whole queue.
+        # Only the broader method queue yields while its source is unchanged.
+        # Legacy and finite dependencies retain their immediate event recovery.
         with self.registry.transaction():
             self.registry.db.execute(
                 "UPDATE role_tasks SET retry_at=? WHERE id=? AND stage='data_wait' "
-                "AND status='waiting' AND owner IS NULL",
-                (now + 30, identity),
+                "AND status='waiting' AND owner IS NULL "
+                "AND json_extract(context,'$.selection_authority.question_policy')=? "
+                "AND json_type(context,'$.finite_test') IS NULL",
+                (now + 30, identity, PATTERN_METHOD_QUESTION_POLICY),
             )
 
     def selection_metrics(self) -> dict[str, Any]:

@@ -2622,7 +2622,7 @@ Exact native, dashboard, ownership, PG and browser job selections — [.github/w
 | [tests/test_pattern_comparisons.py](../../tests/test_pattern_comparisons.py) | [verification-verification](verification.md) | 30 |
 | [tests/test_pattern_memory.py](../../tests/test_pattern_memory.py) | [verification-verification](verification.md) | 10 |
 | [tests/test_pattern_next_method_comparison.py](../../tests/test_pattern_next_method_comparison.py) | [verification-verification](verification.md) | 21 |
-| [tests/test_pattern_next_method_worker.py](../../tests/test_pattern_next_method_worker.py) | [verification-verification](verification.md) | 43 |
+| [tests/test_pattern_next_method_worker.py](../../tests/test_pattern_next_method_worker.py) | [verification-verification](verification.md) | 44 |
 | [tests/test_pattern_research_learning.py](../../tests/test_pattern_research_learning.py) | [verification-verification](verification.md) | 22 |
 | [tests/test_pattern_research_observation.py](../../tests/test_pattern_research_observation.py) | [verification-verification](verification.md) | 22 |
 | [tests/test_pattern_role_worker.py](../../tests/test_pattern_role_worker.py) | [verification-verification](verification.md) | 56 |
@@ -5559,7 +5559,7 @@ Declared local imports: [src/trading/experiment_registry.py](../../src/trading/e
 - [RoleWorker.resume_sources](../../src/trading/role_worker.py#L4821) — function
 - [RoleWorker._resume_source](../../src/trading/role_worker.py#L4869) — function
 - [RoleWorker._defer_source](../../src/trading/role_worker.py#L4960) — function
-- [RoleWorker.selection_metrics](../../src/trading/role_worker.py#L4969) — function
+- [RoleWorker.selection_metrics](../../src/trading/role_worker.py#L4972) — function
 Declared local imports: [src/trading/autonomous_finance.py](../../src/trading/autonomous_finance.py), [src/trading/autonomous_lab.py](../../src/trading/autonomous_lab.py), [src/trading/autonomous_spec.py](../../src/trading/autonomous_spec.py), [src/trading/evidence_runtime.py](../../src/trading/evidence_runtime.py), [src/trading/experiment_registry.py](../../src/trading/experiment_registry.py), [src/trading/finite_role_test.py](../../src/trading/finite_role_test.py), [src/trading/lab_role_contract.py](../../src/trading/lab_role_contract.py), [src/trading/llm_training.py](../../src/trading/llm_training.py), [src/trading/local_role_model.py](../../src/trading/local_role_model.py), [src/trading/paper_engine.py](../../src/trading/paper_engine.py), [src/trading/pattern_comparisons.py](../../src/trading/pattern_comparisons.py), [src/trading/peft_role_model.py](../../src/trading/peft_role_model.py), [src/trading/research_evidence.py](../../src/trading/research_evidence.py), [src/trading/research_knowledge.py](../../src/trading/research_knowledge.py), [src/trading/research_lessons.py](../../src/trading/research_lessons.py), [src/trading/research_reviews.py](../../src/trading/research_reviews.py), [src/trading/research_storage.py](../../src/trading/research_storage.py), [src/trading/role_evidence.py](../../src/trading/role_evidence.py), [src/trading/role_history.py](../../src/trading/role_history.py), [src/trading/rule_components.py](../../src/trading/rule_components.py), [src/trading/scoped_tools.py](../../src/trading/scoped_tools.py)
 
 ### src/trading/rule_components.py
@@ -7390,25 +7390,26 @@ Declared local imports: [src/trading/autonomous_spec.py](../../src/trading/auton
 - [test_read_only_observation_descendant_retains_original_mature_lesson](../../tests/test_pattern_next_method_worker.py#L535) — function
 - [test_read_only_observation_descendant_retains_original_mature_lesson.request_data](../../tests/test_pattern_next_method_worker.py#L543) — function
 - [test_due_or_unreconciled_work_keeps_priority_over_new_question](../../tests/test_pattern_next_method_worker.py#L573) — function
-- [test_foreign_used_p0_starts_p1_without_foreign_lesson](../../tests/test_pattern_next_method_worker.py#L595) — function
-- [test_own_mature_p0_motivates_independent_p1_with_lossless_prior](../../tests/test_pattern_next_method_worker.py#L622) — function
-- [test_shared_score_projection_preserves_different_types_nulls_and_unknown_fields](../../tests/test_pattern_next_method_worker.py#L659) — function
-- [test_p1_data_wait_hot_and_cold_resume_keeps_exact_method](../../tests/test_pattern_next_method_worker.py#L728) — function
-- [test_changed_during_preparation_refuses_publication_before_model](../../tests/test_pattern_next_method_worker.py#L763) — function
-- [test_changed_during_preparation_refuses_publication_before_model.changed](../../tests/test_pattern_next_method_worker.py#L768) — function
-- [test_all_foreign_used_is_honest_wait_with_no_source_adoption](../../tests/test_pattern_next_method_worker.py#L787) — function
-- [test_used_state_changes_before_model_refuse_uncharged](../../tests/test_pattern_next_method_worker.py#L796) — function
-- [test_restart_archived_mature_source_preserves_next_method_and_dedup](../../tests/test_pattern_next_method_worker.py#L806) — function
-- [test_p1_unoffered_p0_answer_is_rejected_without_proposal](../../tests/test_pattern_next_method_worker.py#L821) — function
-- [engine_shaped_score](../../tests/test_pattern_next_method_worker.py#L832) — function
-- [restore_prior_projection](../../tests/test_pattern_next_method_worker.py#L888) — function
-- [restore_prior_score](../../tests/test_pattern_next_method_worker.py#L912) — function
-- [test_actual_engine_shaped_two_score_packets_remain_lossless](../../tests/test_pattern_next_method_worker.py#L916) — function
-- [test_actual_engine_shaped_two_score_packets_remain_lossless.shaped_update](../../tests/test_pattern_next_method_worker.py#L921) — function
-- [test_full_followup_packet_preserves_unavailable_or_original_sample_fields](../../tests/test_pattern_next_method_worker.py#L1014) — function
-- [retain_engine_proof](../../tests/test_pattern_next_method_worker.py#L1074) — function
-- [retain_engine_proof.saved](../../tests/test_pattern_next_method_worker.py#L1080) — function
-- [test_actual_two_independent_comparisons_preserve_mature_source_and_accounts](../../tests/test_pattern_next_method_worker.py#L1160) — function
+- [test_unchanged_method_dependency_defers_without_spending_another_attempt](../../tests/test_pattern_next_method_worker.py#L595) — function
+- [test_foreign_used_p0_starts_p1_without_foreign_lesson](../../tests/test_pattern_next_method_worker.py#L609) — function
+- [test_own_mature_p0_motivates_independent_p1_with_lossless_prior](../../tests/test_pattern_next_method_worker.py#L636) — function
+- [test_shared_score_projection_preserves_different_types_nulls_and_unknown_fields](../../tests/test_pattern_next_method_worker.py#L673) — function
+- [test_p1_data_wait_hot_and_cold_resume_keeps_exact_method](../../tests/test_pattern_next_method_worker.py#L742) — function
+- [test_changed_during_preparation_refuses_publication_before_model](../../tests/test_pattern_next_method_worker.py#L777) — function
+- [test_changed_during_preparation_refuses_publication_before_model.changed](../../tests/test_pattern_next_method_worker.py#L782) — function
+- [test_all_foreign_used_is_honest_wait_with_no_source_adoption](../../tests/test_pattern_next_method_worker.py#L801) — function
+- [test_used_state_changes_before_model_refuse_uncharged](../../tests/test_pattern_next_method_worker.py#L810) — function
+- [test_restart_archived_mature_source_preserves_next_method_and_dedup](../../tests/test_pattern_next_method_worker.py#L820) — function
+- [test_p1_unoffered_p0_answer_is_rejected_without_proposal](../../tests/test_pattern_next_method_worker.py#L835) — function
+- [engine_shaped_score](../../tests/test_pattern_next_method_worker.py#L846) — function
+- [restore_prior_projection](../../tests/test_pattern_next_method_worker.py#L902) — function
+- [restore_prior_score](../../tests/test_pattern_next_method_worker.py#L926) — function
+- [test_actual_engine_shaped_two_score_packets_remain_lossless](../../tests/test_pattern_next_method_worker.py#L930) — function
+- [test_actual_engine_shaped_two_score_packets_remain_lossless.shaped_update](../../tests/test_pattern_next_method_worker.py#L935) — function
+- [test_full_followup_packet_preserves_unavailable_or_original_sample_fields](../../tests/test_pattern_next_method_worker.py#L1028) — function
+- [retain_engine_proof](../../tests/test_pattern_next_method_worker.py#L1088) — function
+- [retain_engine_proof.saved](../../tests/test_pattern_next_method_worker.py#L1094) — function
+- [test_actual_two_independent_comparisons_preserve_mature_source_and_accounts](../../tests/test_pattern_next_method_worker.py#L1174) — function
 Declared local imports: [src/trading/autonomous_finance.py](../../src/trading/autonomous_finance.py), [src/trading/autonomous_lab.py](../../src/trading/autonomous_lab.py), [src/trading/autonomous_spec.py](../../src/trading/autonomous_spec.py), [src/trading/experiment_registry.py](../../src/trading/experiment_registry.py), [src/trading/lab_role_contract.py](../../src/trading/lab_role_contract.py), [src/trading/pattern_comparisons.py](../../src/trading/pattern_comparisons.py), [src/trading/peft_role_model.py](../../src/trading/peft_role_model.py), [src/trading/role_evidence.py](../../src/trading/role_evidence.py), [src/trading/role_worker.py](../../src/trading/role_worker.py)
 
 ### tests/test_pattern_research_learning.py
@@ -7885,22 +7886,22 @@ Declared local imports: [src/trading/paper_engine.py](../../src/trading/paper_en
 
 ### tests/test_preserved_v4_discovery.py
 
-- [fixed_spec](../../tests/test_preserved_v4_discovery.py#L26) — function
-- [native_lab](../../tests/test_preserved_v4_discovery.py#L35) — function
-- [seed_parent](../../tests/test_preserved_v4_discovery.py#L54) — function
-- [test_fixed_v4_parent_is_unchanged_and_later_baseline_discovery_runs](../../tests/test_preserved_v4_discovery.py#L73) — function
-- [test_fixed_v4_does_not_hide_later_legacy_lookback_variation](../../tests/test_preserved_v4_discovery.py#L87) — function
-- [test_legacy_used_child_is_not_reissued_and_original_ack_reopens](../../tests/test_preserved_v4_discovery.py#L107) — function
-- [test_fixed_v4_skip_reaches_existing_independent_discovery](../../tests/test_preserved_v4_discovery.py#L123) — function
-- [test_existing_parent_ineligibility_still_skips_legacy_child](../../tests/test_preserved_v4_discovery.py#L135) — function
-- [test_existing_capacity_and_strict_fixed_schema_are_not_relaxed](../../tests/test_preserved_v4_discovery.py#L144) — function
-- [test_supervisor_pause_and_resource_gates_precede_discovery](../../tests/test_preserved_v4_discovery.py#L156) — function
-- [synthetic_tick](../../tests/test_preserved_v4_discovery.py#L174) — function
-- [synthetic_tick.apply](../../tests/test_preserved_v4_discovery.py#L196) — function
-- [test_actual_engine_refuses_reused_bar_then_enters_on_later_synthetic_bar](../../tests/test_preserved_v4_discovery.py#L209) — function
-- [test_actual_engine_refuses_reused_bar_then_enters_on_later_synthetic_bar.transact](../../tests/test_preserved_v4_discovery.py#L221) — function
-- [test_actual_preserved_v4_parent_keeps_accounting_and_normal_discovery](../../tests/test_preserved_v4_discovery.py#L260) — function
-- [test_actual_preserved_v4_parent_keeps_accounting_and_normal_discovery.retain](../../tests/test_preserved_v4_discovery.py#L394) — function
+- [fixed_spec](../../tests/test_preserved_v4_discovery.py#L27) — function
+- [native_lab](../../tests/test_preserved_v4_discovery.py#L36) — function
+- [seed_parent](../../tests/test_preserved_v4_discovery.py#L55) — function
+- [test_fixed_v4_parent_is_unchanged_and_later_baseline_discovery_runs](../../tests/test_preserved_v4_discovery.py#L74) — function
+- [test_fixed_v4_does_not_hide_later_legacy_lookback_variation](../../tests/test_preserved_v4_discovery.py#L88) — function
+- [test_legacy_used_child_is_not_reissued_and_original_ack_reopens](../../tests/test_preserved_v4_discovery.py#L108) — function
+- [test_fixed_v4_skip_reaches_existing_independent_discovery](../../tests/test_preserved_v4_discovery.py#L124) — function
+- [test_existing_parent_ineligibility_still_skips_legacy_child](../../tests/test_preserved_v4_discovery.py#L136) — function
+- [test_existing_capacity_and_strict_fixed_schema_are_not_relaxed](../../tests/test_preserved_v4_discovery.py#L145) — function
+- [test_supervisor_pause_and_resource_gates_precede_discovery](../../tests/test_preserved_v4_discovery.py#L157) — function
+- [synthetic_tick](../../tests/test_preserved_v4_discovery.py#L177) — function
+- [synthetic_tick.apply](../../tests/test_preserved_v4_discovery.py#L199) — function
+- [test_actual_engine_refuses_reused_bar_then_enters_on_later_synthetic_bar](../../tests/test_preserved_v4_discovery.py#L212) — function
+- [test_actual_engine_refuses_reused_bar_then_enters_on_later_synthetic_bar.transact](../../tests/test_preserved_v4_discovery.py#L224) — function
+- [test_actual_preserved_v4_parent_keeps_accounting_and_normal_discovery](../../tests/test_preserved_v4_discovery.py#L263) — function
+- [test_actual_preserved_v4_parent_keeps_accounting_and_normal_discovery.retain](../../tests/test_preserved_v4_discovery.py#L397) — function
 Declared local imports: [src/trading/autonomous_finance.py](../../src/trading/autonomous_finance.py), [src/trading/autonomous_lab.py](../../src/trading/autonomous_lab.py), [src/trading/autonomous_spec.py](../../src/trading/autonomous_spec.py), [src/trading/experiment_registry.py](../../src/trading/experiment_registry.py), [src/trading/paper_engine.py](../../src/trading/paper_engine.py), [src/trading/paper_store.py](../../src/trading/paper_store.py)
 
 ### tests/test_projection_ram.py
