@@ -1,0 +1,107 @@
+{
+  "version": "frozen-sqlite-access-v1",
+  "mode": "measure",
+  "source_base": "dcf7ccbb178cdd89175e427962dec80475620c73",
+  "source_files": {
+    "pyproject.toml": "5986469729b318aed075ce2f6c0d3b90a0c5c93611fa6f62ab82e86983ffeee2",
+    "requirements-lock.txt": "39fc6516d0472d30aa752246388a9ec0649bd5cc5847a9de7e199289991767f8",
+    "scripts/compression_study/__init__.py": "e3a3e34aed71b843d28a136158a32cc8c1b13eecb84bbb7d387c4c17a8ab7142",
+    "scripts/compression_study/codecs.py": "231ba80f2a249f8d655266f76d4f6599552cd6cf12299cde74c0942a3aec870d",
+    "scripts/compression_study/diagnose_capture.py": "747ab8370ced36e2c81870942d26666f9ebadcdb450b1109256d06c601b7c1dd",
+    "scripts/compression_study/prototype.py": "3c6ba62162d1d153568d18f07ac7cf0f00d8148a4480469fd09f7b9928ea77b0",
+    "scripts/compression_study/requirements.txt": "293d4ce9c7f865af20267451e45c2b2ebcb5fa9acac8de0d20a82b50f312358f",
+    "scripts/compression_study/resources.py": "3323011e25d7790b5ad0949913d4b171072ad76fd452c84a8d74f4aa92d0020a",
+    "scripts/compression_study/run.py": "d2eba2b9436e5b97c4ce1701448034654219aa5f671dbf872ac6418d779b217e",
+    "scripts/compression_study/sanitize.py": "fc7839156466142b1b959fd8153a539f816a4b1683696014f7d90c7dd87bd845",
+    "scripts/compression_study/specimens.py": "898d3d3fe8f898a31b53e0cce0c7e6ec922743f4e6885da130fa8326946819a2",
+    "src/trading/evidence_runtime.py": "6ba62cb838fa089c353bb867e66e5f64b82d5d7d748b0fac51ae82e796adb6f3",
+    "src/trading/ownership.py": "76e48e2ff67096a8d255e87a04580e110a4ec7e020048b532d978bf91da4a034",
+    "src/trading/peft_child_owner.py": "0151adac956496077372494022a4fa3b97bd4d0c4f13bd4ad54f1693ffc89535",
+    "src/trading/research_evidence.py": "743b3e77a4be793ac5d56990030a2e745a6ab607dd5493f16eeb12975f6212c9",
+    "src/trading/research_storage.py": "d29fdd883394ea4adcf2053ea340b98c3182446c97f7e619a5e2187a43454d40",
+    "tests/test_capture_recovery.py": "6831afe6d87554336515b02d4ab6c7adf6b011a0c44ad5ada5656d5755d02d1c",
+    "tests/test_compression_study.py": "b16fecfd918bc91c3390697ae70283a13047d1e2c9fd64d1b8bff0effe9ee843"
+  },
+  "dependencies": {
+    "python": "3.12.10",
+    "zlib_build": "1.3.1",
+    "zlib_runtime": "1.3.1",
+    "sqlite": "3.49.1",
+    "zstandard": "0.25.0",
+    "lz4": "4.3.3",
+    "psutil": "7.0.0",
+    "pydantic": "2.13.4",
+    "pytest": "8.4.2",
+    "ruff": "0.16.9",
+    "mypy": "2.3.1",
+    "lz4_native": "1.9.4",
+    "architecture": "AMD64",
+    "os": "Windows",
+    "pointer_bits": 64,
+    "zstd_backend": "cext",
+    "zstd_native": [
+      1,
+      5,
+      7
+    ]
+  },
+  "profiles": {
+    "none": {
+      "codec": "none",
+      "threads": 1
+    },
+    "zstd-1": {
+      "codec": "zstandard",
+      "level": 1,
+      "threads": 0,
+      "write_checksum": true,
+      "write_content_size": true,
+      "max_window_bytes": 33554432,
+      "compressed_read_bytes": 1024,
+      "max_window_size_argument": 33554432
+    }
+  },
+  "seed": 20261005,
+  "repetitions": 5,
+  "real_specimens": null,
+  "status": "deferred",
+  "complete_five_repetitions": false,
+  "specimens": [],
+  "preparations": [],
+  "samples": [],
+  "summary": [],
+  "savings": [],
+  "strata": {
+    "age": [
+      "under-1-day",
+      "1-to-7-days",
+      "over-7-days"
+    ],
+    "content": [
+      "wire",
+      "decision-summary",
+      "mixed-other"
+    ],
+    "size": [
+      "under-1-MiB",
+      "1-to-8-MiB",
+      "8-to-32-MiB"
+    ]
+  },
+  "eligible_frame_bytes": null,
+  "savings_scope": "selected SQLite input lengths counted once; no operating-tier extrapolation",
+  "input_preparation_wall_s": null,
+  "phase_wall_s": null,
+  "peak_owned_scratch_charge_bytes": null,
+  "memory_limit_bytes": 536870912,
+  "scratch_limit_bytes": 1073741824,
+  "operation_deadline_seconds": 60,
+  "phase_deadline_seconds": 900,
+  "failure_count": 0,
+  "actual_reclaimed_bytes": 0,
+  "operating_quota_change_bytes": 0,
+  "timing_scope": "source check, access, full validation and startup are reported separately",
+  "io_scope": "stream calls and process counters; device traffic unmeasured",
+  "cache_protocol": "No cache clearing; validation/preparation precedes reads",
+  "boundary": "Benchmark-only; no operating compression, replacement, deletion or activation; zero reclaimed bytes. Initial metadata-reader SHM bookkeeping was not measured."
+}

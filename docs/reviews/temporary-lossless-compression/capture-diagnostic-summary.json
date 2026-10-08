@@ -1,0 +1,248 @@
+{
+  "version": "capture-owner-diagnostic-summary-v1",
+  "benchmark_head": "a167fe84e9788fe09cbcf58f716543c169780954",
+  "source_base": "dcf7ccbb178cdd89175e427962dec80475620c73",
+  "source_files": {
+    "pyproject.toml": "5986469729b318aed075ce2f6c0d3b90a0c5c93611fa6f62ab82e86983ffeee2",
+    "requirements-lock.txt": "39fc6516d0472d30aa752246388a9ec0649bd5cc5847a9de7e199289991767f8",
+    "scripts/compression_study/__init__.py": "e3a3e34aed71b843d28a136158a32cc8c1b13eecb84bbb7d387c4c17a8ab7142",
+    "scripts/compression_study/codecs.py": "231ba80f2a249f8d655266f76d4f6599552cd6cf12299cde74c0942a3aec870d",
+    "scripts/compression_study/diagnose_capture.py": "747ab8370ced36e2c81870942d26666f9ebadcdb450b1109256d06c601b7c1dd",
+    "scripts/compression_study/prototype.py": "3c6ba62162d1d153568d18f07ac7cf0f00d8148a4480469fd09f7b9928ea77b0",
+    "scripts/compression_study/requirements.txt": "293d4ce9c7f865af20267451e45c2b2ebcb5fa9acac8de0d20a82b50f312358f",
+    "scripts/compression_study/resources.py": "3323011e25d7790b5ad0949913d4b171072ad76fd452c84a8d74f4aa92d0020a",
+    "scripts/compression_study/run.py": "d2eba2b9436e5b97c4ce1701448034654219aa5f671dbf872ac6418d779b217e",
+    "scripts/compression_study/sanitize.py": "fc7839156466142b1b959fd8153a539f816a4b1683696014f7d90c7dd87bd845",
+    "scripts/compression_study/specimens.py": "898d3d3fe8f898a31b53e0cce0c7e6ec922743f4e6885da130fa8326946819a2",
+    "src/trading/evidence_runtime.py": "6ba62cb838fa089c353bb867e66e5f64b82d5d7d748b0fac51ae82e796adb6f3",
+    "src/trading/ownership.py": "76e48e2ff67096a8d255e87a04580e110a4ec7e020048b532d978bf91da4a034",
+    "src/trading/peft_child_owner.py": "0151adac956496077372494022a4fa3b97bd4d0c4f13bd4ad54f1693ffc89535",
+    "src/trading/research_evidence.py": "743b3e77a4be793ac5d56990030a2e745a6ab607dd5493f16eeb12975f6212c9",
+    "src/trading/research_storage.py": "d29fdd883394ea4adcf2053ea340b98c3182446c97f7e619a5e2187a43454d40",
+    "tests/test_capture_recovery.py": "6831afe6d87554336515b02d4ab6c7adf6b011a0c44ad5ada5656d5755d02d1c",
+    "tests/test_compression_study.py": "b16fecfd918bc91c3390697ae70283a13047d1e2c9fd64d1b8bff0effe9ee843"
+  },
+  "source_unchanged": true,
+  "operation_deadline_seconds": 60,
+  "memory_limit_bytes": 536870912,
+  "priority_check_passed": true,
+  "test_deadline_seconds_unchanged": 5,
+  "completed_test_verdict": null,
+  "attempts": [
+    {
+      "mode": "plain",
+      "benchmark_head": "eb87abbcbee4ad033fed7bd4505c983b677b653d",
+      "status": "supervisor-timeout",
+      "completed_test_verdict": null
+    },
+    {
+      "mode": "trace",
+      "benchmark_head": "482efaf471e07987ce4c56e8b6c38f8669f929be",
+      "status": "invalid-diagnostic-missing-import",
+      "completed_test_verdict": null
+    },
+    {
+      "mode": "trace",
+      "benchmark_head": "a167fe84e9788fe09cbcf58f716543c169780954",
+      "status": "supervisor-timeout",
+      "completed_test_verdict": null
+    }
+  ],
+  "trace_event_count": 322,
+  "stages": [
+    {
+      "at_s": 0.0,
+      "event": "diagnostic-start"
+    },
+    {
+      "at_s": 0.25487629999406636,
+      "event": "pytest-import",
+      "wall_s": 0.2545968000777066,
+      "cpu_s": 0.125
+    },
+    {
+      "at_s": 7.042054700199515,
+      "event": "collection-finished"
+    },
+    {
+      "at_s": 7.044653900200501,
+      "event": "test-setup"
+    },
+    {
+      "at_s": 7.110125900013372,
+      "event": "test-report",
+      "when": "setup",
+      "outcome": "passed",
+      "duration_s": 0.06528229988180101
+    },
+    {
+      "at_s": 7.110884300200269,
+      "event": "test-call"
+    }
+  ],
+  "longest_owner_intervals": [
+    {
+      "source": "evidence_runtime.py",
+      "function": "_write_batch",
+      "thread": 2,
+      "start_s": 32.4535294000525,
+      "end_s": 55.94226160016842,
+      "wall_s": 23.48873220011592
+    },
+    {
+      "source": "evidence_runtime.py",
+      "function": "_write_batch_inner",
+      "thread": 2,
+      "start_s": 32.45361190009862,
+      "end_s": 55.942137100035325,
+      "wall_s": 23.488525199936703
+    },
+    {
+      "source": "research_storage.py",
+      "function": "__init__",
+      "thread": 1,
+      "start_s": 7.112812899984419,
+      "end_s": 17.753473500022665,
+      "wall_s": 10.640660600038245
+    },
+    {
+      "source": "research_storage.py",
+      "function": "_initialize",
+      "thread": 1,
+      "start_s": 7.242906900122762,
+      "end_s": 17.251864799996838,
+      "wall_s": 10.008957899874076
+    },
+    {
+      "source": "research_storage.py",
+      "function": "append",
+      "thread": 1,
+      "start_s": 17.753702400019392,
+      "end_s": 25.74658070015721,
+      "wall_s": 7.992878300137818
+    },
+    {
+      "source": "evidence_runtime.py",
+      "function": "_mature_due",
+      "thread": 2,
+      "start_s": 45.13983820006251,
+      "end_s": 51.89810900017619,
+      "wall_s": 6.758270800113678
+    },
+    {
+      "source": "research_storage.py",
+      "function": "_housekeeping",
+      "thread": 2,
+      "start_s": 51.909690300002694,
+      "end_s": 55.657026700209826,
+      "wall_s": 3.747336400207132
+    },
+    {
+      "source": "research_storage.py",
+      "function": "__init__",
+      "thread": 2,
+      "start_s": 32.454327300190926,
+      "end_s": 35.1419277000241,
+      "wall_s": 2.6876003998331726
+    },
+    {
+      "source": "research_storage.py",
+      "function": "_initialize",
+      "thread": 2,
+      "start_s": 32.458191300043836,
+      "end_s": 34.567713800119236,
+      "wall_s": 2.1095225000754
+    },
+    {
+      "source": "research_storage.py",
+      "function": "_recovery_source",
+      "thread": 2,
+      "start_s": 32.46793260006234,
+      "end_s": 34.55787920020521,
+      "wall_s": 2.0899466001428664
+    },
+    {
+      "source": "research_storage.py",
+      "function": "close",
+      "thread": 1,
+      "start_s": 55.94297830015421,
+      "end_s": 57.46182590001263,
+      "wall_s": 1.518847599858418
+    },
+    {
+      "source": "evidence_runtime.py",
+      "function": "_write_batch",
+      "thread": 2,
+      "start_s": 31.069097500061616,
+      "end_s": 32.17105090012774,
+      "wall_s": 1.1019534000661224
+    }
+  ],
+  "observed_main_thread_lock_release_s": [
+    17.753110600169748,
+    25.74648610013537,
+    32.07578680012375,
+    36.06153990002349
+  ],
+  "recorder_states": [
+    {
+      "at_s": 31.069097500061616,
+      "source": "evidence_runtime.py",
+      "function": "_write_batch",
+      "event": "call",
+      "recorder_state": "starting"
+    },
+    {
+      "at_s": 31.069450300186872,
+      "source": "evidence_runtime.py",
+      "function": "_write_batch_inner",
+      "event": "call",
+      "recorder_state": "starting"
+    },
+    {
+      "at_s": 32.170929400017485,
+      "source": "evidence_runtime.py",
+      "function": "_write_batch_inner",
+      "event": "return",
+      "recorder_state": "unavailable"
+    },
+    {
+      "at_s": 32.17105090012774,
+      "source": "evidence_runtime.py",
+      "function": "_write_batch",
+      "event": "return",
+      "recorder_state": "unavailable"
+    },
+    {
+      "at_s": 32.4535294000525,
+      "source": "evidence_runtime.py",
+      "function": "_write_batch",
+      "event": "call",
+      "recorder_state": "unavailable"
+    },
+    {
+      "at_s": 32.45361190009862,
+      "source": "evidence_runtime.py",
+      "function": "_write_batch_inner",
+      "event": "call",
+      "recorder_state": "unavailable"
+    },
+    {
+      "at_s": 55.942137100035325,
+      "source": "evidence_runtime.py",
+      "function": "_write_batch_inner",
+      "event": "return",
+      "recorder_state": "recording"
+    },
+    {
+      "at_s": 55.94226160016842,
+      "source": "evidence_runtime.py",
+      "function": "_write_batch",
+      "event": "return",
+      "recorder_state": "recording"
+    }
+  ],
+  "limits": "Partial traced observations; profiling/progress I/O add overhead; no historical root-cause or completed-test claim; thread/frame numbers are receipt-local ordinals.",
+  "actual_reclaimed_bytes": 0,
+  "operating_quota_change_bytes": 0
+}

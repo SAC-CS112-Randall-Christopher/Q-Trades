@@ -1,0 +1,3230 @@
+{
+  "version": "frozen-sqlite-access-v1",
+  "mode": "smoke",
+  "source_base": "dcf7ccbb178cdd89175e427962dec80475620c73",
+  "source_files": {
+    "pyproject.toml": "5986469729b318aed075ce2f6c0d3b90a0c5c93611fa6f62ab82e86983ffeee2",
+    "requirements-lock.txt": "39fc6516d0472d30aa752246388a9ec0649bd5cc5847a9de7e199289991767f8",
+    "scripts/compression_study/__init__.py": "e3a3e34aed71b843d28a136158a32cc8c1b13eecb84bbb7d387c4c17a8ab7142",
+    "scripts/compression_study/codecs.py": "231ba80f2a249f8d655266f76d4f6599552cd6cf12299cde74c0942a3aec870d",
+    "scripts/compression_study/diagnose_capture.py": "747ab8370ced36e2c81870942d26666f9ebadcdb450b1109256d06c601b7c1dd",
+    "scripts/compression_study/prototype.py": "3c6ba62162d1d153568d18f07ac7cf0f00d8148a4480469fd09f7b9928ea77b0",
+    "scripts/compression_study/requirements.txt": "293d4ce9c7f865af20267451e45c2b2ebcb5fa9acac8de0d20a82b50f312358f",
+    "scripts/compression_study/resources.py": "3323011e25d7790b5ad0949913d4b171072ad76fd452c84a8d74f4aa92d0020a",
+    "scripts/compression_study/run.py": "d2eba2b9436e5b97c4ce1701448034654219aa5f671dbf872ac6418d779b217e",
+    "scripts/compression_study/sanitize.py": "fc7839156466142b1b959fd8153a539f816a4b1683696014f7d90c7dd87bd845",
+    "scripts/compression_study/specimens.py": "898d3d3fe8f898a31b53e0cce0c7e6ec922743f4e6885da130fa8326946819a2",
+    "src/trading/evidence_runtime.py": "6ba62cb838fa089c353bb867e66e5f64b82d5d7d748b0fac51ae82e796adb6f3",
+    "src/trading/ownership.py": "76e48e2ff67096a8d255e87a04580e110a4ec7e020048b532d978bf91da4a034",
+    "src/trading/peft_child_owner.py": "0151adac956496077372494022a4fa3b97bd4d0c4f13bd4ad54f1693ffc89535",
+    "src/trading/research_evidence.py": "743b3e77a4be793ac5d56990030a2e745a6ab607dd5493f16eeb12975f6212c9",
+    "src/trading/research_storage.py": "d29fdd883394ea4adcf2053ea340b98c3182446c97f7e619a5e2187a43454d40",
+    "tests/test_capture_recovery.py": "6831afe6d87554336515b02d4ab6c7adf6b011a0c44ad5ada5656d5755d02d1c",
+    "tests/test_compression_study.py": "b16fecfd918bc91c3390697ae70283a13047d1e2c9fd64d1b8bff0effe9ee843"
+  },
+  "dependencies": {
+    "python": "3.12.10",
+    "zlib_build": "1.3.1",
+    "zlib_runtime": "1.3.1",
+    "sqlite": "3.49.1",
+    "zstandard": "0.25.0",
+    "lz4": "4.3.3",
+    "psutil": "7.0.0",
+    "pydantic": "2.13.4",
+    "pytest": "8.4.2",
+    "ruff": "0.16.9",
+    "mypy": "2.3.1",
+    "lz4_native": "1.9.4",
+    "architecture": "AMD64",
+    "os": "Windows",
+    "pointer_bits": 64,
+    "zstd_backend": "cext",
+    "zstd_native": [
+      1,
+      5,
+      7
+    ]
+  },
+  "profiles": {
+    "none": {
+      "codec": "none",
+      "threads": 1
+    },
+    "zstd-1": {
+      "codec": "zstandard",
+      "level": 1,
+      "threads": 0,
+      "write_checksum": true,
+      "write_content_size": true,
+      "max_window_bytes": 33554432,
+      "compressed_read_bytes": 1024,
+      "max_window_size_argument": 33554432
+    }
+  },
+  "seed": 20261005,
+  "repetitions": 1,
+  "real_specimens": 0,
+  "status": "completed",
+  "complete_five_repetitions": false,
+  "specimens": [
+    {
+      "specimen": 1,
+      "input_bytes": 65536,
+      "records": 24,
+      "stratum": {
+        "age": null,
+        "content": null,
+        "size": null
+      }
+    },
+    {
+      "specimen": 2,
+      "input_bytes": 65536,
+      "records": 24,
+      "stratum": {
+        "age": null,
+        "content": null,
+        "size": null
+      }
+    },
+    {
+      "specimen": 3,
+      "input_bytes": 114688,
+      "records": 24,
+      "stratum": {
+        "age": null,
+        "content": null,
+        "size": null
+      }
+    }
+  ],
+  "preparations": [
+    {
+      "specimen": 1,
+      "arm": "none",
+      "input_bytes": 65536,
+      "output_bytes": 65536,
+      "metadata_bytes": 305,
+      "claim_bytes": 1,
+      "input_allocation_bytes": 65536,
+      "output_allocation_bytes": 65536,
+      "manifest_allocation_bytes": 312,
+      "claim_allocation_bytes": 8,
+      "peak_staging_bytes": 131377,
+      "peak_staging_allocation_bytes": 131384,
+      "publish_total_wall_s": 3.387946499977261,
+      "publish_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 5.083500300068408,
+      "compression": {
+        "total": {
+          "wall_s": 1.5285465000197291,
+          "cpu_s": 0.015625
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.00021959980949759483,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.28718350012786686,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.0002041999250650406,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.200654299929738,
+            "cpu_s": 0.015625
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 65536
+      },
+      "verification_decode": {
+        "total": {
+          "wall_s": 0.7421490999404341,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.00010319985449314117,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.15512249991297722,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.0002242999617010355,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.5480024998541921,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 65536
+      },
+      "verification_total": {
+        "wall_s": 0.8013406998943537,
+        "cpu_s": 0.0
+      },
+      "source_verification_phases": {
+        "io_read": {
+          "wall_s": 0.00030889990739524364,
+          "cpu_s": 0.0
+        },
+        "hash": {
+          "wall_s": 0.00035220012068748474,
+          "cpu_s": 0.0
+        }
+      },
+      "metadata_write": {
+        "wall_s": 0.9869796000421047,
+        "cpu_s": 0.0
+      },
+      "finalization": {
+        "wall_s": 0.0005092001520097256,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.8658334000501782,
+        "cpu_s": 0.625
+      },
+      "memory": {
+        "rss_bytes": 34992128,
+        "peak_working_set_bytes": 34992128,
+        "peak_commit_bytes": 23748608,
+        "process_cpu_s": 0.6875,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 525,
+          "write_count": 4,
+          "read_bytes": 4962775,
+          "write_bytes": 131378
+        }
+      }
+    },
+    {
+      "specimen": 1,
+      "arm": "zstd-1",
+      "input_bytes": 65536,
+      "output_bytes": 2472,
+      "metadata_bytes": 462,
+      "claim_bytes": 1,
+      "input_allocation_bytes": 65536,
+      "output_allocation_bytes": 4096,
+      "manifest_allocation_bytes": 464,
+      "claim_allocation_bytes": 8,
+      "peak_staging_bytes": 68470,
+      "peak_staging_allocation_bytes": 70096,
+      "publish_total_wall_s": 3.478116000071168,
+      "publish_total_cpu_s": 0.046875,
+      "supervisor_wall_s": 4.894497100031003,
+      "compression": {
+        "total": {
+          "wall_s": 1.160658000037074,
+          "cpu_s": 0.03125
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.00032720016315579414,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 6.650015711784363e-05,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 7.799826562404633e-06,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 2.5399960577487946e-05,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.1257467998657376,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 2472
+      },
+      "verification_decode": {
+        "total": {
+          "wall_s": 0.5788414000999182,
+          "cpu_s": 0.015625
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.2831990998238325,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 9.390036575496197e-05,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.008666299981996417,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.00018069986253976822,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.24625379987992346,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 2472,
+        "stream_output_bytes": 65536
+      },
+      "verification_total": {
+        "wall_s": 0.5915532000362873,
+        "cpu_s": 0.015625
+      },
+      "source_verification_phases": {
+        "io_read": {
+          "wall_s": 0.00019320007413625717,
+          "cpu_s": 0.0
+        },
+        "hash": {
+          "wall_s": 0.0003320001997053623,
+          "cpu_s": 0.0
+        }
+      },
+      "metadata_write": {
+        "wall_s": 1.39611029997468,
+        "cpu_s": 0.0
+      },
+      "finalization": {
+        "wall_s": 0.0005613998509943485,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.6185274999588728,
+        "cpu_s": 0.515625
+      },
+      "memory": {
+        "rss_bytes": 35823616,
+        "peak_working_set_bytes": 35823616,
+        "peak_commit_bytes": 24412160,
+        "process_cpu_s": 0.609375,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 527,
+          "write_count": 4,
+          "read_bytes": 4873250,
+          "write_bytes": 68471
+        }
+      }
+    },
+    {
+      "specimen": 2,
+      "arm": "none",
+      "input_bytes": 65536,
+      "output_bytes": 65536,
+      "metadata_bytes": 305,
+      "claim_bytes": 1,
+      "input_allocation_bytes": 65536,
+      "output_allocation_bytes": 65536,
+      "manifest_allocation_bytes": 312,
+      "claim_allocation_bytes": 8,
+      "peak_staging_bytes": 131377,
+      "peak_staging_allocation_bytes": 131384,
+      "publish_total_wall_s": 3.7175314999185503,
+      "publish_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 5.001606299774721,
+      "compression": {
+        "total": {
+          "wall_s": 1.6737997999880463,
+          "cpu_s": 0.015625
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.0002552999649196863,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.023245899938046932,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.00018740002997219563,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.2087884999345988,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 65536
+      },
+      "verification_decode": {
+        "total": {
+          "wall_s": 0.5413283000234514,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.00013930024579167366,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.1178993999492377,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.000201700022444129,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.398857600055635,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 65536
+      },
+      "verification_total": {
+        "wall_s": 0.5469406000338495,
+        "cpu_s": 0.0
+      },
+      "source_verification_phases": {
+        "io_read": {
+          "wall_s": 0.000403400044888258,
+          "cpu_s": 0.0
+        },
+        "hash": {
+          "wall_s": 0.00031500007025897503,
+          "cpu_s": 0.0
+        }
+      },
+      "metadata_write": {
+        "wall_s": 1.0988372000865638,
+        "cpu_s": 0.0
+      },
+      "finalization": {
+        "wall_s": 0.0004279001150280237,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.6194130999501795,
+        "cpu_s": 0.5625
+      },
+      "memory": {
+        "rss_bytes": 35831808,
+        "peak_working_set_bytes": 35831808,
+        "peak_commit_bytes": 24399872,
+        "process_cpu_s": 0.609375,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 524,
+          "write_count": 4,
+          "read_bytes": 4929814,
+          "write_bytes": 131378
+        }
+      }
+    },
+    {
+      "specimen": 2,
+      "arm": "zstd-1",
+      "input_bytes": 65536,
+      "output_bytes": 15534,
+      "metadata_bytes": 463,
+      "claim_bytes": 1,
+      "input_allocation_bytes": 65536,
+      "output_allocation_bytes": 16384,
+      "manifest_allocation_bytes": 464,
+      "claim_allocation_bytes": 8,
+      "peak_staging_bytes": 81533,
+      "peak_staging_allocation_bytes": 82384,
+      "publish_total_wall_s": 2.4925516999792308,
+      "publish_total_cpu_s": 0.03125,
+      "supervisor_wall_s": 3.888531500007957,
+      "compression": {
+        "total": {
+          "wall_s": 1.0294981999322772,
+          "cpu_s": 0.015625
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.0004561000969260931,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 9.789993055164814e-05,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.00022069993428885937,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 4.1800085455179214e-05,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.9929043999873102,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 15534
+      },
+      "verification_decode": {
+        "total": {
+          "wall_s": 0.4338458999991417,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.0004658007528632879,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 0.00021640025079250336,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.0022785007022321224,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.00027150032110512257,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.399021300021559,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 15534,
+        "stream_output_bytes": 65536
+      },
+      "verification_total": {
+        "wall_s": 0.44146119989454746,
+        "cpu_s": 0.015625
+      },
+      "source_verification_phases": {
+        "io_read": {
+          "wall_s": 0.00026139989495277405,
+          "cpu_s": 0.0
+        },
+        "hash": {
+          "wall_s": 0.0003090999089181423,
+          "cpu_s": 0.0
+        }
+      },
+      "metadata_write": {
+        "wall_s": 0.9381128000095487,
+        "cpu_s": 0.0
+      },
+      "finalization": {
+        "wall_s": 0.000990099972113967,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.6239298000000417,
+        "cpu_s": 0.5625
+      },
+      "memory": {
+        "rss_bytes": 35909632,
+        "peak_working_set_bytes": 35909632,
+        "peak_commit_bytes": 24395776,
+        "process_cpu_s": 0.625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 528,
+          "write_count": 4,
+          "read_bytes": 4886306,
+          "write_bytes": 81534
+        }
+      }
+    },
+    {
+      "specimen": 3,
+      "arm": "none",
+      "input_bytes": 114688,
+      "output_bytes": 114688,
+      "metadata_bytes": 307,
+      "claim_bytes": 1,
+      "input_allocation_bytes": 114688,
+      "output_allocation_bytes": 114688,
+      "manifest_allocation_bytes": 312,
+      "claim_allocation_bytes": 8,
+      "peak_staging_bytes": 229683,
+      "peak_staging_allocation_bytes": 229688,
+      "publish_total_wall_s": 2.9863573000766337,
+      "publish_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 4.466251799836755,
+      "compression": {
+        "total": {
+          "wall_s": 1.254359400132671,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.00023639993742108345,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.009641699958592653,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.0006256999913603067,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.2065143999643624,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 114688,
+        "stream_output_bytes": 114688
+      },
+      "verification_decode": {
+        "total": {
+          "wall_s": 0.5979432000312954,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.0003185998648405075,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.0070998999290168285,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.0013145999982953072,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.5574821000918746,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 114688,
+        "stream_output_bytes": 114688
+      },
+      "verification_total": {
+        "wall_s": 0.6051790998317301,
+        "cpu_s": 0.0
+      },
+      "source_verification_phases": {
+        "io_read": {
+          "wall_s": 0.0003790000919252634,
+          "cpu_s": 0.0
+        },
+        "hash": {
+          "wall_s": 0.000493000028654933,
+          "cpu_s": 0.0
+        }
+      },
+      "metadata_write": {
+        "wall_s": 1.0350289000198245,
+        "cpu_s": 0.0
+      },
+      "finalization": {
+        "wall_s": 0.0005147999618202448,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.751259199809283,
+        "cpu_s": 0.59375
+      },
+      "memory": {
+        "rss_bytes": 35696640,
+        "peak_working_set_bytes": 35696640,
+        "peak_commit_bytes": 24240128,
+        "process_cpu_s": 0.6875,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 545,
+          "write_count": 6,
+          "read_bytes": 5208530,
+          "write_bytes": 229684
+        }
+      }
+    },
+    {
+      "specimen": 3,
+      "arm": "zstd-1",
+      "input_bytes": 114688,
+      "output_bytes": 40575,
+      "metadata_bytes": 464,
+      "claim_bytes": 1,
+      "input_allocation_bytes": 114688,
+      "output_allocation_bytes": 40960,
+      "manifest_allocation_bytes": 464,
+      "claim_allocation_bytes": 8,
+      "peak_staging_bytes": 155727,
+      "peak_staging_allocation_bytes": 156112,
+      "publish_total_wall_s": 2.7200031001120806,
+      "publish_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 3.8278085999190807,
+      "compression": {
+        "total": {
+          "wall_s": 1.3984162998385727,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.00048030028119683266,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 8.690007962286472e-05,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.00012800004333257675,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 8.669961243867874e-05,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.3479631000664085,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 114688,
+        "stream_output_bytes": 40575
+      },
+      "verification_decode": {
+        "total": {
+          "wall_s": 0.34607940004207194,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.0012115000281482935,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 0.0003515011630952358,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.019500900758430362,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.0005043996497988701,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.27622719993814826,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 40575,
+        "stream_output_bytes": 114688
+      },
+      "verification_total": {
+        "wall_s": 0.35443340009078383,
+        "cpu_s": 0.0
+      },
+      "source_verification_phases": {
+        "io_read": {
+          "wall_s": 0.00033630034886300564,
+          "cpu_s": 0.0
+        },
+        "hash": {
+          "wall_s": 0.000636399956420064,
+          "cpu_s": 0.0
+        }
+      },
+      "metadata_write": {
+        "wall_s": 0.9590117000043392,
+        "cpu_s": 0.0
+      },
+      "finalization": {
+        "wall_s": 0.0006035000551491976,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.6147537000942975,
+        "cpu_s": 0.546875
+      },
+      "memory": {
+        "rss_bytes": 35553280,
+        "peak_working_set_bytes": 35553280,
+        "peak_commit_bytes": 24436736,
+        "process_cpu_s": 0.65625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 549,
+          "write_count": 4,
+          "read_bytes": 5107956,
+          "write_bytes": 155728
+        }
+      }
+    }
+  ],
+  "samples": [
+    {
+      "specimen": 2,
+      "label": "specimen-2",
+      "arm": "zstd-1",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 0,
+      "total_wall_s": 1.4202758001629263,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 1.4362125999759883,
+      "worker_total_cpu_s": 0.03125,
+      "supervisor_wall_s": 2.794556000037119,
+      "restored_scratch_bytes": 65536,
+      "restored_scratch_allocation_bytes": 65536,
+      "access": {
+        "wall_s": 1.4103155999910086,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0005113000515848398,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.012168299872428179,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.006929799914360046,
+        "cpu_s": 0.015625
+      },
+      "startup": {
+        "wall_s": 0.7634376001078635,
+        "cpu_s": 0.421875
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 1.385903999907896,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.0003209998831152916,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 0.00010479963384568691,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.0062642996199429035,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.000243400689214468,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.0135252000764012,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 15534,
+        "stream_output_bytes": 65536,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.012127900030463934,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 9.34000127017498e-05,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 4.469999112188816e-05,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35926016,
+        "peak_working_set_bytes": 35926016,
+        "peak_commit_bytes": 24408064,
+        "process_cpu_s": 0.515625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 535,
+          "write_count": 1,
+          "read_bytes": 4787910,
+          "write_bytes": 65536
+        }
+      }
+    },
+    {
+      "specimen": 2,
+      "label": "specimen-2",
+      "arm": "zstd-1",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 1,
+      "total_wall_s": 1.311570700025186,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 1.3325036000460386,
+      "worker_total_cpu_s": 0.03125,
+      "supervisor_wall_s": 2.4505082999821752,
+      "restored_scratch_bytes": 65536,
+      "restored_scratch_allocation_bytes": 65536,
+      "access": {
+        "wall_s": 1.2934482998680323,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.00040140002965927124,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.014714200049638748,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.007650700164958835,
+        "cpu_s": 0.015625
+      },
+      "startup": {
+        "wall_s": 0.7849858000408858,
+        "cpu_s": 0.546875
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 1.2779110001865774,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.0003070002421736717,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 0.00018520047888159752,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.0012352000921964645,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.00024850061163306236,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.237900499952957,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 15534,
+        "stream_output_bytes": 65536,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.0007266998291015625,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 5.900021642446518e-05,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 3.620004281401634e-05,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35766272,
+        "peak_working_set_bytes": 35766272,
+        "peak_commit_bytes": 24178688,
+        "process_cpu_s": 0.609375,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 544,
+          "write_count": 1,
+          "read_bytes": 4808446,
+          "write_bytes": 65536
+        }
+      }
+    },
+    {
+      "specimen": 1,
+      "label": "specimen-1",
+      "arm": "zstd-1",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 2,
+      "total_wall_s": 1.607657500077039,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 1.6247374000959098,
+      "worker_total_cpu_s": 0.03125,
+      "supervisor_wall_s": 2.4810228999704123,
+      "restored_scratch_bytes": 65536,
+      "restored_scratch_allocation_bytes": 65536,
+      "access": {
+        "wall_s": 1.5987937999889255,
+        "cpu_s": 0.015625
+      },
+      "frozen_source_check": {
+        "wall_s": 0.000551300123333931,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.004719299962744117,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.002736099995672703,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.594681299990043,
+        "cpu_s": 0.53125
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 1.5864077999722213,
+          "cpu_s": 0.015625
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.000250599579885602,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 8.570007048547268e-05,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.2583276000805199,
+            "cpu_s": 0.015625
+          },
+          "hash": {
+            "wall_s": 0.00023570004850625992,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.218578599859029,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 2472,
+        "stream_output_bytes": 65536,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.007562699960544705,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 8.979998528957367e-05,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 1.5700003132224083e-05,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 36044800,
+        "peak_working_set_bytes": 36044800,
+        "peak_commit_bytes": 24174592,
+        "process_cpu_s": 0.59375,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 543,
+          "write_count": 1,
+          "read_bytes": 4782327,
+          "write_bytes": 65536
+        }
+      }
+    },
+    {
+      "specimen": 2,
+      "label": "specimen-2",
+      "arm": "direct",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 3,
+      "total_wall_s": 0.007336599985137582,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 0.031733299838379025,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 0.904906400013715,
+      "restored_scratch_bytes": 0,
+      "restored_scratch_allocation_bytes": 0,
+      "access": {
+        "wall_s": 0.0028443001210689545,
+        "cpu_s": 0.015625
+      },
+      "frozen_source_check": {
+        "wall_s": 0.00043429993093013763,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.002824000082910061,
+        "cpu_s": 0.015625
+      },
+      "full_validation": {
+        "wall_s": 0.00404309993609786,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.7144952001981437,
+        "cpu_s": 0.59375
+      },
+      "restoration": null,
+      "memory": {
+        "rss_bytes": 34635776,
+        "peak_working_set_bytes": 35078144,
+        "peak_commit_bytes": 23973888,
+        "process_cpu_s": 0.65625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 524,
+          "write_count": 0,
+          "read_bytes": 4749777,
+          "write_bytes": 0
+        }
+      }
+    },
+    {
+      "specimen": 1,
+      "label": "specimen-1",
+      "arm": "none",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 4,
+      "total_wall_s": 0.36053989990614355,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 0.3763749999925494,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 1.1547656999900937,
+      "restored_scratch_bytes": 65536,
+      "restored_scratch_allocation_bytes": 65536,
+      "access": {
+        "wall_s": 0.35476520005613565,
+        "cpu_s": 0.015625
+      },
+      "frozen_source_check": {
+        "wall_s": 0.000319099985063076,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.007176100043579936,
+        "cpu_s": 0.015625
+      },
+      "full_validation": {
+        "wall_s": 0.0046425999607890844,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.5611439999192953,
+        "cpu_s": 0.46875
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 0.3377386999782175,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 6.600003689527512e-05,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.11171790002845228,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.00017319992184638977,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.20574330003000796,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 65536,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.009727099910378456,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 0.0001113000325858593,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 0.00021620001643896103,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35434496,
+        "peak_working_set_bytes": 35434496,
+        "peak_commit_bytes": 24084480,
+        "process_cpu_s": 0.5625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 539,
+          "write_count": 1,
+          "read_bytes": 4901802,
+          "write_bytes": 65536
+        }
+      }
+    },
+    {
+      "specimen": 3,
+      "label": "specimen-3",
+      "arm": "none",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 5,
+      "total_wall_s": 0.46412699995562434,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 0.48866600007750094,
+      "worker_total_cpu_s": 0.03125,
+      "supervisor_wall_s": 1.7461375000420958,
+      "restored_scratch_bytes": 114688,
+      "restored_scratch_allocation_bytes": 114688,
+      "access": {
+        "wall_s": 0.4503279998898506,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0014210001099854708,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.0036208999808877707,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.010858400026336312,
+        "cpu_s": 0.015625
+      },
+      "startup": {
+        "wall_s": 1.0201206000056118,
+        "cpu_s": 0.625
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 0.43421890004538,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.0001680999994277954,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.0011875000782310963,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.000426099868491292,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.4131457998882979,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 114688,
+        "stream_output_bytes": 114688,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.012352900113910437,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 0.00023639993742108345,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 0.000533699756488204,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35655680,
+        "peak_working_set_bytes": 35655680,
+        "peak_commit_bytes": 24039424,
+        "process_cpu_s": 0.734375,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 548,
+          "write_count": 2,
+          "read_bytes": 5077871,
+          "write_bytes": 114688
+        }
+      }
+    },
+    {
+      "specimen": 2,
+      "label": "specimen-2",
+      "arm": "direct",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 6,
+      "total_wall_s": 0.00808649999089539,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 0.024022799916565418,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 0.9653413000050932,
+      "restored_scratch_bytes": 0,
+      "restored_scratch_allocation_bytes": 0,
+      "access": {
+        "wall_s": 0.00322420010343194,
+        "cpu_s": 0.015625
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0004513000603765249,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.003206100082024932,
+        "cpu_s": 0.015625
+      },
+      "full_validation": {
+        "wall_s": 0.004394100047647953,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.7274770000949502,
+        "cpu_s": 0.59375
+      },
+      "restoration": null,
+      "memory": {
+        "rss_bytes": 35598336,
+        "peak_working_set_bytes": 35598336,
+        "peak_commit_bytes": 24248320,
+        "process_cpu_s": 0.65625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 533,
+          "write_count": 0,
+          "read_bytes": 4770313,
+          "write_bytes": 0
+        }
+      }
+    },
+    {
+      "specimen": 1,
+      "label": "specimen-1",
+      "arm": "zstd-1",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 7,
+      "total_wall_s": 1.5077965999953449,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 1.532846099929884,
+      "worker_total_cpu_s": 0.03125,
+      "supervisor_wall_s": 3.288116700015962,
+      "restored_scratch_bytes": 65536,
+      "restored_scratch_allocation_bytes": 65536,
+      "access": {
+        "wall_s": 1.4309334999416023,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0005318999756127596,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.016051199985668063,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.007644800003618002,
+        "cpu_s": 0.015625
+      },
+      "startup": {
+        "wall_s": 1.448073800187558,
+        "cpu_s": 0.671875
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 1.4138939001131803,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.0002894999925047159,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 0.00011729984544217587,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.029925899812951684,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.0003550001420080662,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.3517697001807392,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 2472,
+        "stream_output_bytes": 65536,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.0008116001263260841,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 6.429990753531456e-05,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 1.600012183189392e-05,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35840000,
+        "peak_working_set_bytes": 35840000,
+        "peak_commit_bytes": 24236032,
+        "process_cpu_s": 0.78125,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 534,
+          "write_count": 1,
+          "read_bytes": 4761791,
+          "write_bytes": 65536
+        }
+      }
+    },
+    {
+      "specimen": 3,
+      "label": "specimen-3",
+      "arm": "zstd-1",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 8,
+      "total_wall_s": 1.575561000034213,
+      "total_cpu_s": 0.03125,
+      "worker_total_wall_s": 1.5931130999233574,
+      "worker_total_cpu_s": 0.03125,
+      "supervisor_wall_s": 2.6608915999531746,
+      "restored_scratch_bytes": 114688,
+      "restored_scratch_allocation_bytes": 114688,
+      "access": {
+        "wall_s": 1.5692623001523316,
+        "cpu_s": 0.03125
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0005395000334829092,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.0036944998428225517,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.003696700092405081,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.7909305999055505,
+        "cpu_s": 0.578125
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 1.5539729001466185,
+          "cpu_s": 0.015625
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.0007200003601610661,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 0.00027230032719671726,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.12715089973062277,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.00036860001273453236,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.3482192000374198,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 40575,
+        "stream_output_bytes": 114688,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.011485100025311112,
+            "cpu_s": 0.015625
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 0.000246899900957942,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 0.00011890009045600891,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35479552,
+        "peak_working_set_bytes": 35479552,
+        "peak_commit_bytes": 24166400,
+        "process_cpu_s": 0.640625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 552,
+          "write_count": 1,
+          "read_bytes": 4936298,
+          "write_bytes": 114688
+        }
+      }
+    },
+    {
+      "specimen": 3,
+      "label": "specimen-3",
+      "arm": "direct",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 9,
+      "total_wall_s": 0.009712199913337827,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 0.032552999909967184,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 0.82918979995884,
+      "restored_scratch_bytes": 0,
+      "restored_scratch_allocation_bytes": 0,
+      "access": {
+        "wall_s": 0.0028316001407802105,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0005979000125080347,
+        "cpu_s": 0.015625
+      },
+      "database_read": {
+        "wall_s": 0.0028111999854445457,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.006264700088649988,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.5697274999693036,
+        "cpu_s": 0.46875
+      },
+      "restoration": null,
+      "memory": {
+        "rss_bytes": 34807808,
+        "peak_working_set_bytes": 34938880,
+        "peak_commit_bytes": 23994368,
+        "process_cpu_s": 0.515625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 549,
+          "write_count": 0,
+          "read_bytes": 4876810,
+          "write_bytes": 0
+        }
+      }
+    },
+    {
+      "specimen": 1,
+      "label": "specimen-1",
+      "arm": "direct",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 10,
+      "total_wall_s": 0.006777900038287044,
+      "total_cpu_s": 0.0,
+      "worker_total_wall_s": 0.02687630010768771,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 0.7817895000334829,
+      "restored_scratch_bytes": 0,
+      "restored_scratch_allocation_bytes": 0,
+      "access": {
+        "wall_s": 0.001916100038215518,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0005581001751124859,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.0018998999148607254,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.004288000054657459,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.5811623998451978,
+        "cpu_s": 0.4375
+      },
+      "restoration": null,
+      "memory": {
+        "rss_bytes": 35516416,
+        "peak_working_set_bytes": 35516416,
+        "peak_commit_bytes": 24109056,
+        "process_cpu_s": 0.46875,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 524,
+          "write_count": 0,
+          "read_bytes": 4749783,
+          "write_bytes": 0
+        }
+      }
+    },
+    {
+      "specimen": 3,
+      "label": "specimen-3",
+      "arm": "none",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 11,
+      "total_wall_s": 1.4489168000873178,
+      "total_cpu_s": 0.0,
+      "worker_total_wall_s": 1.5347630998585373,
+      "worker_total_cpu_s": 0.03125,
+      "supervisor_wall_s": 13.390856500016525,
+      "restored_scratch_bytes": 114688,
+      "restored_scratch_allocation_bytes": 114688,
+      "access": {
+        "wall_s": 1.4387886000331491,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0007388000376522541,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.0076009000185877085,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.00815490004606545,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 5.135518900118768,
+        "cpu_s": 0.765625
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 1.4253589001018554,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.00016539986245334148,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.004760300042107701,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.0005764001980423927,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.0962164998054504,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 114688,
+        "stream_output_bytes": 114688,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.002538600005209446,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 0.0001417999155819416,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 0.00035630003549158573,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35753984,
+        "peak_working_set_bytes": 35753984,
+        "peak_commit_bytes": 24219648,
+        "process_cpu_s": 0.859375,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 559,
+          "write_count": 2,
+          "read_bytes": 5106599,
+          "write_bytes": 114688
+        }
+      }
+    },
+    {
+      "specimen": 3,
+      "label": "specimen-3",
+      "arm": "zstd-1",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 12,
+      "total_wall_s": 0.9838642999529839,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 0.9999192000832409,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 1.982378999935463,
+      "restored_scratch_bytes": 114688,
+      "restored_scratch_allocation_bytes": 114688,
+      "access": {
+        "wall_s": 0.9780419000890106,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0006081999745219946,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.004608399933204055,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.004180399933829904,
+        "cpu_s": 0.015625
+      },
+      "startup": {
+        "wall_s": 0.7823562000412494,
+        "cpu_s": 0.53125
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 0.9723864998668432,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "codec": {
+            "wall_s": 0.0005354993045330048,
+            "cpu_s": 0.0
+          },
+          "io_read": {
+            "wall_s": 0.00024370057508349419,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.059972300194203854,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.0004859995096921921,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.8789202002808452,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 40575,
+        "stream_output_bytes": 114688,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.0009383999276906252,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 8.5500068962574e-05,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 0.00010599987581372261,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35868672,
+        "peak_working_set_bytes": 35868672,
+        "peak_commit_bytes": 24223744,
+        "process_cpu_s": 0.59375,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 563,
+          "write_count": 1,
+          "read_bytes": 4965026,
+          "write_bytes": 114688
+        }
+      }
+    },
+    {
+      "specimen": 1,
+      "label": "specimen-1",
+      "arm": "direct",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 13,
+      "total_wall_s": 0.008214500034227967,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 0.025478800060227513,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 0.9541817000135779,
+      "restored_scratch_bytes": 0,
+      "restored_scratch_allocation_bytes": 0,
+      "access": {
+        "wall_s": 0.0022126000840216875,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.00036880001425743103,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.002196999965235591,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.005618299823254347,
+        "cpu_s": 0.015625
+      },
+      "startup": {
+        "wall_s": 0.6505539000499994,
+        "cpu_s": 0.59375
+      },
+      "restoration": null,
+      "memory": {
+        "rss_bytes": 35258368,
+        "peak_working_set_bytes": 35258368,
+        "peak_commit_bytes": 24076288,
+        "process_cpu_s": 0.65625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 533,
+          "write_count": 0,
+          "read_bytes": 4770319,
+          "write_bytes": 0
+        }
+      }
+    },
+    {
+      "specimen": 1,
+      "label": "specimen-1",
+      "arm": "none",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 14,
+      "total_wall_s": 0.6021960000507534,
+      "total_cpu_s": 0.0,
+      "worker_total_wall_s": 0.6160585000179708,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 1.3486762000247836,
+      "restored_scratch_bytes": 65536,
+      "restored_scratch_allocation_bytes": 65536,
+      "access": {
+        "wall_s": 0.5964958001859486,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.00031450018286705017,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.0033813000191003084,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.004500499926507473,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.5537876999005675,
+        "cpu_s": 0.484375
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 0.5922052999958396,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 7.519987411797047e-05,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.20573299983516335,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.000220100162550807,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.3577489999588579,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 65536,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.0008148001506924629,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 6.92000612616539e-05,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 0.00013539986684918404,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 34873344,
+        "peak_working_set_bytes": 35147776,
+        "peak_commit_bytes": 24055808,
+        "process_cpu_s": 0.53125,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 530,
+          "write_count": 1,
+          "read_bytes": 4881266,
+          "write_bytes": 65536
+        }
+      }
+    },
+    {
+      "specimen": 3,
+      "label": "specimen-3",
+      "arm": "direct",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 15,
+      "total_wall_s": 0.004645999986678362,
+      "total_cpu_s": 0.015625,
+      "worker_total_wall_s": 0.017251200042665005,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 0.622571999905631,
+      "restored_scratch_bytes": 0,
+      "restored_scratch_allocation_bytes": 0,
+      "access": {
+        "wall_s": 0.0012790998443961143,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0004236998502165079,
+        "cpu_s": 0.015625
+      },
+      "database_read": {
+        "wall_s": 0.0012666000984609127,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.0029319999739527702,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.4883729999419302,
+        "cpu_s": 0.4375
+      },
+      "restoration": null,
+      "memory": {
+        "rss_bytes": 35332096,
+        "peak_working_set_bytes": 35332096,
+        "peak_commit_bytes": 23945216,
+        "process_cpu_s": 0.484375,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 538,
+          "write_count": 0,
+          "read_bytes": 4848082,
+          "write_bytes": 0
+        }
+      }
+    },
+    {
+      "specimen": 2,
+      "label": "specimen-2",
+      "arm": "none",
+      "workload": "batch",
+      "repetition": 0,
+      "sequence": 16,
+      "total_wall_s": 1.0744467999320477,
+      "total_cpu_s": 0.0,
+      "worker_total_wall_s": 1.0917872998397797,
+      "worker_total_cpu_s": 0.015625,
+      "supervisor_wall_s": 1.707757400115952,
+      "restored_scratch_bytes": 65536,
+      "restored_scratch_allocation_bytes": 65536,
+      "access": {
+        "wall_s": 1.0640906000044197,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0002933000214397907,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.010996999917551875,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.008973699994385242,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.4674289000686258,
+        "cpu_s": 0.453125
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 1.0450150000397116,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 8.009979501366615e-05,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.0274704999756068,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.00019700010307133198,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 0.9624227997846901,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 65536,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.007885399973019958,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 9.510014206171036e-05,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 0.0001238998956978321,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35254272,
+        "peak_working_set_bytes": 35254272,
+        "peak_commit_bytes": 24047616,
+        "process_cpu_s": 0.515625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 539,
+          "write_count": 1,
+          "read_bytes": 4901796,
+          "write_bytes": 65536
+        }
+      }
+    },
+    {
+      "specimen": 2,
+      "label": "specimen-2",
+      "arm": "none",
+      "workload": "one-reference",
+      "repetition": 0,
+      "sequence": 17,
+      "total_wall_s": 1.7050576999317855,
+      "total_cpu_s": 0.0,
+      "worker_total_wall_s": 1.7193713001906872,
+      "worker_total_cpu_s": 0.0,
+      "supervisor_wall_s": 2.6499131999444216,
+      "restored_scratch_bytes": 65536,
+      "restored_scratch_allocation_bytes": 65536,
+      "access": {
+        "wall_s": 1.698806299827993,
+        "cpu_s": 0.0
+      },
+      "frozen_source_check": {
+        "wall_s": 0.0003106999211013317,
+        "cpu_s": 0.0
+      },
+      "database_read": {
+        "wall_s": 0.003635699860751629,
+        "cpu_s": 0.0
+      },
+      "full_validation": {
+        "wall_s": 0.004765599966049194,
+        "cpu_s": 0.0
+      },
+      "startup": {
+        "wall_s": 0.7103141001425683,
+        "cpu_s": 0.59375
+      },
+      "restoration": {
+        "total": {
+          "wall_s": 1.693807499948889,
+          "cpu_s": 0.0
+        },
+        "phases": {
+          "io_read": {
+            "wall_s": 0.000107599887996912,
+            "cpu_s": 0.0
+          },
+          "io_write": {
+            "wall_s": 0.07130020018666983,
+            "cpu_s": 0.0
+          },
+          "hash": {
+            "wall_s": 0.00021660001948475838,
+            "cpu_s": 0.0
+          },
+          "flush": {
+            "wall_s": 1.5826520002447069,
+            "cpu_s": 0.0
+          }
+        },
+        "stream_input_bytes": 65536,
+        "stream_output_bytes": 65536,
+        "artifact_verification": {
+          "total": {
+            "wall_s": 0.0012703998945653439,
+            "cpu_s": 0.0
+          },
+          "phases": {
+            "io_read": {
+              "wall_s": 7.390021346509457e-05,
+              "cpu_s": 0.0
+            },
+            "hash": {
+              "wall_s": 0.0001550000160932541,
+              "cpu_s": 0.0
+            }
+          }
+        }
+      },
+      "memory": {
+        "rss_bytes": 35500032,
+        "peak_working_set_bytes": 35500032,
+        "peak_commit_bytes": 24563712,
+        "process_cpu_s": 0.640625,
+        "priority_class": 64,
+        "threads_observed": 4,
+        "process_io": {
+          "read_count": 530,
+          "write_count": 1,
+          "read_bytes": 4881260,
+          "write_bytes": 65536
+        }
+      }
+    }
+  ],
+  "summary": [
+    {
+      "label": "specimen-1",
+      "arm": "direct",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.0022126000840216875,
+          "min": 0.0022126000840216875,
+          "max": 0.0022126000840216875
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.00036880001425743103,
+          "min": 0.00036880001425743103,
+          "max": 0.00036880001425743103
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.005618299823254347,
+          "min": 0.005618299823254347,
+          "max": 0.005618299823254347
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.002196999965235591,
+          "min": 0.002196999965235591,
+          "max": 0.002196999965235591
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-1",
+      "arm": "direct",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.001916100038215518,
+          "min": 0.001916100038215518,
+          "max": 0.001916100038215518
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0005581001751124859,
+          "min": 0.0005581001751124859,
+          "max": 0.0005581001751124859
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.004288000054657459,
+          "min": 0.004288000054657459,
+          "max": 0.004288000054657459
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.0018998999148607254,
+          "min": 0.0018998999148607254,
+          "max": 0.0018998999148607254
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-1",
+      "arm": "none",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.35476520005613565,
+          "min": 0.35476520005613565,
+          "max": 0.35476520005613565
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.000319099985063076,
+          "min": 0.000319099985063076,
+          "max": 0.000319099985063076
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.0046425999607890844,
+          "min": 0.0046425999607890844,
+          "max": 0.0046425999607890844
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.007176100043579936,
+          "min": 0.007176100043579936,
+          "max": 0.007176100043579936
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      }
+    },
+    {
+      "label": "specimen-1",
+      "arm": "none",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.5964958001859486,
+          "min": 0.5964958001859486,
+          "max": 0.5964958001859486
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.00031450018286705017,
+          "min": 0.00031450018286705017,
+          "max": 0.00031450018286705017
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.004500499926507473,
+          "min": 0.004500499926507473,
+          "max": 0.004500499926507473
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.0033813000191003084,
+          "min": 0.0033813000191003084,
+          "max": 0.0033813000191003084
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-1",
+      "arm": "zstd-1",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 1.5987937999889255,
+          "min": 1.5987937999889255,
+          "max": 1.5987937999889255
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.000551300123333931,
+          "min": 0.000551300123333931,
+          "max": 0.000551300123333931
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.002736099995672703,
+          "min": 0.002736099995672703,
+          "max": 0.002736099995672703
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.004719299962744117,
+          "min": 0.004719299962744117,
+          "max": 0.004719299962744117
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-1",
+      "arm": "zstd-1",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 1.4309334999416023,
+          "min": 1.4309334999416023,
+          "max": 1.4309334999416023
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0005318999756127596,
+          "min": 0.0005318999756127596,
+          "max": 0.0005318999756127596
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.007644800003618002,
+          "min": 0.007644800003618002,
+          "max": 0.007644800003618002
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.016051199985668063,
+          "min": 0.016051199985668063,
+          "max": 0.016051199985668063
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-2",
+      "arm": "direct",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.00322420010343194,
+          "min": 0.00322420010343194,
+          "max": 0.00322420010343194
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0004513000603765249,
+          "min": 0.0004513000603765249,
+          "max": 0.0004513000603765249
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.004394100047647953,
+          "min": 0.004394100047647953,
+          "max": 0.004394100047647953
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.003206100082024932,
+          "min": 0.003206100082024932,
+          "max": 0.003206100082024932
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      }
+    },
+    {
+      "label": "specimen-2",
+      "arm": "direct",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.0028443001210689545,
+          "min": 0.0028443001210689545,
+          "max": 0.0028443001210689545
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.00043429993093013763,
+          "min": 0.00043429993093013763,
+          "max": 0.00043429993093013763
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.00404309993609786,
+          "min": 0.00404309993609786,
+          "max": 0.00404309993609786
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.002824000082910061,
+          "min": 0.002824000082910061,
+          "max": 0.002824000082910061
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      }
+    },
+    {
+      "label": "specimen-2",
+      "arm": "none",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 1.0640906000044197,
+          "min": 1.0640906000044197,
+          "max": 1.0640906000044197
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0002933000214397907,
+          "min": 0.0002933000214397907,
+          "max": 0.0002933000214397907
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.008973699994385242,
+          "min": 0.008973699994385242,
+          "max": 0.008973699994385242
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.010996999917551875,
+          "min": 0.010996999917551875,
+          "max": 0.010996999917551875
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-2",
+      "arm": "none",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 1.698806299827993,
+          "min": 1.698806299827993,
+          "max": 1.698806299827993
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0003106999211013317,
+          "min": 0.0003106999211013317,
+          "max": 0.0003106999211013317
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.004765599966049194,
+          "min": 0.004765599966049194,
+          "max": 0.004765599966049194
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.003635699860751629,
+          "min": 0.003635699860751629,
+          "max": 0.003635699860751629
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-2",
+      "arm": "zstd-1",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 1.2934482998680323,
+          "min": 1.2934482998680323,
+          "max": 1.2934482998680323
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.00040140002965927124,
+          "min": 0.00040140002965927124,
+          "max": 0.00040140002965927124
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.007650700164958835,
+          "min": 0.007650700164958835,
+          "max": 0.007650700164958835
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.014714200049638748,
+          "min": 0.014714200049638748,
+          "max": 0.014714200049638748
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-2",
+      "arm": "zstd-1",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 1.4103155999910086,
+          "min": 1.4103155999910086,
+          "max": 1.4103155999910086
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0005113000515848398,
+          "min": 0.0005113000515848398,
+          "max": 0.0005113000515848398
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.006929799914360046,
+          "min": 0.006929799914360046,
+          "max": 0.006929799914360046
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.012168299872428179,
+          "min": 0.012168299872428179,
+          "max": 0.012168299872428179
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-3",
+      "arm": "direct",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.0028316001407802105,
+          "min": 0.0028316001407802105,
+          "max": 0.0028316001407802105
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0005979000125080347,
+          "min": 0.0005979000125080347,
+          "max": 0.0005979000125080347
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.006264700088649988,
+          "min": 0.006264700088649988,
+          "max": 0.006264700088649988
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.0028111999854445457,
+          "min": 0.0028111999854445457,
+          "max": 0.0028111999854445457
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-3",
+      "arm": "direct",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.0012790998443961143,
+          "min": 0.0012790998443961143,
+          "max": 0.0012790998443961143
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0004236998502165079,
+          "min": 0.0004236998502165079,
+          "max": 0.0004236998502165079
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.0029319999739527702,
+          "min": 0.0029319999739527702,
+          "max": 0.0029319999739527702
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.0012666000984609127,
+          "min": 0.0012666000984609127,
+          "max": 0.0012666000984609127
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-3",
+      "arm": "none",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 1.4387886000331491,
+          "min": 1.4387886000331491,
+          "max": 1.4387886000331491
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0007388000376522541,
+          "min": 0.0007388000376522541,
+          "max": 0.0007388000376522541
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.00815490004606545,
+          "min": 0.00815490004606545,
+          "max": 0.00815490004606545
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.0076009000185877085,
+          "min": 0.0076009000185877085,
+          "max": 0.0076009000185877085
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-3",
+      "arm": "none",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.4503279998898506,
+          "min": 0.4503279998898506,
+          "max": 0.4503279998898506
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0014210001099854708,
+          "min": 0.0014210001099854708,
+          "max": 0.0014210001099854708
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.010858400026336312,
+          "min": 0.010858400026336312,
+          "max": 0.010858400026336312
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.0036208999808877707,
+          "min": 0.0036208999808877707,
+          "max": 0.0036208999808877707
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-3",
+      "arm": "zstd-1",
+      "workload": "batch",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 0.9780419000890106,
+          "min": 0.9780419000890106,
+          "max": 0.9780419000890106
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0006081999745219946,
+          "min": 0.0006081999745219946,
+          "max": 0.0006081999745219946
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.004180399933829904,
+          "min": 0.004180399933829904,
+          "max": 0.004180399933829904
+        },
+        "cpu_s": {
+          "median": 0.015625,
+          "min": 0.015625,
+          "max": 0.015625
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.004608399933204055,
+          "min": 0.004608399933204055,
+          "max": 0.004608399933204055
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    {
+      "label": "specimen-3",
+      "arm": "zstd-1",
+      "workload": "one-reference",
+      "samples": 1,
+      "access": {
+        "wall_s": {
+          "median": 1.5692623001523316,
+          "min": 1.5692623001523316,
+          "max": 1.5692623001523316
+        },
+        "cpu_s": {
+          "median": 0.03125,
+          "min": 0.03125,
+          "max": 0.03125
+        }
+      },
+      "frozen_source_check": {
+        "wall_s": {
+          "median": 0.0005395000334829092,
+          "min": 0.0005395000334829092,
+          "max": 0.0005395000334829092
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "full_validation": {
+        "wall_s": {
+          "median": 0.003696700092405081,
+          "min": 0.003696700092405081,
+          "max": 0.003696700092405081
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "database_read": {
+        "wall_s": {
+          "median": 0.0036944998428225517,
+          "min": 0.0036944998428225517,
+          "max": 0.0036944998428225517
+        },
+        "cpu_s": {
+          "median": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    }
+  ],
+  "savings": [
+    {
+      "arm": "none",
+      "input_bytes_counted_once": 245760,
+      "payload_bytes": 245760,
+      "metadata_and_claim_bytes": 920,
+      "replacement_bytes": 246680,
+      "payload_reduction_fraction": 0.0,
+      "replacement_reduction_fraction": -0.0037434895833332593,
+      "input_allocation_bytes": 245760,
+      "replacement_allocation_bytes": 246720
+    },
+    {
+      "arm": "zstd-1",
+      "input_bytes_counted_once": 245760,
+      "payload_bytes": 58581,
+      "metadata_and_claim_bytes": 1392,
+      "replacement_bytes": 59973,
+      "payload_reduction_fraction": 0.76163330078125,
+      "replacement_reduction_fraction": 0.75596923828125,
+      "input_allocation_bytes": 245760,
+      "replacement_allocation_bytes": 62856
+    }
+  ],
+  "strata": {
+    "age": [
+      "under-1-day",
+      "1-to-7-days",
+      "over-7-days"
+    ],
+    "content": [
+      "wire",
+      "decision-summary",
+      "mixed-other"
+    ],
+    "size": [
+      "under-1-MiB",
+      "1-to-8-MiB",
+      "8-to-32-MiB"
+    ]
+  },
+  "eligible_frame_bytes": null,
+  "savings_scope": "selected SQLite input lengths counted once; no operating-tier extrapolation",
+  "input_preparation_wall_s": 0.6373936999589205,
+  "phase_wall_s": 135.89000000013039,
+  "peak_owned_scratch_charge_bytes": 250425641,
+  "memory_limit_bytes": 536870912,
+  "scratch_limit_bytes": 1073741824,
+  "operation_deadline_seconds": 60,
+  "phase_deadline_seconds": 300,
+  "failure_count": 0,
+  "actual_reclaimed_bytes": 0,
+  "operating_quota_change_bytes": 0,
+  "timing_scope": "source check, access, full validation and startup are reported separately",
+  "io_scope": "stream calls and process counters; device traffic unmeasured",
+  "cache_protocol": "No cache clearing; validation/preparation precedes reads",
+  "boundary": "Benchmark-only; operating files unchanged; zero reclaimed bytes"
+}
