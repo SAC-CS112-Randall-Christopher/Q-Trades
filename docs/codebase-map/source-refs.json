@@ -20,8 +20,13 @@
         "apps/web/index.html",
         "apps/web/package-lock.json",
         "apps/web/package.json",
+        "apps/web/src/ResearchConnection.tsx",
+        "apps/web/src/ResearchOverview.tsx",
+        "apps/web/src/ResearchSetup.tsx",
         "apps/web/src/WorkspaceViews.tsx",
         "apps/web/src/main.tsx",
+        "apps/web/src/productNavigation.ts",
+        "apps/web/src/researchControls.ts",
         "apps/web/src/style.css",
         "apps/web/src/theme.css",
         "apps/web/src/vite-env.d.ts",
@@ -129,6 +134,7 @@
         "apps/web/src/PaperCampaignJournal.tsx",
         "apps/web/src/PaperCampaignPanel.tsx",
         "apps/web/src/PaperEconomicsPanel.tsx",
+        "apps/web/src/RetainedComparison.tsx",
         "apps/web/src/StrategyLab.tsx"
       ]
     },
@@ -324,6 +330,7 @@
         "src/trading/research_inference.py",
         "src/trading/research_lessons.py",
         "src/trading/research_notices.py",
+        "src/trading/research_overview.py",
         "src/trading/research_protocol.py",
         "src/trading/research_quality.py",
         "src/trading/research_support.py",
@@ -365,6 +372,8 @@
         "tests/browser/pattern_scanner.cjs",
         "tests/browser/pattern_scanner_charts.cjs",
         "tests/browser/pattern_scanner_server.py",
+        "tests/browser/research_product.cjs",
+        "tests/browser/research_product_server.py",
         "tests/browser/role_archive_retry.cjs",
         "tests/browser/role_archive_retry_server.py",
         "tests/browser/role_pattern_evidence.cjs",
@@ -481,6 +490,7 @@
         "tests/test_research_evidence.py",
         "tests/test_research_lessons.py",
         "tests/test_research_notices.py",
+        "tests/test_research_product.py",
         "tests/test_research_resources.py",
         "tests/test_research_resume.py",
         "tests/test_research_runtime.py",
@@ -581,7 +591,7 @@
       ]
     }
   ],
-  "baseline_commit": "9ac64e09d04b2fd4e055b8a8d26066172e6fc5f4",
+  "baseline_commit": "d8bf23472f14c8f0ce90286744d0226a2202df68",
   "files": [
     {
       "area": "verification-verification",
@@ -601,7 +611,7 @@
       "local_imports": [],
       "path": ".github/workflows/windows-native.yml",
       "routes": [],
-      "sha256": "e3be5cc3e6715f266849272f7d156ea702fc9d752b7a15a516dc44455d9f81e7"
+      "sha256": "8c34d33d93f782bb79aaa3646d379f93fbf187726d0f74641c0e73c1ed99090c"
     },
     {
       "area": "configuration-and-build-architecture",
@@ -631,7 +641,7 @@
       "local_imports": [],
       "path": "AGENTS.md",
       "routes": [],
-      "sha256": "8af18e3f12f8d0e8833682010bd8d92f85b38e3174881af61526c7394346b044"
+      "sha256": "b26c807de5358f620aa9ede5a3593b7b325d2d929278c433344b56184270442b"
     },
     {
       "area": "map-maintenance-maintenance",
@@ -688,68 +698,70 @@
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 5,
+          "line": 6,
           "name": "Proposal"
         },
         {
           "kind": "lexical declaration",
-          "line": 6,
+          "line": 7,
           "name": "Score"
         },
         {
           "kind": "lexical declaration",
-          "line": 7,
+          "line": 8,
           "name": "Trial"
         },
         {
           "kind": "lexical declaration",
-          "line": 8,
+          "line": 9,
           "name": "Account"
         },
         {
           "kind": "lexical declaration",
-          "line": 9,
+          "line": 10,
           "name": "Lab"
         },
         {
           "kind": "lexical declaration",
-          "line": 10,
+          "line": 11,
           "name": "Snapshot"
         },
         {
           "kind": "lexical declaration",
-          "line": 11,
+          "line": 12,
           "name": "History"
         },
         {
           "kind": "lexical declaration",
-          "line": 14,
+          "line": 15,
           "name": "get"
         },
         {
           "kind": "lexical declaration",
-          "line": 15,
+          "line": 16,
           "name": "post"
         },
         {
           "kind": "lexical declaration",
-          "line": 17,
+          "line": 18,
           "name": "AutonomousPanel"
         }
       ],
       "guide": "strategy-experiments.md",
       "imports": [
         "./ResearchStoragePanel",
+        "./RetainedComparison",
         "./market-chart.css",
         "react"
       ],
       "local_imports": [
         "apps/web/src/ResearchStoragePanel.tsx",
+        "apps/web/src/RetainedComparison.tsx",
         "apps/web/src/market-chart.css"
       ],
       "path": "apps/web/src/AutonomousPanel.tsx",
       "routes": [],
-      "sha256": "ffa1470e258b7ab18dd26d6bfbecff4962a3b416d50384e08bab703ce5fce6f4"
+      "sha256": "c90b532440d72d1266f6dc41da1557e96abf7b00afd15190eb9a3bce5945f3d7"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -1390,38 +1402,43 @@
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 3,
+          "line": 5,
           "name": "Report"
         },
         {
           "kind": "lexical declaration",
-          "line": 7,
+          "line": 9,
           "name": "Learning"
         },
         {
           "kind": "lexical declaration",
-          "line": 14,
+          "line": 16,
           "name": "LearningPanel"
         },
         {
           "kind": "lexical declaration",
-          "line": 23,
+          "line": 31,
           "name": "post"
         },
         {
           "kind": "lexical declaration",
-          "line": 32,
+          "line": 40,
           "name": "inspect"
         }
       ],
       "guide": "strategy-experiments.md",
       "imports": [
+        "./RetainedComparison",
+        "./productNavigation",
         "react"
       ],
-      "local_imports": [],
+      "local_imports": [
+        "apps/web/src/RetainedComparison.tsx",
+        "apps/web/src/productNavigation.ts"
+      ],
       "path": "apps/web/src/LearningPanel.tsx",
       "routes": [],
-      "sha256": "b7367e228e0b310fbbcb9ea2901098757017227f220711b204ba25a868342f93"
+      "sha256": "d3934a976eee5f876ec1bfb62a782e078e34087083481d0563cd2ccb51dc18c7"
     },
     {
       "area": "dashboard-research-worker",
@@ -2501,6 +2518,113 @@
       "sha256": "0686874f2e24bbba53cb385f2dde7154b1182af2a2dd1a3a196a919efcf08ac0"
     },
     {
+      "area": "dashboard-dashboard-api",
+      "declarations": [
+        {
+          "kind": "lexical declaration",
+          "line": 4,
+          "name": "Review"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 7,
+          "name": "ResearchConnection"
+        }
+      ],
+      "guide": "dashboard-api.md",
+      "imports": [
+        "./researchControls",
+        "react"
+      ],
+      "local_imports": [
+        "apps/web/src/researchControls.ts"
+      ],
+      "path": "apps/web/src/ResearchConnection.tsx",
+      "routes": [],
+      "sha256": "12255b9fbd8260bf851b3140be138e3196f09a65f8c7ca76172cef0337bf9fa3"
+    },
+    {
+      "area": "dashboard-dashboard-api",
+      "declarations": [
+        {
+          "kind": "lexical declaration",
+          "line": 7,
+          "name": "Observation"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 8,
+          "name": "ResearchTask"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 9,
+          "name": "ResearchState"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 17,
+          "name": "ResearchScope"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 18,
+          "name": "ComparisonState"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 19,
+          "name": "Markets"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 20,
+          "name": "Notice"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 21,
+          "name": "Attention"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 22,
+          "name": "ProductOverview"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 28,
+          "name": "useProductOverview"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 50,
+          "name": "Operation"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 57,
+          "name": "ResearchOverview"
+        }
+      ],
+      "guide": "dashboard-api.md",
+      "imports": [
+        "./PaperPanel",
+        "./ResearchAttention",
+        "./WorkspaceViews",
+        "lucide-react",
+        "react"
+      ],
+      "local_imports": [
+        "apps/web/src/PaperPanel.tsx",
+        "apps/web/src/ResearchAttention.tsx",
+        "apps/web/src/WorkspaceViews.tsx"
+      ],
+      "path": "apps/web/src/ResearchOverview.tsx",
+      "routes": [],
+      "sha256": "c086e879b73dca7ff77f4c63031d0c7770c65915f39f267b578e769307e9edcf"
+    },
+    {
       "area": "dashboard-evidence-storage-training",
       "declarations": [
         {
@@ -2522,6 +2646,49 @@
       "path": "apps/web/src/ResearchQualityPanel.tsx",
       "routes": [],
       "sha256": "077e822e218185d67e92981b8d4aa7915da2beca7fb0e78cb6fb78af44fd8da0"
+    },
+    {
+      "area": "dashboard-dashboard-api",
+      "declarations": [
+        {
+          "kind": "lexical declaration",
+          "line": 8,
+          "name": "Startup"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 9,
+          "name": "ComponentResult"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 12,
+          "name": "savedStartup"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 17,
+          "name": "ResearchSetup"
+        }
+      ],
+      "guide": "dashboard-api.md",
+      "imports": [
+        "./AutonomousPanel",
+        "./ResearchConnection",
+        "./ResearchOverview",
+        "./researchControls",
+        "lucide-react",
+        "react"
+      ],
+      "local_imports": [
+        "apps/web/src/AutonomousPanel.tsx",
+        "apps/web/src/ResearchConnection.tsx",
+        "apps/web/src/ResearchOverview.tsx",
+        "apps/web/src/researchControls.ts"
+      ],
+      "path": "apps/web/src/ResearchSetup.tsx",
+      "routes": [],
+      "sha256": "1c3b8da14628c5a433f2743ec91b157399c683a3e3bf7985ded633c3de532210"
     },
     {
       "area": "dashboard-evidence-storage-training",
@@ -2613,86 +2780,144 @@
       "sha256": "c34c12515e1750ff1282c4d21213e8d05d5f7d1132304e5f5f0c343f8cb88092"
     },
     {
+      "area": "dashboard-strategy-experiments",
+      "declarations": [
+        {
+          "kind": "lexical declaration",
+          "line": 5,
+          "name": "Proposal"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 6,
+          "name": "Score"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 7,
+          "name": "Admission"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 8,
+          "name": "Offer"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 9,
+          "name": "SavedTrial"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 12,
+          "name": "RetainedComparison"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 39,
+          "name": "admit"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 77,
+          "name": "RetainedAccount"
+        }
+      ],
+      "guide": "strategy-experiments.md",
+      "imports": [
+        "./ResearchOverview",
+        "./productNavigation",
+        "react"
+      ],
+      "local_imports": [
+        "apps/web/src/ResearchOverview.tsx",
+        "apps/web/src/productNavigation.ts"
+      ],
+      "path": "apps/web/src/RetainedComparison.tsx",
+      "routes": [],
+      "sha256": "0942fe2964ad2e8e439fd2f620907b426414d4d38a9576ec41bb1b27882a30e1"
+    },
+    {
       "area": "dashboard-research-worker",
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 9,
+          "line": 12,
           "name": "RoleState"
         },
         {
           "kind": "lexical declaration",
-          "line": 52,
+          "line": 55,
           "name": "ToolRequest"
         },
         {
           "kind": "lexical declaration",
-          "line": 59,
+          "line": 62,
           "name": "QuestionSelection"
         },
         {
           "kind": "lexical declaration",
-          "line": 85,
+          "line": 88,
           "name": "PatternComparison"
         },
         {
           "kind": "lexical declaration",
-          "line": 100,
+          "line": 103,
           "name": "CurrentInputs"
         },
         {
           "kind": "lexical declaration",
-          "line": 101,
+          "line": 104,
           "name": "FixedControls"
         },
         {
           "kind": "lexical declaration",
-          "line": 102,
+          "line": 105,
           "name": "FixedMethod"
         },
         {
           "kind": "lexical declaration",
-          "line": 103,
+          "line": 106,
           "name": "Task"
         },
         {
           "kind": "lexical declaration",
-          "line": 118,
+          "line": 123,
           "name": "Question"
         },
         {
           "kind": "lexical declaration",
-          "line": 119,
+          "line": 124,
           "name": "SavedRequest"
         },
         {
           "kind": "lexical declaration",
-          "line": 120,
+          "line": 125,
           "name": "PilotControl"
         },
         {
           "kind": "lexical declaration",
-          "line": 130,
+          "line": 134,
           "name": "ActionError"
         },
         {
           "kind": "lexical declaration",
-          "line": 147,
+          "line": 151,
           "name": "patternLinks"
         },
         {
           "kind": "lexical declaration",
-          "line": 167,
+          "line": 171,
           "name": "capturedFixedMethod"
         },
         {
           "kind": "lexical declaration",
-          "line": 175,
+          "line": 179,
           "name": "PatternTaskEvidence"
         },
         {
           "kind": "lexical declaration",
-          "line": 206,
+          "line": 210,
           "name": "RoleResearchPanel"
         }
       ],
@@ -2701,22 +2926,28 @@
         "./FrozenComponentPanel",
         "./LessonPanel",
         "./ResearchActorPanel",
+        "./ResearchOverview",
         "./ResearchQualityPanel",
         "./StockResearchPanel",
         "./TrainingCandidateExport",
+        "./productNavigation",
+        "./researchControls",
         "react"
       ],
       "local_imports": [
         "apps/web/src/FrozenComponentPanel.tsx",
         "apps/web/src/LessonPanel.tsx",
         "apps/web/src/ResearchActorPanel.tsx",
+        "apps/web/src/ResearchOverview.tsx",
         "apps/web/src/ResearchQualityPanel.tsx",
         "apps/web/src/StockResearchPanel.tsx",
-        "apps/web/src/TrainingCandidateExport.tsx"
+        "apps/web/src/TrainingCandidateExport.tsx",
+        "apps/web/src/productNavigation.ts",
+        "apps/web/src/researchControls.ts"
       ],
       "path": "apps/web/src/RoleResearchPanel.tsx",
       "routes": [],
-      "sha256": "54d8f0bbeace3179de5d86ab9c42bdf65dc7b6832adb377c45797b66dbb0578e"
+      "sha256": "8022c0925c715d462c95b74803dee55f1093d009b70c8bd3f0feba11f4d2b401"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -2929,42 +3160,44 @@
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 5,
+          "line": 6,
           "name": "Trade"
         },
         {
           "kind": "lexical declaration",
-          "line": 15,
+          "line": 16,
           "name": "Page"
         },
         {
           "kind": "lexical declaration",
-          "line": 33,
+          "line": 34,
           "name": "TradeHistory"
         },
         {
           "kind": "lexical declaration",
-          "line": 84,
+          "line": 87,
           "name": "reset"
         },
         {
           "kind": "lexical declaration",
-          "line": 152,
+          "line": 155,
           "name": "TradeRows"
         }
       ],
       "guide": "paper-accounting.md",
       "imports": [
         "./PaperPanel",
+        "./productNavigation",
         "lucide-react",
         "react"
       ],
       "local_imports": [
-        "apps/web/src/PaperPanel.tsx"
+        "apps/web/src/PaperPanel.tsx",
+        "apps/web/src/productNavigation.ts"
       ],
       "path": "apps/web/src/TradeHistory.tsx",
       "routes": [],
-      "sha256": "3298cfdbd095be793295edad93661c1c557700a4e7927606882458340ea214e9"
+      "sha256": "a435be40929837ec465afc5ab5ba2bdb88aae6e84c5ed3ee056e3aa37bc90997"
     },
     {
       "area": "dashboard-evidence-storage-training",
@@ -3037,97 +3270,97 @@
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 44,
+          "line": 46,
           "name": "Status"
         },
         {
           "kind": "lexical declaration",
-          "line": 45,
+          "line": 47,
           "name": "accountState"
         },
         {
           "kind": "lexical declaration",
-          "line": 83,
+          "line": 85,
           "name": "totals"
         },
         {
           "kind": "lexical declaration",
-          "line": 115,
+          "line": 117,
           "name": "EmptyPaper"
         },
         {
           "kind": "lexical declaration",
-          "line": 128,
+          "line": 130,
           "name": "GlobalEntryControl"
         },
         {
           "kind": "lexical declaration",
-          "line": 139,
+          "line": 141,
           "name": "control"
         },
         {
           "kind": "lexical declaration",
-          "line": 184,
+          "line": 186,
           "name": "AccountDistribution"
         },
         {
           "kind": "lexical declaration",
-          "line": 238,
+          "line": 240,
           "name": "PerformanceChart"
         },
         {
           "kind": "lexical declaration",
-          "line": 507,
+          "line": 510,
           "name": "MarketWatchlist"
         },
         {
           "kind": "lexical declaration",
-          "line": 508,
+          "line": 511,
           "name": "Quotes"
         },
         {
           "kind": "lexical declaration",
-          "line": 525,
+          "line": 528,
           "name": "load"
         },
         {
           "kind": "lexical declaration",
-          "line": 608,
+          "line": 611,
           "name": "DashboardView"
         },
         {
           "kind": "lexical declaration",
-          "line": 797,
+          "line": 800,
           "name": "AccountInspector"
         },
         {
           "kind": "lexical declaration",
-          "line": 821,
+          "line": 824,
           "name": "control"
         },
         {
           "kind": "lexical declaration",
-          "line": 963,
+          "line": 966,
           "name": "isResearchAccount"
         },
         {
           "kind": "lexical declaration",
-          "line": 970,
+          "line": 973,
           "name": "AccountsView"
         },
         {
           "kind": "lexical declaration",
-          "line": 1367,
+          "line": 1373,
           "name": "OrdersView"
         },
         {
           "kind": "lexical declaration",
-          "line": 1494,
+          "line": 1502,
           "name": "RiskOverview"
         },
         {
           "kind": "lexical declaration",
-          "line": 1589,
+          "line": 1597,
           "name": "LockIcon"
         }
       ],
@@ -3138,7 +3371,9 @@
         "./PaperCampaignPanel",
         "./PaperPanel",
         "./PerformanceDiagnosticPanel",
+        "./RetainedComparison",
         "./TradeHistory",
+        "./productNavigation",
         "lucide-react",
         "react"
       ],
@@ -3148,11 +3383,13 @@
         "apps/web/src/PaperCampaignPanel.tsx",
         "apps/web/src/PaperPanel.tsx",
         "apps/web/src/PerformanceDiagnosticPanel.tsx",
-        "apps/web/src/TradeHistory.tsx"
+        "apps/web/src/RetainedComparison.tsx",
+        "apps/web/src/TradeHistory.tsx",
+        "apps/web/src/productNavigation.ts"
       ],
       "path": "apps/web/src/WorkspaceViews.tsx",
       "routes": [],
-      "sha256": "2a1917f2729591ee42f497f838d0bb1d67ef5907d312a8d9579df7c2defb4b0a"
+      "sha256": "6c7ca0d51aae8bd32fe428356b2e758eab1b13d4ff5a696238b1bac2dfeb2ca2"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -3184,27 +3421,27 @@
         },
         {
           "kind": "lexical declaration",
-          "line": 126,
+          "line": 112,
           "name": "Page"
         },
         {
           "kind": "lexical declaration",
-          "line": 147,
+          "line": 133,
           "name": "currentPage"
         },
         {
           "kind": "lexical declaration",
-          "line": 168,
+          "line": 162,
           "name": "App"
         },
         {
           "kind": "lexical declaration",
-          "line": 287,
+          "line": 291,
           "name": "collectorControl"
         },
         {
           "kind": "lexical declaration",
-          "line": 322,
+          "line": 326,
           "name": "searchAccounts"
         }
       ],
@@ -3225,9 +3462,12 @@
         "./ReadinessPanel",
         "./ResearchActivity",
         "./ResearchAttention",
+        "./ResearchOverview",
+        "./ResearchSetup",
         "./RoleResearchPanel",
         "./TrainingDataPanel",
         "./WorkspaceViews",
+        "./productNavigation",
         "./style.css",
         "./theme.css",
         "lucide-react",
@@ -3250,15 +3490,18 @@
         "apps/web/src/ReadinessPanel.tsx",
         "apps/web/src/ResearchActivity.tsx",
         "apps/web/src/ResearchAttention.tsx",
+        "apps/web/src/ResearchOverview.tsx",
+        "apps/web/src/ResearchSetup.tsx",
         "apps/web/src/RoleResearchPanel.tsx",
         "apps/web/src/TrainingDataPanel.tsx",
         "apps/web/src/WorkspaceViews.tsx",
+        "apps/web/src/productNavigation.ts",
         "apps/web/src/style.css",
         "apps/web/src/theme.css"
       ],
       "path": "apps/web/src/main.tsx",
       "routes": [],
-      "sha256": "6d0ce613b553631a13ed0f2204ba3b8b0f8fa3835fddd9ba5f00cbc29af6e439"
+      "sha256": "c9b804c34ad0ebbd09c848d10595d7c7ee90ad923bc141d6702839d14f284508"
     },
     {
       "area": "dashboard-market-data",
@@ -3269,6 +3512,39 @@
       "path": "apps/web/src/market-chart.css",
       "routes": [],
       "sha256": "2786b9ee861e1ed70af6c271429d1a412a6d673492ef16a6de1fb2cdfa74ae63"
+    },
+    {
+      "area": "dashboard-dashboard-api",
+      "declarations": [
+        {
+          "kind": "lexical declaration",
+          "line": 5,
+          "name": "inContext"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 16,
+          "name": "useAccountScope"
+        }
+      ],
+      "guide": "dashboard-api.md",
+      "imports": [
+        "react"
+      ],
+      "local_imports": [],
+      "path": "apps/web/src/productNavigation.ts",
+      "routes": [],
+      "sha256": "a794e3bc28f3918f64c7fa69c550a7d2b10d98ed2a80bb36175f1bf1b6deb8bd"
+    },
+    {
+      "area": "dashboard-dashboard-api",
+      "declarations": [],
+      "guide": "dashboard-api.md",
+      "imports": [],
+      "local_imports": [],
+      "path": "apps/web/src/researchControls.ts",
+      "routes": [],
+      "sha256": "b786b72923a2c70a970ac348be93825b66a6e2cb55429ba969c32da6a3e8e645"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -3308,7 +3584,7 @@
       "local_imports": [],
       "path": "apps/web/src/theme.css",
       "routes": [],
-      "sha256": "6f39c449e4a0e639fc88d70362d83636613538bd33ef5262a9af1e547d848d92"
+      "sha256": "2d5142894e27b935c9735dd755f11adf8f1cf26b69ef188a557407189a1d1ec7"
     },
     {
       "area": "dashboard-evidence-storage-training",
@@ -7126,927 +7402,962 @@
       "declarations": [
         {
           "kind": "class",
-          "line": 108,
+          "line": 109,
           "name": "Control"
         },
         {
           "kind": "class",
-          "line": 113,
+          "line": 114,
           "name": "NoticePresentation"
         },
         {
           "kind": "class",
-          "line": 120,
+          "line": 121,
           "name": "RiskControl"
         },
         {
           "kind": "class",
-          "line": 126,
+          "line": 127,
           "name": "EconomicsControl"
         },
         {
           "kind": "class",
-          "line": 133,
+          "line": 134,
           "name": "AccountControl"
         },
         {
           "kind": "class",
-          "line": 139,
+          "line": 140,
           "name": "DiagnosticRequest"
         },
         {
           "kind": "class",
-          "line": 144,
+          "line": 145,
           "name": "DiagnosticStart"
         },
         {
           "kind": "class",
-          "line": 150,
+          "line": 151,
           "name": "ForwardAdmission"
         },
         {
           "kind": "class",
-          "line": 158,
+          "line": 159,
           "name": "LearningReport"
         },
         {
           "kind": "class",
-          "line": 164,
+          "line": 165,
+          "name": "RuleQualification"
+        },
+        {
+          "kind": "class",
+          "line": 176,
           "name": "LearningRole"
         },
         {
           "kind": "class",
-          "line": 172,
+          "line": 184,
           "name": "ToolRequest"
         },
         {
           "kind": "class",
-          "line": 185,
+          "line": 197,
           "name": "CandleStudyRequest"
         },
         {
           "kind": "class",
-          "line": 193,
+          "line": 205,
           "name": "PatternControl"
         },
         {
           "kind": "function",
-          "line": 202,
+          "line": 214,
           "name": "create_app"
         },
         {
           "kind": "function",
-          "line": 229,
+          "line": 241,
           "name": "create_app.lifespan"
         },
         {
           "kind": "function",
-          "line": 301,
+          "line": 313,
           "name": "create_app.lifespan.research_ready"
         },
         {
           "kind": "function",
-          "line": 329,
+          "line": 341,
           "name": "create_app.lifespan.research_universe"
         },
         {
           "kind": "function",
-          "line": 481,
+          "line": 493,
           "name": "create_app.local_security_headers"
         },
         {
           "kind": "function",
-          "line": 497,
+          "line": 509,
           "name": "create_app.storage_failure"
         },
         {
           "kind": "function",
-          "line": 509,
+          "line": 521,
           "name": "create_app.status"
         },
         {
           "kind": "function",
-          "line": 530,
+          "line": 542,
           "name": "create_app.paper_quotes"
         },
         {
           "kind": "function",
-          "line": 535,
+          "line": 547,
           "name": "create_app.live_readiness"
         },
         {
           "kind": "function",
-          "line": 544,
+          "line": 556,
           "name": "create_app.research_trials"
         },
         {
           "kind": "function",
-          "line": 549,
+          "line": 561,
           "name": "create_app.research_activity"
         },
         {
           "kind": "function",
-          "line": 556,
+          "line": 568,
           "name": "create_app.research_storage_status"
         },
         {
           "kind": "function",
-          "line": 560,
+          "line": 572,
           "name": "create_app.research_notices"
         },
         {
           "kind": "function",
-          "line": 569,
+          "line": 581,
           "name": "create_app.research_notice_detail"
         },
         {
           "kind": "function",
-          "line": 581,
+          "line": 593,
           "name": "create_app.notice_presentation"
         },
         {
           "kind": "function",
-          "line": 591,
+          "line": 603,
           "name": "create_app.research_storage_target"
         },
         {
           "kind": "function",
-          "line": 600,
+          "line": 612,
           "name": "create_app.research_storage_plan"
         },
         {
           "kind": "function",
-          "line": 616,
+          "line": 628,
           "name": "create_app.research_storage_evidence"
         },
         {
           "kind": "function",
-          "line": 630,
+          "line": 642,
           "name": "create_app.lab_operator"
         },
         {
           "kind": "function",
-          "line": 646,
+          "line": 658,
           "name": "create_app.bounded_training_input"
         },
         {
           "kind": "function",
-          "line": 670,
+          "line": 685,
           "name": "create_app.scoped_actor_route"
         },
         {
           "kind": "function",
-          "line": 689,
+          "line": 704,
           "name": "create_app.actors"
         },
         {
           "kind": "function",
-          "line": 695,
+          "line": 710,
           "name": "create_app.actor_token"
         },
         {
           "kind": "function",
-          "line": 701,
+          "line": 716,
           "name": "create_app.knowledge_owner"
         },
         {
           "kind": "function",
-          "line": 708,
+          "line": 723,
           "name": "create_app.private_validation"
         },
         {
           "kind": "function",
-          "line": 717,
+          "line": 732,
           "name": "create_app.optional_storage_failure"
         },
         {
           "kind": "function",
-          "line": 730,
+          "line": 745,
           "name": "create_app.review_owner"
         },
         {
           "kind": "function",
-          "line": 737,
+          "line": 752,
           "name": "create_app.knowledge_list"
         },
         {
           "kind": "function",
-          "line": 743,
+          "line": 758,
           "name": "create_app.knowledge_import"
         },
         {
           "kind": "function",
-          "line": 751,
+          "line": 766,
           "name": "create_app.knowledge_search"
         },
         {
           "kind": "function",
-          "line": 759,
+          "line": 774,
           "name": "create_app.knowledge_document"
         },
         {
           "kind": "function",
-          "line": 767,
+          "line": 782,
           "name": "create_app.knowledge_acquire"
         },
         {
           "kind": "function",
-          "line": 775,
+          "line": 790,
           "name": "create_app.knowledge_source"
         },
         {
           "kind": "function",
-          "line": 784,
+          "line": 799,
           "name": "create_app.knowledge_disposition"
         },
         {
           "kind": "function",
-          "line": 794,
+          "line": 809,
           "name": "create_app.knowledge_original_document"
         },
         {
           "kind": "function",
-          "line": 810,
+          "line": 825,
           "name": "create_app.knowledge_receipt"
         },
         {
           "kind": "function",
-          "line": 817,
+          "line": 832,
           "name": "create_app.knowledge_reindex"
         },
         {
           "kind": "function",
-          "line": 822,
+          "line": 837,
           "name": "create_app.knowledge_backup"
         },
         {
           "kind": "class",
-          "line": 826,
+          "line": 841,
           "name": "create_app.KnowledgeRestore"
         },
         {
           "kind": "function",
-          "line": 832,
+          "line": 847,
           "name": "create_app.knowledge_restore"
         },
         {
           "kind": "function",
-          "line": 840,
+          "line": 855,
           "name": "create_app.knowledge_restored"
         },
         {
           "kind": "function",
-          "line": 857,
+          "line": 872,
           "name": "create_app.review_status"
         },
         {
           "kind": "function",
-          "line": 864,
+          "line": 879,
           "name": "create_app.review_connection_test"
         },
         {
           "kind": "function",
-          "line": 911,
+          "line": 926,
           "name": "create_app.review_result"
         },
         {
           "kind": "class",
-          "line": 918,
+          "line": 933,
           "name": "create_app.ReviewerConfiguration"
         },
         {
           "kind": "function",
-          "line": 924,
+          "line": 939,
           "name": "create_app.review_configure"
         },
         {
           "kind": "function",
-          "line": 932,
+          "line": 947,
           "name": "create_app.review_pause"
         },
         {
           "kind": "function",
-          "line": 937,
+          "line": 952,
           "name": "create_app.review_run"
         },
         {
           "kind": "function",
-          "line": 946,
+          "line": 961,
           "name": "create_app.review_decision"
         },
         {
           "kind": "function",
-          "line": 956,
+          "line": 971,
           "name": "create_app.review_reconcile"
         },
         {
           "kind": "function",
-          "line": 966,
+          "line": 981,
           "name": "create_app.review_credential"
         },
         {
           "kind": "function",
-          "line": 985,
+          "line": 1000,
           "name": "create_app.review_disconnect"
         },
         {
           "kind": "function",
-          "line": 993,
+          "line": 1008,
           "name": "create_app.research_mcp"
         },
         {
           "kind": "function",
-          "line": 1019,
+          "line": 1034,
           "name": "create_app.research_mcp_stream"
         },
         {
           "kind": "function",
-          "line": 1023,
+          "line": 1038,
           "name": "create_app.actor_grants"
         },
         {
           "kind": "function",
-          "line": 1028,
+          "line": 1043,
           "name": "create_app.actor_grant"
         },
         {
           "kind": "function",
-          "line": 1036,
+          "line": 1051,
           "name": "create_app.actor_revoke"
         },
         {
           "kind": "function",
-          "line": 1048,
+          "line": 1063,
           "name": "create_app.actor_claim"
         },
         {
           "kind": "function",
-          "line": 1055,
+          "line": 1070,
           "name": "create_app.actor_renew"
         },
         {
           "kind": "function",
-          "line": 1062,
+          "line": 1077,
           "name": "create_app.actor_release"
         },
         {
           "kind": "function",
-          "line": 1073,
+          "line": 1088,
           "name": "create_app.actor_answer"
         },
         {
           "kind": "function",
-          "line": 1080,
+          "line": 1095,
           "name": "create_app.actor_result"
         },
         {
           "kind": "function",
-          "line": 1087,
+          "line": 1102,
           "name": "create_app.actor_maintenance"
         },
         {
           "kind": "function",
-          "line": 1094,
+          "line": 1109,
           "name": "create_app.research_lab"
         },
         {
           "kind": "function",
-          "line": 1100,
+          "line": 1115,
           "name": "create_app.autonomous"
         },
         {
           "kind": "function",
-          "line": 1107,
+          "line": 1122,
           "name": "create_app.role_status"
         },
         {
           "kind": "function",
-          "line": 1119,
+          "line": 1134,
+          "name": "create_app.product_overview"
+        },
+        {
+          "kind": "function",
+          "line": 1140,
+          "name": "create_app.supervised_start"
+        },
+        {
+          "kind": "function",
+          "line": 1150,
+          "name": "create_app.model_connection_review"
+        },
+        {
+          "kind": "function",
+          "line": 1160,
+          "name": "create_app.model_connection_save"
+        },
+        {
+          "kind": "function",
+          "line": 1178,
           "name": "create_app.role_question"
         },
         {
           "kind": "function",
-          "line": 1137,
+          "line": 1196,
           "name": "create_app.role_pilot_control"
         },
         {
           "kind": "function",
-          "line": 1161,
+          "line": 1220,
           "name": "create_app.role_detail"
         },
         {
           "kind": "function",
-          "line": 1171,
+          "line": 1230,
           "name": "create_app.role_training_candidate"
         },
         {
           "kind": "function",
-          "line": 1197,
+          "line": 1256,
           "name": "create_app.training"
         },
         {
           "kind": "function",
-          "line": 1201,
+          "line": 1260,
           "name": "create_app.teaching_error"
         },
         {
           "kind": "function",
-          "line": 1205,
+          "line": 1264,
           "name": "create_app.teaching_sources"
         },
         {
           "kind": "function",
-          "line": 1209,
+          "line": 1268,
           "name": "create_app.teaching_select"
         },
         {
           "kind": "function",
-          "line": 1216,
+          "line": 1275,
           "name": "create_app.teaching_detail"
         },
         {
           "kind": "function",
-          "line": 1227,
+          "line": 1286,
           "name": "create_app.teaching_save"
         },
         {
           "kind": "function",
-          "line": 1234,
+          "line": 1293,
           "name": "create_app.teaching_preflight"
         },
         {
           "kind": "function",
-          "line": 1241,
+          "line": 1300,
           "name": "create_app.teaching_prepare"
         },
         {
           "kind": "function",
-          "line": 1248,
+          "line": 1307,
           "name": "create_app.teaching_result"
         },
         {
           "kind": "function",
-          "line": 1257,
+          "line": 1316,
           "name": "create_app.teaching_retry"
         },
         {
           "kind": "function",
-          "line": 1264,
+          "line": 1323,
           "name": "create_app.teaching_retire"
         },
         {
           "kind": "function",
-          "line": 1271,
+          "line": 1330,
           "name": "create_app.teaching_comparison"
         },
         {
           "kind": "function",
-          "line": 1280,
+          "line": 1339,
           "name": "create_app.role_retry"
         },
         {
           "kind": "function",
-          "line": 1288,
+          "line": 1347,
           "name": "create_app.role_component_detail"
         },
         {
           "kind": "function",
-          "line": 1300,
+          "line": 1359,
           "name": "create_app.lesson_search"
         },
         {
           "kind": "function",
-          "line": 1331,
+          "line": 1390,
           "name": "create_app.lesson_detail"
         },
         {
           "kind": "function",
-          "line": 1341,
+          "line": 1400,
           "name": "create_app.selection_metrics"
         },
         {
           "kind": "function",
-          "line": 1348,
+          "line": 1407,
           "name": "create_app.research_quality"
         },
         {
           "kind": "function",
-          "line": 1355,
+          "line": 1414,
           "name": "create_app.stock_investigate"
         },
         {
           "kind": "function",
-          "line": 1363,
+          "line": 1422,
           "name": "create_app.stock_market_study"
         },
         {
           "kind": "function",
-          "line": 1371,
+          "line": 1430,
           "name": "create_app.stock_study"
         },
         {
           "kind": "function",
-          "line": 1381,
+          "line": 1440,
           "name": "create_app.stock_section"
         },
         {
           "kind": "function",
-          "line": 1400,
+          "line": 1459,
           "name": "create_app.autonomous_snapshot"
         },
         {
           "kind": "function",
-          "line": 1404,
+          "line": 1463,
           "name": "create_app.autonomous_start"
         },
         {
           "kind": "function",
-          "line": 1412,
+          "line": 1471,
           "name": "create_app.autonomous_control"
         },
         {
           "kind": "function",
-          "line": 1420,
+          "line": 1479,
           "name": "create_app.autonomous_bundle"
         },
         {
           "kind": "function",
-          "line": 1424,
+          "line": 1483,
           "name": "create_app.autonomous_submit"
         },
         {
           "kind": "function",
-          "line": 1432,
+          "line": 1491,
           "name": "create_app.autonomous_proposal"
         },
         {
           "kind": "function",
-          "line": 1447,
+          "line": 1506,
           "name": "create_app.autonomous_history"
         },
         {
           "kind": "function",
-          "line": 1451,
-          "name": "create_app.autonomous_account"
-        },
-        {
-          "kind": "function",
-          "line": 1462,
-          "name": "create_app.autonomous_export"
-        },
-        {
-          "kind": "function",
-          "line": 1468,
-          "name": "create_app.research_launch"
-        },
-        {
-          "kind": "function",
-          "line": 1476,
-          "name": "create_app.prospective_plans"
-        },
-        {
-          "kind": "function",
-          "line": 1488,
-          "name": "create_app.prospective_freeze"
-        },
-        {
-          "kind": "function",
-          "line": 1499,
-          "name": "create_app.prospective_inspect"
-        },
-        {
-          "kind": "function",
-          "line": 1512,
-          "name": "create_app.replay_operator"
+          "line": 1510,
+          "name": "create_app.autonomous_trial"
         },
         {
           "kind": "function",
           "line": 1521,
-          "name": "create_app.replay_history"
+          "name": "create_app.autonomous_account"
         },
         {
           "kind": "function",
-          "line": 1525,
-          "name": "create_app.replay_receipt"
+          "line": 1532,
+          "name": "create_app.autonomous_export"
         },
         {
           "kind": "function",
-          "line": 1535,
-          "name": "create_app.replay_launch"
+          "line": 1538,
+          "name": "create_app.research_launch"
         },
         {
           "kind": "function",
-          "line": 1542,
-          "name": "create_app.research_campaign"
+          "line": 1546,
+          "name": "create_app.prospective_plans"
         },
         {
           "kind": "function",
-          "line": 1550,
-          "name": "create_app.research_campaign_receipt"
-        },
-        {
-          "kind": "function",
-          "line": 1560,
-          "name": "create_app.research_campaign_cancel"
+          "line": 1558,
+          "name": "create_app.prospective_freeze"
         },
         {
           "kind": "function",
           "line": 1569,
+          "name": "create_app.prospective_inspect"
+        },
+        {
+          "kind": "function",
+          "line": 1582,
+          "name": "create_app.replay_operator"
+        },
+        {
+          "kind": "function",
+          "line": 1591,
+          "name": "create_app.replay_history"
+        },
+        {
+          "kind": "function",
+          "line": 1595,
+          "name": "create_app.replay_receipt"
+        },
+        {
+          "kind": "function",
+          "line": 1605,
+          "name": "create_app.replay_launch"
+        },
+        {
+          "kind": "function",
+          "line": 1612,
+          "name": "create_app.research_campaign"
+        },
+        {
+          "kind": "function",
+          "line": 1620,
+          "name": "create_app.research_campaign_receipt"
+        },
+        {
+          "kind": "function",
+          "line": 1630,
+          "name": "create_app.research_campaign_cancel"
+        },
+        {
+          "kind": "function",
+          "line": 1639,
           "name": "create_app.research_result"
         },
         {
           "kind": "function",
-          "line": 1579,
+          "line": 1649,
           "name": "create_app.learning_history"
         },
         {
           "kind": "function",
-          "line": 1598,
+          "line": 1668,
           "name": "create_app.research_cancel"
         },
         {
           "kind": "function",
-          "line": 1606,
+          "line": 1676,
           "name": "create_app.research_forward"
         },
         {
           "kind": "function",
-          "line": 1652,
+          "line": 1722,
           "name": "create_app.station_live"
         },
         {
           "kind": "function",
-          "line": 1659,
+          "line": 1729,
           "name": "create_app.station_detail"
         },
         {
           "kind": "function",
-          "line": 1669,
+          "line": 1739,
           "name": "create_app.station_detail.selected_detail"
         },
         {
           "kind": "function",
-          "line": 1685,
+          "line": 1755,
           "name": "create_app.research_tools"
         },
         {
           "kind": "function",
-          "line": 1728,
+          "line": 1798,
           "name": "create_app.disclose_tool"
         },
         {
           "kind": "function",
-          "line": 1738,
+          "line": 1808,
           "name": "create_app.historical_analogues"
         },
         {
           "kind": "function",
-          "line": 1778,
+          "line": 1848,
           "name": "create_app.tool_accounts"
         },
         {
           "kind": "function",
-          "line": 1785,
+          "line": 1855,
           "name": "create_app.tool_accounts.identities"
         },
         {
           "kind": "function",
-          "line": 1813,
+          "line": 1883,
           "name": "create_app.tool_run"
         },
         {
           "kind": "function",
-          "line": 1834,
+          "line": 1904,
           "name": "create_app.candle_request"
         },
         {
           "kind": "function",
-          "line": 1848,
+          "line": 1918,
           "name": "create_app.scanner_owner"
         },
         {
           "kind": "function",
-          "line": 1855,
+          "line": 1925,
           "name": "create_app.scanner_status"
         },
         {
           "kind": "function",
-          "line": 1864,
+          "line": 1934,
           "name": "create_app.scanner_campaigns"
         },
         {
           "kind": "function",
-          "line": 1871,
+          "line": 1941,
           "name": "create_app.scanner_daily_pages"
         },
         {
           "kind": "function",
-          "line": 1878,
+          "line": 1948,
           "name": "create_app.scanner_daily_snapshot"
         },
         {
           "kind": "function",
-          "line": 1888,
+          "line": 1958,
           "name": "create_app.pattern_comparison_owner"
         },
         {
           "kind": "function",
-          "line": 1904,
+          "line": 1974,
           "name": "create_app.scanner_comparison_source"
         },
         {
           "kind": "function",
-          "line": 1932,
+          "line": 2002,
           "name": "create_app.scanner_prepare_comparison"
         },
         {
           "kind": "function",
-          "line": 1948,
+          "line": 2018,
           "name": "create_app.scanner_comparison_history"
         },
         {
           "kind": "function",
-          "line": 1959,
+          "line": 2029,
           "name": "create_app.scanner_prepared_comparison"
         },
         {
           "kind": "function",
-          "line": 1973,
+          "line": 2043,
           "name": "create_app.scanner_control"
         },
         {
           "kind": "function",
-          "line": 1994,
+          "line": 2064,
           "name": "create_app.scanner_request"
         },
         {
           "kind": "function",
-          "line": 2009,
+          "line": 2079,
           "name": "create_app.scanner_chart"
         },
         {
           "kind": "function",
-          "line": 2049,
+          "line": 2119,
           "name": "create_app.scanner_page"
         },
         {
           "kind": "function",
-          "line": 2069,
+          "line": 2139,
           "name": "create_app.candle_study"
         },
         {
           "kind": "function",
-          "line": 2073,
+          "line": 2143,
           "name": "create_app.tool_detail"
         },
         {
           "kind": "function",
-          "line": 2122,
+          "line": 2192,
           "name": "create_app.run_tool"
         },
         {
           "kind": "function",
-          "line": 2224,
+          "line": 2294,
           "name": "create_app.paper_entries"
         },
         {
           "kind": "function",
-          "line": 2239,
+          "line": 2309,
           "name": "create_app.paper_risk_control"
         },
         {
           "kind": "function",
-          "line": 2265,
+          "line": 2335,
           "name": "create_app.paper_economics_settings"
         },
         {
           "kind": "function",
-          "line": 2296,
+          "line": 2366,
           "name": "create_app.campaign_operator"
         },
         {
           "kind": "function",
-          "line": 2312,
+          "line": 2382,
           "name": "create_app.paper_campaign"
         },
         {
           "kind": "function",
-          "line": 2322,
+          "line": 2392,
           "name": "create_app.paper_diagnostics"
         },
         {
           "kind": "function",
-          "line": 2334,
+          "line": 2404,
           "name": "create_app.paper_diagnostic_create"
         },
         {
           "kind": "function",
-          "line": 2344,
+          "line": 2414,
           "name": "create_app.paper_diagnostic_start"
         },
         {
           "kind": "function",
-          "line": 2356,
+          "line": 2426,
           "name": "create_app.paper_diagnostic_stop"
         },
         {
           "kind": "function",
-          "line": 2366,
+          "line": 2436,
           "name": "create_app.paper_account_control"
         },
         {
           "kind": "function",
-          "line": 2382,
+          "line": 2452,
           "name": "create_app.replacement_strategies"
         },
         {
           "kind": "function",
-          "line": 2403,
+          "line": 2473,
           "name": "create_app.change_paper_strategy"
         },
         {
           "kind": "function",
-          "line": 2419,
+          "line": 2489,
           "name": "create_app.paper_strategy_receipt"
         },
         {
           "kind": "function",
-          "line": 2436,
+          "line": 2506,
           "name": "create_app.matched_forward_control"
         },
         {
           "kind": "function",
-          "line": 2445,
+          "line": 2515,
           "name": "create_app.forward_learning_report"
         },
         {
           "kind": "function",
-          "line": 2454,
+          "line": 2524,
+          "name": "create_app.qualify_frozen_rule"
+        },
+        {
+          "kind": "function",
+          "line": 2545,
           "name": "create_app.forward_learning_role"
         },
         {
           "kind": "function",
-          "line": 2465,
+          "line": 2556,
           "name": "create_app.forward_learning_export"
         },
         {
           "kind": "function",
-          "line": 2476,
+          "line": 2567,
           "name": "create_app.paper_journal"
         },
         {
           "kind": "function",
-          "line": 2490,
+          "line": 2581,
           "name": "create_app.paper_trades"
         },
         {
           "kind": "function",
-          "line": 2547,
+          "line": 2638,
           "name": "create_app.collector"
         },
         {
           "kind": "function",
-          "line": 2559,
+          "line": 2650,
           "name": "create_app.options_entries"
         },
         {
           "kind": "function",
-          "line": 2574,
+          "line": 2665,
           "name": "create_app.options_journal"
         },
         {
           "kind": "function",
-          "line": 2583,
+          "line": 2674,
           "name": "create_app.evidence_list"
         },
         {
           "kind": "function",
-          "line": 2591,
+          "line": 2682,
           "name": "create_app.decision_evidence"
         },
         {
           "kind": "function",
-          "line": 2614,
+          "line": 2705,
           "name": "create_app.compact_prefix_evidence"
         },
         {
           "kind": "function",
-          "line": 2628,
+          "line": 2719,
           "name": "create_app.capture"
         },
         {
           "kind": "function",
-          "line": 2640,
+          "line": 2731,
           "name": "create_app.health"
         },
         {
           "kind": "function",
-          "line": 2667,
+          "line": 2758,
           "name": "create_app.index"
         },
         {
           "kind": "function",
-          "line": 2672,
+          "line": 2763,
           "name": "create_app.build_required"
         }
       ],
@@ -8137,6 +8448,8 @@
         "trading.paper_engine.filters",
         "trading.paper_engine.fresh_frame",
         "trading.paper_engine.policy",
+        "trading.paper_learning",
+        "trading.paper_learning.rule_offer",
         "trading.paper_store",
         "trading.paper_store.PaperStore",
         "trading.paper_store.load_dsn",
@@ -8150,6 +8463,7 @@
         "trading.pattern_scanner.PatternScanner",
         "trading.peft_role_model",
         "trading.peft_role_model.PeftPaperPilotRoles",
+        "trading.peft_role_model.configure_paper_scope",
         "trading.peft_role_model.local_role_transport",
         "trading.prospective_review",
         "trading.prospective_review.ProspectiveSpec",
@@ -8186,6 +8500,13 @@
         "trading.research_mcp.ResearchMCP",
         "trading.research_notices",
         "trading.research_notices.operational_conditions",
+        "trading.research_overview",
+        "trading.research_overview.ModelConfiguration",
+        "trading.research_overview.ModelConnection",
+        "trading.research_overview.SupervisedStart",
+        "trading.research_overview.preview_configuration",
+        "trading.research_overview.snapshot",
+        "trading.research_overview.start",
         "trading.research_quality",
         "trading.research_quality.quality_report",
         "trading.research_reviews",
@@ -8263,6 +8584,7 @@
         "src/trading/ownership.py",
         "src/trading/paper_campaigns.py",
         "src/trading/paper_engine.py",
+        "src/trading/paper_learning.py",
         "src/trading/paper_store.py",
         "src/trading/pattern_charts.py",
         "src/trading/pattern_comparisons.py",
@@ -8278,6 +8600,7 @@
         "src/trading/research_knowledge.py",
         "src/trading/research_mcp.py",
         "src/trading/research_notices.py",
+        "src/trading/research_overview.py",
         "src/trading/research_quality.py",
         "src/trading/research_reviews.py",
         "src/trading/research_storage.py",
@@ -8297,876 +8620,912 @@
       "routes": [
         {
           "handler": "index",
-          "line": 2667,
+          "line": 2758,
           "method": "GET",
           "route": "/"
         },
         {
           "handler": "build_required",
-          "line": 2672,
+          "line": 2763,
           "method": "GET",
           "route": "/"
         },
         {
           "handler": "autonomous_snapshot",
-          "line": 1400,
+          "line": 1459,
           "method": "GET",
           "route": "/api/autonomous"
         },
         {
           "handler": "autonomous_account",
-          "line": 1451,
+          "line": 1521,
           "method": "GET",
           "route": "/api/autonomous/accounts/{name}"
         },
         {
           "handler": "autonomous_bundle",
-          "line": 1420,
+          "line": 1479,
           "method": "GET",
           "route": "/api/autonomous/bundle"
         },
         {
           "handler": "autonomous_control",
-          "line": 1412,
+          "line": 1471,
           "method": "POST",
           "route": "/api/autonomous/control"
         },
         {
           "handler": "autonomous_export",
-          "line": 1462,
+          "line": 1532,
           "method": "GET",
           "route": "/api/autonomous/export"
         },
         {
           "handler": "autonomous_history",
-          "line": 1447,
+          "line": 1506,
           "method": "GET",
           "route": "/api/autonomous/history"
         },
         {
           "handler": "autonomous_submit",
-          "line": 1424,
+          "line": 1483,
           "method": "POST",
           "route": "/api/autonomous/proposals"
         },
         {
           "handler": "autonomous_proposal",
-          "line": 1432,
+          "line": 1491,
           "method": "GET",
           "route": "/api/autonomous/proposals/{request_id}"
         },
         {
           "handler": "autonomous_start",
-          "line": 1404,
+          "line": 1463,
           "method": "POST",
           "route": "/api/autonomous/start"
         },
         {
+          "handler": "autonomous_trial",
+          "line": 1510,
+          "method": "GET",
+          "route": "/api/autonomous/trials/{identity}"
+        },
+        {
           "handler": "capture",
-          "line": 2628,
+          "line": 2719,
           "method": "GET",
           "route": "/api/capture"
         },
         {
           "handler": "collector",
-          "line": 2547,
+          "line": 2638,
           "method": "POST",
           "route": "/api/collector"
         },
         {
           "handler": "evidence_list",
-          "line": 2583,
+          "line": 2674,
           "method": "GET",
           "route": "/api/evidence"
         },
         {
           "handler": "compact_prefix_evidence",
-          "line": 2614,
+          "line": 2705,
           "method": "GET",
           "route": "/api/evidence/compact/{episode}"
         },
         {
           "handler": "decision_evidence",
-          "line": 2591,
+          "line": 2682,
           "method": "GET",
           "route": "/api/evidence/{record_id}"
         },
         {
           "handler": "health",
-          "line": 2640,
+          "line": 2731,
           "method": "GET",
           "route": "/api/health"
         },
         {
           "handler": "research_lab",
-          "line": 1094,
+          "line": 1109,
           "method": "GET",
           "route": "/api/lab"
         },
         {
           "handler": "research_campaign",
-          "line": 1542,
+          "line": 1612,
           "method": "POST",
           "route": "/api/lab/campaigns"
         },
         {
           "handler": "research_campaign_receipt",
-          "line": 1550,
+          "line": 1620,
           "method": "GET",
           "route": "/api/lab/campaigns/{request_id}"
         },
         {
           "handler": "research_campaign_cancel",
-          "line": 1560,
+          "line": 1630,
           "method": "POST",
           "route": "/api/lab/campaigns/{request_id}/cancel"
         },
         {
           "handler": "research_launch",
-          "line": 1468,
+          "line": 1538,
           "method": "POST",
           "route": "/api/lab/experiments"
         },
         {
           "handler": "research_result",
-          "line": 1569,
+          "line": 1639,
           "method": "GET",
           "route": "/api/lab/experiments/{request_id}"
         },
         {
           "handler": "research_cancel",
-          "line": 1598,
+          "line": 1668,
           "method": "POST",
           "route": "/api/lab/experiments/{request_id}/cancel"
         },
         {
           "handler": "research_forward",
-          "line": 1606,
+          "line": 1676,
           "method": "POST",
           "route": "/api/lab/experiments/{request_id}/forward"
         },
         {
           "handler": "learning_history",
-          "line": 1579,
+          "line": 1649,
           "method": "GET",
           "route": "/api/lab/experiments/{request_id}/learning"
         },
         {
           "handler": "prospective_plans",
-          "line": 1476,
+          "line": 1546,
           "method": "GET",
           "route": "/api/lab/prospective"
         },
         {
           "handler": "prospective_freeze",
-          "line": 1488,
+          "line": 1558,
           "method": "POST",
           "route": "/api/lab/prospective"
         },
         {
           "handler": "prospective_inspect",
-          "line": 1499,
+          "line": 1569,
           "method": "POST",
           "route": "/api/lab/prospective/{request_id}/inspect"
         },
         {
           "handler": "role_status",
-          "line": 1107,
+          "line": 1122,
           "method": "GET",
           "route": "/api/lab/roles"
         },
         {
           "handler": "role_pilot_control",
-          "line": 1137,
+          "line": 1196,
           "method": "POST",
           "route": "/api/lab/roles/control"
         },
         {
           "handler": "role_question",
-          "line": 1119,
+          "line": 1178,
           "method": "POST",
           "route": "/api/lab/roles/questions"
         },
         {
           "handler": "role_detail",
-          "line": 1161,
+          "line": 1220,
           "method": "GET",
           "route": "/api/lab/roles/tasks/{identity}"
         },
         {
           "handler": "role_component_detail",
-          "line": 1288,
+          "line": 1347,
           "method": "GET",
           "route": "/api/lab/roles/tasks/{identity}/components/{capability}"
         },
         {
           "handler": "role_retry",
-          "line": 1280,
+          "line": 1339,
           "method": "POST",
           "route": "/api/lab/roles/tasks/{identity}/retry"
         },
         {
           "handler": "role_training_candidate",
-          "line": 1171,
+          "line": 1230,
           "method": "GET",
           "route": "/api/lab/roles/tasks/{identity}/training-candidate"
         },
         {
           "handler": "teaching_sources",
-          "line": 1205,
+          "line": 1264,
           "method": "GET",
           "route": "/api/lab/training"
         },
         {
           "handler": "teaching_select",
-          "line": 1209,
+          "line": 1268,
           "method": "POST",
           "route": "/api/lab/training/candidates"
         },
         {
           "handler": "teaching_detail",
-          "line": 1216,
+          "line": 1275,
           "method": "GET",
           "route": "/api/lab/training/examples/{identity}"
         },
         {
           "handler": "teaching_save",
-          "line": 1227,
+          "line": 1286,
           "method": "POST",
           "route": "/api/lab/training/examples/{identity}/review"
         },
         {
           "handler": "teaching_comparison",
-          "line": 1271,
+          "line": 1330,
           "method": "GET",
           "route": "/api/lab/training/historical/{identity}"
         },
         {
           "handler": "teaching_preflight",
-          "line": 1234,
+          "line": 1293,
           "method": "POST",
           "route": "/api/lab/training/preflight"
         },
         {
           "handler": "teaching_prepare",
-          "line": 1241,
+          "line": 1300,
           "method": "POST",
           "route": "/api/lab/training/prepare"
         },
         {
           "handler": "teaching_result",
-          "line": 1248,
+          "line": 1307,
           "method": "GET",
           "route": "/api/lab/training/results/{identity}"
         },
         {
           "handler": "teaching_retry",
-          "line": 1257,
+          "line": 1316,
           "method": "POST",
           "route": "/api/lab/training/results/{identity}/retry"
         },
         {
           "handler": "teaching_retire",
-          "line": 1264,
+          "line": 1323,
           "method": "POST",
           "route": "/api/lab/training/retire-evaluation"
         },
         {
           "handler": "options_entries",
-          "line": 2559,
+          "line": 2650,
           "method": "POST",
           "route": "/api/options/entries"
         },
         {
           "handler": "options_journal",
-          "line": 2574,
+          "line": 2665,
           "method": "GET",
           "route": "/api/options/journal"
         },
         {
           "handler": "paper_account_control",
-          "line": 2366,
+          "line": 2436,
           "method": "POST",
           "route": "/api/paper/accounts/{account}/control"
         },
         {
           "handler": "paper_economics_settings",
-          "line": 2265,
+          "line": 2335,
           "method": "POST",
           "route": "/api/paper/accounts/{account}/economics-settings"
         },
         {
           "handler": "paper_risk_control",
-          "line": 2239,
+          "line": 2309,
           "method": "POST",
           "route": "/api/paper/accounts/{account}/risk-control"
         },
         {
           "handler": "change_paper_strategy",
-          "line": 2403,
+          "line": 2473,
           "method": "POST",
           "route": "/api/paper/accounts/{account}/strategy"
         },
         {
           "handler": "paper_strategy_receipt",
-          "line": 2419,
+          "line": 2489,
           "method": "GET",
           "route": "/api/paper/accounts/{account}/strategy/{request_id}"
         },
         {
           "handler": "paper_campaign",
-          "line": 2312,
+          "line": 2382,
           "method": "POST",
           "route": "/api/paper/campaigns"
         },
         {
           "handler": "paper_diagnostics",
-          "line": 2322,
+          "line": 2392,
           "method": "GET",
           "route": "/api/paper/diagnostics"
         },
         {
           "handler": "paper_diagnostic_create",
-          "line": 2334,
+          "line": 2404,
           "method": "POST",
           "route": "/api/paper/diagnostics/create"
         },
         {
           "handler": "paper_diagnostic_start",
-          "line": 2344,
+          "line": 2414,
           "method": "POST",
           "route": "/api/paper/diagnostics/start"
         },
         {
           "handler": "paper_diagnostic_stop",
-          "line": 2356,
+          "line": 2426,
           "method": "POST",
           "route": "/api/paper/diagnostics/stop"
         },
         {
           "handler": "paper_entries",
-          "line": 2224,
+          "line": 2294,
           "method": "POST",
           "route": "/api/paper/entries"
         },
         {
           "handler": "paper_journal",
-          "line": 2476,
+          "line": 2567,
           "method": "GET",
           "route": "/api/paper/journal"
         },
         {
           "handler": "matched_forward_control",
-          "line": 2436,
+          "line": 2506,
           "method": "POST",
           "route": "/api/paper/learning/control/{candidate}"
         },
         {
           "handler": "forward_learning_report",
-          "line": 2445,
+          "line": 2515,
           "method": "POST",
           "route": "/api/paper/learning/reports"
         },
         {
           "handler": "forward_learning_export",
-          "line": 2465,
+          "line": 2556,
           "method": "GET",
           "route": "/api/paper/learning/reports/{request_id}"
         },
         {
           "handler": "forward_learning_role",
-          "line": 2454,
+          "line": 2545,
           "method": "POST",
           "route": "/api/paper/learning/role"
         },
         {
+          "handler": "qualify_frozen_rule",
+          "line": 2524,
+          "method": "POST",
+          "route": "/api/paper/learning/rules"
+        },
+        {
           "handler": "paper_quotes",
-          "line": 530,
+          "line": 542,
           "method": "GET",
           "route": "/api/paper/quotes"
         },
         {
           "handler": "replacement_strategies",
-          "line": 2382,
+          "line": 2452,
           "method": "GET",
           "route": "/api/paper/strategies"
         },
         {
           "handler": "paper_trades",
-          "line": 2490,
+          "line": 2581,
           "method": "GET",
           "route": "/api/paper/trades"
         },
         {
           "handler": "live_readiness",
-          "line": 535,
+          "line": 547,
           "method": "GET",
           "route": "/api/readiness"
         },
         {
           "handler": "replay_history",
-          "line": 1521,
+          "line": 1591,
           "method": "GET",
           "route": "/api/replays"
         },
         {
           "handler": "replay_launch",
-          "line": 1535,
+          "line": 1605,
           "method": "POST",
           "route": "/api/replays"
         },
         {
           "handler": "replay_receipt",
-          "line": 1525,
+          "line": 1595,
           "method": "GET",
           "route": "/api/replays/{request_id}"
         },
         {
           "handler": "research_activity",
-          "line": 549,
+          "line": 561,
           "method": "GET",
           "route": "/api/research/activity"
         },
         {
           "handler": "actor_answer",
-          "line": 1073,
+          "line": 1088,
           "method": "POST",
           "route": "/api/research/actors/answers"
         },
         {
           "handler": "actor_release",
-          "line": 1062,
+          "line": 1077,
           "method": "POST",
           "route": "/api/research/actors/claims/release"
         },
         {
           "handler": "actor_renew",
-          "line": 1055,
+          "line": 1070,
           "method": "POST",
           "route": "/api/research/actors/claims/renew"
         },
         {
           "handler": "actor_grants",
-          "line": 1023,
+          "line": 1038,
           "method": "GET",
           "route": "/api/research/actors/grants"
         },
         {
           "handler": "actor_grant",
-          "line": 1028,
+          "line": 1043,
           "method": "POST",
           "route": "/api/research/actors/grants"
         },
         {
           "handler": "actor_revoke",
-          "line": 1036,
+          "line": 1051,
           "method": "POST",
           "route": "/api/research/actors/grants/{identity}/revoke"
         },
         {
           "handler": "actor_claim",
-          "line": 1048,
+          "line": 1063,
           "method": "POST",
           "route": "/api/research/actors/tasks/claim"
         },
         {
           "handler": "actor_maintenance",
-          "line": 1087,
+          "line": 1102,
           "method": "GET",
           "route": "/api/research/actors/tasks/maintenance"
         },
         {
           "handler": "actor_result",
-          "line": 1080,
+          "line": 1095,
           "method": "GET",
           "route": "/api/research/actors/tasks/{identity}/result"
         },
         {
           "handler": "historical_analogues",
-          "line": 1738,
+          "line": 1808,
           "method": "GET",
           "route": "/api/research/analogues/{record_id}"
         },
         {
           "handler": "candle_study",
-          "line": 2069,
+          "line": 2139,
           "method": "POST",
           "route": "/api/research/candle-patterns"
         },
         {
           "handler": "candle_request",
-          "line": 1834,
+          "line": 1904,
           "method": "GET",
           "route": "/api/research/candle-patterns/requests/{request_id}"
         },
         {
           "handler": "knowledge_list",
-          "line": 737,
+          "line": 752,
           "method": "GET",
           "route": "/api/research/knowledge"
         },
         {
           "handler": "knowledge_acquire",
-          "line": 767,
+          "line": 782,
           "method": "POST",
           "route": "/api/research/knowledge/acquire"
         },
         {
           "handler": "knowledge_backup",
-          "line": 822,
+          "line": 837,
           "method": "POST",
           "route": "/api/research/knowledge/backup"
         },
         {
           "handler": "knowledge_document",
-          "line": 759,
+          "line": 774,
           "method": "POST",
           "route": "/api/research/knowledge/document"
         },
         {
           "handler": "knowledge_import",
-          "line": 743,
+          "line": 758,
           "method": "POST",
           "route": "/api/research/knowledge/import"
         },
         {
           "handler": "knowledge_receipt",
-          "line": 810,
+          "line": 825,
           "method": "GET",
           "route": "/api/research/knowledge/receipts/{identity}"
         },
         {
           "handler": "knowledge_reindex",
-          "line": 817,
+          "line": 832,
           "method": "POST",
           "route": "/api/research/knowledge/reindex"
         },
         {
           "handler": "knowledge_restore",
-          "line": 832,
+          "line": 847,
           "method": "POST",
           "route": "/api/research/knowledge/restore"
         },
         {
           "handler": "knowledge_restored",
-          "line": 840,
+          "line": 855,
           "method": "GET",
           "route": "/api/research/knowledge/restored/{library}/{source}/{revision}"
         },
         {
           "handler": "knowledge_search",
-          "line": 751,
+          "line": 766,
           "method": "POST",
           "route": "/api/research/knowledge/search"
         },
         {
           "handler": "knowledge_disposition",
-          "line": 784,
+          "line": 799,
           "method": "POST",
           "route": "/api/research/knowledge/sources/{source}/disposition"
         },
         {
           "handler": "knowledge_source",
-          "line": 775,
+          "line": 790,
           "method": "GET",
           "route": "/api/research/knowledge/sources/{source}/{revision}"
         },
         {
           "handler": "knowledge_original_document",
-          "line": 794,
+          "line": 809,
           "method": "GET",
           "route": "/api/research/knowledge/sources/{source}/{revision}/document"
         },
         {
           "handler": "lesson_search",
-          "line": 1300,
+          "line": 1359,
           "method": "GET",
           "route": "/api/research/lessons"
         },
         {
           "handler": "lesson_detail",
-          "line": 1331,
+          "line": 1390,
           "method": "GET",
           "route": "/api/research/lessons/{identity}"
         },
         {
           "handler": "research_mcp_stream",
-          "line": 1019,
+          "line": 1034,
           "method": "GET",
           "route": "/api/research/mcp"
         },
         {
           "handler": "research_mcp",
-          "line": 993,
+          "line": 1008,
           "method": "POST",
           "route": "/api/research/mcp"
         },
         {
+          "handler": "model_connection_save",
+          "line": 1160,
+          "method": "POST",
+          "route": "/api/research/model-connection"
+        },
+        {
+          "handler": "model_connection_review",
+          "line": 1150,
+          "method": "POST",
+          "route": "/api/research/model-connection/review"
+        },
+        {
           "handler": "research_notices",
-          "line": 560,
+          "line": 572,
           "method": "GET",
           "route": "/api/research/notices"
         },
         {
           "handler": "notice_presentation",
-          "line": 581,
+          "line": 593,
           "method": "POST",
           "route": "/api/research/notices/presentation"
         },
         {
           "handler": "research_notice_detail",
-          "line": 569,
+          "line": 581,
           "method": "GET",
           "route": "/api/research/notices/{key}"
         },
         {
+          "handler": "product_overview",
+          "line": 1134,
+          "method": "GET",
+          "route": "/api/research/overview"
+        },
+        {
           "handler": "scanner_status",
-          "line": 1855,
+          "line": 1925,
           "method": "GET",
           "route": "/api/research/pattern-scanner"
         },
         {
           "handler": "scanner_campaigns",
-          "line": 1864,
+          "line": 1934,
           "method": "GET",
           "route": "/api/research/pattern-scanner/campaigns"
         },
         {
           "handler": "scanner_chart",
-          "line": 2009,
+          "line": 2079,
           "method": "GET",
           "route": "/api/research/pattern-scanner/chart"
         },
         {
           "handler": "scanner_comparison_source",
-          "line": 1904,
+          "line": 1974,
           "method": "GET",
           "route": "/api/research/pattern-scanner/comparison-source"
         },
         {
           "handler": "scanner_comparison_history",
-          "line": 1948,
+          "line": 2018,
           "method": "GET",
           "route": "/api/research/pattern-scanner/comparisons"
         },
         {
           "handler": "scanner_prepare_comparison",
-          "line": 1932,
+          "line": 2002,
           "method": "POST",
           "route": "/api/research/pattern-scanner/comparisons"
         },
         {
           "handler": "scanner_prepared_comparison",
-          "line": 1959,
+          "line": 2029,
           "method": "GET",
           "route": "/api/research/pattern-scanner/comparisons/{request_id}"
         },
         {
           "handler": "scanner_control",
-          "line": 1973,
+          "line": 2043,
           "method": "POST",
           "route": "/api/research/pattern-scanner/control"
         },
         {
           "handler": "scanner_daily_pages",
-          "line": 1871,
+          "line": 1941,
           "method": "GET",
           "route": "/api/research/pattern-scanner/daily/shortlists"
         },
         {
           "handler": "scanner_daily_snapshot",
-          "line": 1878,
+          "line": 1948,
           "method": "GET",
           "route": "/api/research/pattern-scanner/daily/shortlists/{identity}"
         },
         {
           "handler": "scanner_request",
-          "line": 1994,
+          "line": 2064,
           "method": "GET",
           "route": "/api/research/pattern-scanner/requests/{request_id}"
         },
         {
           "handler": "scanner_page",
-          "line": 2049,
+          "line": 2119,
           "method": "GET",
           "route": "/api/research/pattern-scanner/{kind}"
         },
         {
           "handler": "research_quality",
-          "line": 1348,
+          "line": 1407,
           "method": "GET",
           "route": "/api/research/quality"
         },
         {
           "handler": "review_status",
-          "line": 857,
+          "line": 872,
           "method": "GET",
           "route": "/api/research/reviews"
         },
         {
           "handler": "review_configure",
-          "line": 924,
+          "line": 939,
           "method": "POST",
           "route": "/api/research/reviews/configure"
         },
         {
           "handler": "review_connection_test",
-          "line": 864,
+          "line": 879,
           "method": "POST",
           "route": "/api/research/reviews/connection-test"
         },
         {
           "handler": "review_credential",
-          "line": 966,
+          "line": 981,
           "method": "POST",
           "route": "/api/research/reviews/credential"
         },
         {
           "handler": "review_disconnect",
-          "line": 985,
+          "line": 1000,
           "method": "POST",
           "route": "/api/research/reviews/disconnect"
         },
         {
           "handler": "review_pause",
-          "line": 932,
+          "line": 947,
           "method": "POST",
           "route": "/api/research/reviews/pause"
         },
         {
           "handler": "review_result",
-          "line": 911,
+          "line": 926,
           "method": "GET",
           "route": "/api/research/reviews/results/{identity}"
         },
         {
           "handler": "review_decision",
-          "line": 946,
+          "line": 961,
           "method": "POST",
           "route": "/api/research/reviews/results/{identity}/decision"
         },
         {
           "handler": "review_reconcile",
-          "line": 956,
+          "line": 971,
           "method": "POST",
           "route": "/api/research/reviews/results/{identity}/reconcile"
         },
         {
           "handler": "review_run",
-          "line": 937,
+          "line": 952,
           "method": "POST",
           "route": "/api/research/reviews/run"
         },
         {
           "handler": "selection_metrics",
-          "line": 1341,
+          "line": 1400,
           "method": "GET",
           "route": "/api/research/selection"
         },
         {
           "handler": "stock_investigate",
-          "line": 1355,
+          "line": 1414,
           "method": "POST",
           "route": "/api/research/stocks/investigations"
         },
         {
           "handler": "stock_market_study",
-          "line": 1363,
+          "line": 1422,
           "method": "POST",
           "route": "/api/research/stocks/market-study"
         },
         {
           "handler": "stock_study",
-          "line": 1371,
+          "line": 1430,
           "method": "GET",
           "route": "/api/research/stocks/studies/{identity}"
         },
         {
           "handler": "stock_section",
-          "line": 1381,
+          "line": 1440,
           "method": "GET",
           "route": "/api/research/stocks/studies/{identity}/section"
         },
         {
           "handler": "research_storage_status",
-          "line": 556,
+          "line": 568,
           "method": "GET",
           "route": "/api/research/storage"
         },
         {
           "handler": "research_storage_evidence",
-          "line": 616,
+          "line": 628,
           "method": "GET",
           "route": "/api/research/storage/evidence"
         },
         {
           "handler": "research_storage_plan",
-          "line": 600,
+          "line": 612,
           "method": "POST",
           "route": "/api/research/storage/plan"
         },
         {
           "handler": "research_storage_target",
-          "line": 591,
+          "line": 603,
           "method": "GET",
           "route": "/api/research/storage/target"
         },
         {
+          "handler": "supervised_start",
+          "line": 1140,
+          "method": "POST",
+          "route": "/api/research/supervised-start"
+        },
+        {
           "handler": "research_tools",
-          "line": 1685,
+          "line": 1755,
           "method": "GET",
           "route": "/api/research/tools"
         },
         {
           "handler": "tool_accounts",
-          "line": 1778,
+          "line": 1848,
           "method": "GET",
           "route": "/api/research/tools/accounts"
         },
         {
           "handler": "run_tool",
-          "line": 2122,
+          "line": 2192,
           "method": "POST",
           "route": "/api/research/tools/run"
         },
         {
           "handler": "tool_run",
-          "line": 1813,
+          "line": 1883,
           "method": "GET",
           "route": "/api/research/tools/runs/{run_id}"
         },
         {
           "handler": "tool_detail",
-          "line": 2073,
+          "line": 2143,
           "method": "GET",
           "route": "/api/research/tools/runs/{run_id}/detail"
         },
         {
           "handler": "research_trials",
-          "line": 544,
+          "line": 556,
           "method": "GET",
           "route": "/api/research/trials"
         },
         {
           "handler": "station_detail",
-          "line": 1659,
+          "line": 1729,
           "method": "GET",
           "route": "/api/station/detail"
         },
         {
           "handler": "station_live",
-          "line": 1652,
+          "line": 1722,
           "method": "GET",
           "route": "/api/station/live"
         },
         {
           "handler": "status",
-          "line": 509,
+          "line": 521,
           "method": "GET",
           "route": "/api/status"
         }
       ],
-      "sha256": "02ee81243498043499228735072c8962cb88266ac26e4c9d05d9d6a42f5f5b47"
+      "sha256": "0dd9ca225f799f51b2a0962325a953c6b9d710c97542a7bcc19627de62996a57"
     },
     {
       "area": "finance-strategy-experiments",
@@ -9281,7 +9640,7 @@
       ],
       "path": "src/trading/autonomous_finance.py",
       "routes": [],
-      "sha256": "93a964eddf3332240be8bdff7f4946a5faae653d5465ab9ad2fd9a028887bef8"
+      "sha256": "ec71027160e37acb9c6a7008c6f581a109a35d8be5a0c9e39db396d55a280843"
     },
     {
       "area": "finance-strategy-experiments",
@@ -9313,107 +9672,112 @@
         },
         {
           "kind": "function",
-          "line": 58,
+          "line": 61,
+          "name": "AutonomousLab.control.apply"
+        },
+        {
+          "kind": "function",
+          "line": 80,
           "name": "AutonomousLab.bundle"
         },
         {
           "kind": "function",
-          "line": 151,
+          "line": 173,
           "name": "AutonomousLab.submit"
         },
         {
           "kind": "function",
-          "line": 191,
+          "line": 213,
           "name": "AutonomousLab._retain_inputs"
         },
         {
           "kind": "function",
-          "line": 209,
+          "line": 231,
           "name": "AutonomousLab._finite_dispatch"
         },
         {
           "kind": "function",
-          "line": 226,
+          "line": 248,
           "name": "AutonomousLab._finite_dispatch.guard"
         },
         {
           "kind": "function",
-          "line": 240,
+          "line": 262,
           "name": "AutonomousLab._financial_admission"
         },
         {
           "kind": "function",
-          "line": 249,
+          "line": 271,
           "name": "AutonomousLab._financial_admission.check"
         },
         {
           "kind": "function",
-          "line": 274,
+          "line": 296,
           "name": "AutonomousLab.evaluate"
         },
         {
           "kind": "function",
-          "line": 326,
+          "line": 348,
           "name": "AutonomousLab._family_available"
         },
         {
           "kind": "function",
-          "line": 331,
+          "line": 353,
           "name": "AutonomousLab._family_available.size"
         },
         {
           "kind": "function",
-          "line": 350,
+          "line": 372,
           "name": "AutonomousLab.propose"
         },
         {
           "kind": "function",
-          "line": 476,
+          "line": 498,
           "name": "AutonomousLab._state"
         },
         {
           "kind": "function",
-          "line": 477,
+          "line": 499,
           "name": "AutonomousLab._state.apply"
         },
         {
           "kind": "function",
-          "line": 488,
+          "line": 510,
           "name": "AutonomousLab._budget"
         },
         {
           "kind": "function",
-          "line": 489,
+          "line": 511,
           "name": "AutonomousLab._budget.apply"
         },
         {
           "kind": "function",
-          "line": 511,
+          "line": 533,
           "name": "AutonomousLab.step"
         },
         {
           "kind": "function",
-          "line": 526,
+          "line": 548,
           "name": "AutonomousLab._step"
         },
         {
           "kind": "function",
-          "line": 576,
+          "line": 598,
           "name": "AutonomousLab._step.current_time"
         },
         {
           "kind": "function",
-          "line": 598,
+          "line": 620,
           "name": "AutonomousLab._step.score"
         },
         {
           "kind": "function",
-          "line": 694,
+          "line": 716,
           "name": "AutonomousLab._step.fund"
         },
         {
           "kind": "function",
-          "line": 768,
+          "line": 790,
           "name": "AutonomousLab.snapshot"
         }
       ],
@@ -9484,7 +9848,7 @@
       ],
       "path": "src/trading/autonomous_lab.py",
       "routes": [],
-      "sha256": "ecf5365440d1f158ca9a271f336e74bd3090a8f8e978afbd77b368d02b498acd"
+      "sha256": "0c501c98c357cc8415bf478cf4c5feecf2f7b284b3a364c21baaf5bd82190612"
     },
     {
       "area": "finance-strategy-experiments",
@@ -13119,6 +13483,8 @@
       "imports": [
         "copy",
         "copy.deepcopy",
+        "trading.autonomous_finance",
+        "trading.autonomous_finance.slots",
         "trading.experiment_registry",
         "trading.experiment_registry.fingerprint",
         "trading.numerical_candidates",
@@ -13128,18 +13494,22 @@
         "trading.paper_engine.D",
         "trading.paper_engine.PaperEngine",
         "trading.paper_engine.account",
+        "trading.paper_learning",
+        "trading.paper_learning.implementation_identity",
         "typing",
         "typing.Any",
         "typing.TYPE_CHECKING"
       ],
       "local_imports": [
+        "src/trading/autonomous_finance.py",
         "src/trading/experiment_registry.py",
         "src/trading/numerical_candidates.py",
-        "src/trading/paper_engine.py"
+        "src/trading/paper_engine.py",
+        "src/trading/paper_learning.py"
       ],
       "path": "src/trading/paper_challengers.py",
       "routes": [],
-      "sha256": "ff9d1a18f0dcaf50334b722a0d134a7b5c49aa0540409a380c2468f3f4d22885"
+      "sha256": "ce7c6a5a02203317a32f734982ef1d76242456839489893251be269a2e8f90d6"
     },
     {
       "area": "finance-paper-accounting",
@@ -13338,137 +13708,137 @@
         },
         {
           "kind": "function",
-          "line": 96,
+          "line": 107,
           "name": "risk_summary"
         },
         {
           "kind": "function",
-          "line": 115,
+          "line": 126,
           "name": "observation_evidence"
         },
         {
           "kind": "function",
-          "line": 132,
+          "line": 143,
           "name": "filters"
         },
         {
           "kind": "function",
-          "line": 159,
+          "line": 170,
           "name": "account"
         },
         {
           "kind": "function",
-          "line": 206,
+          "line": 217,
           "name": "initial_state"
         },
         {
           "kind": "class",
-          "line": 238,
+          "line": 249,
           "name": "PaperEngine"
         },
         {
           "kind": "function",
-          "line": 239,
+          "line": 250,
           "name": "PaperEngine.__init__"
         },
         {
           "kind": "function",
-          "line": 246,
+          "line": 257,
           "name": "PaperEngine.emit"
         },
         {
           "kind": "function",
-          "line": 287,
+          "line": 298,
           "name": "PaperEngine.line"
         },
         {
           "kind": "function",
-          "line": 290,
+          "line": 301,
           "name": "PaperEngine.record_futures_context"
         },
         {
           "kind": "function",
-          "line": 343,
+          "line": 354,
           "name": "PaperEngine.seed"
         },
         {
           "kind": "function",
-          "line": 361,
+          "line": 372,
           "name": "PaperEngine.universe_experiment"
         },
         {
           "kind": "function",
-          "line": 397,
+          "line": 408,
           "name": "PaperEngine.cancel"
         },
         {
           "kind": "function",
-          "line": 411,
+          "line": 422,
           "name": "PaperEngine.value"
         },
         {
           "kind": "function",
-          "line": 471,
+          "line": 482,
           "name": "PaperEngine.fill"
         },
         {
           "kind": "function",
-          "line": 639,
+          "line": 650,
           "name": "PaperEngine.enter"
         },
         {
           "kind": "function",
-          "line": 788,
+          "line": 799,
           "name": "PaperEngine.exit_position"
         },
         {
           "kind": "function",
-          "line": 890,
+          "line": 901,
           "name": "PaperEngine.failure_review"
         },
         {
           "kind": "function",
-          "line": 978,
+          "line": 989,
           "name": "PaperEngine.review"
         },
         {
           "kind": "function",
-          "line": 1125,
+          "line": 1136,
           "name": "PaperEngine.campaign_frames"
         },
         {
           "kind": "function",
-          "line": 1147,
+          "line": 1158,
           "name": "PaperEngine.tick_account"
         },
         {
           "kind": "function",
-          "line": 1245,
+          "line": 1256,
           "name": "PaperEngine.tick"
         },
         {
           "kind": "function",
-          "line": 1328,
+          "line": 1339,
           "name": "PaperEngine.set_economics"
         },
         {
           "kind": "function",
-          "line": 1368,
+          "line": 1379,
           "name": "PaperEngine.adopt_hard_stop"
         },
         {
           "kind": "function",
-          "line": 1394,
+          "line": 1405,
           "name": "PaperEngine.recover_hard_stop"
         },
         {
           "kind": "function",
-          "line": 1418,
+          "line": 1429,
           "name": "PaperEngine.assert_account"
         },
         {
           "kind": "function",
-          "line": 1426,
+          "line": 1437,
           "name": "PaperEngine.assert_invariants"
         }
       ],
@@ -13508,6 +13878,8 @@
         "trading.paper_diagnostics.tick_diagnostic",
         "trading.paper_economics",
         "trading.paper_economics.observe",
+        "trading.paper_learning",
+        "trading.paper_learning.implementation_identity",
         "trading.paper_strategy",
         "trading.paper_strategy.VARIANTS",
         "trading.redesign_strategy",
@@ -13526,74 +13898,100 @@
         "src/trading/numerical_candidates.py",
         "src/trading/paper_diagnostics.py",
         "src/trading/paper_economics.py",
+        "src/trading/paper_learning.py",
         "src/trading/paper_strategy.py",
         "src/trading/redesign_strategy.py"
       ],
       "path": "src/trading/paper_engine.py",
       "routes": [],
-      "sha256": "149a60c6028518b25ed1e10fc6e4a2c8436cbcbc4d89cacf0979b5f0f8fcfd5b"
+      "sha256": "45711ba9e609c567627cb0742c99fd78be1588163eacbd7c2fa9ae9e34db403c"
     },
     {
       "area": "finance-strategy-experiments",
       "declarations": [
         {
           "kind": "function",
-          "line": 38,
+          "line": 43,
+          "name": "implementation_identity"
+        },
+        {
+          "kind": "function",
+          "line": 66,
+          "name": "require_frozen_strategy"
+        },
+        {
+          "kind": "function",
+          "line": 87,
           "name": "config"
         },
         {
           "kind": "function",
-          "line": 56,
+          "line": 112,
           "name": "drift"
         },
         {
           "kind": "function",
-          "line": 77,
+          "line": 145,
+          "name": "rule_source"
+        },
+        {
+          "kind": "function",
+          "line": 197,
+          "name": "rule_offer"
+        },
+        {
+          "kind": "function",
+          "line": 246,
+          "name": "admit_rule"
+        },
+        {
+          "kind": "function",
+          "line": 325,
           "name": "matched_control"
         },
         {
           "kind": "function",
-          "line": 133,
+          "line": 406,
           "name": "hac_error"
         },
         {
           "kind": "function",
-          "line": 145,
+          "line": 418,
           "name": "comparison"
         },
         {
           "kind": "function",
-          "line": 216,
+          "line": 504,
           "name": "comparison.compound"
         },
         {
           "kind": "function",
-          "line": 292,
+          "line": 587,
           "name": "report_summary"
         },
         {
           "kind": "function",
-          "line": 312,
+          "line": 607,
           "name": "verify_report"
         },
         {
           "kind": "function",
-          "line": 322,
+          "line": 617,
           "name": "retain_report"
         },
         {
           "kind": "function",
-          "line": 346,
+          "line": 641,
           "name": "designate"
         },
         {
           "kind": "function",
-          "line": 411,
+          "line": 717,
           "name": "rollback"
         },
         {
           "kind": "function",
-          "line": 445,
+          "line": 751,
           "name": "snapshot"
         }
       ],
@@ -13602,12 +14000,22 @@
         "copy",
         "decimal",
         "decimal.Decimal",
+        "functools",
+        "functools.cache",
+        "hashlib",
         "math",
+        "pathlib",
+        "pathlib.Path",
         "statistics",
         "trading.account_purpose",
         "trading.account_purpose.RESEARCH_EXCLUSION",
         "trading.account_purpose.require_research_account",
         "trading.account_purpose.research_account",
+        "trading.autonomous_finance",
+        "trading.autonomous_finance.slots",
+        "trading.autonomous_spec",
+        "trading.autonomous_spec.LabProposal",
+        "trading.autonomous_spec.RuleSpec",
         "trading.experiment_registry",
         "trading.experiment_registry.fingerprint",
         "trading.numerical_candidates",
@@ -13615,19 +14023,27 @@
         "trading.paper_engine",
         "trading.paper_engine.PaperEngine",
         "trading.paper_engine.account",
+        "trading.paper_strategy",
+        "trading.paper_strategy.VARIANTS",
+        "trading.redesign_strategy",
+        "trading.redesign_strategy.STRATEGIES",
         "typing",
         "typing.Any",
         "typing.TYPE_CHECKING"
       ],
       "local_imports": [
         "src/trading/account_purpose.py",
+        "src/trading/autonomous_finance.py",
+        "src/trading/autonomous_spec.py",
         "src/trading/experiment_registry.py",
         "src/trading/numerical_candidates.py",
-        "src/trading/paper_engine.py"
+        "src/trading/paper_engine.py",
+        "src/trading/paper_strategy.py",
+        "src/trading/redesign_strategy.py"
       ],
       "path": "src/trading/paper_learning.py",
       "routes": [],
-      "sha256": "5d8323298b6ddfd0df9d4fee7ee1aa66bafe6ff665393c92f683e3118ab647d1"
+      "sha256": "8b21c9ac0319ac2e224df29846cce50827f7868f4c9cb742ff42900865a244bd"
     },
     {
       "area": "finance-paper-accounting",
@@ -13678,177 +14094,187 @@
         },
         {
           "kind": "function",
-          "line": 57,
+          "line": 60,
           "name": "PaperRuntime.memory_book"
         },
         {
           "kind": "function",
-          "line": 60,
+          "line": 63,
           "name": "PaperRuntime.replacement_study"
         },
         {
           "kind": "function",
-          "line": 69,
+          "line": 72,
           "name": "PaperRuntime.lab_history"
         },
         {
           "kind": "function",
-          "line": 100,
+          "line": 103,
           "name": "PaperRuntime.numerical_study"
         },
         {
           "kind": "function",
-          "line": 215,
+          "line": 218,
           "name": "PaperRuntime.forward_admit"
         },
         {
           "kind": "function",
-          "line": 225,
+          "line": 228,
           "name": "PaperRuntime.collect_candles"
         },
         {
           "kind": "function",
-          "line": 247,
+          "line": 250,
           "name": "PaperRuntime.collect"
         },
         {
           "kind": "function",
-          "line": 337,
+          "line": 340,
           "name": "PaperRuntime.run"
         },
         {
           "kind": "function",
-          "line": 361,
+          "line": 364,
           "name": "PaperRuntime.run.apply"
         },
         {
           "kind": "function",
-          "line": 398,
+          "line": 401,
           "name": "PaperRuntime.snapshot"
         },
         {
           "kind": "function",
-          "line": 471,
+          "line": 475,
           "name": "PaperRuntime.set_paused"
         },
         {
           "kind": "function",
-          "line": 472,
+          "line": 476,
           "name": "PaperRuntime.set_paused.apply"
         },
         {
           "kind": "function",
-          "line": 485,
+          "line": 489,
           "name": "PaperRuntime.control_frames"
         },
         {
           "kind": "function",
-          "line": 488,
+          "line": 492,
           "name": "PaperRuntime.campaign_create"
         },
         {
           "kind": "function",
-          "line": 496,
+          "line": 500,
           "name": "PaperRuntime.require_healthy_control"
         },
         {
           "kind": "function",
-          "line": 500,
+          "line": 504,
           "name": "PaperRuntime.diagnostic_entries_allowed"
         },
         {
           "kind": "function",
-          "line": 505,
+          "line": 509,
           "name": "PaperRuntime.diagnostic_snapshot"
         },
         {
           "kind": "function",
-          "line": 540,
+          "line": 544,
           "name": "PaperRuntime._transact_state"
         },
         {
           "kind": "function",
-          "line": 546,
+          "line": 550,
           "name": "PaperRuntime._diagnostic_control"
         },
         {
           "kind": "function",
-          "line": 557,
+          "line": 561,
           "name": "PaperRuntime.diagnostic_create"
         },
         {
           "kind": "function",
-          "line": 567,
+          "line": 571,
           "name": "PaperRuntime.diagnostic_start"
         },
         {
           "kind": "function",
-          "line": 583,
+          "line": 587,
           "name": "PaperRuntime.diagnostic_stop"
         },
         {
           "kind": "function",
-          "line": 592,
+          "line": 596,
           "name": "PaperRuntime.learning_snapshot"
         },
         {
           "kind": "function",
-          "line": 597,
+          "line": 601,
           "name": "PaperRuntime.forward_control"
         },
         {
           "kind": "function",
-          "line": 605,
+          "line": 609,
+          "name": "PaperRuntime.qualify_rule"
+        },
+        {
+          "kind": "function",
+          "line": 630,
+          "name": "PaperRuntime.qualify_rule.apply"
+        },
+        {
+          "kind": "function",
+          "line": 647,
           "name": "PaperRuntime.learning_report"
         },
         {
           "kind": "function",
-          "line": 653,
+          "line": 695,
           "name": "PaperRuntime.retained_learning_report"
         },
         {
           "kind": "function",
-          "line": 664,
+          "line": 706,
           "name": "PaperRuntime.learning_role"
         },
         {
           "kind": "function",
-          "line": 682,
+          "line": 724,
           "name": "PaperRuntime.account_control"
         },
         {
           "kind": "function",
-          "line": 692,
+          "line": 734,
           "name": "PaperRuntime.strategy_change"
         },
         {
           "kind": "function",
-          "line": 698,
+          "line": 740,
           "name": "PaperRuntime.strategy_change.apply"
         },
         {
           "kind": "function",
-          "line": 724,
+          "line": 766,
           "name": "PaperRuntime.strategy_receipt"
         },
         {
           "kind": "function",
-          "line": 733,
+          "line": 775,
           "name": "PaperRuntime.risk_control"
         },
         {
           "kind": "function",
-          "line": 738,
+          "line": 780,
           "name": "PaperRuntime.risk_control.apply"
         },
         {
           "kind": "function",
-          "line": 753,
+          "line": 795,
           "name": "PaperRuntime.economics_control"
         },
         {
           "kind": "function",
-          "line": 760,
+          "line": 802,
           "name": "PaperRuntime.economics_control.apply"
         }
       ],
@@ -13873,6 +14299,8 @@
         "trading.execution_profiles",
         "trading.execution_profiles.PROFILES",
         "trading.execution_profiles.execution",
+        "trading.experiment_registry",
+        "trading.experiment_registry.fingerprint",
         "trading.market",
         "trading.market.parse_book",
         "trading.market.parse_instruments",
@@ -13900,11 +14328,14 @@
         "trading.paper_engine.fresh_frame",
         "trading.paper_engine.risk_summary",
         "trading.paper_learning",
+        "trading.paper_learning.admit_rule",
         "trading.paper_learning.comparison",
         "trading.paper_learning.designate",
+        "trading.paper_learning.implementation_identity",
         "trading.paper_learning.matched_control",
         "trading.paper_learning.retain_report",
         "trading.paper_learning.rollback",
+        "trading.paper_learning.rule_source",
         "trading.paper_learning.snapshot",
         "trading.paper_store",
         "trading.paper_store.PaperStore",
@@ -13936,6 +14367,7 @@
         "src/trading/autonomous_spec.py",
         "src/trading/evidence_runtime.py",
         "src/trading/execution_profiles.py",
+        "src/trading/experiment_registry.py",
         "src/trading/market.py",
         "src/trading/memory_quality.py",
         "src/trading/numerical_candidates.py",
@@ -13956,7 +14388,7 @@
       ],
       "path": "src/trading/paper_runtime.py",
       "routes": [],
-      "sha256": "70da9cecefd10805d1f0750d5b2030a81402db1af4317e4f6b0d041ef0a02128"
+      "sha256": "f30309fbe616a4ca8ab3cad68b8778c9bd7fd431d8bcc81ed27aafe4909d7c81"
     },
     {
       "area": "finance-paper-accounting",
@@ -13973,162 +14405,167 @@
         },
         {
           "kind": "function",
-          "line": 82,
+          "line": 84,
           "name": "load_dsn"
         },
         {
           "kind": "function",
-          "line": 90,
+          "line": 92,
           "name": "_projection_float"
         },
         {
           "kind": "class",
-          "line": 102,
+          "line": 104,
           "name": "PaperStore"
         },
         {
           "kind": "function",
-          "line": 103,
+          "line": 105,
           "name": "PaperStore.__init__"
         },
         {
           "kind": "function",
-          "line": 130,
+          "line": 132,
           "name": "PaperStore.require_owner"
         },
         {
           "kind": "function",
-          "line": 135,
+          "line": 137,
           "name": "PaperStore.close"
         },
         {
           "kind": "function",
-          "line": 139,
+          "line": 141,
           "name": "PaperStore.projection_cache_info"
         },
         {
           "kind": "function",
-          "line": 150,
+          "line": 152,
           "name": "PaperStore.initialize"
         },
         {
           "kind": "function",
-          "line": 165,
+          "line": 167,
           "name": "PaperStore._append"
         },
         {
           "kind": "function",
-          "line": 219,
+          "line": 221,
           "name": "PaperStore.transact"
         },
         {
           "kind": "function",
-          "line": 232,
+          "line": 234,
           "name": "PaperStore.transact_with_receipt"
         },
         {
           "kind": "function",
-          "line": 259,
+          "line": 261,
           "name": "PaperStore._transact"
         },
         {
           "kind": "function",
-          "line": 340,
+          "line": 342,
           "name": "PaperStore._transact.encode_projection"
         },
         {
           "kind": "function",
-          "line": 394,
+          "line": 396,
           "name": "PaperStore.read"
         },
         {
           "kind": "function",
-          "line": 403,
+          "line": 405,
           "name": "PaperStore.lab_reservation"
         },
         {
           "kind": "function",
-          "line": 416,
+          "line": 418,
           "name": "PaperStore.lab_reserve"
         },
         {
           "kind": "function",
-          "line": 427,
+          "line": 429,
           "name": "PaperStore.lab_reserve.apply"
         },
         {
           "kind": "function",
-          "line": 447,
+          "line": 449,
           "name": "PaperStore.lab_history"
         },
         {
           "kind": "function",
-          "line": 469,
+          "line": 471,
+          "name": "PaperStore.retained_trial"
+        },
+        {
+          "kind": "function",
+          "line": 494,
           "name": "PaperStore.archived_account"
         },
         {
           "kind": "function",
-          "line": 476,
+          "line": 501,
           "name": "PaperStore.learning_report"
         },
         {
           "kind": "function",
-          "line": 490,
+          "line": 515,
           "name": "PaperStore.bars"
         },
         {
           "kind": "function",
-          "line": 524,
+          "line": 549,
           "name": "PaperStore.recent"
         },
         {
           "kind": "function",
-          "line": 534,
+          "line": 559,
           "name": "PaperStore.numerical_inputs"
         },
         {
           "kind": "function",
-          "line": 543,
+          "line": 568,
           "name": "PaperStore.forward_windows"
         },
         {
           "kind": "function",
-          "line": 556,
+          "line": 581,
           "name": "PaperStore.export"
         },
         {
           "kind": "function",
-          "line": 576,
+          "line": 601,
           "name": "PaperStore.trade_history"
         },
         {
           "kind": "function",
-          "line": 644,
+          "line": 669,
           "name": "PaperStore.research_account"
         },
         {
           "kind": "function",
-          "line": 691,
+          "line": 716,
           "name": "PaperStore.research_events"
         },
         {
           "kind": "function",
-          "line": 715,
+          "line": 740,
           "name": "PaperStore.research_cost_groups"
         },
         {
           "kind": "function",
-          "line": 735,
+          "line": 760,
           "name": "PaperStore.research_outcomes"
         },
         {
           "kind": "function",
-          "line": 797,
+          "line": 822,
           "name": "PaperStore.reconcile"
         },
         {
           "kind": "function",
-          "line": 852,
+          "line": 877,
           "name": "PaperStore.storage_usage"
         }
       ],
@@ -14186,7 +14623,7 @@
       ],
       "path": "src/trading/paper_store.py",
       "routes": [],
-      "sha256": "12d95b59c07b6848d9b993934744e053951b20533c4e4fe7474d358ba395b897"
+      "sha256": "d279f57399280765e546fb32c0f974184ef167479ab04492001a9132f405a369"
     },
     {
       "area": "finance-paper-accounting",
@@ -14405,12 +14842,12 @@
         },
         {
           "kind": "function",
-          "line": 881,
+          "line": 885,
           "name": "PatternComparisons.prepare"
         },
         {
           "kind": "function",
-          "line": 927,
+          "line": 931,
           "name": "PatternComparisons._prepare_new"
         }
       ],
@@ -14482,7 +14919,7 @@
       ],
       "path": "src/trading/pattern_comparisons.py",
       "routes": [],
-      "sha256": "9d77528d56ec1ad4e39a69655b3f01ed9c72837026b117ef3ef9aaad46481170"
+      "sha256": "f4434a765cb6f7172d69716fed8f3fa361c11443e2d2bc945e9f6753ec40c6da"
     },
     {
       "area": "market-market-data",
@@ -15067,72 +15504,97 @@
         {
           "kind": "function",
           "line": 929,
+          "name": "PeftPaperPilotRoles.reviewed_scope"
+        },
+        {
+          "kind": "function",
+          "line": 972,
+          "name": "PeftPaperPilotRoles.control_revision"
+        },
+        {
+          "kind": "function",
+          "line": 986,
+          "name": "PeftPaperPilotRoles.start_reviewed_scope"
+        },
+        {
+          "kind": "function",
+          "line": 999,
           "name": "PeftPaperPilotRoles.cancel"
         },
         {
           "kind": "function",
-          "line": 934,
+          "line": 1004,
           "name": "PeftPaperPilotRoles.set_enabled"
         },
         {
           "kind": "function",
-          "line": 974,
+          "line": 1044,
           "name": "PeftPaperPilotRoles.development_admit"
         },
         {
           "kind": "function",
-          "line": 977,
+          "line": 1047,
           "name": "PeftPaperPilotRoles._paper_guard"
         },
         {
           "kind": "function",
-          "line": 1029,
+          "line": 1099,
           "name": "PeftPaperPilotRoles._guard_authority"
         },
         {
           "kind": "function",
-          "line": 1049,
+          "line": 1119,
           "name": "PeftPaperPilotRoles.admit"
         },
         {
           "kind": "function",
-          "line": 1056,
+          "line": 1126,
           "name": "PeftPaperPilotRoles.preflight"
         },
         {
           "kind": "function",
-          "line": 1063,
+          "line": 1133,
           "name": "PeftPaperPilotRoles.instance_preflight"
         },
         {
           "kind": "function",
-          "line": 1104,
+          "line": 1174,
           "name": "PeftPaperPilotRoles.infer"
         },
         {
           "kind": "function",
-          "line": 1107,
+          "line": 1177,
           "name": "PeftPaperPilotRoles.infer_reserved"
         },
         {
           "kind": "function",
-          "line": 1117,
+          "line": 1187,
           "name": "PeftPaperPilotRoles._verify_finite_dispatch"
         },
         {
           "kind": "function",
-          "line": 1183,
+          "line": 1253,
           "name": "PeftPaperPilotRoles._dispatch_checkpoint"
         },
         {
           "kind": "function",
-          "line": 1187,
+          "line": 1257,
           "name": "PeftPaperPilotRoles._infer"
         },
         {
           "kind": "function",
-          "line": 1250,
+          "line": 1320,
           "name": "local_role_transport"
+        },
+        {
+          "kind": "function",
+          "line": 1334,
+          "name": "prepare_paper_scope"
+        },
+        {
+          "kind": "function",
+          "line": 1380,
+          "name": "configure_paper_scope"
         }
       ],
       "guide": "model-admission.md",
@@ -15204,7 +15666,7 @@
       ],
       "path": "src/trading/peft_role_model.py",
       "routes": [],
-      "sha256": "8c153b79521703e7154b4c3b1f85eff2120f50c3a99415d761e9f6b324e10784"
+      "sha256": "cb89b60618e88f7a50cb6cd8cfffe54a6a569bc0fb1b2a1324231784bed6f509"
     },
     {
       "area": "research-model-admission",
@@ -16748,6 +17210,100 @@
       "declarations": [
         {
           "kind": "class",
+          "line": 15,
+          "name": "SupervisedStart"
+        },
+        {
+          "kind": "class",
+          "line": 26,
+          "name": "ModelConnection"
+        },
+        {
+          "kind": "class",
+          "line": 31,
+          "name": "ModelConfiguration"
+        },
+        {
+          "kind": "function",
+          "line": 36,
+          "name": "preview_configuration"
+        },
+        {
+          "kind": "function",
+          "line": 55,
+          "name": "observation"
+        },
+        {
+          "kind": "function",
+          "line": 67,
+          "name": "comparison_status"
+        },
+        {
+          "kind": "function",
+          "line": 90,
+          "name": "scanner_status"
+        },
+        {
+          "kind": "function",
+          "line": 110,
+          "name": "scope_status"
+        },
+        {
+          "kind": "function",
+          "line": 124,
+          "name": "research_status"
+        },
+        {
+          "kind": "function",
+          "line": 160,
+          "name": "snapshot"
+        },
+        {
+          "kind": "function",
+          "line": 180,
+          "name": "_missing"
+        },
+        {
+          "kind": "function",
+          "line": 184,
+          "name": "start"
+        }
+      ],
+      "guide": "research-worker.md",
+      "imports": [
+        "collections.abc",
+        "collections.abc.Callable",
+        "pathlib",
+        "pathlib.Path",
+        "psycopg",
+        "pydantic",
+        "pydantic.BaseModel",
+        "pydantic.ConfigDict",
+        "pydantic.Field",
+        "sqlite3",
+        "time",
+        "trading.experiment_registry",
+        "trading.experiment_registry.fingerprint",
+        "trading.peft_role_model",
+        "trading.peft_role_model.PeftPaperPilotRoles",
+        "trading.peft_role_model.prepare_paper_scope",
+        "typing",
+        "typing.Any",
+        "typing.Literal"
+      ],
+      "local_imports": [
+        "src/trading/experiment_registry.py",
+        "src/trading/peft_role_model.py"
+      ],
+      "path": "src/trading/research_overview.py",
+      "routes": [],
+      "sha256": "228b75c03a761dc38f9e03f55c3649c626f925e98f580b59c4262c81f385bf63"
+    },
+    {
+      "area": "research-research-worker",
+      "declarations": [
+        {
+          "kind": "class",
           "line": 27,
           "name": "Answer"
         },
@@ -17912,237 +18468,247 @@
         },
         {
           "kind": "function",
-          "line": 1672,
+          "line": 1700,
           "name": "RoleWorker.view"
         },
         {
           "kind": "function",
-          "line": 1715,
+          "line": 1756,
           "name": "RoleWorker.training_candidate"
         },
         {
           "kind": "function",
-          "line": 1785,
+          "line": 1826,
           "name": "RoleWorker._disclose_outcome"
         },
         {
           "kind": "function",
-          "line": 1794,
+          "line": 1835,
           "name": "RoleWorker.retry"
         },
         {
           "kind": "function",
-          "line": 1872,
+          "line": 1913,
           "name": "RoleWorker._update"
         },
         {
           "kind": "function",
-          "line": 1932,
+          "line": 1973,
           "name": "RoleWorker._pattern_numerical_exposure"
         },
         {
           "kind": "function",
-          "line": 2030,
+          "line": 2071,
           "name": "RoleWorker._current"
         },
         {
           "kind": "function",
-          "line": 2127,
+          "line": 2168,
           "name": "RoleWorker._pattern_shared_outcome"
         },
         {
           "kind": "function",
-          "line": 2174,
+          "line": 2215,
           "name": "RoleWorker._packet"
         },
         {
           "kind": "function",
-          "line": 2506,
+          "line": 2547,
           "name": "RoleWorker._base_packet"
         },
         {
           "kind": "function",
-          "line": 2618,
+          "line": 2659,
           "name": "RoleWorker._capability"
         },
         {
           "kind": "function",
-          "line": 2640,
+          "line": 2681,
           "name": "RoleWorker.component_detail"
         },
         {
           "kind": "function",
-          "line": 2669,
+          "line": 2710,
           "name": "RoleWorker.development_answer"
         },
         {
           "kind": "function",
-          "line": 2817,
+          "line": 2858,
           "name": "RoleWorker._answer"
         },
         {
           "kind": "function",
-          "line": 2994,
+          "line": 3035,
           "name": "RoleWorker.step"
         },
         {
           "kind": "function",
-          "line": 3286,
+          "line": 3327,
           "name": "RoleWorker._owned"
         },
         {
           "kind": "function",
-          "line": 3300,
+          "line": 3341,
           "name": "RoleWorker._archive_evaluation"
         },
         {
           "kind": "function",
-          "line": 3333,
+          "line": 3374,
           "name": "RoleWorker._selection_authority"
         },
         {
           "kind": "function",
-          "line": 3337,
+          "line": 3378,
           "name": "RoleWorker._selection_json"
         },
         {
           "kind": "function",
-          "line": 3340,
+          "line": 3381,
           "name": "RoleWorker._selection_room"
         },
         {
           "kind": "function",
-          "line": 3425,
+          "line": 3466,
           "name": "RoleWorker._selection_source"
         },
         {
           "kind": "function",
-          "line": 3484,
+          "line": 3525,
           "name": "RoleWorker._selection_lesson"
         },
         {
           "kind": "function",
-          "line": 3507,
+          "line": 3548,
           "name": "RoleWorker._pattern_event_identity"
         },
         {
           "kind": "function",
-          "line": 3520,
+          "line": 3561,
           "name": "RoleWorker._pattern_source"
         },
         {
           "kind": "function",
-          "line": 3583,
+          "line": 3624,
           "name": "RoleWorker._check_pattern_selection"
         },
         {
           "kind": "function",
-          "line": 3660,
+          "line": 3701,
           "name": "RoleWorker._pattern_terminal"
         },
         {
           "kind": "function",
-          "line": 3728,
+          "line": 3764,
           "name": "RoleWorker._pattern_learning_record"
         },
         {
           "kind": "function",
-          "line": 3738,
+          "line": 3774,
+          "name": "RoleWorker._verified_pattern_learning_record"
+        },
+        {
+          "kind": "function",
+          "line": 3801,
+          "name": "RoleWorker._pattern_learning_record_matches"
+        },
+        {
+          "kind": "function",
+          "line": 3805,
           "name": "RoleWorker._pattern_learning_body"
         },
         {
           "kind": "function",
-          "line": 3795,
+          "line": 3862,
           "name": "RoleWorker._pattern_predecessor_state"
         },
         {
           "kind": "function",
-          "line": 3817,
+          "line": 3884,
           "name": "RoleWorker._pattern_root_selection"
         },
         {
           "kind": "function",
-          "line": 3846,
+          "line": 3913,
           "name": "RoleWorker._pattern_learning_prior"
         },
         {
           "kind": "function",
-          "line": 4003,
+          "line": 4064,
           "name": "RoleWorker._check_pattern_learning"
         },
         {
           "kind": "function",
-          "line": 4057,
+          "line": 4115,
           "name": "RoleWorker._pattern_learning_admission"
         },
         {
           "kind": "function",
-          "line": 4064,
+          "line": 4122,
           "name": "RoleWorker._pattern_learning_admission.check"
         },
         {
           "kind": "function",
-          "line": 4090,
+          "line": 4148,
           "name": "RoleWorker._select_pattern_question"
         },
         {
           "kind": "function",
-          "line": 4403,
+          "line": 4461,
           "name": "RoleWorker._check_selection"
         },
         {
           "kind": "function",
-          "line": 4440,
+          "line": 4498,
           "name": "RoleWorker._selection_source_keys"
         },
         {
           "kind": "function",
-          "line": 4455,
+          "line": 4513,
           "name": "RoleWorker.select_fresh_question"
         },
         {
           "kind": "function",
-          "line": 4573,
+          "line": 4631,
           "name": "RoleWorker.question_selection_status"
         },
         {
           "kind": "function",
-          "line": 4630,
+          "line": 4688,
           "name": "RoleWorker.run"
         },
         {
           "kind": "function",
-          "line": 4644,
+          "line": 4702,
           "name": "RoleWorker._supervision"
         },
         {
           "kind": "function",
-          "line": 4672,
+          "line": 4730,
           "name": "RoleWorker._maintain"
         },
         {
           "kind": "function",
-          "line": 4710,
+          "line": 4768,
           "name": "RoleWorker.select_followups"
         },
         {
           "kind": "function",
-          "line": 4821,
+          "line": 4879,
           "name": "RoleWorker.resume_sources"
         },
         {
           "kind": "function",
-          "line": 4869,
+          "line": 4927,
           "name": "RoleWorker._resume_source"
         },
         {
           "kind": "function",
-          "line": 4960,
+          "line": 5018,
           "name": "RoleWorker._defer_source"
         },
         {
           "kind": "function",
-          "line": 4972,
+          "line": 5030,
           "name": "RoleWorker.selection_metrics"
         }
       ],
@@ -18277,7 +18843,7 @@
       ],
       "path": "src/trading/role_worker.py",
       "routes": [],
-      "sha256": "36167dea8f4f39afe8af78289fefeb7c9ee6f75e37969e3e913cce4424d3e35a"
+      "sha256": "f88b4b8b69358e7b497d37fefb023ce96a28ef3813c3a87aa74659c7140d5735"
     },
     {
       "area": "finance-strategy-experiments",
@@ -20699,6 +21265,198 @@
       "guide": "verification.md",
       "imports": [
         "node:assert/strict",
+        "node:fs",
+        "node:path",
+        "playwright"
+      ],
+      "local_imports": [],
+      "path": "tests/browser/research_product.cjs",
+      "routes": [],
+      "sha256": "56a6a3cef56e7263c39fea7b33a4f11adcdf4161ab8a6b844413d79c38410f37"
+    },
+    {
+      "area": "verification-verification",
+      "declarations": [
+        {
+          "kind": "function",
+          "line": 43,
+          "name": "main"
+        },
+        {
+          "kind": "function",
+          "line": 148,
+          "name": "main.hashes"
+        },
+        {
+          "kind": "function",
+          "line": 164,
+          "name": "main.attach_model"
+        },
+        {
+          "kind": "function",
+          "line": 174,
+          "name": "main.financial_tick"
+        },
+        {
+          "kind": "function",
+          "line": 195,
+          "name": "main.drive"
+        },
+        {
+          "kind": "function",
+          "line": 230,
+          "name": "main.probe"
+        },
+        {
+          "kind": "function",
+          "line": 261,
+          "name": "main.lifespan"
+        },
+        {
+          "kind": "function",
+          "line": 281,
+          "name": "main.lifespan.setup"
+        },
+        {
+          "kind": "function",
+          "line": 319,
+          "name": "main.qa_receipts"
+        },
+        {
+          "kind": "function",
+          "line": 350,
+          "name": "main.authorize"
+        },
+        {
+          "kind": "function",
+          "line": 354,
+          "name": "main.pause_driver"
+        },
+        {
+          "kind": "function",
+          "line": 363,
+          "name": "main.read_probe"
+        },
+        {
+          "kind": "function",
+          "line": 368,
+          "name": "main.control"
+        }
+      ],
+      "guide": "verification.md",
+      "imports": [
+        "argparse",
+        "asyncio",
+        "contextlib",
+        "contextlib.asynccontextmanager",
+        "contextlib.suppress",
+        "copy",
+        "fastapi",
+        "fastapi.HTTPException",
+        "fastapi.Header",
+        "hashlib",
+        "json",
+        "os",
+        "pathlib",
+        "pathlib.Path",
+        "psycopg",
+        "psycopg.conninfo",
+        "psycopg.conninfo.conninfo_to_dict",
+        "psycopg.conninfo.make_conninfo",
+        "psycopg.sql",
+        "pytest",
+        "starlette.responses",
+        "starlette.responses.JSONResponse",
+        "sys",
+        "test_autonomous_lab",
+        "test_autonomous_lab.bars_at",
+        "test_autonomous_lab.close_window",
+        "test_daily_pattern_analyzer",
+        "test_daily_pattern_analyzer.advance",
+        "test_development_latency_measurement",
+        "test_development_latency_measurement.protected_status",
+        "test_pattern_next_method_worker",
+        "test_pattern_next_method_worker.MethodTransport",
+        "test_pattern_role_worker",
+        "test_pattern_role_worker.build_pattern_worker_fixture",
+        "test_pattern_role_worker.publish_native_event",
+        "test_peft_development",
+        "test_peft_development.declared",
+        "test_role_question_selection",
+        "test_role_question_selection.causal_frame",
+        "time",
+        "trading",
+        "trading.api",
+        "trading.api.create_app",
+        "trading.autonomous_finance",
+        "trading.autonomous_lab",
+        "trading.autonomous_lab.AutonomousLab",
+        "trading.autonomous_spec",
+        "trading.autonomous_spec.LabPolicy",
+        "trading.config",
+        "trading.config.Settings",
+        "trading.engine_diagnostics",
+        "trading.engine_diagnostics.EngineWorkPressurePolicy",
+        "trading.experiment_registry",
+        "trading.experiment_registry.ExperimentRegistry",
+        "trading.financial_readback",
+        "trading.financial_readback.FinancialReadback",
+        "trading.local_role_model",
+        "trading.local_role_model.LocalRoles",
+        "trading.local_role_model.development_latency_observation",
+        "trading.paper_store",
+        "trading.paper_store.load_dsn",
+        "trading.pattern_comparisons",
+        "trading.pattern_comparisons.PatternComparisons",
+        "trading.peft_role_model",
+        "trading.peft_role_model.PeftPaperPilotRoles",
+        "trading.peft_role_model.local_role_transport",
+        "trading.research_notices",
+        "trading.research_notices.ResearchNotices",
+        "trading.role_worker",
+        "trading.role_worker.RoleWorker",
+        "uuid",
+        "uvicorn"
+      ],
+      "local_imports": [
+        "src/trading/api.py",
+        "src/trading/autonomous_finance.py",
+        "src/trading/autonomous_lab.py",
+        "src/trading/autonomous_spec.py",
+        "src/trading/config.py",
+        "src/trading/engine_diagnostics.py",
+        "src/trading/experiment_registry.py",
+        "src/trading/financial_readback.py",
+        "src/trading/local_role_model.py",
+        "src/trading/paper_store.py",
+        "src/trading/pattern_comparisons.py",
+        "src/trading/peft_role_model.py",
+        "src/trading/research_notices.py",
+        "src/trading/role_worker.py"
+      ],
+      "path": "tests/browser/research_product_server.py",
+      "routes": [
+        {
+          "handler": "read_probe",
+          "line": 363,
+          "method": "GET",
+          "route": "/__qa/probe"
+        },
+        {
+          "handler": "control",
+          "line": 368,
+          "method": "POST",
+          "route": "/__qa/{action}"
+        }
+      ],
+      "sha256": "068b7edde2b6d55022e31a1913c0bdd64b6338091e78fdb6a047c63b0f0c7b62"
+    },
+    {
+      "area": "verification-verification",
+      "declarations": [],
+      "guide": "verification.md",
+      "imports": [
+        "node:assert/strict",
         "node:crypto",
         "node:fs",
         "node:path",
@@ -20868,7 +21626,7 @@
       "local_imports": [],
       "path": "tests/browser/role_pattern_evidence.cjs",
       "routes": [],
-      "sha256": "edc7dc51f129790f3fc8ba37ea702c0f1775cdd70cb461fe346cf252fd164f45"
+      "sha256": "27ae8f5d62abdbc5fb65eb1bfb0b8d2bb2599ca31b78206ff8fa50b46490175d"
     },
     {
       "area": "verification-verification",
@@ -28005,63 +28763,108 @@
       "declarations": [
         {
           "kind": "function",
-          "line": 27,
+          "line": 30,
           "name": "candidate_state"
         },
         {
           "kind": "function",
-          "line": 38,
+          "line": 41,
           "name": "windows"
         },
         {
           "kind": "function",
-          "line": 68,
+          "line": 71,
           "name": "test_matched_control_is_cash_isolated_idempotent_and_uses_declared_universe"
         },
         {
           "kind": "function",
-          "line": 82,
-          "name": "test_scored_rule_candidate_exposes_missing_handoff_without_qualification"
+          "line": 85,
+          "name": "rule_fixture"
         },
         {
           "kind": "function",
-          "line": 109,
+          "line": 135,
+          "name": "test_rule_source_funds_a_separate_exact_pair_without_changing_originals"
+        },
+        {
+          "kind": "function",
+          "line": 192,
+          "name": "test_rule_qualification_refusals_preserve_all_funding_and_history"
+        },
+        {
+          "kind": "function",
+          "line": 223,
+          "name": "test_rule_qualification_policy_stays_prospective_and_reversible"
+        },
+        {
+          "kind": "function",
+          "line": 259,
+          "name": "test_designation_rechecks_all_frozen_strategy_and_reference_configurations"
+        },
+        {
+          "kind": "function",
+          "line": 274,
           "name": "test_insufficient_synthetic_reused_negative_and_exceptional_data_never_promotes"
         },
         {
           "kind": "function",
-          "line": 136,
+          "line": 301,
           "name": "test_positive_contract_requires_explicit_approval_and_rollback_preserves_all_accounts"
         },
         {
           "kind": "function",
-          "line": 163,
+          "line": 328,
           "name": "test_drift_expired_report_version_and_unmatched_instrument_fail_closed"
         },
         {
           "kind": "function",
-          "line": 187,
+          "line": 352,
           "name": "test_report_journal_restart_and_loss_preservation"
         },
         {
           "kind": "function",
-          "line": 191,
+          "line": 356,
           "name": "test_report_journal_restart_and_loss_preservation.setup"
         },
         {
           "kind": "function",
-          "line": 218,
+          "line": 383,
           "name": "test_normal_api_retains_no_promotion_export_and_consumption"
         },
         {
           "kind": "function",
-          "line": 228,
+          "line": 393,
           "name": "test_normal_api_retains_no_promotion_export_and_consumption.setup"
         },
         {
           "kind": "function",
-          "line": 270,
+          "line": 435,
           "name": "test_numerical_incumbent_control_is_an_exact_frozen_copy"
+        },
+        {
+          "kind": "function",
+          "line": 457,
+          "name": "test_native_retired_rule_source_api_recovers_same_funding_after_lost_ack"
+        },
+        {
+          "kind": "function",
+          "line": 514,
+          "name": "test_native_retired_rule_source_api_recovers_same_funding_after_lost_ack.lose_ack"
+        },
+        {
+          "kind": "function",
+          "line": 562,
+          "name": "test_unavailable_implementation_does_not_prevent_financial_management"
+        },
+        {
+          "kind": "function",
+          "line": 574,
+          "name": "test_unavailable_implementation_does_not_prevent_financial_management.unavailable"
+        },
+        {
+          "kind": "function",
+          "line": 592,
+          "name": "test_changed_implementation_refuses_new_entries_and_designation_only"
         }
       ],
       "guide": "verification.md",
@@ -28069,17 +28872,30 @@
         "copy",
         "fastapi.testclient",
         "fastapi.testclient.TestClient",
+        "pathlib",
+        "pathlib.Path",
+        "psycopg",
         "pytest",
+        "test_autonomous_lab",
+        "test_autonomous_lab.admit",
+        "test_autonomous_lab.close_window",
+        "test_autonomous_lab.make_lab",
         "test_numerical_candidates",
         "test_numerical_candidates.fixture_artifact",
         "test_paper_engine",
         "test_paper_engine.START",
+        "test_paper_runtime",
+        "test_paper_runtime.ReadOnlyStub",
         "test_paper_store",
         "test_paper_store.pg_store",
         "time",
+        "trading",
         "trading.api",
         "trading.api.create_app",
+        "trading.autonomous_finance",
         "trading.autonomous_spec",
+        "trading.autonomous_spec.LabPolicy",
+        "trading.autonomous_spec.LabProposal",
         "trading.autonomous_spec.RuleSpec",
         "trading.config",
         "trading.config.Settings",
@@ -28089,22 +28905,28 @@
         "trading.paper_challengers.admit",
         "trading.paper_economics",
         "trading.paper_economics.new_benchmark",
+        "trading.paper_economics.sample",
         "trading.paper_engine",
         "trading.paper_engine.PaperEngine",
+        "trading.paper_engine.entry_reason",
         "trading.paper_engine.initial_state",
         "trading.paper_learning",
+        "trading.paper_learning.admit_rule",
         "trading.paper_learning.comparison",
         "trading.paper_learning.designate",
         "trading.paper_learning.drift",
+        "trading.paper_learning.implementation_identity",
         "trading.paper_learning.matched_control",
         "trading.paper_learning.retain_report",
         "trading.paper_learning.rollback",
+        "trading.paper_learning.rule_offer",
         "trading.paper_learning.snapshot",
         "trading.paper_runtime",
         "trading.paper_runtime.PaperRuntime"
       ],
       "local_imports": [
         "src/trading/api.py",
+        "src/trading/autonomous_finance.py",
         "src/trading/autonomous_spec.py",
         "src/trading/config.py",
         "src/trading/experiment_registry.py",
@@ -28116,7 +28938,7 @@
       ],
       "path": "tests/test_paper_learning.py",
       "routes": [],
-      "sha256": "cf805d7a3795cf276d98bfdbc191b06c38fa06750eb987654cdee2d8e4be5aa4"
+      "sha256": "e032710cba42a9134ff86158a0357d04948f7b7e905ab693dce73edc6ee5ba41"
     },
     {
       "area": "verification-verification",
@@ -30127,118 +30949,187 @@
       "declarations": [
         {
           "kind": "class",
-          "line": 28,
+          "line": 33,
           "name": "LearningTransport"
         },
         {
           "kind": "function",
-          "line": 29,
+          "line": 34,
           "name": "LearningTransport.__init__"
         },
         {
           "kind": "function",
-          "line": 35,
+          "line": 40,
           "name": "LearningTransport.preflight"
         },
         {
           "kind": "function",
-          "line": 68,
+          "line": 73,
           "name": "LearningTransport.infer"
         },
         {
           "kind": "function",
-          "line": 76,
+          "line": 81,
           "name": "fixture"
         },
         {
           "kind": "function",
-          "line": 89,
+          "line": 94,
           "name": "mature"
         },
         {
           "kind": "function",
-          "line": 159,
+          "line": 164,
           "name": "later"
         },
         {
           "kind": "function",
-          "line": 169,
+          "line": 174,
           "name": "test_two_actual_software_generations_reuse_exact_mature_score_without_second_dispatch"
         },
         {
           "kind": "function",
-          "line": 313,
+          "line": 318,
           "name": "test_first_question_and_genuinely_unfunded_no_change_have_explicit_absence"
         },
         {
           "kind": "function",
-          "line": 327,
+          "line": 332,
           "name": "test_missing_expected_mature_lesson_refuses_without_model_or_new_root"
         },
         {
           "kind": "function",
-          "line": 345,
+          "line": 350,
           "name": "test_archived_predecessor_restart_exact_lesson_and_duplicate_coalesce"
         },
         {
           "kind": "function",
-          "line": 366,
+          "line": 371,
+          "name": "test_selected_successor_survives_predecessor_archive_then_restart"
+        },
+        {
+          "kind": "function",
+          "line": 397,
+          "name": "test_verified_archive_during_successor_publication_preserves_original_source"
+        },
+        {
+          "kind": "function",
+          "line": 404,
+          "name": "test_verified_archive_during_successor_publication_preserves_original_source.archive_after_inputs"
+        },
+        {
+          "kind": "function",
+          "line": 418,
+          "name": "test_selected_successor_refuses_unverified_archived_predecessor"
+        },
+        {
+          "kind": "function",
+          "line": 437,
+          "name": "test_selected_successor_refuses_unverified_archived_predecessor.damaged"
+        },
+        {
+          "kind": "function",
+          "line": 457,
+          "name": "test_preparation_and_original_history_archive_share_one_lock_order"
+        },
+        {
+          "kind": "class",
+          "line": 466,
+          "name": "test_preparation_and_original_history_archive_share_one_lock_order.BoundedLock"
+        },
+        {
+          "kind": "function",
+          "line": 467,
+          "name": "test_preparation_and_original_history_archive_share_one_lock_order.BoundedLock.__enter__"
+        },
+        {
+          "kind": "function",
+          "line": 470,
+          "name": "test_preparation_and_original_history_archive_share_one_lock_order.BoundedLock.__exit__"
+        },
+        {
+          "kind": "function",
+          "line": 480,
+          "name": "test_preparation_and_original_history_archive_share_one_lock_order.borrow"
+        },
+        {
+          "kind": "function",
+          "line": 493,
+          "name": "test_preparation_and_original_history_archive_share_one_lock_order.mark_evaluation"
+        },
+        {
+          "kind": "function",
+          "line": 502,
+          "name": "test_preparation_and_original_history_archive_share_one_lock_order.archive"
+        },
+        {
+          "kind": "function",
+          "line": 508,
+          "name": "test_preparation_and_original_history_archive_share_one_lock_order.admission"
+        },
+        {
+          "kind": "function",
+          "line": 536,
           "name": "test_third_distinct_event_carries_original_mature_source_across_restart"
         },
         {
           "kind": "function",
-          "line": 393,
+          "line": 563,
           "name": "test_inherited_binding_refuses_self_missing_outcome_and_changed_original"
         },
         {
           "kind": "function",
-          "line": 420,
+          "line": 590,
           "name": "test_prior_unavailable_or_future_source_and_protected_outcome_refuse"
         },
         {
           "kind": "function",
-          "line": 451,
+          "line": 621,
           "name": "test_mature_prior_refuses_different_method_cost_reference_or_source_basis"
         },
         {
           "kind": "function",
-          "line": 471,
+          "line": 641,
           "name": "test_learning_link_and_question_publication_roll_back_together"
         },
         {
           "kind": "function",
-          "line": 481,
+          "line": 651,
           "name": "test_learning_link_and_question_publication_roll_back_together.capture"
         },
         {
           "kind": "function",
-          "line": 487,
+          "line": 657,
           "name": "test_learning_link_and_question_publication_roll_back_together.fail"
         },
         {
           "kind": "function",
-          "line": 504,
+          "line": 674,
           "name": "test_publication_rechecks_exact_original_authority_source_and_used_catalog"
         },
         {
           "kind": "function",
-          "line": 514,
+          "line": 684,
           "name": "test_publication_rechecks_exact_original_authority_source_and_used_catalog.changed"
         },
         {
           "kind": "function",
-          "line": 559,
+          "line": 726,
           "name": "test_legacy_pattern_policy_does_not_enter_learning_or_change_packet"
         },
         {
           "kind": "function",
-          "line": 573,
+          "line": 740,
           "name": "test_same_event_and_data_wait_do_not_create_preferred_answer_repeat"
         }
       ],
       "guide": "verification.md",
       "imports": [
         "asyncio",
+        "concurrent.futures",
+        "concurrent.futures.ThreadPoolExecutor",
+        "contextlib",
+        "contextlib.contextmanager",
         "copy",
         "hashlib",
         "json",
@@ -30252,6 +31143,12 @@
         "test_pattern_role_worker.restore_scored_body",
         "test_pattern_role_worker.rows",
         "test_pattern_role_worker.select",
+        "threading",
+        "threading.Event",
+        "threading.RLock",
+        "threading.current_thread",
+        "trading.evidence_runtime",
+        "trading.evidence_runtime.EvidenceRecorder",
         "trading.experiment_registry",
         "trading.experiment_registry.fingerprint",
         "trading.lab_role_contract",
@@ -30263,8 +31160,12 @@
         "trading.paper_economics.sample",
         "trading.paper_engine",
         "trading.paper_engine.account",
+        "trading.pattern_comparisons",
+        "trading.pattern_comparisons.PatternComparisonCommand",
         "trading.peft_role_model",
         "trading.peft_role_model.PATTERN_LEARNING_QUESTION_POLICY",
+        "trading.research_storage",
+        "trading.research_storage.save_plan",
         "trading.role_evidence",
         "trading.role_evidence.pattern_feature",
         "trading.role_evidence.pattern_followup_outcome",
@@ -30274,17 +31175,20 @@
         "trading.role_worker.RoleWorker"
       ],
       "local_imports": [
+        "src/trading/evidence_runtime.py",
         "src/trading/experiment_registry.py",
         "src/trading/lab_role_contract.py",
         "src/trading/paper_economics.py",
         "src/trading/paper_engine.py",
+        "src/trading/pattern_comparisons.py",
         "src/trading/peft_role_model.py",
+        "src/trading/research_storage.py",
         "src/trading/role_evidence.py",
         "src/trading/role_worker.py"
       ],
       "path": "tests/test_pattern_research_learning.py",
       "routes": [],
-      "sha256": "e1f9b3378f023a2fac12051c9eba0eac33602ce2a58541825a29cdb8013ce982"
+      "sha256": "d48c74742e29c42ea5ca0b2af81f3c3a6aa1d3449208c6bdf7a9c475b30c7f42"
     },
     {
       "area": "verification-verification",
@@ -30336,67 +31240,67 @@
         },
         {
           "kind": "function",
-          "line": 205,
+          "line": 206,
           "name": "test_readonly_mode_preserves_current_guards_and_immutable_wait"
         },
         {
           "kind": "function",
-          "line": 233,
+          "line": 234,
           "name": "test_readonly_mode_preserves_storage_and_protected_evidence_refusals"
         },
         {
           "kind": "function",
-          "line": 243,
+          "line": 244,
           "name": "test_readonly_mode_preserves_storage_and_protected_evidence_refusals.refuse"
         },
         {
           "kind": "function",
-          "line": 265,
+          "line": 266,
           "name": "test_used_marker_lost_during_archive_wait_refuses_publication"
         },
         {
           "kind": "function",
-          "line": 272,
+          "line": 273,
           "name": "test_used_marker_lost_during_archive_wait_refuses_publication.reject_during_borrow"
         },
         {
           "kind": "function",
-          "line": 290,
+          "line": 291,
           "name": "test_concurrent_readonly_exact_intent_publishes_one_original"
         },
         {
           "kind": "function",
-          "line": 310,
+          "line": 311,
           "name": "test_readonly_mode_is_internal_and_does_not_extend_command_schema"
         },
         {
           "kind": "function",
-          "line": 324,
+          "line": 325,
           "name": "test_readonly_marker_is_exact_fixed_rule_not_an_unrelated_rule"
         },
         {
           "kind": "function",
-          "line": 343,
+          "line": 344,
           "name": "test_readonly_template_cannot_bypass_existing_lab_used_rule_rejection"
         },
         {
           "kind": "function",
-          "line": 365,
+          "line": 366,
           "name": "test_capacity_closes_during_archive_wait_without_publishing_supported_observation"
         },
         {
           "kind": "function",
-          "line": 374,
+          "line": 375,
           "name": "test_capacity_closes_during_archive_wait_without_publishing_supported_observation.full_during_borrow"
         },
         {
           "kind": "function",
-          "line": 396,
+          "line": 397,
           "name": "test_known_role_training_overlap_is_readonly_only_without_erasing_native_gaps"
         },
         {
           "kind": "function",
-          "line": 441,
+          "line": 442,
           "name": "test_readonly_training_allowance_never_accepts_other_protected_origins"
         }
       ],
@@ -30433,7 +31337,7 @@
       ],
       "path": "tests/test_pattern_research_observation.py",
       "routes": [],
-      "sha256": "d4ecf0094a89a248d2bdfc6414c76efc0b6dc8ef894bf472f783432bc40f7c2d"
+      "sha256": "3b39d9c1be34b244e6cbe3b5fcde2b924ac59a5f720fb3da1d0ef04d10ae94c2"
     },
     {
       "area": "verification-verification",
@@ -34327,7 +35231,7 @@
       ],
       "path": "tests/test_research_campaigns.py",
       "routes": [],
-      "sha256": "661c12738d1ce2d4e9306adc1199a3138877b9c23c5b5f1974a0a95a2c154ee1"
+      "sha256": "230c14fe36383bcbc5626e71917ac227e1e8a32cc021144218b890336fdfde69"
     },
     {
       "area": "verification-verification",
@@ -34944,6 +35848,171 @@
       "path": "tests/test_research_notices.py",
       "routes": [],
       "sha256": "815cf5896164f5d6f124975888cdf7a22bd7c5f8bf28b181701a86954fe1608e"
+    },
+    {
+      "area": "verification-verification",
+      "declarations": [
+        {
+          "kind": "function",
+          "line": 26,
+          "name": "automatic_pilot"
+        },
+        {
+          "kind": "function",
+          "line": 45,
+          "name": "test_overview_reads_do_not_select_dispatch_disclose_or_change_financial_state"
+        },
+        {
+          "kind": "function",
+          "line": 74,
+          "name": "test_component_failure_is_unavailable_without_erasing_other_owner_observations"
+        },
+        {
+          "kind": "function",
+          "line": 86,
+          "name": "test_component_failure_is_unavailable_without_erasing_other_owner_observations.fail"
+        },
+        {
+          "kind": "function",
+          "line": 98,
+          "name": "test_overview_retains_waiting_investigation_beyond_recent_terminal_history"
+        },
+        {
+          "kind": "function",
+          "line": 136,
+          "name": "test_reviewed_scope_preserves_original_manual_grant_and_private_paths"
+        },
+        {
+          "kind": "function",
+          "line": 147,
+          "name": "test_approved_scope_resume_is_idempotent_and_reopens_with_saved_intent"
+        },
+        {
+          "kind": "function",
+          "line": 171,
+          "name": "test_changed_scope_and_closed_guard_refuse_before_activation"
+        },
+        {
+          "kind": "class",
+          "line": 189,
+          "name": "ComparisonOwner"
+        },
+        {
+          "kind": "function",
+          "line": 192,
+          "name": "ComparisonOwner.__init__"
+        },
+        {
+          "kind": "function",
+          "line": 197,
+          "name": "ComparisonOwner.snapshot"
+        },
+        {
+          "kind": "function",
+          "line": 208,
+          "name": "ComparisonOwner.control"
+        },
+        {
+          "kind": "function",
+          "line": 213,
+          "name": "test_partial_startup_reconciles_existing_components_without_new_policy"
+        },
+        {
+          "kind": "function",
+          "line": 240,
+          "name": "test_policy_changed_or_unreviewed_pause_refuses_all_startup_effects"
+        },
+        {
+          "kind": "function",
+          "line": 264,
+          "name": "test_newer_pause_wins_over_in_flight_startup_even_when_already_paused"
+        },
+        {
+          "kind": "function",
+          "line": 280,
+          "name": "test_newer_pause_wins_over_in_flight_startup_even_when_already_paused.pause_after_comparison"
+        },
+        {
+          "kind": "function",
+          "line": 291,
+          "name": "test_lost_model_ack_is_unconfirmed_but_saved_intent_reconciles_without_rewrite"
+        },
+        {
+          "kind": "function",
+          "line": 309,
+          "name": "test_lost_model_ack_is_unconfirmed_but_saved_intent_reconciles_without_rewrite.lose_ack"
+        },
+        {
+          "kind": "function",
+          "line": 321,
+          "name": "test_new_configuration_reuses_existing_verified_profile_and_remains_paused"
+        },
+        {
+          "kind": "function",
+          "line": 347,
+          "name": "test_setup_cannot_replace_or_extend_an_existing_permission"
+        },
+        {
+          "kind": "function",
+          "line": 355,
+          "name": "test_expired_scope_stays_inspectable_but_never_resumes"
+        },
+        {
+          "kind": "function",
+          "line": 376,
+          "name": "test_expired_scope_stays_inspectable_but_never_resumes.expired"
+        }
+      ],
+      "guide": "verification.md",
+      "imports": [
+        "copy",
+        "json",
+        "pytest",
+        "sqlite3",
+        "test_pattern_role_worker",
+        "test_pattern_role_worker.build_pattern_worker_fixture",
+        "test_pattern_role_worker.rows",
+        "test_pattern_role_worker.select",
+        "test_peft_development",
+        "test_peft_development.declared",
+        "test_peft_paper_pilot",
+        "test_peft_paper_pilot.pilot",
+        "trading.experiment_registry",
+        "trading.experiment_registry.fingerprint",
+        "trading.lab_role_contract",
+        "trading.lab_role_contract.PATTERN_VERSION",
+        "trading.lab_role_contract.contract_hash",
+        "trading.lab_role_contract.pattern_method_policy_sha",
+        "trading.peft_profile",
+        "trading.peft_profile.digest",
+        "trading.peft_role_model",
+        "trading.peft_role_model.PAPER_PILOT_FINITE_FORMAT",
+        "trading.peft_role_model.PAPER_PILOT_PATTERN_METHOD_FORMAT",
+        "trading.peft_role_model.PATTERN_METHOD_QUESTION_POLICY",
+        "trading.peft_role_model.PeftPaperPilotRoles",
+        "trading.peft_role_model.configure_paper_scope",
+        "trading.peft_role_model.local_role_transport",
+        "trading.peft_role_model.prepare_paper_scope",
+        "trading.research_notices",
+        "trading.research_notices.ResearchNotices",
+        "trading.research_overview",
+        "trading.research_overview.SupervisedStart",
+        "trading.research_overview.snapshot",
+        "trading.research_overview.start",
+        "types",
+        "types.SimpleNamespace"
+      ],
+      "local_imports": [
+        "src/trading/experiment_registry.py",
+        "src/trading/lab_role_contract.py",
+        "src/trading/peft_profile.py",
+        "src/trading/peft_role_model.py",
+        "src/trading/research_notices.py",
+        "src/trading/research_overview.py"
+      ],
+      "path": "tests/test_research_product.py",
+      "routes": [],
+      "sha256": "8b5bbc0aafa38c8c7a10871246c910fddf192c7d3c87af829d4e1b84fdce064e"
     },
     {
       "area": "verification-verification",
@@ -39302,21 +40371,21 @@
     }
   ],
   "guides": {
-    "docs/codebase-map/README.md": "6abfacd371717d166152eabf915bb62b14d895d20bc28054da86a8f347f96137",
+    "docs/codebase-map/README.md": "c1cca686d2bb2d693ca2ce17bded9dbdb6113a8779f3bc917ea853157591276a",
     "docs/codebase-map/architecture.md": "5515e049cbe21c4072bb9c58498963a0d4be7856afb1c3ba353738bad8592ead",
-    "docs/codebase-map/dashboard-api.md": "0e02a40fe7cc72b9baf508cc5dbf9838ba5ec08acc27b037d9f7a78496d45f24",
+    "docs/codebase-map/dashboard-api.md": "1bdf82018538180e2b50d1ae8ea39e24c1a70201a5c0218edfdcf6222764e319",
     "docs/codebase-map/evidence-storage-training.md": "e901b9edbc492c1d2f495604ecf5fe2edf1e0f1216655c4ec585eaa4258bd124",
     "docs/codebase-map/maintenance.md": "546da53010b6844818f1a957bfae60d7bf607c0e2eb2ab52b8b2004b9525efac",
     "docs/codebase-map/market-data.md": "57cd85fda9db76012274bcffd21ee45c7e737a8ff2ff406d7775554208a35069",
     "docs/codebase-map/model-admission.md": "2a448479693509c564f96d0ac8f05e13d10c5459a012fb6ed9c1a379cd02de2a",
     "docs/codebase-map/oversight-tools.md": "1482c52ee88b8090a33752f0734d6af4438ecd883199dfd03adcf458c339da2b",
     "docs/codebase-map/paper-accounting.md": "b6c250540be90b46bab2b04c5ee72143fc7018e6d10ac82436f0c5d079759a89",
-    "docs/codebase-map/research-worker.md": "b87173a1bb634139162fe018c7a9d60c4025297fd140ab6d47c107dbcf0ec809",
+    "docs/codebase-map/research-worker.md": "5f01eb453a9d7d99157a81080ea6e4d6937c312c3b7f35ffeb64a57513656df4",
     "docs/codebase-map/runtime-updates.md": "934878e0476e582e257832ea188fe49cfdad13a0150f940e8a5e192358a4a7f2",
     "docs/codebase-map/scanner-charts.md": "5cacc517dbef07d4c6764dad3661e046598136706ede70b895802a95b397c86f",
     "docs/codebase-map/secondary-research.md": "2d1e61f2f8e6c3ae2e8aa3da1255ec2834d05c1920f6c30315a85634aee0448a",
-    "docs/codebase-map/strategy-experiments.md": "32c6137810c560f42b4dafe290ff2b73888ae0d7e03ba372865c2280109dbbfe",
-    "docs/codebase-map/verification.md": "cc25a2f0c7cd075259352901fda256ed0ab91391efd04b47701854fff35fe95f"
+    "docs/codebase-map/strategy-experiments.md": "b70fc8faab1486f53bd5c73a41b7816a0401a26e23b6106aa4ddde3cad84fdfb",
+    "docs/codebase-map/verification.md": "86a538328d845e090f6323bad289f2fa4bb9d02bffee7cc3680fd66321007d44"
   },
   "references": [
     {
@@ -39341,7 +40410,7 @@
     {
       "description": "Exact lost-ack original strategy change recovery.",
       "id": "account-strategy-receipt",
-      "line": 724,
+      "line": 766,
       "path": "src/trading/paper_runtime.py",
       "symbol": "PaperRuntime.strategy_receipt"
     },
@@ -39361,7 +40430,7 @@
     {
       "description": "Captured causal analogue GET records conservative disclosure.",
       "id": "dashboard-analogue-disclosure",
-      "line": 1738,
+      "line": 1808,
       "path": "src/trading/api.py",
       "symbol": "create_app.historical_analogues"
     },
@@ -39374,7 +40443,7 @@
     {
       "description": "Actual owner construction, scanner/worker injection and lifecycle drain.",
       "id": "dashboard-api-lifespan",
-      "line": 229,
+      "line": 241,
       "path": "src/trading/api.py",
       "symbol": "create_app.lifespan"
     },
@@ -39388,27 +40457,27 @@
       "anchor": "function App()",
       "description": "Status polling, Lab/Risk tab routing and page mounts.",
       "id": "dashboard-app",
-      "line": 168,
+      "line": 162,
       "path": "apps/web/src/main.tsx"
     },
     {
       "description": "Exact original candle UUID lookup without automatic dispatch.",
       "id": "dashboard-candle-request",
-      "line": 1834,
+      "line": 1904,
       "path": "src/trading/api.py",
       "symbol": "create_app.candle_request"
     },
     {
       "description": "Strict native saved window, progress/cursor and selected record GET.",
       "id": "dashboard-chart-route",
-      "line": 2009,
+      "line": 2079,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_chart"
     },
     {
       "description": "Explicit local Monitor pause/resume only.",
       "id": "dashboard-collector-control",
-      "line": 2547,
+      "line": 2638,
       "path": "src/trading/api.py",
       "symbol": "create_app.collector"
     },
@@ -39421,56 +40490,56 @@
     {
       "description": "Verified bounded UUID-ordered saved preparations.",
       "id": "dashboard-comparison-history",
-      "line": 1948,
+      "line": 2018,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_comparison_history"
     },
     {
       "description": "Exact immutable preparation UUID recovery.",
       "id": "dashboard-comparison-original",
-      "line": 1959,
+      "line": 2029,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_prepared_comparison"
     },
     {
       "description": "Shared actual worker/scanner/registry identity guard.",
       "id": "dashboard-comparison-owner",
-      "line": 1888,
+      "line": 1958,
       "path": "src/trading/api.py",
       "symbol": "create_app.pattern_comparison_owner"
     },
     {
       "description": "Strict operator preparation POST; no method/research-only public override.",
       "id": "dashboard-comparison-prepare",
-      "line": 1932,
+      "line": 2002,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_prepare_comparison"
     },
     {
       "description": "Read-only default-method original finding description.",
       "id": "dashboard-comparison-source",
-      "line": 1904,
+      "line": 1974,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_comparison_source"
     },
     {
       "description": "Immutable daily shortlist summary pages.",
       "id": "dashboard-daily-pages",
-      "line": 1871,
+      "line": 1941,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_daily_pages"
     },
     {
       "description": "Exact saved daily body GET.",
       "id": "dashboard-daily-snapshot",
-      "line": 1878,
+      "line": 1948,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_daily_snapshot"
     },
     {
       "description": "Threaded exact selected-account detail read.",
       "id": "dashboard-detail-route",
-      "line": 1659,
+      "line": 1729,
       "path": "src/trading/api.py",
       "symbol": "create_app.station_detail"
     },
@@ -39484,21 +40553,21 @@
     {
       "description": "Installed code marker, current freshness and explicit journal unknowns.",
       "id": "dashboard-health-route",
-      "line": 2640,
+      "line": 2731,
       "path": "src/trading/api.py",
       "symbol": "create_app.health"
     },
     {
       "description": "Current selected-symbol cached live station GET.",
       "id": "dashboard-live-route",
-      "line": 1652,
+      "line": 1722,
       "path": "src/trading/api.py",
       "symbol": "create_app.station_live"
     },
     {
       "description": "Exact local header/Origin and registry availability fence.",
       "id": "dashboard-local-operator",
-      "line": 630,
+      "line": 642,
       "path": "src/trading/api.py",
       "symbol": "create_app.lab_operator"
     },
@@ -39506,7 +40575,7 @@
       "anchor": "function currentPage(): Page",
       "description": "Hash aliases and normal page resolution.",
       "id": "dashboard-main-route",
-      "line": 147,
+      "line": 133,
       "path": "apps/web/src/main.tsx"
     },
     {
@@ -39532,49 +40601,49 @@
     {
       "description": "Retained bounded campaign summaries.",
       "id": "dashboard-scanner-campaigns",
-      "line": 1864,
+      "line": 1934,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_campaigns"
     },
     {
       "description": "Original control mutation and separately read current status.",
       "id": "dashboard-scanner-control",
-      "line": 1973,
+      "line": 2043,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_control"
     },
     {
       "description": "Enum-controlled scoped progress/level/pattern/alert pages.",
       "id": "dashboard-scanner-pages",
-      "line": 2049,
+      "line": 2119,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_page"
     },
     {
       "description": "Original request receipt GET, distinct from mutable current status.",
       "id": "dashboard-scanner-request",
-      "line": 1994,
+      "line": 2064,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_request"
     },
     {
       "description": "Exact current or requested saved scanner campaign read.",
       "id": "dashboard-scanner-status",
-      "line": 1855,
+      "line": 1925,
       "path": "src/trading/api.py",
       "symbol": "create_app.scanner_status"
     },
     {
       "description": "Actor route scope separate from dashboard/operator authority.",
       "id": "dashboard-scoped-actor",
-      "line": 670,
+      "line": 685,
       "path": "src/trading/api.py",
       "symbol": "create_app.scoped_actor_route"
     },
     {
       "description": "Local CSP, API no-store and response security headers.",
       "id": "dashboard-security-headers",
-      "line": 481,
+      "line": 493,
       "path": "src/trading/api.py",
       "symbol": "create_app.local_security_headers"
     },
@@ -39594,35 +40663,35 @@
     {
       "description": "Monitor/paper/optional observed status projection.",
       "id": "dashboard-status-route",
-      "line": 509,
+      "line": 521,
       "path": "src/trading/api.py",
       "symbol": "create_app.status"
     },
     {
       "description": "SQLite storage errors remain 503 unavailable.",
       "id": "dashboard-storage-failure",
-      "line": 497,
+      "line": 509,
       "path": "src/trading/api.py",
       "symbol": "create_app.storage_failure"
     },
     {
       "description": "Bounded current and retired identity pages.",
       "id": "dashboard-tool-accounts",
-      "line": 1778,
+      "line": 1848,
       "path": "src/trading/api.py",
       "symbol": "create_app.tool_accounts"
     },
     {
       "description": "Original run GET with conservative disclosure and native reopen.",
       "id": "dashboard-tool-original",
-      "line": 1813,
+      "line": 1883,
       "path": "src/trading/api.py",
       "symbol": "create_app.tool_run"
     },
     {
       "description": "One explicit journaled tool command and owned native retention path.",
       "id": "dashboard-tool-runner",
-      "line": 2122,
+      "line": 2192,
       "path": "src/trading/api.py",
       "symbol": "create_app.run_tool"
     },
@@ -39636,7 +40705,7 @@
     {
       "description": "Listed training/review/MCP body cap, not a universal API size bound.",
       "id": "dashboard-training-body-limit",
-      "line": 646,
+      "line": 658,
       "path": "src/trading/api.py",
       "symbol": "create_app.bounded_training_input"
     },
@@ -40049,7 +41118,7 @@
     {
       "description": "Fresh deterministic numerical evaluation under current inputs.",
       "id": "lab-evaluate",
-      "line": 274,
+      "line": 296,
       "path": "src/trading/autonomous_lab.py",
       "symbol": "AutonomousLab.evaluate"
     },
@@ -40090,14 +41159,14 @@
     {
       "description": "Fresh policy, pause, resource, input and finite guards at financial commit boundaries.",
       "id": "lab-financial-admission",
-      "line": 240,
+      "line": 262,
       "path": "src/trading/autonomous_lab.py",
       "symbol": "AutonomousLab._financial_admission"
     },
     {
       "description": "Finite saved proposal fence for new financial effects.",
       "id": "lab-finite-dispatch",
-      "line": 209,
+      "line": 231,
       "path": "src/trading/autonomous_lab.py",
       "symbol": "AutonomousLab._finite_dispatch"
     },
@@ -40153,7 +41222,7 @@
     {
       "description": "Legacy child, baseline, independent and later replication discovery.",
       "id": "lab-propose",
-      "line": 350,
+      "line": 372,
       "path": "src/trading/autonomous_lab.py",
       "symbol": "AutonomousLab.propose"
     },
@@ -40181,7 +41250,7 @@
     {
       "description": "Optional evaluation outside the financial writer; guarded recovery, reserve/fund and score publication.",
       "id": "lab-step",
-      "line": 526,
+      "line": 548,
       "path": "src/trading/autonomous_lab.py",
       "symbol": "AutonomousLab._step"
     },
@@ -40359,7 +41428,7 @@
     {
       "description": "Closed minute bootstrap/backfill, merge and revision refusal.",
       "id": "market-minute-history",
-      "line": 225,
+      "line": 228,
       "path": "src/trading/paper_runtime.py",
       "symbol": "PaperRuntime.collect_candles"
     },
@@ -40571,7 +41640,7 @@
     {
       "description": "Finite reservation and single dispatch claim checkpoint",
       "id": "model-finite-dispatch",
-      "line": 1117,
+      "line": 1187,
       "path": "src/trading/peft_role_model.py",
       "symbol": "PeftPaperPilotRoles._verify_finite_dispatch"
     },
@@ -40592,7 +41661,7 @@
     {
       "description": "Captured current authority profile and policy admission",
       "id": "model-instance-preflight",
-      "line": 1063,
+      "line": 1133,
       "path": "src/trading/peft_role_model.py",
       "symbol": "PeftPaperPilotRoles.instance_preflight"
     },
@@ -40633,7 +41702,7 @@
     {
       "description": "Captured grant recheck request lock and dispatch lifecycle",
       "id": "model-pilot-infer",
-      "line": 1187,
+      "line": 1257,
       "path": "src/trading/peft_role_model.py",
       "symbol": "PeftPaperPilotRoles._infer"
     },
@@ -40883,14 +41952,14 @@
     {
       "description": "Authenticated private MCP HTTP adapter",
       "id": "oversight-api-mcp",
-      "line": 993,
+      "line": 1008,
       "path": "src/trading/api.py",
       "symbol": "create_app.research_mcp"
     },
     {
       "description": "Validated operator tool claim dispatch and acknowledgment",
       "id": "oversight-api-tool",
-      "line": 1813,
+      "line": 1883,
       "path": "src/trading/api.py",
       "symbol": "create_app.tool_run"
     },
@@ -41074,14 +42143,14 @@
     {
       "description": "Isolated fake capital, execution, attempts and risk fields.",
       "id": "paper-account",
-      "line": 159,
+      "line": 170,
       "path": "src/trading/paper_engine.py",
       "symbol": "account"
     },
     {
       "description": "Retained retired-account state from permanent history.",
       "id": "paper-archived-account",
-      "line": 469,
+      "line": 494,
       "path": "src/trading/paper_store.py",
       "symbol": "PaperStore.archived_account"
     },
@@ -41120,14 +42189,14 @@
     {
       "description": "Exact approved current forward report and role pointer change.",
       "id": "paper-designate",
-      "line": 346,
+      "line": 641,
       "path": "src/trading/paper_learning.py",
       "symbol": "designate"
     },
     {
       "description": "Role rollback preserving financial state and history.",
       "id": "paper-designation-rollback",
-      "line": 411,
+      "line": 717,
       "path": "src/trading/paper_learning.py",
       "symbol": "rollback"
     },
@@ -41146,70 +42215,70 @@
     {
       "description": "Deterministic spot accounting, execution, risk and review.",
       "id": "paper-engine",
-      "line": 238,
+      "line": 249,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine"
     },
     {
       "description": "Balanced cancellation and remaining reservation release.",
       "id": "paper-engine-cancel",
-      "line": 397,
+      "line": 408,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.cancel"
     },
     {
       "description": "Per-asset balanced event construction and purpose annotation.",
       "id": "paper-engine-emit",
-      "line": 246,
+      "line": 257,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.emit"
     },
     {
       "description": "Entry admission, reserve, cost/depth/cash/risk checks.",
       "id": "paper-engine-enter",
-      "line": 639,
+      "line": 650,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.enter"
     },
     {
       "description": "Owned-position stops, holds and risk-reducing exit intents.",
       "id": "paper-engine-exit",
-      "line": 788,
+      "line": 799,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.exit_position"
     },
     {
       "description": "Subsequent-book execution with fresh portfolio recheck.",
       "id": "paper-engine-fill",
-      "line": 471,
+      "line": 482,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.fill"
     },
     {
       "description": "Matched whole-account legacy review and flat selection.",
       "id": "paper-engine-review",
-      "line": 978,
+      "line": 989,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.review"
     },
     {
       "description": "Financial tick, per-account rollback and global invariants.",
       "id": "paper-engine-tick",
-      "line": 1245,
+      "line": 1256,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.tick"
     },
     {
       "description": "Risk management before entries and new-bar decision dedup.",
       "id": "paper-engine-tick-account",
-      "line": 1147,
+      "line": 1158,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.tick_account"
     },
     {
       "description": "Executable liquidation equity and stale/missing qualification.",
       "id": "paper-engine-value",
-      "line": 411,
+      "line": 422,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.value"
     },
@@ -41255,42 +42324,42 @@
     {
       "description": "Permanent financial event/journal pagination.",
       "id": "paper-export",
-      "line": 556,
+      "line": 581,
       "path": "src/trading/paper_store.py",
       "symbol": "PaperStore.export"
     },
     {
       "description": "Retained failures and legacy-only reviewed replenishment.",
       "id": "paper-failure-review",
-      "line": 890,
+      "line": 901,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.failure_review"
     },
     {
       "description": "Subsequent matched daily-block qualification policy.",
       "id": "paper-forward-comparison",
-      "line": 145,
+      "line": 418,
       "path": "src/trading/paper_learning.py",
       "symbol": "comparison"
     },
     {
       "description": "Original spot identities and persistent initial projection.",
       "id": "paper-initial-state",
-      "line": 206,
+      "line": 217,
       "path": "src/trading/paper_engine.py",
       "symbol": "initial_state"
     },
     {
       "description": "Permanent scored and retired trial pagination.",
       "id": "paper-lab-history",
-      "line": 447,
+      "line": 449,
       "path": "src/trading/paper_store.py",
       "symbol": "PaperStore.lab_history"
     },
     {
       "description": "Full immutable journal receipt and compact summary.",
       "id": "paper-learning-report",
-      "line": 322,
+      "line": 617,
       "path": "src/trading/paper_learning.py",
       "symbol": "retain_report"
     },
@@ -41316,14 +42385,14 @@
     {
       "description": "Numerical qualification plus explicit unavailable RuleSpec handoff disclosure.",
       "id": "paper-qualification-handoffs",
-      "line": 445,
+      "line": 751,
       "path": "src/trading/paper_learning.py",
       "symbol": "snapshot"
     },
     {
       "description": "Journal and projected-account reconciliation including archives.",
       "id": "paper-reconcile",
-      "line": 797,
+      "line": 822,
       "path": "src/trading/paper_store.py",
       "symbol": "PaperStore.reconcile"
     },
@@ -41344,7 +42413,7 @@
     {
       "description": "Exact stop recovery without new funding or reset.",
       "id": "paper-risk-recovery",
-      "line": 1394,
+      "line": 1405,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.recover_hard_stop"
     },
@@ -41361,6 +42430,27 @@
       "path": "tests/test_paper_risk.py"
     },
     {
+      "description": "Separate prospective rule/control funding through existing writer and unchanged capacity/risk gates",
+      "id": "paper-rule-admission",
+      "line": 246,
+      "path": "src/trading/paper_learning.py",
+      "symbol": "admit_rule"
+    },
+    {
+      "description": "Read-only original review outside writer, indexed immutable-receipt recheck inside financial transaction",
+      "id": "paper-rule-runtime",
+      "line": 609,
+      "path": "src/trading/paper_runtime.py",
+      "symbol": "PaperRuntime.qualify_rule"
+    },
+    {
+      "description": "Original immutable reservation, unique mature score, exact frozen rule and economic provenance",
+      "id": "paper-rule-source",
+      "line": 145,
+      "path": "src/trading/paper_learning.py",
+      "symbol": "rule_source"
+    },
+    {
       "description": "Observed spot input and financial control adapter.",
       "id": "paper-runtime",
       "line": 31,
@@ -41370,14 +42460,14 @@
     {
       "description": "Exclusive PostgreSQL writer, projection, journal and read queries.",
       "id": "paper-store",
-      "line": 102,
+      "line": 104,
       "path": "src/trading/paper_store.py",
       "symbol": "PaperStore"
     },
     {
       "description": "Writer-only idempotent seed projection/funding.",
       "id": "paper-store-initialize",
-      "line": 150,
+      "line": 152,
       "path": "src/trading/paper_store.py",
       "symbol": "PaperStore.initialize"
     },
@@ -41390,7 +42480,7 @@
     {
       "description": "Atomic event/journal and projection publication, authorization checkpoints.",
       "id": "paper-store-transaction",
-      "line": 259,
+      "line": 261,
       "path": "src/trading/paper_store.py",
       "symbol": "PaperStore._transact"
     },
@@ -41415,7 +42505,7 @@
     {
       "description": "Separately funded universe control and wide accounts.",
       "id": "paper-universe-pair",
-      "line": 361,
+      "line": 372,
       "path": "src/trading/paper_engine.py",
       "symbol": "PaperEngine.universe_experiment"
     },
@@ -41463,14 +42553,14 @@
     {
       "description": "Immutable exact finding preparation without inbox/funding.",
       "id": "pattern-prepare",
-      "line": 881,
+      "line": 885,
       "path": "src/trading/pattern_comparisons.py",
       "symbol": "PatternComparisons.prepare"
     },
     {
       "description": "Application construction and current data/owner wiring",
       "id": "platform-app",
-      "line": 202,
+      "line": 214,
       "path": "src/trading/api.py",
       "symbol": "create_app"
     },
@@ -41497,7 +42587,7 @@
     {
       "description": "Background owner construction, optional failures and cancellation order",
       "id": "platform-lifespan",
-      "line": 229,
+      "line": 241,
       "path": "src/trading/api.py",
       "symbol": "create_app.lifespan"
     },
@@ -41539,6 +42629,71 @@
       "id": "preserved-v4-discovery-tests",
       "line": 1,
       "path": "tests/test_preserved_v4_discovery.py"
+    },
+    {
+      "description": "Compiled normal product, unsuppressed polling and native disposable-owner workflow",
+      "id": "product-browser-proof",
+      "line": 1,
+      "path": "tests/browser/research_product.cjs"
+    },
+    {
+      "description": "Finite isolated PG/scanner/role driver with synthetic inputs, clock and software model callbacks",
+      "id": "product-browser-server",
+      "line": 43,
+      "path": "tests/browser/research_product_server.py",
+      "symbol": "main"
+    },
+    {
+      "description": "Existing dated readiness owner; no authenticated order connector or live permission",
+      "id": "product-live-readiness",
+      "line": 166,
+      "path": "src/trading/live_readiness.py",
+      "symbol": "packet"
+    },
+    {
+      "description": "Existing readiness decision packet under Accounts and Results safeguards",
+      "id": "product-live-readiness-panel",
+      "line": 1,
+      "path": "apps/web/src/ReadinessPanel.tsx"
+    },
+    {
+      "description": "Existing verified profile to disabled recurring scope, create-only policy and exact acknowledgment",
+      "id": "product-model-scope",
+      "line": 1380,
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "configure_paper_scope"
+    },
+    {
+      "description": "Exact account/task/trial navigation and account selection with Back and current-view preservation",
+      "id": "product-navigation",
+      "line": 1,
+      "path": "apps/web/src/productNavigation.ts"
+    },
+    {
+      "description": "Bounded independent owner observations without dispatch, detail disclosure or financial writes",
+      "id": "product-overview-read",
+      "line": 160,
+      "path": "src/trading/research_overview.py",
+      "symbol": "snapshot"
+    },
+    {
+      "description": "Read purity, waiting identity, configuration/expiry/revision and idempotent owner tests",
+      "id": "product-owner-tests",
+      "line": 1,
+      "path": "tests/test_research_product.py"
+    },
+    {
+      "description": "Normal saved-scope setup, revised review and nonreplaying acknowledgment recovery",
+      "id": "product-setup-panel",
+      "line": 1,
+      "path": "apps/web/src/ResearchSetup.tsx"
+    },
+    {
+      "description": "Reviewed component startup with exact current scope/policy and Pause revisions",
+      "id": "product-supervised-start",
+      "line": 184,
+      "path": "src/trading/research_overview.py",
+      "symbol": "start"
     },
     {
       "description": "Fixed replacement bank and causal five-minute aggregation.",
@@ -41621,21 +42776,21 @@
     {
       "description": "Exact mature source or retained waiting/rejected predecessor observation",
       "id": "research-pattern-prior",
-      "line": 3846,
+      "line": 3913,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._pattern_learning_prior"
     },
     {
       "description": "Immutable root selection for hot or archived dependency continuations",
       "id": "research-pattern-root-selection",
-      "line": 3817,
+      "line": 3884,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._pattern_root_selection"
     },
     {
       "description": "Stable saved finding and current policy-bound method selection",
       "id": "research-pattern-selector",
-      "line": 4090,
+      "line": 4148,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._select_pattern_question"
     },
@@ -41732,6 +42887,13 @@
       "path": "tests/test_role_worker.py"
     },
     {
+      "description": "Verified hot/cold canonical predecessor recovery preserving original task and mature outcome",
+      "id": "research-verified-original",
+      "line": 3774,
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._verified_pattern_learning_record"
+    },
+    {
       "description": "Durable optional role task and original attempt owner",
       "id": "research-worker",
       "line": 86,
@@ -41741,63 +42903,63 @@
     {
       "description": "Frozen original packet profile attempt and reservation before inference",
       "id": "research-worker-answer",
-      "line": 2817,
+      "line": 2858,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._answer"
     },
     {
       "description": "Verified full evaluation archive then lease-checked publication",
       "id": "research-worker-archive",
-      "line": 3300,
+      "line": 3341,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._archive_evaluation"
     },
     {
       "description": "Captured authority inputs and financial prerequisites revalidation",
       "id": "research-worker-current",
-      "line": 2030,
+      "line": 2071,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._current"
     },
     {
       "description": "Atomic matched fresh numerical input exposure registration",
       "id": "research-worker-exposure",
-      "line": 1932,
+      "line": 1973,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._pattern_numerical_exposure"
     },
     {
       "description": "Existing optional role supervision and dispatch loop",
       "id": "research-worker-loop",
-      "line": 4630,
+      "line": 4688,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker.run"
     },
     {
       "description": "Durable phase ownership backoff and exposed permanent failure",
       "id": "research-worker-maintenance",
-      "line": 4672,
+      "line": 4730,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._maintain"
     },
     {
       "description": "Shield and drain owned threaded work on cancellation",
       "id": "research-worker-owned",
-      "line": 3286,
+      "line": 3327,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._owned"
     },
     {
       "description": "Explicit failed archive or original unknown-attempt retry rules",
       "id": "research-worker-retry",
-      "line": 1794,
+      "line": 1835,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker.retry"
     },
     {
       "description": "Leased stage progression through current evaluation and mature followup",
       "id": "research-worker-step",
-      "line": 2994,
+      "line": 3035,
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker.step"
     },
@@ -42169,7 +43331,7 @@
     {
       "description": "Fresh spot-only versus retained legacy options startup.",
       "id": "secondary-api-wiring",
-      "line": 229,
+      "line": 241,
       "path": "src/trading/api.py",
       "symbol": "create_app.lifespan"
     },
@@ -42374,6 +43536,28 @@
     },
     {
       "guide": "dashboard-api.md",
+      "id": "coherent-product-startup",
+      "references": [
+        "product-overview-read",
+        "product-supervised-start",
+        "product-setup-panel",
+        "product-model-scope",
+        "product-navigation",
+        "product-owner-tests",
+        "product-browser-proof"
+      ],
+      "section": "coherent-product-setup-and-observation",
+      "symptoms": [
+        "where is automation",
+        "waiting task disappears",
+        "startup unknown",
+        "new Pause",
+        "saved configuration"
+      ],
+      "title": "Trace saved setup into supervised research and visible waiting work"
+    },
+    {
+      "guide": "dashboard-api.md",
       "id": "dashboard-foreign-owner",
       "references": [
         "dashboard-api-lifespan",
@@ -42565,6 +43749,27 @@
         "research contamination"
       ],
       "title": "Trace diagnostic evidence without granting research eligibility"
+    },
+    {
+      "guide": "strategy-experiments.md",
+      "id": "frozen-rule-qualification",
+      "references": [
+        "paper-rule-source",
+        "paper-rule-admission",
+        "paper-rule-runtime",
+        "paper-forward-comparison",
+        "paper-designate",
+        "paper-learning-tests"
+      ],
+      "section": "forward-qualification-and-designation",
+      "symptoms": [
+        "RuleSpec qualification",
+        "original retired trial",
+        "unknown funding acknowledgment",
+        "28 daily blocks",
+        "incumbent drift"
+      ],
+      "title": "Trace a mature frozen rule to subsequent paper qualification"
     },
     {
       "guide": "strategy-experiments.md",

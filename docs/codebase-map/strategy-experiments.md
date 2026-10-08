@@ -123,17 +123,33 @@ The later paths retain used-rule, family/reserve and timing gates. Exact replica
 
 ## Forward qualification and designation
 
-Fixed RuleSpec Lab results have no implemented handoff into this numerical-only
-qualification policy. The learning snapshot and ordinary Forward learning panel
-identify retained scored rule candidates as `qualification_handoff_not_implemented`.
-Waiting longer cannot repair a missing candidate-type transition. A future
-extension must preserve exact frozen rule identity, matched incumbent controls,
-cost/risk policy, retained trial evidence, capacity and prospective approval;
-fabricating a numerical artifact is not a valid bridge.
+Fixed RuleSpec Lab results use the existing qualification policy through
+[exact rule source review](source-index.md#paper-rule-source) and explicit
+[rule admission](source-index.md#paper-rule-admission). The original immutable
+reservation, unique mature score, proposal/rule identity and source cost/risk
+controls are verified before and inside the existing financial writer. A
+promising, adverse, inconclusive or low-information result can be reviewed;
+data-blocked and risk-stopped sources cannot be presented as eligible.
+
+Admission creates a separate prospective candidate and matched current incumbent
+control with original $50/$100 hypothetical capital and cost assumptions.
+It respects the stricter of the active policy's capacity and twenty places,
+including reservations. It preserves original trial accounts and adverse
+results, creates no numerical artifact, and cannot be retired as an old Lab
+trial. Exact repeated admission recovers its existing pair without new funding,
+even if fresh eligibility later changes. The normal exact comparison/qualification
+view retains source/account identity and unknown acknowledgment recovery.
+
+The candidate and matched incumbent freeze rule/artifact, economic/risk and
+implementation identity. The cached process fingerprint is computed once;
+unavailable provenance does not stop existing financial management. Unknown or
+changed implementation refuses these forward accounts' new entries and later
+designation, while exits/stops continue. Candidate/control configuration and
+the current incumbent configuration are rechecked before designation.
 
 [Whole-account economics](source-index.md#paper-economics) use funding-adjusted executable equity, cash and full-period passive exposure controls. Unknown operating costs remain unknown. Paid fees and spread/slippage already represented in fills/marks are not deducted twice. Window eligibility depends on matching configuration, capital/funding, risk, instrument universe and fresh coverage.
 
-The legacy engine's two-window flat change is separate from [paper_learning.comparison](source-index.md#paper-forward-comparison). The latter accepts only frozen forward numerical candidates with a matched incumbent control and observed-public-feed label. It discards earlier/inspected/incomplete/mismatched windows, requires 28 subsequent contiguous complete daily blocks and declared dependence/selection, stability, drawdown and stress margins. Its HAC error is descriptive; policy thresholds are not p-values. More than the bounded 512 windows cannot certify full history.
+The legacy engine's two-window flat change is separate from [paper_learning.comparison](source-index.md#paper-forward-comparison). The latter accepts frozen forward numerical or supported-rule candidates with a matched incumbent control and observed-public-feed label. It discards earlier/inspected/incomplete/mismatched windows, requires 28 subsequent complete daily blocks, each assembled from contiguous eligible windows, and declared dependence/selection, stability, drawdown and stress margins. The original exploratory period cannot count. Its HAC error is descriptive; policy thresholds are not p-values. More than the bounded 512 windows cannot certify full history.
 
 [Report retention](source-index.md#paper-learning-report) journals the full immutable receipt and keeps a compact projection. [Designation](source-index.md#paper-designate) needs exact report SHA, current expected role/configuration, freshness and explicit approval; it changes the incumbent role pointer without transferring capital. [Rollback](source-index.md#paper-designation-rollback) preserves attempts, fees, losses, holdings and funding. A qualifying paper report still does not authorize live orders.
 

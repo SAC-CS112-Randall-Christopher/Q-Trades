@@ -18,9 +18,10 @@ def admit(
     operating_daily_usd: str | None,
 ) -> dict[str, Any]:
     from trading.paper_engine import D, account
+    from trading.paper_learning import implementation_identity
 
     validate_artifact(artifact)
-    admissions = engine.state.setdefault("challengers", {})
+    admissions = engine.state.get("challengers", {})
     key = experiment + ":" + artifact["family"]
     if artifact["family"] == "memory_entry":
         key += ":" + artifact["arm"]
@@ -36,16 +37,25 @@ def admit(
         if admissions[key]["spec_sha256"] != digest:
             raise ValueError("The frozen admission already has different funding/cost assumptions")
         return {"status": "already_applied", **admissions[key]}
+    implementation = implementation_identity()
+    if implementation is None:
+        raise ValueError(
+            "Execution implementation provenance is unavailable; forward admission waits"
+        )
     if len(admissions) >= 4:
         raise ValueError("Four forward admissions retained; preserve history before extending")
-    if len(set(engine.state["accounts"]) | {"universe-wide-v1", "universe-control-v1"}) >= 20:
-        raise ValueError("Twenty-account limit reached; retained accounts cannot be discarded")
+    from trading.autonomous_finance import slots
+
+    capacity = slots(engine.state)
+    if capacity["used"] + 1 > min(20, capacity["capacity"]):
+        raise ValueError("Active paper capacity reached; retained accounts cannot be discarded")
     name = "forward-" + artifact["sha256"][:24]
     if name in engine.state["accounts"]:
         raise ValueError("This artifact already has a forward account")
     a = account("numeric-" + artifact["sha256"][:24], engine.now, cash)
     a.update(
         numerical_artifact=deepcopy(artifact),
+        strategy_implementation_sha256=implementation,
         memory_entry_contract=artifact["version"] if artifact["family"] == "memory_entry" else None,
         experiment_id=experiment,
         label=(
@@ -71,7 +81,7 @@ def admit(
         "qualification": "Exploratory only; no primary promotion",
         "prior_policy_preserved": True,
     }
-    admissions[key] = receipt
+    engine.state.setdefault("challengers", {})[key] = receipt
     engine.state["accounts"][name] = a
     engine.emit(
         "forward_account_funded",

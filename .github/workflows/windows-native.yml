@@ -97,7 +97,7 @@ jobs:
             tests/test_development_failure_receipts.py tests/test_development_latency_measurement.py `
             tests/test_peft_child_owner.py tests/test_peft_child_resource_integration.py `
             tests/test_request_counts.py `
-            tests/test_research_notices.py `
+            tests/test_research_notices.py tests/test_research_product.py `
             tests/test_question_recovery.py tests/test_research_lessons.py tests/test_role_supervisor.py `
             tests/test_rule_component.py tests/test_role_packet_preflight.py `
             tests/test_stock_research.py tests/test_research_actors.py `
@@ -412,6 +412,99 @@ jobs:
         with:
           name: synthetic-financial-monitoring-browser
           path: ${{ runner.temp }}/browser-output
+          if-no-files-found: ignore
+          retention-days: 14
+
+  coherent-product-browser:
+    # Normal polling and independent native financial/research owners; synthetic inputs only.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+      PYTHONPATH: src
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: qtrades-source-ci-only
+          POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+        ports:
+          - 127.0.0.1:54544:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned test/browser requirements and build the product
+        run: |
+          python -m pip install --no-input -r requirements-lock.txt
+          npm ci --prefix apps/web --ignore-scripts --no-audit --no-fund
+          npm install --prefix "$RUNNER_TEMP/browser-runtime" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          "$RUNNER_TEMP/browser-runtime/node_modules/.bin/playwright" install --with-deps chromium
+          npm --prefix apps/web run build
+      - name: Configure owned disposable product resources
+        run: |
+          python - <<'PY'
+          import json, os, uuid
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"])
+          (root / "product-pg.json").write_text(json.dumps({"dsn":
+              "host=127.0.0.1 port=54544 dbname=postgres user=postgres password=qtrades-source-ci-only"}))
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              output.write("QTRADES_BROWSER_QA_TOKEN=" + uuid.uuid4().hex + "\n")
+              output.write("QTRADES_BROWSER_QA_OUTPUT=" + str(root / "product-browser-output") + "\n")
+              output.write("NODE_PATH=" + str(root / "browser-runtime/node_modules") + "\n")
+          PY
+      - name: Verify setup, automatic research, cold recovery and rule qualification
+        run: |
+          python -B tests/browser/research_product_server.py \
+            --directory "$RUNNER_TEMP/product-browser-workspace" \
+            --database-config "$RUNNER_TEMP/product-pg.json" \
+            --web-dist "$GITHUB_WORKSPACE/apps/web/dist" --port 58996 \
+            > "$RUNNER_TEMP/product-browser-server.log" 2>&1 &
+          product_pid=$!
+          cleanup() {
+            product_test_status=$?
+            trap - EXIT
+            set +e
+            product_cleanup_status=0
+            curl --fail --silent --connect-timeout 2 --max-time 5 \
+              -X POST -H "x-qa-token: $QTRADES_BROWSER_QA_TOKEN" \
+              http://127.0.0.1:58996/__qa/stop > /dev/null
+            if [ "$?" -ne 0 ]; then product_cleanup_status=1; fi
+            for attempt in $(seq 1 40); do
+              if ! kill -0 "$product_pid" 2>/dev/null; then break; fi
+              sleep 1
+            done
+            if kill -0 "$product_pid" 2>/dev/null; then
+              echo "Owned product QA child did not drain within 40 seconds."
+              product_cleanup_status=1
+            else
+              wait "$product_pid"
+              if [ "$?" -ne 0 ]; then product_cleanup_status=1; fi
+            fi
+            if [ "$product_test_status" -ne 0 ]; then exit "$product_test_status"; fi
+            exit "$product_cleanup_status"
+          }
+          trap cleanup EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --connect-timeout 1 --max-time 2 http://127.0.0.1:58996/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          node tests/browser/research_product.cjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: synthetic-coherent-product-browser
+          path: |
+            ${{ runner.temp }}/product-browser-output
+            ${{ runner.temp }}/product-browser-server.log
           if-no-files-found: ignore
           retention-days: 14
 

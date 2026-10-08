@@ -1534,9 +1534,15 @@ class RoleWorker:
         if not math.isfinite(before) or len(search) > 100:
             raise ValueError("Use a finite history cursor and at most 100 search characters")
         query = (
-            "SELECT t.id,t.created,t.updated,t.stage,t.status,t.reason,t.question_text AS question "
+            "SELECT t.id,t.created,t.updated,t.stage,t.status,t.reason,t.question_text AS question,"
+            "t.retry_at,CASE WHEN t.status='done' THEN coalesce("
+            "substr(json_extract(t.result,'$.followup.rationale'),1,500),"
+            "substr(json_extract(t.result,'$.rationale'),1,500),"
+            "substr(json_extract(l.body,'$.claim'),1,500)) END AS decision_summary,"
+            "json_extract(t.context,'$.question.horizon') AS horizon,"
+            "json_extract(t.context,'$.tool_evidence.security') AS market "
         )
-        query += "FROM role_tasks t "
+        query += "FROM role_tasks t LEFT JOIN research_lessons l ON l.task=t.id "
         clauses: list[str] = []
         params: list[Any] = []
         if search.strip():
@@ -1572,7 +1578,8 @@ class RoleWorker:
                 )
             ]
             current = self.registry.db.execute(
-                "SELECT id,question_text AS question,stage,status,reason,updated,lease_until "
+                "SELECT id,question_text AS question,stage,status,reason,created,updated,"
+                "retry_at,lease_until "
                 "FROM role_tasks WHERE owner=? AND lease_until>=? AND ? "
                 "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
                 "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
@@ -1611,6 +1618,26 @@ class RoleWorker:
                     selection_json,
                 ),
             ).fetchone()
+            active_tasks = self.registry.db.execute(
+                "SELECT id,question_text AS question,stage,status,reason,created,updated,"
+                "retry_at,json_extract(context,'$.question.horizon') AS horizon,"
+                "json_extract(context,'$.tool_evidence.security') AS market "
+                "FROM role_tasks WHERE status NOT IN ('done','failed') AND ? "
+                "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
+                "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
+                "AND (json_type(context,'$.selection_authority') IS NULL "
+                "OR json_extract(context,'$.selection_authority')=json(?)) "
+                "ORDER BY created,id LIMIT 8",
+                (
+                    current_authority,
+                    self.execution_mode,
+                    current_contract,
+                    pilot_grant_id,
+                    pilot_grant_id,
+                    selection_json,
+                ),
+            ).fetchall()
         enabled = self._activation_enabled()
         queued = pending["total"] - pending["tools"] - pending["data"] - pending["outcomes"]
         activity = {
@@ -1650,6 +1677,7 @@ class RoleWorker:
             "experimental": self.paper_pilot,
             "execution_mode": self.execution_mode,
             "current_task": dict(current) if current else None,
+            "active_tasks": [dict(row) for row in active_tasks],
             "activity": activity,
             "question_selection": self.question_selection_status(),
             "contract": current_contract,
@@ -1706,6 +1734,19 @@ class RoleWorker:
                 attempt[key] = json.loads(attempt[key]) if attempt[key] else None
             attempt.pop("packet", None)  # The task exposes its immutable evidence handles.
         self._disclose_outcome(task["id"], task["result"])
+        with self.registry.lock:
+            next_tasks = self.registry.db.execute(
+                "SELECT DISTINCT t.id,t.question_text AS question,t.stage,t.status,t.updated "
+                "FROM role_tasks t LEFT JOIN role_question_selections s ON s.task=t.id "
+                "LEFT JOIN research_lessons l ON l.id=json_extract(t.context,'$.question.lesson') "
+                "WHERE json_extract(t.context,'$.predecessor_task')=? "
+                "OR json_extract(s.body,'$.learning.predecessor_task')=? "
+                "OR l.task=? "
+                "ORDER BY t.created,t.id LIMIT 6",
+                (identity, identity, identity),
+            ).fetchall()
+        task["continuations"] = [dict(row) for row in next_tasks[:5]]
+        task["more_continuations"] = len(next_tasks) > 5
         if len(json.dumps(task).encode()) > 131072:
             raise ValueError(
                 "Task detail exceeds its bounded response allowance; exact attempts retained"
@@ -3673,19 +3714,14 @@ class RoleWorker:
             seen.add(identity)
             task = self.get(identity)
             if records is not None:
+                row, _ = self._verified_pattern_learning_record(identity)
                 with self.registry.lock:
-                    row = self._pattern_learning_record(identity)
                     if (
-                        row["archive_reference"] != task["archive_reference"]
-                        or row["archive_sha256"] != task["archive_sha256"]
-                        or row["stage"] != task["stage"]
+                        row["stage"] != task["stage"]
                         or row["status"] != task["status"]
-                        or (
-                            row["archive_reference"] is None
-                            and any(
-                                (json.loads(row[key]) if row[key] else None) != task[key]
-                                for key in ("context", "proposal", "result")
-                            )
+                        or any(
+                            (json.loads(row[key]) if row[key] else None) != task[key]
+                            for key in ("context", "proposal", "result")
                         )
                     ):
                         raise InputWait("Predecessor storage changed during original recovery")
@@ -3734,6 +3770,37 @@ class RoleWorker:
         if row is None:
             raise InputWait("Original pattern predecessor is unavailable")
         return dict(row)
+
+    def _verified_pattern_learning_record(
+        self, identity: str
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        """Bind original content, while verifying a hot-to-cold storage move.
+
+        Research preparation/admission owns this read, outside financial work.
+        The existing history owner verifies original bytes and metadata. A final
+        registry check fences concurrent replacement; no current-data fallback.
+        The second projection preserves older bindings captured while cold.
+        """
+        with self.registry.lock:
+            row = self.registry.db.execute(
+                "SELECT * FROM role_tasks WHERE id=?", (identity,)
+            ).fetchone()
+            if row is None:
+                raise InputWait("Original pattern predecessor is unavailable")
+            raw = self._pattern_learning_record(identity)
+        if row["archive_reference"] is None:
+            return raw, raw
+        saved = self.history.read(row)
+        original = {key: saved[key] for key in raw}
+        original.update(archive_reference=None, archive_sha256=None)
+        with self.registry.lock:
+            if self._pattern_learning_record(identity) != raw:
+                raise InputWait("Original predecessor storage changed during verified recovery")
+        return original, raw
+
+    def _pattern_learning_record_matches(self, record: dict[str, Any]) -> bool:
+        original, legacy = self._verified_pattern_learning_record(record["task"])
+        return record["sha256"] in {fingerprint(original), fingerprint(legacy)}
 
     def _pattern_learning_body(self, binding: dict[str, Any]) -> dict[str, Any] | None:
         lesson = binding["lesson"]
@@ -3939,20 +4006,14 @@ class RoleWorker:
             ).fetchone()
         if row is None:
             raise InputWait("Recorded mature outcome requires its original supported lesson")
+        source_record, _ = self._verified_pattern_learning_record(task["id"])
         with self.registry.lock:
-            source_record = self._pattern_learning_record(task["id"])
             if (
-                source_record["archive_reference"] != task["archive_reference"]
-                or source_record["archive_sha256"] != task["archive_sha256"]
-                or source_record["stage"] != task["stage"]
+                source_record["stage"] != task["stage"]
                 or source_record["status"] != task["status"]
-                or (
-                    source_record["archive_reference"] is None
-                    and any(
-                        (json.loads(source_record[key]) if source_record[key] else None)
-                        != task[key]
-                        for key in ("context", "proposal", "result")
-                    )
+                or any(
+                    (json.loads(source_record[key]) if source_record[key] else None) != task[key]
+                    for key in ("context", "proposal", "result")
                 )
             ):
                 raise InputWait("Original mature source changed during recovery")
@@ -4032,9 +4093,9 @@ class RoleWorker:
         # Waiting tasks are expected to resume. Bind their immutable selection
         # and captured observation without requiring mutable state forever.
         for index, record in enumerate(records if observation is None or publication else []):
+            if not self._pattern_learning_record_matches(record):
+                raise InputWait("Original predecessor changed before publication")
             with self.registry.lock:
-                if fingerprint(self._pattern_learning_record(record["task"])) != record["sha256"]:
-                    raise InputWait("Original predecessor changed before publication")
                 children = self.registry.db.execute(
                     "SELECT id FROM role_tasks WHERE json_extract(context,'$.predecessor_task')=? "
                     "ORDER BY id LIMIT 2",
@@ -4048,11 +4109,8 @@ class RoleWorker:
             raise InputWait("Question no longer binds its original mature lesson")
         if binding["source_record"] is not None:
             record = binding["source_record"]
-            with self.registry.lock:
-                if fingerprint(self._pattern_learning_record(record["task"])) != record["sha256"]:
-                    raise InputWait(
-                        "Original mature source task/archive changed before publication"
-                    )
+            if not self._pattern_learning_record_matches(record):
+                raise InputWait("Original mature source task/archive changed before publication")
 
     def _pattern_learning_admission(
         self,

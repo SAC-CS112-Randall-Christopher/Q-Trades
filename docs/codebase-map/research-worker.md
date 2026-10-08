@@ -104,6 +104,17 @@ A foreign used `p0` can make `p1` the first available method; it does not provid
 
 ## Original packets and financial truth
 
+An archived predecessor is a storage move, not a different research outcome.
+[Verified original recovery](source-index.md#research-verified-original) reopens
+RoleHistory through its existing storage owner and verifies packet kind, exact
+task, original creation/update times, terminal stage/status and canonical fields.
+It compares the original reduced record, allowing a verified hot-to-cold move
+after successor selection. Missing, corrupt or foreign originals still refuse;
+attempts and allowances are not reset. Pattern learning admission runs before
+and after a storage borrow, preserving registry-before-storage lock order.
+`test_pattern_research_learning.py` covers mature-first ordered archive/restart,
+pre-publication rollover, negative original reads and real recorder contention.
+
 [Role evidence projections](source-index.md#research-role-evidence) retain independent source hashes for original preparation, current numerical evaluation, native recognition, and prior scored outcome. Some mature packets use explicit references to fields in the same packet, differences, and removals to avoid duplicate scored bodies. Missing samples, nulls, numeric types, and sample-key collisions must reconstruct exactly. Hashing a detector's literal reason is a declared projection; the full original remains in its saved evidence.
 
 The [attempt owner](source-index.md#research-worker-answer) persists the frozen profile, packet, reserved allowance, and raw answer before interpretation. A completed answer is reused only for the same frozen packet. Unknown completion remains unknown until its explicit recovery path; neither invalid answers nor adverse results refund a reservation or authorize a preferred answer. Context fit, schema validity, actual model reasoning, and after-cost performance are separate evidence stages.

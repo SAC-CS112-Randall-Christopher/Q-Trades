@@ -842,9 +842,11 @@ class PatternComparisons:
             }
             for offset in range(0, len(inputs), 500)
         ]
+        # Learning admission may reopen archived history under the registry lock.
+        # Never enter that lock while borrowing the shared recorder storage.
+        if admission is not None:
+            admission()
         with owner(plan) as storage:
-            if admission is not None:
-                admission()
             refs = storage.append(packets, now)
             for packet, ref in zip(packets, refs, strict=True):
                 if reopen_evidence(plan, ref) != packet:
@@ -854,6 +856,8 @@ class PatternComparisons:
                     now + plan.temporary_retention_seconds,
                     "Pattern comparison execution inputs",
                 )
+        if admission is not None:
+            admission()
         proof = {
             "count": len(inputs),
             "sha256": digest(inputs),

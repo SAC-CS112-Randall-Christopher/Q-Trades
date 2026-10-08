@@ -72,6 +72,17 @@ def entry_reason(a: dict[str, Any], paused: bool, now: float) -> str | None:
         return "Account processing stopped; inspect its recovery panel. Sibling accounts continue."
     if a.get("entries_paused"):
         return "Operator paused this account's entries; position exits remain enabled."
+    if a.get("campaign_id") in {"forward-research", "forward-control"}:
+        from trading.paper_learning import implementation_identity
+
+        if (
+            implementation_identity() is None
+            or a.get("strategy_implementation_sha256") != implementation_identity()
+        ):
+            return (
+                "Frozen execution implementation changed or is unavailable; "
+                "existing exits remain enabled."
+            )
     if not a["valuation_fresh"] or not fresh_frame({"observed": a.get("valuation_at")}, now):
         issues = a.get("valuation_issues", {})
         detail = "; ".join(f"{symbol}: {reason}" for symbol, reason in issues.items())

@@ -181,7 +181,8 @@ def test_current_readonly_observation_has_matched_capture_disclosure_and_no_offe
         admission=lambda: admissions.append(True),
         research_only=True,
     )
-    assert len(admissions) == 3
+    # Before/after the storage borrow, after capture and before publication.
+    assert len(admissions) == 4
     assert observation["evaluation"]["status"] == "supported_research_observation"
     assert observation["proposal_without_bundle_digest"] is None
     assert (

@@ -58,8 +58,10 @@ The map deliberately keeps these separate:
 8. Actual model capacity/coexistence/usefulness and prospective trading economics.
 
 The existing source stack's earlier passing checks belong to their exact source
-inputs. This map's baseline starts at PR87; adding documentation does not relabel
-old executions as a fresh installed result. A runtime installation marker is not
+inputs. The coherent-product increment starts at refreshed main `d8bf234`,
+including PR89; its [current ledger](../reviews/COHERENT_PRODUCT_66.md) separates
+new checks from the earlier PR87 map and audit evidence. Adding documentation
+does not relabel old executions as a fresh installed result. A runtime installation marker is not
 proof that all files and preserved data match; a green test is not a profitable
 strategy, continuous observation window or qualified model.
 

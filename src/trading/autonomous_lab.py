@@ -46,13 +46,35 @@ class AutonomousLab:
         self.paper._transact_state(time.time(), lambda e: result.update(finance.start(e, policy)))
         return result
 
-    def control(self, action: str, target: str | None) -> dict[str, Any]:
+    def control(
+        self,
+        action: str,
+        target: str | None,
+        *,
+        expected_policy_identity: str | None = None,
+        expected_control_revision: int | None = None,
+    ) -> dict[str, Any]:
         self.paper.require_healthy_control()
         result: dict[str, Any] = {}
         with self._proposal_lock:
-            self.paper._transact_state(
-                time.time(), lambda e: result.update(finance.control(e, action, target))
-            )
+
+            def apply(engine: PaperEngine) -> None:
+                if expected_policy_identity is not None:
+                    policy = engine.state.get("autonomous_lab", {}).get("policy")
+                    if policy is None or fingerprint(policy) != expected_policy_identity:
+                        raise ValueError("Saved comparison policy changed; review before resuming")
+                if expected_control_revision is not None:
+                    lab = engine.state.get("autonomous_lab", {})
+                    if action == "resume_proposals" and lab.get("proposals_paused") is False:
+                        result.update(status="already_applied", action=action)
+                        return
+                    if lab.get("control_revision", 0) != expected_control_revision:
+                        raise ValueError(
+                            "A newer comparison control is saved; review before resuming"
+                        )
+                result.update(finance.control(engine, action, target))
+
+            self.paper._transact_state(time.time(), apply)
         return result
 
     def bundle(self, now: float) -> dict[str, Any]:

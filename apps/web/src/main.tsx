@@ -4,12 +4,10 @@ import {
   Activity,
   ArrowDownToLine,
   ArrowRight,
-  BarChart3,
   BrainCircuit,
   ChevronRight,
   CircleHelp,
   Command,
-  FileClock,
   LayoutDashboard,
   LockKeyhole,
   Menu,
@@ -31,14 +29,16 @@ import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
 import { RoleResearchPanel } from "./RoleResearchPanel";
+import { inContext } from "./productNavigation";
 import { ResearchActivity } from "./ResearchActivity";
 import { ResearchAttention } from "./ResearchAttention";
 import { AutonomousPanel } from "./AutonomousPanel";
 import { EvidencePanel } from "./EvidencePanel";
 import { ReadinessPanel } from "./ReadinessPanel";
+import { ResearchOverview } from "./ResearchOverview";
+import { ResearchSetup } from "./ResearchSetup";
 import {
   AccountsView,
-  DashboardView,
   GlobalEntryControl,
   OrdersView,
   PerformanceChart,
@@ -75,55 +75,41 @@ type Snapshot = {
 const navigation = [
   {
     id: "dashboard",
-    label: "Dashboard",
+    label: "Overview",
+    href: "#overview",
     icon: LayoutDashboard,
     description: "Account performance and current activity",
   },
   {
-    id: "accounts",
-    label: "Accounts",
-    icon: Wallet,
-    description: "Isolated paper accounts and campaigns",
-  },
-  {
     id: "ai-lab",
-    label: "AI Lab",
+    label: "Research",
+    href: "#research",
     icon: BrainCircuit,
-    description: "Frozen experiments, learning and model trials",
+    description: "Investigations, evidence, results and next decisions",
   },
   {
-    id: "strategies",
-    label: "Strategies",
+    id: "accounts",
+    label: "Accounts & Results",
+    href: "#accounts",
+    icon: Wallet,
+    description: "Paper accounts, matched comparisons, positions, orders and costs",
+  },
+  {
+    id: "markets",
+    label: "Markets",
+    href: "#markets",
     icon: Activity,
-    description: "Recorded strategy decisions and evidence",
-  },
-  {
-    id: "orders",
-    label: "Orders",
-    icon: FileClock,
-    description:
-      "Trade history, positions, pending orders and retained journal",
-  },
-  {
-    id: "analytics",
-    label: "Analytics",
-    icon: BarChart3,
-    description: "Whole-account returns, fees and cost assumptions",
-  },
-  {
-    id: "risk",
-    label: "Risk",
-    icon: ShieldCheck,
-    description: "Entry limits, hard stops and live readiness",
+    description: "Observed markets, saved charts, findings and research eligibility",
   },
   {
     id: "settings",
     label: "Settings",
+    href: "#settings?view=setup",
     icon: Settings2,
     description: "Local collector, exports and deferred practice",
   },
 ] as const;
-type Page = (typeof navigation)[number]["id"] | "markets";
+type Page = (typeof navigation)[number]["id"] | "strategies" | "orders" | "analytics" | "risk";
 const aliases: Record<string, Page> = {
   overview: "dashboard",
   experiment: "accounts",
@@ -146,10 +132,18 @@ const aliases: Record<string, Page> = {
 };
 function currentPage(): Page {
   const hash = location.hash.slice(1).split("?")[0];
+  const view = new URLSearchParams(location.hash.split("?")[1] ?? "").get("view");
+  if (hash === "accounts") {
+    if (view === "orders") return "orders";
+    if (view === "performance") return "analytics";
+    if (view === "safeguards" || view === "readiness") return "risk";
+    if (view === "comparisons" || view === "qualification") return "ai-lab";
+  }
+  if (hash === "settings" && ["models", "knowledge", "training"].includes(view ?? "")) return "ai-lab";
   if (hash === "training-data" || hash.startsWith("teaching:") || hash.startsWith("lab-result:") || hash.startsWith("lab-comparison:")) return "ai-lab";
   return (
     aliases[hash] ??
-    (navigation.some((n) => n.id === hash) || hash === "markets"
+    (navigation.some((n) => n.id === hash) || ["strategies", "orders", "analytics", "risk"].includes(hash)
       ? (hash as Page)
       : "dashboard")
   );
@@ -167,7 +161,7 @@ const timeLabel = (value?: string) =>
 
 function App() {
   const [page, setPage] = useState<Page>(currentPage);
-  const [labTab, setLabTab] = useState("autonomous");
+  const [labTab, setLabTab] = useState("roles");
   const [riskTab, setRiskTab] = useState("limits");
   const [data, setData] = useState<Snapshot | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
@@ -177,10 +171,12 @@ function App() {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountSearch, setAccountSearch] = useState("");
+  const [advancedResearch, setAdvancedResearch] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const update = () => {
       const hash = location.hash.split("?")[0];
+      const view = new URLSearchParams(location.hash.split("?")[1] ?? "").get("view");
       setPage(currentPage());
       setMenuOpen(false);
       setSearchOpen(false);
@@ -189,17 +185,23 @@ function App() {
       else if (["#knowledge", "#research-reviews", "#reviewer-connection"].includes(hash)) setLabTab("knowledge");
       else if (hash === "#forward-learning") setLabTab("learning");
       else if (hash === "#experiment-lab") setLabTab("experiments");
-      else if (hash === "#research") setLabTab("autonomous");
+      else if (hash === "#research") setLabTab(["autonomous", "experiments", "history"].includes(view ?? "") ? view! : "roles");
+      else if (hash === "#ai-lab") setLabTab("autonomous");
+      else if (hash === "#accounts" && view === "comparisons") setLabTab("autonomous");
+      else if (hash === "#accounts" && view === "qualification") setLabTab("learning");
+      else if (hash === "#settings" && ["models", "knowledge", "training"].includes(view ?? "")) setLabTab(view!);
       else if (
-        location.hash === "#training-data" ||
+        hash === "#training-data" ||
         location.hash.startsWith("#teaching:") || location.hash.startsWith("#lab-result:") || location.hash.startsWith("#lab-comparison:")
       )
         setLabTab("training");
-      if (hash === "#live-readiness") setRiskTab("readiness");
+      if (hash === "#live-readiness" || view === "readiness") setRiskTab("readiness");
+      else if (hash === "#risk" || view === "safeguards") setRiskTab("limits");
       window.scrollTo({ top: 0, behavior: "instant" });
     };
     update();
     window.addEventListener("hashchange", update);
+    window.addEventListener("popstate", update);
     const keyboard = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -214,6 +216,7 @@ function App() {
     window.addEventListener("keydown", keyboard);
     return () => {
       window.removeEventListener("hashchange", update);
+      window.removeEventListener("popstate", update);
       window.removeEventListener("keydown", keyboard);
     };
   }, []);
@@ -268,12 +271,13 @@ function App() {
               ? "Stale"
               : "Paper worker running";
   const accountCount = Object.keys(paper?.accounts ?? {}).length;
-  const title = navigation.find((n) => n.id === page)?.label ?? "Markets";
+  const section = ["orders", "analytics", "risk"].includes(page) || page === "ai-lab" && ["autonomous", "learning"].includes(labTab) ? "accounts" : page === "strategies" ? "markets" : page === "ai-lab" && ["models", "knowledge", "training"].includes(labTab) ? "settings" : page;
+  const title = navigation.find((n) => n.id === section)?.label ?? "Overview";
   const subtitle: Record<Page, string> = {
-    dashboard: "Your paper accounts, performance and research — in one place.",
+    dashboard: "Current operation, recent decisions, next actions and attention.",
     accounts:
       "Compare isolated accounts. Keep each balance, strategy and loss limit separate.",
-    "ai-lab": "Test an idea. Freeze the evidence. Learn from every outcome.",
+    "ai-lab": "Follow saved investigations, their evidence and their next decision.",
     strategies: "Understand the rules, the signals and why a strategy acted.",
     orders:
       "Recent trades across accounts, plus positions and the full journal.",
@@ -346,8 +350,8 @@ function App() {
       <aside className={`sidebar ${menuOpen ? "is-open" : ""}`}>
         <a
           className="brand"
-          href="#dashboard"
-          aria-label="QTrades AI dashboard"
+          href="#overview"
+          aria-label="QTrades AI overview"
         >
           <svg className="q-mark" viewBox="0 0 40 40" aria-hidden="true">
             <defs>
@@ -380,9 +384,9 @@ function App() {
           {navigation.map((n) => (
             <a
               key={n.id}
-              href={`#${n.id}`}
-              className={page === n.id ? "nav-primary" : ""}
-              aria-current={page === n.id ? "page" : undefined}
+              href={inContext(n.href)}
+              className={section === n.id ? "nav-primary" : ""}
+              aria-current={section === n.id ? "page" : undefined}
               onClick={() => {
                 setMenuOpen(false);
                 if (n.id === "accounts") setAccountSearch("");
@@ -395,15 +399,6 @@ function App() {
               )}
             </a>
           ))}
-          <a
-            href="#markets"
-            onClick={() => setMenuOpen(false)}
-            className={page === "markets" ? "nav-primary" : ""}
-            aria-current={page === "markets" ? "page" : undefined}
-          >
-            <Activity size={19} />
-            <span>Markets</span>
-          </a>
         </nav>
         <div className="sidebar-note">
           <ShieldCheck size={24} />
@@ -480,7 +475,7 @@ function App() {
                 {matchingPages.map((n) => (
                   <a
                     key={n.id}
-                    href={`#${n.id}`}
+                    href={inContext(n.href)}
                     onClick={() => setSearchOpen(false)}
                   >
                     <n.icon size={17} />
@@ -536,7 +531,7 @@ function App() {
               <p className="eyebrow">
                 WORKSPACE <ChevronRight size={11} /> {title.toUpperCase()}
               </p>
-              <h1>{page === "accounts" ? "Accounts control center" : title}</h1>
+              <h1>{title}</h1>
               <p className="subtitle">{subtitle[page]}</p>
             </div>
             <div className="heading-actions">
@@ -573,12 +568,9 @@ function App() {
               historical evidence stays available.
             </div>
           )}
-          {page === "dashboard" && (
-            <>
-              <DashboardView paper={paper} unavailable={unavailable} />
-              <ResearchAttention />
-            </>
-          )}
+          {section === "accounts" && <nav className="workspace-tabs" aria-label="Accounts and results views">{[["#accounts", "Accounts"], ["#accounts?view=comparisons", "Matched comparisons"], ["#accounts?view=orders", "Positions & orders"], ["#accounts?view=performance", "Performance & costs"], ["#accounts?view=qualification", "Paper qualification"], ["#accounts?view=safeguards", "Safeguards"]].map(([href, label]) => <a key={href} href={inContext(href)}>{label}</a>)}</nav>}
+          {section === "settings" && <nav className="workspace-tabs" aria-label="Settings views">{[["#settings?view=setup", "Setup & resume"], ["#settings?view=models", "Local model connection"], ["#settings?view=knowledge", "Knowledge & optional review"], ["#settings?view=training", "Training Lab preparation"]].map(([href, label]) => <a key={href} href={inContext(href)}>{label}</a>)}</nav>}
+          {page === "dashboard" && <ResearchOverview paper={paper} unavailable={unavailable} />}
           {page === "accounts" && (
             <>
               <AccountsView
@@ -598,35 +590,26 @@ function App() {
           )}
           {page === "ai-lab" && (
             <>
-              <ResearchActivity />
-              <ResearchAttention />
-              <div className="workspace-tabs" aria-label="AI Lab views">
+              {section === "ai-lab" && <details className="workspace-details" onToggle={event => setAdvancedResearch(event.currentTarget.open)}><summary>Advanced research tools and diagnostics</summary>{advancedResearch && <><div className="workspace-tabs" aria-label="Advanced research views">
                 {[
-                  ["autonomous", "Continuous paper lab"],
-                  ["roles", "Local model research"],
+                  ["roles", "Investigations"],
                   ["experiments", "Numerical research"],
-                  ["learning", "Forward learning"],
                   ["history", "Historical matches"],
-                  ["models", "Local model trials"],
-                  ["training", "Training data"],
-                  ["knowledge", "Knowledge & reviews"],
                 ].map(([id, label]) => (
                   <button
                     key={id}
                     className={labTab === id ? "selected" : ""}
                     aria-pressed={labTab === id}
                     onClick={() => {
-                      setLabTab(id);
-                      if (id === "training") location.hash = "training-data";
-                      if (id === "knowledge") location.hash = "knowledge";
+                      location.hash = id === "roles" ? "research" : `research?view=${id}`;
                     }}
                   >
                     {label}
                   </button>
                 ))}
-              </div>
+              </div><ResearchActivity /><ResearchAttention /></>}</details>}
               {labTab === "autonomous" && <AutonomousPanel />}
-              {labTab === "roles" && <RoleResearchPanel />}
+              {labTab === "roles" && <RoleResearchPanel integrated={location.hash.split("?")[0] === "#research"} />}
               {labTab === "knowledge" && <Suspense fallback={<p>Opening persistent knowledge…</p>}><KnowledgeWorkspace /></Suspense>}
               {labTab === "training" && <Suspense fallback={<p>Loading training review…</p>}><TrainingDataPanel /></Suspense>}
               {labTab === "experiments" && <ExperimentLab paper={paper} />}
@@ -696,6 +679,7 @@ function App() {
           )}
           {page === "settings" && (
             <>
+              <ResearchSetup />
               <div className="settings-grid">
                 <section className="workspace-card">
                   <div className="card-heading">

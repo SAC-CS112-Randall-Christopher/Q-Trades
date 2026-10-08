@@ -1,4 +1,19 @@
-# Current audit repair — October 8, 2026, PR88 closed research loop
+# Current coherent product lane — October 8, 2026, issue #66
+
+Chris's corrected goal is one supervised crypto spot trading product: complete
+the coherent paper validation workflow now, then separately validate selected
+venue integration and bounded real-money operation. This lane is
+`codex/coherent-product-66`, based on refreshed main `d8bf234`. Existing PR76 is
+the separate finite-setup owner; native packaging retains its separate owner.
+Use `docs/reviews/COHERENT_PRODUCT_66.md` for current outcome/evidence deltas.
+Source/UI changes, disposable QA, independent review and draft publication are
+authorized. Operating merge/install/restart, new inference/acquisition/training,
+financial-policy changes and live access retain their explicit boundaries.
+Paper is the present execution environment, not the final product ceiling.
+Do not claim paper software proof establishes actual learning, qualification,
+economic advantage, installed acceptance or live authorization.
+
+# Historical audit repair — October 8, 2026, PR88 closed research loop
 
 Chris asks to pursue, verify and fix the supplied PR88 closed-loop audit. This
 isolated source lane is `codex/closed-loop-audit-88`, starting at audited PR88

@@ -167,14 +167,15 @@ const bounded = async (promise, milliseconds, label) => {
     await page.screenshot({ path: path.join(directory, "role-pattern-mobile.png"), timeout: 5000 });
     groups.push({ name: phase, exact_task_reload: true, mobile_geometry: geometry });
     if (original.audit_recovery) {
-      phase = "fixed-rule-result-missing-qualification-handoff";
+      phase = "fixed-rule-original-qualification-source-link";
       await page.setViewportSize({ width: 1440, height: 1100 });
       await page.goto(`${origin}/#forward-learning`, { waitUntil: "domcontentloaded", timeout: remaining(10000) });
-      const handoff = page.getByRole("article", { name: "Unavailable qualification handoff" });
+      const handoff = page.getByRole("article", { name: "Original rule result for qualification" });
       await handoff.waitFor();
-      assert((await handoff.innerText()).includes("qualification handoff not implemented for this strategy type"));
+      assert((await handoff.innerText()).includes("Its exploratory return is not qualification"));
+      assert(await handoff.getByRole("link", { name: "Review this frozen rule and prospective funding" }).isVisible());
       assert.equal(await handoff.getByRole("button").count(), 0);
-      await handoff.screenshot({ path: path.join(directory, "missing-rule-qualification.png"), timeout: 5000 });
+      await handoff.screenshot({ path: path.join(directory, "original-rule-qualification-source.png"), timeout: 5000 });
       groups.push({ name: phase, synthetic_scored_rule: true, no_qualification_authority: true });
     }
     }

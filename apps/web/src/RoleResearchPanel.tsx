@@ -5,6 +5,9 @@ import { StockResearchPanel } from "./StockResearchPanel";
 import { ResearchActorPanel } from "./ResearchActorPanel";
 import { ResearchQualityPanel } from "./ResearchQualityPanel";
 import { FrozenComponentPanel } from "./FrozenComponentPanel";
+import { investigationLink, researchStage, researchTime } from "./ResearchOverview";
+import { pilotControlKey, researchControlLock, startupKey } from "./researchControls";
+import { inContext } from "./productNavigation";
 
 type RoleState = {
   enabled: boolean;
@@ -44,7 +47,7 @@ type RoleState = {
     operating_admission?: { state: string; checked_at: number; next_action: string; meaning: string };
     roles?: Record<string, { qualified: boolean; reason?: string }>;
   };
-  tasks: { id: string; question?: string; created: number; updated: number; stage: string; status: string; reason: string | null }[];
+  tasks: { id: string; question?: string; created: number; updated: number; stage: string; status: string; reason: string | null; decision_summary?: string | null }[];
   next_before: number | null;
   next_before_id: string | null;
   history: { retained: number; archived: number; active: number; hot_limit: number };
@@ -101,7 +104,9 @@ type CurrentInputs = { count: number; sha256: string; cutoff: number; start_ms: 
 type FixedControls = Record<string, unknown> & { entry: string; exit: { feature_seconds: number; maximum_hold: number; review: number }; evaluation: { seconds: number } };
 type FixedMethod = { candidate: FixedControls; reference: FixedControls; source_sha256: Record<string, string>; current_inputs: CurrentInputs };
 type Task = {
-  id: string; stage: string; status: string; updated: number; reason: string | null;
+  id: string; stage: string; status: string; created: number; updated: number; retry_at?: number; reason: string | null;
+  continuations?: {id: string; question: string; stage: string; status: string}[];
+  more_continuations?: boolean;
   contract_applicability?: {
     state: "matching" | "different" | "unavailable";
     reason: string;
@@ -118,7 +123,6 @@ type Task = {
 type Question = { question: string; horizon: string; parent: string | null; request_id: string };
 type SavedRequest = { body: Question; phase: "unknown" | "rejected"; message?: string };
 type PilotControl = "pause" | "resume";
-const pilotControlKey = "qtrades-paper-pilot-control";
 const savedControl = (): PilotControl | null => {
   const action = localStorage.getItem(pilotControlKey);
   return action === "pause" || action === "resume" ? action : null;
@@ -203,7 +207,7 @@ function PatternTaskEvidence({ pattern, fixed }: { pattern: PatternComparison; f
   </section>;
 }
 
-export function RoleResearchPanel() {
+export function RoleResearchPanel({ integrated = false }: { integrated?: boolean }) {
   const [state, setState] = useState<RoleState | null>(null);
   const [task, setTask] = useState<Task | null>(null);
   const [selected, setSelected] = useState(() => linkedTask() ?? localStorage.getItem("qtrades-role-task") ?? "");
@@ -222,6 +226,7 @@ export function RoleResearchPanel() {
   const [controlPending, setControlPending] = useState<PilotControl | null>(savedControl);
   const [controlError, setControlError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const [advancedTools, setAdvancedTools] = useState(false);
   const [question, setQuestion] = useState("Does the reviewed range mechanism differ from its matched breakout reference after costs?");
   const [horizon, setHorizon] = useState("short");
   const [parent, setParent] = useState("");
@@ -279,13 +284,16 @@ export function RoleResearchPanel() {
     setSelected(id);
     localStorage.setItem("qtrades-role-task", id);
     setRefresh(r => r + 1);
-    const params = new URLSearchParams({ task: id });
-    location.hash = `role-research?${params}`;
+    const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    params.set("task", id);
+    params.delete("lesson");
+    location.hash = `${integrated ? "research" : "role-research"}?${params}`;
   };
   useEffect(() => {
-    const restore = () => { const id = linkedTask(); if (id !== null) { selectedTask.current = id; setTask(null); setTaskError(null); setSelected(id); } };
+    const restore = () => { const id = linkedTask() ?? ""; if (id !== selectedTask.current) { selectedTask.current = id; setTask(null); setTaskError(null); setSelected(id); } };
     window.addEventListener("hashchange", restore);
-    return () => window.removeEventListener("hashchange", restore);
+    window.addEventListener("popstate", restore);
+    return () => { window.removeEventListener("hashchange", restore); window.removeEventListener("popstate", restore); };
   }, []);
   const remember = (saved: SavedRequest) => {
     localStorage.setItem("qtrades-role-question-retry", JSON.stringify(saved)); setRetry(saved);
@@ -338,6 +346,11 @@ export function RoleResearchPanel() {
     finally { setBusy(false); }
   };
   const controlPilot = async (action: PilotControl) => {
+    if (!navigator.locks) { setControlError("This browser cannot coordinate research controls. Use a supported local browser."); return; }
+    await navigator.locks.request(researchControlLock, { ifAvailable: true }, async lock => {
+    if (!lock) { setControlError("Another window is saving research controls. Refresh its saved status before retrying."); return; }
+    if (action === "resume" && localStorage.getItem(startupKey)) { setControlError("Reconcile the reviewed startup in Settings before issuing another resume."); return; }
+    if (action === "pause") localStorage.removeItem(startupKey);
     const retained = savedControl();
     if (retained && retained !== action) {
       setControlPending(retained); setControlError("Reconcile the earlier pilot control before changing it."); return;
@@ -364,13 +377,17 @@ export function RoleResearchPanel() {
       }
     } catch (cause) { setControlError(cause instanceof Error ? cause.message : "Pilot control acknowledgment unavailable; refresh its current status."); }
     finally { setControlBusy(false); setRefresh(r => r + 1); }
+    });
   };
   const pilot = state?.paper_pilot === true;
   const patternQuestions = state?.contract === "reviewed-rule-role-v8";
   const manualQuestions = !statusError && !!state?.contract && ["reviewed-rule-role-v5", "reviewed-rule-role-v6", "reviewed-rule-role-v7"].includes(state.contract);
   const stageLabel = (stage: string) => pilot && stage === "review" ? "Model review" : stages[stage] ?? stage;
   return <section id="role-research" className="panel role-research" aria-labelledby="role-title">
-    <h2 id="role-title">Local model research</h2>
+    <h2 id="role-title">{integrated ? "Investigations" : "Local model research"}</h2>
+    {integrated && <p>Follow one question from its original evidence through checks, review, comparison and next decision. The existing application worker advances approved stages; manual questions are optional. <a href="#settings?view=setup">Review saved research setup</a>.</p>}
+    {integrated && <p role="status">{statusError ? "Current activity is unavailable." : state?.activity?.reason ?? "Reading current research activity…"} {state?.current_task && <button type="button" onClick={() => open(state.current_task!.id)}>Follow the current investigation</button>}</p>}
+    <details className="workspace-details" open={!integrated}><summary>Research permission, resources and controls</summary>
     <p>Investigate a permitted question, compare reviewed rules, and follow the recorded paper outcome. Numerical calculation and paper admission retain their existing authority.</p>
     {pilot && <section aria-label="Experimental paper research pilot">
       <h3>Experimental paper research pilot</h3>
@@ -406,6 +423,7 @@ export function RoleResearchPanel() {
     {state?.readiness.profile != null && <details><summary>{statusError ? "Last observed model profile and digest" : "Exact current model profile and digest"}</summary><pre>{JSON.stringify(state.readiness.profile, null, 2)}</pre></details>}
     <p>{statusError ? "Last observed policy: " : ""}{state?.reason}</p>
     {!!state?.supervision?.length && <section aria-label="Research worker recovery"><h3>{statusError ? "Last observed worker recovery" : "Worker recovery"}</h3><ul>{state.supervision.map(item => <li key={item.phase}><strong>{item.phase}: {item.status}</strong> · {item.reason} · recorded {stamp(item.updated)}{item.retry_at > 0 ? ` · next bounded retry ${stamp(item.retry_at)}` : ""}</li>)}</ul></section>}
+    </details>
     {statusError && <p role="alert">{statusError} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
     {taskError && <p role="alert">{taskError} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry task detail</button></p>}
     {error && <p role="alert">{error.message} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
@@ -415,7 +433,7 @@ export function RoleResearchPanel() {
       <p>This research mode selects new questions automatically from saved native pattern findings. It waits when evidence or operating prerequisites are unavailable. Manual questions are not supported in this mode.</p>
       {retry && <p>Your earlier manual request remains below for recovery. It has not been replaced by an automatic question.</p>}
     </section>}
-    {(!patternQuestions || retry) && <form onSubmit={enqueue}>
+    {(!patternQuestions || retry) && <details open={!integrated || !!retry}><summary>Manual research question and saved request recovery</summary><form onSubmit={enqueue}>
       {!manualQuestions && !patternQuestions && <p role="status">The current research mode is unverified. Reconnect status before saving a new question. Recovery of an original request remains available.</p>}
       <label>Research question <textarea disabled={busy || !!retry} required minLength={12} maxLength={500} value={retry?.body.question ?? question} onChange={e => setQuestion(e.target.value)} /></label>
       <label>Holding horizon <select disabled={busy || !!retry} value={retry?.body.horizon ?? horizon} onChange={e => setHorizon(e.target.value)}><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select></label>
@@ -431,21 +449,35 @@ export function RoleResearchPanel() {
         <button disabled={busy} type="button" onClick={() => { forget(); setError(null); }}>Discard rejected question</button>
         {!patternQuestions && <button disabled={busy || !manualQuestions} type="button" onClick={() => { if (manualQuestions) void submit({ ...retry.body, request_id: crypto.randomUUID() }); }}>Try rejected question again</button>}
       </>}
-    </form>}
+    </form></details>}
     <p>{patternQuestions ? "Automatic selection does not enable model inference. Each dispatch still requires its declared permissions, activation, current inputs and resource limits." : pilot ? "Saved and evidence-driven questions use the approved experimental paper pilot. Each request rechecks its permissions, current inputs and resource limits; unavailable inputs remain a recorded wait." : "Saving a question does not enable inference. A declared paper policy, current role qualification and separate activation are required."}</p>
+    <details className="workspace-details" open={!integrated || !selected}><summary>Saved investigations and interrupted work</summary>
     {state?.history && <p>{state.history.retained} retained questions · {state.history.active} active · {state.history.archived} archived. Completed details reopen from their verified original record.</p>}
     <form onSubmit={e => { e.preventDefault(); setSearch(searchDraft.trim()); setBefore(0); setBeforeId(""); }}>
       <label>Search saved questions <input value={searchDraft} maxLength={100} onChange={e => setSearchDraft(e.target.value)} /></label>
       <button type="submit">Search history</button>
       {search && <button type="button" onClick={() => { setSearch(""); setSearchDraft(""); setBefore(0); setBeforeId(""); }}>Show all questions</button>}
     </form>
-    <div className="table-scroll"><table><thead><tr><th>Saved question</th><th>Stage</th><th>Status</th><th>Actual last progress</th></tr></thead><tbody>{state?.tasks.map(t => <tr key={t.id}><td><button type="button" onClick={() => open(t.id)}>{t.question ?? t.id}</button></td><td>{stageLabel(t.stage)}</td><td>{t.status}{t.reason ? ` · ${t.reason}` : ""}</td><td>{stamp(t.updated)}</td></tr>)}</tbody></table></div>
+    <div className="table-scroll"><table><thead><tr><th>Saved question</th><th>Stage</th><th>Status</th><th>Actual last progress</th></tr></thead><tbody>{state?.tasks.map(t => <tr key={t.id}><td><button type="button" onClick={() => open(t.id)}>{t.question ?? t.id}</button></td><td>{stageLabel(t.stage)}</td><td>{t.status}{(t.status === "done" ? t.decision_summary : t.reason) ? ` · ${t.status === "done" ? t.decision_summary : t.reason}` : ""}</td><td>{stamp(t.updated)}</td></tr>)}</tbody></table></div>
     {before !== 0 && <button type="button" onClick={() => { setBefore(0); setBeforeId(""); }}>Latest questions</button>}
     {state?.next_before && <button type="button" onClick={() => { setBefore(state.next_before!); setBeforeId(state.next_before_id ?? ""); }}>Older questions</button>}
+    </details>
     {task && <article aria-label="Saved research task">
       <h3>{task.context.question.question}</h3><p>{task.context.question.horizon} horizon · {stageLabel(task.stage)} · {task.status} · progress {stamp(task.updated)}</p>
+      <p>Began {researchTime(task.created)}. {task.retry_at ? `Next scheduled check ${researchTime(task.retry_at)}; this is not a completion estimate.` : "No next check time is recorded."}</p>
+      <ol className="investigation-stages" aria-label="Investigation stages">{[
+        ["Finding", "Original inputs captured"],
+        ["Hypothesis", task.attempts.some(a => a.stage === "idea" && a.response) ? "Model answer retained" : "Awaiting a model decision"],
+        ["Checks", task.evaluation ? "Deterministic check retained" : "Not completed"],
+        ["Review", task.result?.review ? `Recorded ${task.result.review.action.replaceAll("_", " ")}` : "Not completed"],
+        ["Comparison", task.result?.trial_id ? "Matched pair recorded" : task.result?.proposal_id ? "Admission pending" : "No admitted comparison"],
+        ["Outcome", task.result?.outcome ? task.result.outcome.body.outcome : "No mature result"],
+        ["Next decision", task.result?.followup ? task.result.followup.action.replaceAll("_", " ") : "Not completed"],
+      ].map(([stage, state]) => <li key={stage}><strong>{stage}</strong><span>{state}</span></li>)}</ol>
+      {task.result?.rationale && <p><strong>Recorded model conclusion:</strong> {task.result.rationale}</p>}
+      {task.result?.action === "no_change" && <p><strong>No change proposed.</strong> This retained decision does not establish improved trading performance.</p>}
       <p>{statusError || taskError ? "Last observed ownership" : "Current ownership"}: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
-      {task.reason && <p>{task.reason}</p>}
+      {task.status !== "done" && task.reason && <p>{task.reason}</p>}
       {task.contract_applicability && task.contract_applicability.state !== "matching" && <p role="status" aria-label="Saved question format applicability">{statusError || taskError ? "Last observed research format" : "Current research format"}: <strong>{task.contract_applicability.state === "different" ? "Saved question inactive for the selected format" : "Current format unknown"}</strong>. {task.contract_applicability.reason}</p>}
       {task.context.question_selection && <section aria-label="Why this research question was selected">
         <h4>Evidence-driven question · experimental paper research</h4>
@@ -486,10 +518,12 @@ export function RoleResearchPanel() {
       {task.evaluation && <><h4>{task.context.pattern_comparison ? "Numerical evaluation for this task" : "Computed method check"}</h4><p>{task.evaluation.input_count} causal input bars checked at {stamp(task.evaluation.evaluated_at)}. {task.evaluation.feature.reason} {task.evaluation.replay}</p>{task.context.pattern_comparison && <p>This task-stage calculation is separate from the original preparation-time check. Its recorded time does not establish current readiness or a measured trading result.</p>}<details><summary>Exact calculated result and saved input reference</summary><pre>{JSON.stringify(task.evaluation, null, 2)}</pre></details></>}
       {task.result?.review && <p>{task.context.execution_mode === "paper_research_pilot" ? "Experimental model review" : "Independent review"}: {task.result.review.action} · {task.result.review.rationale}</p>}
       {task.proposal && <><p>{task.proposal.strategy.version === "reviewed-lab-rules-v4" ? `Proposed ${task.proposal.kind}: fixed ${task.proposal.strategy.family}, compared with fixed ${task.proposal.reference.family}.` : `Proposed ${task.proposal.kind}: ${task.proposal.strategy.family} with ${task.proposal.strategy.lookback} bars, compared with ${task.proposal.reference.family} using ${task.proposal.reference.lookback} bars.`}</p><details><summary>Validated ordinary paper proposal</summary><pre>{JSON.stringify(task.proposal, null, 2)}</pre></details></>}
-      {task.result?.proposal_id && <p>Ordinary inbox: {task.result.proposal_id} · pair {task.result.trial_id ?? "awaiting capacity, funding or outcome maturity"}</p>}
+      {task.result?.proposal_id && <p>Paper proposal retained · {task.result.trial_id ? <a href={inContext("#accounts?view=comparisons", { trial: task.result.trial_id, task: task.id })}>Open this matched comparison and account evidence</a> : "awaiting capacity, funding or outcome maturity"}</p>}
       {task.proposal?.strategy.entry_filter && <p>Entry component: frozen historical memory · {task.proposal.strategy.entry_filter.horizon_seconds / 60} minutes · artifact {task.proposal.strategy.entry_filter.artifact.sha256} · marginal ${task.proposal.strategy.entry_filter.marginal_daily_usd}/day · fallback {task.proposal.strategy.entry_filter.fallback}. Baseline exits and financial risk remain authoritative.</p>}
       {task.result?.outcome && <section><h4>Recorded comparison: {task.result.outcome.body.outcome}</h4><p>{task.result.outcome.body.reason}</p><p>Window {stamp(task.result.outcome.body.window_start)} to {stamp(task.result.outcome.body.window_end)} · outcome available {stamp(task.result.outcome.body.available_at)}.</p><p>Whole-account result after declared operating costs: candidate ${task.result.outcome.body.net_after_operating_usd?.candidate ?? "unknown"}; reference ${task.result.outcome.body.net_after_operating_usd?.reference ?? "unknown"}; difference ${task.result.outcome.body.delta_usd ?? "unknown"}. Execution fees remain counted once.</p><p>{task.result.outcome.body.qualification}</p><details><summary>Recorded comparison outcome</summary><pre>{JSON.stringify(task.result.outcome, null, 2)}</pre></details></section>}
       {task.result?.followup && <p>Supported follow-up: {task.result.followup.action} · {task.result.followup.rationale} {task.result.followup.dependency}</p>}
+      {!!task.continuations?.length && <section aria-label="Linked next investigations"><h4>Next investigations</h4><ul>{task.continuations.map(next => <li key={next.id}><a href={investigationLink(next.id)}>{next.question}</a> · {researchStage[next.stage] ?? next.stage} · {next.status}</li>)}</ul><p>A linked task establishes a continuation. Its own evidence and model decision are needed to show whether the prior result was used.</p></section>}
+      {task.more_continuations && <p>More linked investigations remain in saved history.</p>}
       <details><summary>Model attempts, final answers and resource receipts</summary>{task.attempts.map((a, i) => <div key={i}>
         <h4>{a.stage} · {a.status}</h4>
         <p>{stamp(a.started)} {a.finished ? `to ${stamp(a.finished)}` : "completion pending or unknown"} {a.reason}</p>
@@ -498,9 +532,7 @@ export function RoleResearchPanel() {
         {["idea", "review", "followup"].includes(a.stage) && task.context.execution_mode !== "paper_research_pilot" && <TrainingCandidateExport key={`${task.id}-${a.stage}-${a.attempt}`} task={task.id} stage={a.stage} attempt={a.attempt} completed={a.finished !== null && a.response !== null} />}
       </div>)}</details>
     </article>}
-    <LessonPanel openTask={open} />
-    <StockResearchPanel />
-    <ResearchActorPanel selectedTask={selected || null} />
-    <ResearchQualityPanel experimentalPilot={pilot} />
+    <details open={!integrated}><summary>Retained supported lessons</summary><LessonPanel openTask={open} /></details>
+    <details open={advancedTools} onToggle={event => setAdvancedTools(event.currentTarget.open)}><summary>Advanced source, role access and quality tools</summary>{advancedTools && <><StockResearchPanel /><ResearchActorPanel selectedTask={selected || null} /><ResearchQualityPanel experimentalPilot={pilot} /></>}</details>
   </section>;
 }

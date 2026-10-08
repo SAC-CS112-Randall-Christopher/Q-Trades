@@ -25,7 +25,21 @@
     {"id":"verification-workflow","path":".github/workflows/windows-native.yml","description":"Exact native, dashboard, ownership, PG and browser job selections"},
     {"id":"map-workflow","path":".github/workflows/codebase-map.yml","description":"Standalone standard-library map job for every PR and main push"},
     {"id":"map-tool","path":"tools/codebase_map.py","symbol":"main","description":"Map navigation, selected traces and explicit snapshot maintenance"},
-    {"id":"map-tool-tests","path":"tests/test_codebase_map.py","description":"Isolated map-tool positive and negative behavior coverage"}
+    {"id":"map-tool-tests","path":"tests/test_codebase_map.py","description":"Isolated map-tool positive and negative behavior coverage"},
+    {"id":"product-overview-read","path":"src/trading/research_overview.py","description":"Bounded independent owner observations without dispatch, detail disclosure or financial writes","symbol":"snapshot"},
+    {"id":"product-supervised-start","path":"src/trading/research_overview.py","description":"Reviewed component startup with exact current scope/policy and Pause revisions","symbol":"start"},
+    {"id":"product-setup-panel","path":"apps/web/src/ResearchSetup.tsx","description":"Normal saved-scope setup, revised review and nonreplaying acknowledgment recovery"},
+    {"id":"product-owner-tests","path":"tests/test_research_product.py","description":"Read purity, waiting identity, configuration/expiry/revision and idempotent owner tests"},
+    {"id":"product-browser-proof","path":"tests/browser/research_product.cjs","description":"Compiled normal product, unsuppressed polling and native disposable-owner workflow"},
+    {"id":"product-browser-server","path":"tests/browser/research_product_server.py","description":"Finite isolated PG/scanner/role driver with synthetic inputs, clock and software model callbacks","symbol":"main"},
+    {"id":"product-navigation","path":"apps/web/src/productNavigation.ts","description":"Exact account/task/trial navigation and account selection with Back and current-view preservation"},
+    {"id":"product-model-scope","path":"src/trading/peft_role_model.py","description":"Existing verified profile to disabled recurring scope, create-only policy and exact acknowledgment","symbol":"configure_paper_scope"},
+    {"id":"paper-rule-source","path":"src/trading/paper_learning.py","description":"Original immutable reservation, unique mature score, exact frozen rule and economic provenance","symbol":"rule_source"},
+    {"id":"paper-rule-admission","path":"src/trading/paper_learning.py","description":"Separate prospective rule/control funding through existing writer and unchanged capacity/risk gates","symbol":"admit_rule"},
+    {"id":"paper-rule-runtime","path":"src/trading/paper_runtime.py","description":"Read-only original review outside writer, indexed immutable-receipt recheck inside financial transaction","symbol":"PaperRuntime.qualify_rule"},
+    {"id":"research-verified-original","path":"src/trading/role_worker.py","description":"Verified hot/cold canonical predecessor recovery preserving original task and mature outcome","symbol":"RoleWorker._verified_pattern_learning_record"},
+    {"id":"product-live-readiness","path":"src/trading/live_readiness.py","description":"Existing dated readiness owner; no authenticated order connector or live permission","symbol":"packet"},
+    {"id":"product-live-readiness-panel","path":"apps/web/src/ReadinessPanel.tsx","description":"Existing readiness decision packet under Accounts and Results safeguards"}
   ],
   "tasks": [
     {"id":"runtime-update-mismatch","title":"Updater refuses an approved target or installed code differs","guide":"runtime-updates.md","section":"updater-target-and-preservation","references":["runtime-updater","runtime-updater-tests","runtime-health-predicate","runtime-health-tests"],"symptoms":["ExpectedCommit mismatch","installed version","merge is not rollout"]},
@@ -33,6 +47,8 @@
     {"id":"startup-optional-failure","title":"Trace startup or an optional subsystem failure","guide":"architecture.md","section":"from-startup-to-background-work","references":["platform-cli","platform-app","platform-lifespan","platform-collector-lock","platform-monitor-store","platform-settings"],"symptoms":["startup fails","research unavailable","paper continues","store unavailable"]},
     {"id":"shutdown-storage-owner","title":"Trace cancellation and store ownership before changing shutdown","guide":"architecture.md","section":"shutdown-and-recovery","references":["platform-lifespan","platform-collector-lock","runtime-update-shutdown"],"symptoms":["close store","cancellation","shared recorder","cold recovery"]},
     {"id":"choose-verification","title":"Choose checks and report the correct proof stage","guide":"verification.md","section":"choose-the-check-that-covers-the-outcome","references":["verification-workflow","platform-package","map-tool-tests"],"symptoms":["which tests","PostgreSQL skipped","CI failure","synthetic proof"]},
-    {"id":"map-drift","title":"Repair stale code-map coverage after a source change","guide":"maintenance.md","section":"keep-behavior-and-navigation-together","references":["map-tool","map-tool-tests"],"symptoms":["stale reference","new module","broken map","lookup missing"]}
+    {"id":"map-drift","title":"Repair stale code-map coverage after a source change","guide":"maintenance.md","section":"keep-behavior-and-navigation-together","references":["map-tool","map-tool-tests"],"symptoms":["stale reference","new module","broken map","lookup missing"]},
+    {"id":"coherent-product-startup","title":"Trace saved setup into supervised research and visible waiting work","guide":"dashboard-api.md","section":"coherent-product-setup-and-observation","references":["product-overview-read","product-supervised-start","product-setup-panel","product-model-scope","product-navigation","product-owner-tests","product-browser-proof"],"symptoms":["where is automation","waiting task disappears","startup unknown","new Pause","saved configuration"]},
+    {"id":"frozen-rule-qualification","title":"Trace a mature frozen rule to subsequent paper qualification","guide":"strategy-experiments.md","section":"forward-qualification-and-designation","references":["paper-rule-source","paper-rule-admission","paper-rule-runtime","paper-forward-comparison","paper-designate","paper-learning-tests"],"symptoms":["RuleSpec qualification","original retired trial","unknown funding acknowledgment","28 daily blocks","incumbent drift"]}
   ]
 }

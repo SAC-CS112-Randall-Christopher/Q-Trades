@@ -68,6 +68,7 @@ from trading.research_knowledge import (
 )
 from trading.research_mcp import PROTOCOLS, LocalMCPClient, ResearchMCP
 from trading.research_notices import operational_conditions
+from trading.research_overview import ModelConfiguration, ModelConnection, SupervisedStart
 from trading.research_quality import quality_report
 from trading.research_reviews import (
     ResearchReviews,
@@ -159,6 +160,17 @@ class LearningReport(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,48}$")
     candidate: str = Field(pattern=r"^forward-[a-z0-9]{24}$")
+
+
+class RuleQualification(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    environment: Literal["paper"] = "paper"
+    trial_id: str = Field(pattern=r"^lab-[a-f0-9]{24}$")
+    rule_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    expected_role_version: int = Field(ge=0)
+    incumbent_configuration_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    implementation_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    approve_hypothetical_funding: Literal[True]
 
 
 class LearningRole(BaseModel):
@@ -650,6 +662,9 @@ def create_app(
             request.url.path.startswith("/api/lab/training/")
             or request.url.path.startswith("/api/research/knowledge/")
             or request.url.path.startswith("/api/research/reviews/")
+            or request.url.path.startswith("/api/research/model-connection")
+            or request.url.path == "/api/research/supervised-start"
+            or request.url.path == "/api/paper/learning/rules"
             or request.url.path == "/api/research/mcp"
         ):
             chunks, size = [], 0
@@ -1115,6 +1130,50 @@ def create_app(
             raise HTTPException(503, "Local role registry unavailable; paper management continues")
         return dict(lab.roles.page(before, before_id, search))
 
+    @app.get("/api/research/overview")
+    def product_overview(request: Request) -> dict[str, Any]:
+        from trading.research_overview import snapshot
+
+        return snapshot(request.app.state.lab, request.app.state.pattern_scanner)
+
+    @app.post("/api/research/supervised-start")
+    def supervised_start(request: Request, command: SupervisedStart) -> dict[str, Any]:
+        from trading.research_overview import start
+
+        lab = lab_operator(request)
+        try:
+            return start(lab, command)
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/research/model-connection/review")
+    def model_connection_review(request: Request, command: ModelConnection) -> dict[str, Any]:
+        from trading.research_overview import preview_configuration
+
+        lab = lab_operator(request)
+        try:
+            return preview_configuration(lab.registry.path.parent, command)
+        except (ValueError, OSError) as exc:
+            raise HTTPException(409, str(exc)[:500]) from exc
+
+    @app.post("/api/research/model-connection")
+    def model_connection_save(request: Request, command: ModelConfiguration) -> dict[str, Any]:
+        from trading.peft_role_model import configure_paper_scope
+
+        lab = lab_operator(request)
+        if command.approve_recurring_scope is not True:
+            raise HTTPException(409, "Explicit recurring paper-research scope approval is required")
+        try:
+            return configure_paper_scope(
+                lab.registry.path.parent, command.development_directory, command.review_identity
+            )
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)[:500]) from exc
+        except OSError as exc:
+            raise HTTPException(
+                503, "Model configuration acknowledgment unknown; reopen saved setup"
+            ) from exc
+
     @app.post("/api/lab/roles/questions")
     def role_question(request: Request, question: Question) -> dict[str, Any]:
         lab = lab_operator(request)
@@ -1447,15 +1506,26 @@ def create_app(
     async def autonomous_history(request: Request, before: int = Query(0, ge=0)) -> dict[str, Any]:
         return dict(autonomous(request).paper.store.lab_history(before))
 
+    @app.get("/api/autonomous/trials/{identity}")
+    def autonomous_trial(request: Request, identity: str) -> dict[str, Any]:
+        from trading.paper_learning import rule_offer
+
+        try:
+            owner = autonomous(request)
+            receipt = dict(owner.paper.store.retained_trial(identity))
+            return receipt | {"qualification_offer": rule_offer(owner.paper.state, receipt)}
+        except ValueError as exc:
+            raise HTTPException(404, str(exc)) from exc
+
     @app.get("/api/autonomous/accounts/{name}")
     async def autonomous_account(request: Request, name: str) -> dict[str, Any]:
         store = autonomous(request).paper.store
         archived = store.archived_account(name)
         if archived:
-            return dict(archived)
+            return dict(archived) | {"environment": "paper"}
         active = autonomous(request).paper.state["accounts"].get(name)
         if active:
-            return {"account": name, "state": active, "retired_at": None}
+            return {"account": name, "state": active, "retired_at": None, "environment": "paper"}
         raise HTTPException(404, "Unknown retained account")
 
     @app.get("/api/autonomous/export")
@@ -2449,6 +2519,27 @@ def create_app(
             return paper.learning_report(spec.request_id, spec.candidate, lab.registry)
         except (ValueError, KeyError) as exc:
             raise HTTPException(409, str(exc)) from exc
+
+    @app.post("/api/paper/learning/rules")
+    def qualify_frozen_rule(request: Request, spec: RuleQualification) -> dict[str, Any]:
+        lab_operator(request)
+        paper = campaign_operator(request)
+        try:
+            return paper.qualify_rule(
+                spec.trial_id,
+                spec.rule_sha256,
+                spec.expected_role_version,
+                spec.incumbent_configuration_sha256,
+                spec.implementation_sha256,
+            )
+        except (ValueError, KeyError, TypeError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503,
+                "Qualification funding acknowledgment is unknown; refresh the original "
+                "comparison to reconcile the same admission",
+            ) from exc
 
     @app.post("/api/paper/learning/role")
     async def forward_learning_role(request: Request, spec: LearningRole) -> dict[str, Any]:

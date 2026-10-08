@@ -42,6 +42,8 @@ CREATE TABLE IF NOT EXISTS paper_events (
 );
 CREATE INDEX IF NOT EXISTS paper_events_recent ON paper_events(account, id DESC);
 CREATE INDEX IF NOT EXISTS paper_events_kind ON paper_events(kind, id DESC);
+CREATE INDEX IF NOT EXISTS paper_lab_reservation_identity ON paper_events ((body->>'id'))
+WHERE kind='lab_trial_reserved';
 CREATE INDEX IF NOT EXISTS paper_trade_entry ON paper_events(account, (body->>'symbol'), at)
 WHERE kind='fill' AND body->>'side'='buy';
 CREATE INDEX IF NOT EXISTS paper_research_scope
@@ -464,6 +466,29 @@ class PaperStore:
             "has_more": len(rows) > limit,
             "next_before": page[-1]["id"] if page else before,
         }
+
+    @_locked
+    def retained_trial(self, identity: str) -> dict[str, Any]:
+        if not identity.startswith("lab-") or len(identity) != 28:
+            raise ValueError("Select an exact saved paper comparison")
+        rows = self.connection.execute(
+            "SELECT id,at,body FROM paper_events WHERE kind='lab_trial_reserved' "
+            "AND body->>'id'=%s ORDER BY id LIMIT 2",
+            (identity,),
+        ).fetchall()
+        if len(rows) != 1:
+            raise ValueError("Original saved comparison unavailable or ambiguous")
+        row = rows[0]
+        row["decisions"] = self.connection.execute(
+            "SELECT kind,at,body FROM paper_events WHERE kind IN "
+            "('lab_trial_scored','lab_trial_retired') AND body->>'trial_id'=%s "
+            "ORDER BY id LIMIT 3",
+            (identity,),
+        ).fetchall()
+        kinds = [decision["kind"] for decision in row["decisions"]]
+        if len(kinds) != len(set(kinds)) or len(kinds) > 2:
+            raise ValueError("Original comparison decision history is ambiguous")
+        return dict(row) | {"environment": "paper"}
 
     @_locked
     def archived_account(self, name: str) -> dict[str, Any] | None:
