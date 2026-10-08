@@ -199,6 +199,27 @@ const bounded = async (work, milliseconds, label) => {
       const remaining = remainingPauseTime();
       return bounded(work(), remaining, "Pause acknowledgment or exact recovery exceeded the original 30-second bound");
     };
+    let pauseRouteFailure = null;
+    const controlUrl = `${origin}/api/research/pattern-scanner/control`;
+    await withinPauseTime(() => other.route(controlUrl, async route => {
+      if (route.request().postDataJSON().action !== "pause") return route.continue();
+      try {
+        // Hold the real shared browser lock after Pause was persisted, before
+        // sending its unchanged request to the real backend. Both terminal
+        // responses therefore contend with a known owner rather than a sleep.
+        await withinPauseTime(() => other.evaluate(async () => {
+          let entered, rejected;
+          const acquired = new Promise((resolve, reject) => { entered = resolve; rejected = reject; });
+          const held = new Promise(resolve => { window.__qaScannerTerminalRelease = resolve; });
+          window.__qaScannerTerminalLockDone = navigator.locks.request(
+            "qtrades-year-pattern-scanner-pending-v1", async () => { entered(); await held; });
+          void window.__qaScannerTerminalLockDone.catch(rejected);
+          await acquired;
+          return true;
+        }));
+        await route.continue(); // No response or command is fabricated.
+      } catch (error) { pauseRouteFailure = error.message; await route.abort(); }
+    }));
     const pauseResponse = other.waitForResponse(r => r.url() === `${origin}/api/research/pattern-scanner/control` &&
       r.request().method() === "POST" && r.request().postDataJSON().action === "pause", { timeout: remainingPauseTime() });
     void pauseResponse.catch(() => {});
@@ -208,6 +229,7 @@ const bounded = async (work, milliseconds, label) => {
     save("delayed-start-pause-command.json", { http_status: pauseActual.status(), command: pauseCommand });
     const pauseReceipt = await withinPauseTime(() => pauseActual.json());
     save("delayed-start-pause-response.json", { http_status: pauseActual.status(), command: pauseCommand, receipt: pauseReceipt });
+    assert.equal(pauseRouteFailure, null);
     assert.equal(pauseActual.status(), 200, JSON.stringify(pauseReceipt));
     assert.equal(pauseCommand.action, "pause"); assert.equal(pauseCommand.campaign_id, prepared.campaign_id);
     assert.equal(pauseReceipt.request_id, pauseCommand.request_id);
@@ -222,9 +244,34 @@ const bounded = async (work, milliseconds, label) => {
     assert.equal(refusedStart.status(), 409, JSON.stringify(startRefusal));
     assert.equal(refusedStart.request().postDataJSON().request_id, held.held_start.request_id);
     assert.equal(startRefusal.detail, "Preparation changed; reopen its current revision before Start");
+    await withinPauseTime(() => page.waitForFunction(async () => {
+      const locks = await navigator.locks.query();
+      return locks.held.some(lock => lock.name === "qtrades-year-pattern-scanner-pending-v1") &&
+        locks.pending.some(lock => lock.name === "qtrades-year-pattern-scanner-pending-v1");
+    }, null, { timeout: remainingPauseTime() }));
+    const queuedRefusal = await withinPauseTime(() => page.evaluate(async () => ({
+      pending: JSON.parse(localStorage.getItem("qtrades-year-pattern-scanner-pending-v1") || "[]"),
+      refusal: JSON.parse(localStorage.getItem("qtrades-year-pattern-scanner-refusal-v1") || "null"),
+      locks: await navigator.locks.query()
+    })));
+    assert.deepEqual(queuedRefusal.pending, [pendingStart, pauseCommand]);
+    assert(!queuedRefusal.refusal || queuedRefusal.refusal.command.request_id !== pendingStart.request_id);
+    save("delayed-start-refusal-queued-under-held-lock.json", queuedRefusal);
+    await withinPauseTime(() => other.evaluate(async () => {
+      window.__qaScannerTerminalRelease();
+      await window.__qaScannerTerminalLockDone;
+      delete window.__qaScannerTerminalRelease;
+      delete window.__qaScannerTerminalLockDone;
+    }));
+    await withinPauseTime(() => other.unroute(controlUrl));
     // Wait for the original refusal cleanup before a second tab performs GET-only recovery.
     await workspace().getByRole("alert").filter({ hasText: startRefusal.detail }).waitFor({ timeout: remainingPauseTime() });
     await workspace().getByRole("button", { name: "Find saved start result", exact: true }).waitFor({ state: "detached", timeout: remainingPauseTime() });
+    const recordedRefusal = await withinPauseTime(() => page.evaluate(() => JSON.parse(
+      localStorage.getItem("qtrades-year-pattern-scanner-refusal-v1") || "null")));
+    assert.deepEqual(recordedRefusal.command, pendingStart);
+    assert.equal(recordedRefusal.status, 409); assert.equal(recordedRefusal.detail, startRefusal.detail);
+    save("delayed-start-known-refusal-cleanup.json", recordedRefusal);
     await other.waitForFunction(() => {
       const region = document.querySelector(".scanner-workspace");
       return region && (region.textContent.includes("pause was acknowledged") ||
@@ -261,7 +308,8 @@ const bounded = async (work, milliseconds, label) => {
     save("delayed-start-released-after-pause.json", afterHeldPause);
     assert.equal(await page.evaluate(() => localStorage.getItem("qtrades-year-pattern-scanner-pending-v1")), null);
     await other.close(); await mode("normal");
-    groups.push({ name: phase, stale_start: 409, pause_preserved: true, exact_pause_get_recovery: recoveredPause, original_pause_posts: 1 });
+    groups.push({ name: phase, stale_start: 409, pause_preserved: true, exact_pause_get_recovery: recoveredPause,
+      original_pause_posts: 1, terminal_refusal_lock_queued: true, known_refusal_cleared: true });
 
     phase = "owner-reopen-preserves-history-and-stays-disabled";
     const beforeRestart = await probe();

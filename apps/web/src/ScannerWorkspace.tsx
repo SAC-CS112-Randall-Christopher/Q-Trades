@@ -56,9 +56,9 @@ function pendingCommands(): { commands: Command[]; error: string | null } {
   } catch { return { commands: [], error: "Saved scanner control is unreadable. Its outcome must be reconciled before a new control." }; }
 }
 
-async function controlLock(work: () => void) {
+async function controlLock(work: () => void, waitForTerminalRefusal = false) {
   if (!navigator.locks) throw new Error("This window cannot safely retain scanner controls for recovery.");
-  await navigator.locks.request(pendingKey, { ifAvailable: true }, lock => {
+  await navigator.locks.request(pendingKey, { ifAvailable: !waitForTerminalRefusal }, lock => {
     if (!lock) throw new Error("Another window is saving a scanner control. Its original request remains retained.");
     work();
   });
@@ -210,7 +210,7 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
           localStorage.setItem("qtrades-year-pattern-scanner-refusal-v1", JSON.stringify({ command, status: response.status, detail: value.detail, at: Date.now() }));
           const rest = saved.commands.filter(item => item.request_id !== command.request_id);
           if (rest.length) localStorage.setItem(pendingKey, JSON.stringify(rest)); else localStorage.removeItem(pendingKey);
-        });
+        }, true);
         if (mounted.current) { setPending(pendingCommands().commands); setControlError(typeof value.detail === "string" ? value.detail : "The original control was refused before changing scanner state."); }
         refreshAgain.current(); return;
       }
