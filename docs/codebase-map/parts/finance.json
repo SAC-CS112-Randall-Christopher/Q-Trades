@@ -1,0 +1,1107 @@
+{
+  "references": [
+    {
+      "id": "paper-store",
+      "path": "src/trading/paper_store.py",
+      "symbol": "PaperStore",
+      "description": "Exclusive PostgreSQL writer, projection, journal and read queries."
+    },
+    {
+      "id": "paper-engine",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine",
+      "description": "Deterministic spot accounting, execution, risk and review."
+    },
+    {
+      "id": "paper-runtime",
+      "path": "src/trading/paper_runtime.py",
+      "symbol": "PaperRuntime",
+      "description": "Observed spot input and financial control adapter."
+    },
+    {
+      "id": "tiered-paper-runtime",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime",
+      "description": "Tiered inputs, health, resource priority and readback wiring."
+    },
+    {
+      "id": "paper-store-transaction",
+      "path": "src/trading/paper_store.py",
+      "symbol": "PaperStore._transact",
+      "description": "Atomic event/journal and projection publication, authorization checkpoints."
+    },
+    {
+      "id": "paper-engine-emit",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.emit",
+      "description": "Per-asset balanced event construction and purpose annotation."
+    },
+    {
+      "id": "paper-execution",
+      "path": "src/trading/execution_profiles.py",
+      "description": "Frozen paper fees, depth participation, slippage and rounding."
+    },
+    {
+      "id": "paper-reconcile",
+      "path": "src/trading/paper_store.py",
+      "symbol": "PaperStore.reconcile",
+      "description": "Journal and projected-account reconciliation including archives."
+    },
+    {
+      "id": "financial-readback",
+      "path": "src/trading/financial_readback.py",
+      "symbol": "FinancialReadback",
+      "description": "Separately authenticated read-only consistent audit connection."
+    },
+    {
+      "id": "financial-readback-worker",
+      "path": "src/trading/financial_readback_worker.py",
+      "symbol": "ReadbackWorker",
+      "description": "Owned bounded child/pipe readback lifecycle and cleanup."
+    },
+    {
+      "id": "paper-trade-history",
+      "path": "src/trading/trade_history.py",
+      "description": "Permanent closed and current open trade row reconstruction."
+    },
+    {
+      "id": "paper-initial-state",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "initial_state",
+      "description": "Original spot identities and persistent initial projection."
+    },
+    {
+      "id": "paper-universe-pair",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.universe_experiment",
+      "description": "Separately funded universe control and wide accounts."
+    },
+    {
+      "id": "paper-account",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "account",
+      "description": "Isolated fake capital, execution, attempts and risk fields."
+    },
+    {
+      "id": "paper-campaigns",
+      "path": "src/trading/paper_campaigns.py",
+      "description": "Frozen ten/fourteen-account campaign and individual controls."
+    },
+    {
+      "id": "paper-challenger-admit",
+      "path": "src/trading/paper_challengers.py",
+      "symbol": "admit",
+      "description": "Frozen numerical forward admission and isolated funding."
+    },
+    {
+      "id": "lab-finance-reserve",
+      "path": "src/trading/autonomous_finance.py",
+      "symbol": "reserve",
+      "description": "Matched financial reservation and parent semantics."
+    },
+    {
+      "id": "paper-diagnostic-lifecycle",
+      "path": "src/trading/paper_diagnostics.py",
+      "description": "Performance diagnostic create/start/drain/stop lifecycle."
+    },
+    {
+      "id": "account-purpose",
+      "path": "src/trading/account_purpose.py",
+      "description": "Structured diagnostic exclusions and research provenance."
+    },
+    {
+      "id": "options-store",
+      "path": "src/trading/options_store.py",
+      "symbol": "OptionsStore",
+      "description": "Historical options projection/journal in an isolated schema."
+    },
+    {
+      "id": "paper-strategy",
+      "path": "src/trading/paper_strategy.py",
+      "description": "Closed-minute parser and original breakout/ATR/trend features."
+    },
+    {
+      "id": "redesign-strategy",
+      "path": "src/trading/redesign_strategy.py",
+      "description": "Fixed replacement bank and causal five-minute aggregation."
+    },
+    {
+      "id": "rule-feature",
+      "path": "src/trading/autonomous_spec.py",
+      "symbol": "rule_feature",
+      "description": "Versioned RuleSpec feature owner and input hashes/cutoffs."
+    },
+    {
+      "id": "paper-engine-enter",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.enter",
+      "description": "Entry admission, reserve, cost/depth/cash/risk checks."
+    },
+    {
+      "id": "paper-engine-tick-account",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.tick_account",
+      "description": "Risk management before entries and new-bar decision dedup."
+    },
+    {
+      "id": "paper-engine-fill",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.fill",
+      "description": "Subsequent-book execution with fresh portfolio recheck."
+    },
+    {
+      "id": "paper-engine-cancel",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.cancel",
+      "description": "Balanced cancellation and remaining reservation release."
+    },
+    {
+      "id": "paper-engine-exit",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.exit_position",
+      "description": "Owned-position stops, holds and risk-reducing exit intents."
+    },
+    {
+      "id": "paper-engine-value",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.value",
+      "description": "Executable liquidation equity and stale/missing qualification."
+    },
+    {
+      "id": "paper-risk-policy",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "policy",
+      "description": "Legacy versus explicit hard-stop policy lookup."
+    },
+    {
+      "id": "paper-risk-recovery",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.recover_hard_stop",
+      "description": "Exact stop recovery without new funding or reset."
+    },
+    {
+      "id": "paper-failure-review",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.failure_review",
+      "description": "Retained failures and legacy-only reviewed replenishment."
+    },
+    {
+      "id": "paper-engine-review",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.review",
+      "description": "Matched whole-account legacy review and flat selection."
+    },
+    {
+      "id": "paper-store-initialize",
+      "path": "src/trading/paper_store.py",
+      "symbol": "PaperStore.initialize",
+      "description": "Writer-only idempotent seed projection/funding."
+    },
+    {
+      "id": "paper-projection-compression",
+      "path": "src/trading/paper_projection.py",
+      "symbol": "configure_projection_compression",
+      "description": "Preview and protected future-write compression metadata change."
+    },
+    {
+      "id": "tiered-audit",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime._accept_financial_audit",
+      "description": "Confirmed completed negative-audit handling."
+    },
+    {
+      "id": "paper-export",
+      "path": "src/trading/paper_store.py",
+      "symbol": "PaperStore.export",
+      "description": "Permanent financial event/journal pagination."
+    },
+    {
+      "id": "account-strategy-change",
+      "path": "src/trading/account_redesign.py",
+      "symbol": "change_strategy",
+      "description": "Flat original account rule/control version change."
+    },
+    {
+      "id": "account-strategy-receipt",
+      "path": "src/trading/paper_runtime.py",
+      "symbol": "PaperRuntime.strategy_receipt",
+      "description": "Exact lost-ack original strategy change recovery."
+    },
+    {
+      "id": "paper-engine-tick",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "PaperEngine.tick",
+      "description": "Financial tick, per-account rollback and global invariants."
+    },
+    {
+      "id": "paper-entry-reason",
+      "path": "src/trading/paper_engine.py",
+      "symbol": "entry_reason",
+      "description": "Current account and global risk-entry refusal reasons."
+    },
+    {
+      "id": "paper-archived-account",
+      "path": "src/trading/paper_store.py",
+      "symbol": "PaperStore.archived_account",
+      "description": "Retained retired-account state from permanent history."
+    },
+    {
+      "id": "lab-finance-retirement",
+      "path": "src/trading/autonomous_finance.py",
+      "description": "Flat drain, account/trial archival and blocked slot release."
+    },
+    {
+      "id": "autonomous-lab",
+      "path": "src/trading/autonomous_lab.py",
+      "symbol": "AutonomousLab",
+      "description": "Existing deterministic proposal and trial supervisor."
+    },
+    {
+      "id": "lab-proposals",
+      "path": "src/trading/lab_proposals.py",
+      "symbol": "LabProposals",
+      "description": "Issued evidence, proposal inbox and idempotent status owner."
+    },
+    {
+      "id": "numerical-candidates",
+      "path": "src/trading/numerical_candidates.py",
+      "description": "Frozen numerical artifact mechanisms and common-window study."
+    },
+    {
+      "id": "pattern-prepare",
+      "path": "src/trading/pattern_comparisons.py",
+      "symbol": "PatternComparisons.prepare",
+      "description": "Immutable exact finding preparation without inbox/funding."
+    },
+    {
+      "id": "lab-evaluate",
+      "path": "src/trading/autonomous_lab.py",
+      "symbol": "AutonomousLab.evaluate",
+      "description": "Fresh deterministic numerical evaluation under current inputs."
+    },
+    {
+      "id": "lab-step",
+      "path": "src/trading/autonomous_lab.py",
+      "symbol": "AutonomousLab._step",
+      "description": "Guarded recovery, reserve/fund, score and discovery loop."
+    },
+    {
+      "id": "paper-forward-comparison",
+      "path": "src/trading/paper_learning.py",
+      "symbol": "comparison",
+      "description": "Subsequent matched daily-block qualification policy."
+    },
+    {
+      "id": "lab-rule-spec",
+      "path": "src/trading/autonomous_spec.py",
+      "symbol": "RuleSpec",
+      "description": "Strict v2/v3/v4 coherent fixed strategy and timing schema."
+    },
+    {
+      "id": "lab-proposal-spec",
+      "path": "src/trading/autonomous_spec.py",
+      "symbol": "LabProposal",
+      "description": "Variation, independent and replication proposal semantics."
+    },
+    {
+      "id": "lab-rule-contract",
+      "path": "src/trading/autonomous_spec.py",
+      "symbol": "contract",
+      "description": "Exact active/inapplicable timing, cost and risk disclosure."
+    },
+    {
+      "id": "reviewed-feature",
+      "path": "src/trading/rule_components.py",
+      "symbol": "reviewed_feature",
+      "description": "Legacy, fixed bank and causal memory entry-filter routing."
+    },
+    {
+      "id": "pattern-comparisons",
+      "path": "src/trading/pattern_comparisons.py",
+      "symbol": "PatternComparisons",
+      "description": "Exact saved native finding and matched method preparation."
+    },
+    {
+      "id": "pattern-methods",
+      "path": "src/trading/lab_role_contract.py",
+      "symbol": "pattern_method_policy_sha",
+      "description": "Fixed p0/p1 method catalogue policy fingerprint."
+    },
+    {
+      "id": "pattern-describe",
+      "path": "src/trading/pattern_comparisons.py",
+      "symbol": "PatternComparisons.describe",
+      "description": "Verified same-scope original event and native archive proof."
+    },
+    {
+      "id": "pattern-current-observation",
+      "path": "src/trading/pattern_comparisons.py",
+      "symbol": "PatternComparisons.current_observation",
+      "description": "Separate fresh matched inputs with no immutable-result rewrite."
+    },
+    {
+      "id": "lab-issued-bundle",
+      "path": "src/trading/lab_proposals.py",
+      "symbol": "LabProposals.bundle",
+      "description": "Content-addressed bounded artifact and disclosure publication."
+    },
+    {
+      "id": "lab-inbox-submit",
+      "path": "src/trading/lab_proposals.py",
+      "symbol": "LabProposals.submit",
+      "description": "Exact proposal admission, used identity and finite fence."
+    },
+    {
+      "id": "lab-inbox-get",
+      "path": "src/trading/lab_proposals.py",
+      "symbol": "LabProposals.get",
+      "description": "Saved original proposal and state lookup."
+    },
+    {
+      "id": "lab-policy",
+      "path": "src/trading/autonomous_spec.py",
+      "symbol": "LabPolicy",
+      "description": "Frozen capacity, costs, coverage, periods and horizon bounds."
+    },
+    {
+      "id": "lab-slots",
+      "path": "src/trading/autonomous_finance.py",
+      "symbol": "slots",
+      "description": "Total financial account/reserved/retiring slot commitments."
+    },
+    {
+      "id": "lab-finite-dispatch",
+      "path": "src/trading/autonomous_lab.py",
+      "symbol": "AutonomousLab._finite_dispatch",
+      "description": "Finite saved proposal fence for new financial effects."
+    },
+    {
+      "id": "lab-finance-fund",
+      "path": "src/trading/autonomous_finance.py",
+      "symbol": "fund",
+      "description": "Separate matched fake funding and fixed review-at clock."
+    },
+    {
+      "id": "lab-finance-observe",
+      "path": "src/trading/autonomous_finance.py",
+      "symbol": "observe",
+      "description": "Actual account/passive marks, coverage and sealed window."
+    },
+    {
+      "id": "lab-finance-review",
+      "path": "src/trading/autonomous_finance.py",
+      "symbol": "review",
+      "description": "Adverse/unknown/after-cost outcomes and preservation."
+    },
+    {
+      "id": "paper-lab-history",
+      "path": "src/trading/paper_store.py",
+      "symbol": "PaperStore.lab_history",
+      "description": "Permanent scored and retired trial pagination."
+    },
+    {
+      "id": "lab-propose",
+      "path": "src/trading/autonomous_lab.py",
+      "symbol": "AutonomousLab.propose",
+      "description": "Legacy child, baseline, independent and later replication discovery."
+    },
+    {
+      "id": "lab-memory-filter",
+      "path": "src/trading/autonomous_spec.py",
+      "symbol": "MemoryFilter",
+      "description": "Frozen causal memory entry filter and declared component costs."
+    },
+    {
+      "id": "memory-accounts",
+      "path": "src/trading/memory_accounts.py",
+      "description": "Matched memory entry study and frozen controls."
+    },
+    {
+      "id": "portfolio-components",
+      "path": "src/trading/portfolio_components.py",
+      "symbol": "evaluate_components",
+      "description": "Independent size/exit/observation ablation with unknown effects."
+    },
+    {
+      "id": "paper-economics",
+      "path": "src/trading/paper_economics.py",
+      "description": "Funding-adjusted whole-account and passive/cash benchmarks."
+    },
+    {
+      "id": "paper-learning-report",
+      "path": "src/trading/paper_learning.py",
+      "symbol": "retain_report",
+      "description": "Full immutable journal receipt and compact summary."
+    },
+    {
+      "id": "paper-designate",
+      "path": "src/trading/paper_learning.py",
+      "symbol": "designate",
+      "description": "Exact approved current forward report and role pointer change."
+    },
+    {
+      "id": "paper-designation-rollback",
+      "path": "src/trading/paper_learning.py",
+      "symbol": "rollback",
+      "description": "Role rollback preserving financial state and history."
+    },
+    {
+      "id": "options-runtime",
+      "path": "src/trading/options_runtime.py",
+      "symbol": "OptionsRuntime",
+      "description": "Independent historical replay session and review worker."
+    },
+    {
+      "id": "options-data",
+      "path": "src/trading/options_data.py",
+      "symbol": "FreeOptionsData",
+      "description": "Bounded anonymous AAPL completed historical provider adapter."
+    },
+    {
+      "id": "options-engine",
+      "path": "src/trading/options_engine.py",
+      "symbol": "OptionsEngine",
+      "description": "Separate historical cash-options deterministic engine."
+    },
+    {
+      "id": "options-data-get",
+      "path": "src/trading/options_data.py",
+      "symbol": "FreeOptionsData.get",
+      "description": "Allowlisted historical routes, durable budget and wire receipt."
+    },
+    {
+      "id": "options-request-budget",
+      "path": "src/trading/options_runtime.py",
+      "symbol": "OptionsRuntime.reserve_request",
+      "description": "Persistent UTC-day source request consumption."
+    },
+    {
+      "id": "options-policy",
+      "path": "src/trading/options_policy.py",
+      "description": "Frozen AAPL standard long-option policy and research assumptions."
+    },
+    {
+      "id": "options-entries",
+      "path": "src/trading/options_engine.py",
+      "symbol": "OptionsEngine.entries",
+      "description": "Full premium/fee and 2.5-percent settled-cash reservation."
+    },
+    {
+      "id": "options-fill",
+      "path": "src/trading/options_engine.py",
+      "symbol": "OptionsEngine.fill_pending",
+      "description": "One chance at a later replayed executable session."
+    },
+    {
+      "id": "options-close",
+      "path": "src/trading/options_engine.py",
+      "symbol": "OptionsEngine.close_position",
+      "description": "Long-option sale and retained cost/unsettled proceeds."
+    },
+    {
+      "id": "options-settle",
+      "path": "src/trading/options_engine.py",
+      "symbol": "OptionsEngine.settle_cash",
+      "description": "Subsequent-session settlement of sale proceeds."
+    },
+    {
+      "id": "options-session",
+      "path": "src/trading/options_engine.py",
+      "symbol": "OptionsEngine.process_session",
+      "description": "Forward-only replay cursor and retained source/gap evidence."
+    },
+    {
+      "id": "options-review",
+      "path": "src/trading/options_engine.py",
+      "symbol": "OptionsEngine.review",
+      "description": "Due review and only future frozen replay policy selection."
+    },
+    {
+      "id": "options-attempts",
+      "path": "src/trading/options_engine.py",
+      "symbol": "OptionsEngine.attempts",
+      "description": "Legacy replay failure/replenishment and cooldown retention."
+    },
+    {
+      "id": "options-reconcile",
+      "path": "src/trading/options_store.py",
+      "symbol": "OptionsStore.reconcile",
+      "description": "Independent options journal/projection reconciliation."
+    },
+    {
+      "id": "secondary-api-wiring",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.lifespan",
+      "description": "Fresh spot-only versus retained legacy options startup."
+    },
+    {
+      "id": "stock-research",
+      "path": "src/trading/stock_research.py",
+      "symbol": "StockResearch",
+      "description": "Saved public-source evidence studies, no equity execution."
+    },
+    {
+      "id": "stock-question",
+      "path": "src/trading/stock_research.py",
+      "symbol": "StockQuestion",
+      "description": "Exact stock hypothesis, security, cutoff and request intent."
+    },
+    {
+      "id": "stock-public-url",
+      "path": "src/trading/stock_research.py",
+      "symbol": "public_url",
+      "description": "Fixed SEC and IBM-demo source URL validation."
+    },
+    {
+      "id": "stock-fetch",
+      "path": "src/trading/stock_research.py",
+      "symbol": "fetch_public",
+      "description": "Bounded public retrieval with private/redirect source refusal."
+    },
+    {
+      "id": "stock-source",
+      "path": "src/trading/stock_research.py",
+      "symbol": "StockResearch._source",
+      "description": "Original byte/version/archive and persistent refresh ownership."
+    },
+    {
+      "id": "stock-reported-facts",
+      "path": "src/trading/stock_research.py",
+      "symbol": "reported_facts",
+      "description": "Available accession/period/unit matched filing facts."
+    },
+    {
+      "id": "stock-ratios",
+      "path": "src/trading/stock_research.py",
+      "symbol": "ratios",
+      "description": "Compatible period/unit ratios with explicit unavailable values."
+    },
+    {
+      "id": "stock-investigate",
+      "path": "src/trading/stock_research.py",
+      "symbol": "StockResearch.investigate",
+      "description": "Bounded filing evidence/timeline/question study."
+    },
+    {
+      "id": "stock-market-summary",
+      "path": "src/trading/stock_research.py",
+      "symbol": "market_summary",
+      "description": "Conservatively available raw IBM daily demonstration."
+    },
+    {
+      "id": "stock-market-study",
+      "path": "src/trading/stock_research.py",
+      "symbol": "StockResearch.market_study",
+      "description": "Explicit price-only demo identity and unavailable filing facts."
+    },
+    {
+      "id": "stock-request-recovery",
+      "path": "src/trading/stock_research.py",
+      "symbol": "StockResearch._request",
+      "description": "Exact mode/question intent and saved-request lookup."
+    },
+    {
+      "id": "stock-get",
+      "path": "src/trading/stock_research.py",
+      "symbol": "StockResearch.get",
+      "description": "Verified saved study and evidence-window disclosure write."
+    },
+    {
+      "id": "stock-sections",
+      "path": "src/trading/stock_research.py",
+      "symbol": "StockResearch.compare_filings",
+      "description": "Saved original filing source bounded phrase comparison."
+    },
+    {
+      "id": "secondary-futures-context",
+      "path": "src/trading/futures_context.py",
+      "symbol": "FuturesContext",
+      "description": "Public perpetual descriptive context, no futures execution."
+    },
+    {
+      "id": "paper-store-tests",
+      "path": "tests/test_paper_store.py",
+      "description": "Sole writer, rollback, seed restart and financial audit mutation tests."
+    },
+    {
+      "id": "paper-commit-receipt-test",
+      "path": "tests/test_paper_store.py",
+      "symbol": "test_exact_commit_references_and_failed_transaction_clear_stale_receipt",
+      "description": "Exact committed event identity and failed-transaction receipt cleanup."
+    },
+    {
+      "id": "paper-risk-tests",
+      "path": "tests/test_paper_risk.py",
+      "description": "Held-frame freshness, later fills, risk exit and hard-stop tests."
+    },
+    {
+      "id": "paper-risk-store-tests",
+      "path": "tests/test_paper_risk_store.py",
+      "description": "Restart, risk control idempotency and financial rollback tests."
+    },
+    {
+      "id": "financial-readback-tests",
+      "path": "tests/test_financial_readback.py",
+      "description": "Actual separate readonly audit, failure priority and recovery tests."
+    },
+    {
+      "id": "paper-trade-history-tests",
+      "path": "tests/test_trade_history.py",
+      "description": "Partial exits, retired accounts, unknown entry price and history tests."
+    },
+    {
+      "id": "paper-projection-tests",
+      "path": "tests/test_paper_projection.py",
+      "description": "Readonly preview, active-writer refusal and preservation rollback tests."
+    },
+    {
+      "id": "paper-cache-tests",
+      "path": "tests/test_projection_ram.py",
+      "description": "Authoritative cache fallback, revision change and rollback tests."
+    },
+    {
+      "id": "account-redesign-tests",
+      "path": "tests/test_account_redesign.py",
+      "description": "Flat rule change, protected accounts and exact receipt recovery tests."
+    },
+    {
+      "id": "diagnostic-exclusion-tests",
+      "path": "tests/test_performance_research_exclusion.py",
+      "description": "Financial diagnostic evidence excluded from research and promotion."
+    },
+    {
+      "id": "pattern-comparison-tests",
+      "path": "tests/test_pattern_comparisons.py",
+      "description": "Exact saved source/native proof, prep recovery, archive and authority tests."
+    },
+    {
+      "id": "autonomous-lab-tests",
+      "path": "tests/test_autonomous_lab.py",
+      "description": "Financial trials, adverse outcomes, retention, contention and gating tests."
+    },
+    {
+      "id": "preserved-v4-discovery-tests",
+      "path": "tests/test_preserved_v4_discovery.py",
+      "description": "Fixed-parent skip with unchanged legacy and ordinary discovery tests."
+    },
+    {
+      "id": "portfolio-component-tests",
+      "path": "tests/test_portfolio_components.py",
+      "description": "Separate component size/exit/scanner ownership and unknown metrics."
+    },
+    {
+      "id": "rule-component-tests",
+      "path": "tests/test_rule_component.py",
+      "description": "Causal replay/intent matching, legacy wire and runtime component tests."
+    },
+    {
+      "id": "paper-learning-tests",
+      "path": "tests/test_paper_learning.py",
+      "description": "Forward qualification refusals, exact approval and history preservation."
+    },
+    {
+      "id": "options-tests",
+      "path": "tests/test_options.py",
+      "description": "Historical premium, fill, settlement, expiry, review and controls tests."
+    },
+    {
+      "id": "options-store-test",
+      "path": "tests/test_options.py",
+      "symbol": "test_postgres_cash_inventory_restart_idempotency_and_spot_isolation",
+      "description": "Options PostgreSQL restart and separation from spot accounting."
+    },
+    {
+      "id": "options-runtime-failure-test",
+      "path": "tests/test_options.py",
+      "symbol": "test_due_review_runs_even_when_historical_source_is_unavailable",
+      "description": "Due historical review even when provider retrieval fails."
+    },
+    {
+      "id": "stock-tests",
+      "path": "tests/test_stock_research.py",
+      "description": "Public-source/cutoff/unit/identity and retained stock study tests."
+    },
+    {
+      "id": "stock-archive-tests",
+      "path": "tests/test_stock_research.py",
+      "symbol": "test_expired_unavailable_archive_refuses_before_fetch_and_recovers",
+      "description": "Missing original archive cannot be silently replaced by fresh fetch."
+    },
+    {
+      "id": "stock-market-test",
+      "path": "tests/test_stock_research.py",
+      "symbol": "test_raw_market_actions_and_missing_entitlement_are_not_total_return",
+      "description": "Raw demo limitations and unverified entitlement qualification."
+    },
+    {
+      "id": "stock-pipeline-test",
+      "path": "tests/test_stock_research.py",
+      "symbol": "test_complete_source_pipeline_saved_result_disclosure_and_injected_excerpt",
+      "description": "Bounded original study/disclosure/source section pipeline."
+    },
+    {
+      "id": "paper-campaign-tests",
+      "path": "tests/test_paper_campaigns.py",
+      "description": "Campaign cash isolation, fault rollback, paused fills and corrupt-owner tests."
+    },
+    {
+      "id": "numerical-candidate-tests",
+      "path": "tests/test_numerical_candidates.py",
+      "description": "Frozen preprocessing, retained gaps and explicit admission tests."
+    },
+    {
+      "id": "paper-execution-window",
+      "path": "src/trading/execution_window.py",
+      "symbol": "ExecutionWindow",
+      "description": "Optional finite original-tick capture, continuity and persisted incomplete status."
+    },
+    {
+      "id": "paper-execution-window-tests",
+      "path": "tests/test_execution_window.py",
+      "description": "Finite capture, restart/gap/budget refusal and synthetic no-trade baseline tests."
+    },
+    {
+      "id": "paper-replay-packet",
+      "path": "src/trading/execution_replay.py",
+      "symbol": "checked_packet",
+      "description": "Exact recorded input/source identity and causal feature reproduction checks."
+    },
+    {
+      "id": "paper-execution-replay",
+      "path": "src/trading/execution_replay.py",
+      "symbol": "run_replay",
+      "description": "Bounded exact financial baseline then modeled execution stresses in a disposable child."
+    },
+    {
+      "id": "paper-execution-replay-tests",
+      "path": "tests/test_execution_replay.py",
+      "description": "Baseline reconciliation, source/gap boundaries, counterfactual withholding and child recovery tests."
+    },
+    {
+      "id": "strategy-input-diagnosis",
+      "path": "src/trading/strategy_diagnosis.py",
+      "symbol": "input_coverage",
+      "description": "Bounded read-only original input samples with exact cold references and unknown coverage."
+    },
+    {
+      "id": "strategy-cost-diagnosis",
+      "path": "src/trading/strategy_diagnosis.py",
+      "symbol": "cost_diagnosis",
+      "description": "Original account/market cohort fee, net, funding and valuation explanation."
+    },
+    {
+      "id": "strategy-diagnosis-dispatch",
+      "path": "src/trading/scoped_tools.py",
+      "symbol": "run",
+      "description": "Exact selected account/interval diagnosis and immutable tool envelope consumer."
+    },
+    {
+      "id": "strategy-diagnosis-disclosure",
+      "path": "src/trading/scoped_tools.py",
+      "symbol": "disclose",
+      "description": "Existing research evidence-window registration of saved tool disclosures."
+    },
+    {
+      "id": "strategy-diagnosis-tests",
+      "path": "tests/test_strategy_diagnosis.py",
+      "description": "Retained input/cost diagnosis, exact API reopening, missing source and cost/unknown boundaries."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "trace-blocked-spot-entry",
+      "title": "Trace a blocked spot entry",
+      "guide": "paper-accounting.md",
+      "section": "closed-bar-decisions-and-order-lifecycle",
+      "references": [
+        "paper-entry-reason",
+        "paper-engine-enter",
+        "paper-strategy",
+        "paper-engine-fill",
+        "paper-risk-tests",
+        "strategy-input-diagnosis",
+        "strategy-diagnosis-tests"
+      ],
+      "symptoms": [
+        "entries blocked",
+        "stale valuation",
+        "pending buy",
+        "signal without fill"
+      ]
+    },
+    {
+      "id": "reconcile-paper-history",
+      "title": "Reconcile journal, projection and retired-account history",
+      "guide": "paper-accounting.md",
+      "section": "atomic-storage-and-cold-recovery",
+      "references": [
+        "paper-store-transaction",
+        "paper-reconcile",
+        "paper-export",
+        "paper-archived-account",
+        "paper-store-tests"
+      ],
+      "symptoms": [
+        "unbalanced journal",
+        "projection errors",
+        "missing retired account",
+        "lost commit acknowledgment"
+      ]
+    },
+    {
+      "id": "inspect-readback-health",
+      "title": "Distinguish financial readback outage from completed imbalance",
+      "guide": "paper-accounting.md",
+      "section": "atomic-storage-and-cold-recovery",
+      "references": [
+        "financial-readback",
+        "financial-readback-worker",
+        "tiered-audit",
+        "financial-readback-tests"
+      ],
+      "symptoms": [
+        "audit unavailable",
+        "negative audit",
+        "refresh unavailable",
+        "readback stale"
+      ]
+    },
+    {
+      "id": "recover-exact-account-control",
+      "title": "Recover an original account rule or risk control",
+      "guide": "paper-accounting.md",
+      "section": "controls-and-fault-isolation",
+      "references": [
+        "account-strategy-change",
+        "account-strategy-receipt",
+        "paper-risk-recovery",
+        "account-redesign-tests"
+      ],
+      "symptoms": [
+        "strategy changed",
+        "lost control ack",
+        "stop recovery",
+        "account flat"
+      ]
+    },
+    {
+      "id": "exclude-performance-diagnostics",
+      "title": "Trace diagnostic evidence without granting research eligibility",
+      "guide": "paper-accounting.md",
+      "section": "account-identity-and-purpose",
+      "references": [
+        "account-purpose",
+        "paper-diagnostic-lifecycle",
+        "diagnostic-exclusion-tests"
+      ],
+      "symptoms": [
+        "diagnostic training",
+        "performance account",
+        "purpose changed",
+        "research contamination"
+      ]
+    },
+    {
+      "id": "trace-lab-queued-work",
+      "title": "Trace a queued Lab comparison through current admission",
+      "guide": "strategy-experiments.md",
+      "section": "inbox-capacity-and-restart-recovery",
+      "references": [
+        "lab-step",
+        "lab-proposals",
+        "lab-policy",
+        "lab-slots",
+        "lab-finite-dispatch",
+        "autonomous-lab-tests"
+      ],
+      "symptoms": [
+        "queued proposal",
+        "capture blocked",
+        "inbox full",
+        "funding waits",
+        "finite expiry"
+      ]
+    },
+    {
+      "id": "inspect-lab-outcome",
+      "title": "Interpret a sealed outcome and ordinary account retirement",
+      "guide": "strategy-experiments.md",
+      "section": "observed-outcome-and-account-retirement",
+      "references": [
+        "lab-finance-observe",
+        "lab-finance-review",
+        "lab-finance-retirement",
+        "paper-lab-history",
+        "autonomous-lab-tests"
+      ],
+      "symptoms": [
+        "data_blocked",
+        "low_information",
+        "no active trial",
+        "missing profit",
+        "retiring account"
+      ]
+    },
+    {
+      "id": "trace-fixed-v4-discovery",
+      "title": "Trace preserved fixed-v4 parent and subsequent discovery",
+      "guide": "strategy-experiments.md",
+      "section": "subsequent-discovery-and-preserved-parents",
+      "references": [
+        "lab-propose",
+        "lab-rule-spec",
+        "lab-proposal-spec",
+        "preserved-v4-discovery-tests"
+      ],
+      "symptoms": [
+        "preserved parent",
+        "lookback validation",
+        "discovery waiting",
+        "duplicate candidate"
+      ]
+    },
+    {
+      "id": "recover-pattern-preparation",
+      "title": "Recover verified finding and exact original preparation",
+      "guide": "strategy-experiments.md",
+      "section": "fixed-scanner-motivated-methods",
+      "references": [
+        "pattern-describe",
+        "pattern-prepare",
+        "pattern-current-observation",
+        "pattern-methods",
+        "pattern-comparison-tests"
+      ],
+      "symptoms": [
+        "saved finding",
+        "missing native archive",
+        "prepared waiting",
+        "research_only",
+        "method p1"
+      ]
+    },
+    {
+      "id": "inspect-forward-designation",
+      "title": "Explain why a forward candidate is not designated",
+      "guide": "strategy-experiments.md",
+      "section": "forward-qualification-and-designation",
+      "references": [
+        "paper-economics",
+        "paper-forward-comparison",
+        "paper-learning-report",
+        "paper-designate",
+        "paper-designation-rollback",
+        "paper-learning-tests"
+      ],
+      "symptoms": [
+        "no promotion",
+        "incomplete daily blocks",
+        "matched control",
+        "operating cost unknown",
+        "report changed"
+      ]
+    },
+    {
+      "id": "review-component-boundary",
+      "title": "Trace component replay versus prospective authority",
+      "guide": "strategy-experiments.md",
+      "section": "components-and-account-campaigns",
+      "references": [
+        "lab-memory-filter",
+        "reviewed-feature",
+        "memory-accounts",
+        "portfolio-components",
+        "rule-component-tests",
+        "portfolio-component-tests"
+      ],
+      "symptoms": [
+        "component inconclusive",
+        "entry filter unsupported",
+        "whole account unknown",
+        "shadow only"
+      ]
+    },
+    {
+      "id": "trace-options-replay",
+      "title": "Trace options cursor, budget, intent and settlement",
+      "guide": "secondary-research.md",
+      "section": "options-replay",
+      "references": [
+        "options-runtime",
+        "options-data-get",
+        "options-request-budget",
+        "options-fill",
+        "options-settle",
+        "options-store",
+        "options-tests"
+      ],
+      "symptoms": [
+        "replay caught up",
+        "request budget",
+        "no affordable option",
+        "option expiry",
+        "unsettled proceeds"
+      ]
+    },
+    {
+      "id": "reopen-stock-evidence",
+      "title": "Reopen a stock study without replacing original source identity",
+      "guide": "secondary-research.md",
+      "section": "stock-evidence-studies",
+      "references": [
+        "stock-request-recovery",
+        "stock-source",
+        "stock-get",
+        "stock-sections",
+        "stock-archive-tests"
+      ],
+      "symptoms": [
+        "stock source unavailable",
+        "missing archive",
+        "request conflict",
+        "cutoff changed",
+        "saved filing"
+      ]
+    },
+    {
+      "id": "qualify-stock-facts",
+      "title": "Trace SEC fact availability and raw market limitations",
+      "guide": "secondary-research.md",
+      "section": "sources-and-cutoff-meaning",
+      "references": [
+        "stock-public-url",
+        "stock-reported-facts",
+        "stock-ratios",
+        "stock-market-summary",
+        "stock-market-test"
+      ],
+      "symptoms": [
+        "ratio unknown",
+        "unit mismatch",
+        "future filing",
+        "IBM demo",
+        "corporate actions unavailable"
+      ]
+    },
+    {
+      "id": "locate-secondary-domain-boundary",
+      "title": "Locate options, equity and futures authority limits",
+      "guide": "secondary-research.md",
+      "section": "boundary-map",
+      "references": [
+        "options-policy",
+        "options-store",
+        "secondary-api-wiring",
+        "stock-research",
+        "secondary-futures-context"
+      ],
+      "symptoms": [
+        "live options",
+        "futures order",
+        "stock funding",
+        "historical replay",
+        "Greeks unavailable"
+      ]
+    }
+  ]
+}

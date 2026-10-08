@@ -1,0 +1,582 @@
+[
+  {
+    "id": "configuration-and-build-architecture",
+    "guide": "architecture.md",
+    "paths": [
+      ".gitignore",
+      ".qtrades-import-manifest.json",
+      "Update Q-Trades.cmd",
+      "compose.yaml",
+      "configs/paper.toml",
+      "pyproject.toml",
+      "requirements-lock.txt"
+    ]
+  },
+  {
+    "id": "dashboard-dashboard-api",
+    "guide": "dashboard-api.md",
+    "paths": [
+      "apps/web/index.html",
+      "apps/web/package-lock.json",
+      "apps/web/package.json",
+      "apps/web/src/WorkspaceViews.tsx",
+      "apps/web/src/main.tsx",
+      "apps/web/src/style.css",
+      "apps/web/src/theme.css",
+      "apps/web/src/vite-env.d.ts",
+      "apps/web/tsconfig.json",
+      "apps/web/vite.config.ts"
+    ]
+  },
+  {
+    "id": "dashboard-evidence-storage-training",
+    "guide": "evidence-storage-training.md",
+    "paths": [
+      "apps/web/src/EvidencePanel.tsx",
+      "apps/web/src/EvidenceReference.ts",
+      "apps/web/src/KnowledgeWorkspace.tsx",
+      "apps/web/src/MemoryQualityPanel.tsx",
+      "apps/web/src/ProspectivePanel.tsx",
+      "apps/web/src/ReplayPanel.tsx",
+      "apps/web/src/ResearchQualityPanel.tsx",
+      "apps/web/src/ResearchSlicePanel.tsx",
+      "apps/web/src/ResearchStoragePanel.tsx",
+      "apps/web/src/TrainingCandidateExport.tsx",
+      "apps/web/src/TrainingDataPanel.tsx",
+      "apps/web/src/knowledge-workspace.css",
+      "apps/web/src/useEvidenceRead.ts"
+    ]
+  },
+  {
+    "id": "dashboard-market-data",
+    "guide": "market-data.md",
+    "paths": [
+      "apps/web/src/FeedPanel.tsx",
+      "apps/web/src/FuturesPanel.tsx",
+      "apps/web/src/MarketChart.tsx",
+      "apps/web/src/MarketStation.tsx",
+      "apps/web/src/market-chart.css",
+      "apps/web/src/station.css"
+    ]
+  },
+  {
+    "id": "dashboard-model-admission",
+    "guide": "model-admission.md",
+    "paths": [
+      "apps/web/src/ModelTrialsPanel.tsx",
+      "apps/web/src/ReadinessPanel.tsx"
+    ]
+  },
+  {
+    "id": "dashboard-oversight-tools",
+    "guide": "oversight-tools.md",
+    "paths": [
+      "apps/web/src/ResearchActorPanel.tsx"
+    ]
+  },
+  {
+    "id": "dashboard-paper-accounting",
+    "guide": "paper-accounting.md",
+    "paths": [
+      "apps/web/src/OriginalStrategyPanel.tsx",
+      "apps/web/src/PaperPanel.tsx",
+      "apps/web/src/PaperRiskPanel.tsx",
+      "apps/web/src/PerformanceDiagnosticPanel.tsx",
+      "apps/web/src/TradeHistory.tsx"
+    ]
+  },
+  {
+    "id": "dashboard-research-worker",
+    "guide": "research-worker.md",
+    "paths": [
+      "apps/web/src/ExperimentLab.tsx",
+      "apps/web/src/LessonPanel.tsx",
+      "apps/web/src/ResearchActivity.tsx",
+      "apps/web/src/ResearchAttention.tsx",
+      "apps/web/src/ResearchCampaignPanel.tsx",
+      "apps/web/src/RoleResearchPanel.tsx"
+    ]
+  },
+  {
+    "id": "dashboard-scanner-charts",
+    "guide": "scanner-charts.md",
+    "paths": [
+      "apps/web/src/CandleWorkspace.tsx",
+      "apps/web/src/DailyAnalyzer.tsx",
+      "apps/web/src/HistoricalMatches.tsx",
+      "apps/web/src/PatternComparisonPanel.tsx",
+      "apps/web/src/ScannerWorkspace.tsx",
+      "apps/web/src/candle-workspace.css",
+      "apps/web/src/scanner-workspace.css"
+    ]
+  },
+  {
+    "id": "dashboard-secondary-research",
+    "guide": "secondary-research.md",
+    "paths": [
+      "apps/web/src/OptionsPanel.tsx",
+      "apps/web/src/StockResearchPanel.tsx"
+    ]
+  },
+  {
+    "id": "dashboard-strategy-experiments",
+    "guide": "strategy-experiments.md",
+    "paths": [
+      "apps/web/src/AutonomousPanel.tsx",
+      "apps/web/src/FrozenComponentPanel.tsx",
+      "apps/web/src/LearningPanel.tsx",
+      "apps/web/src/PaperCampaignJournal.tsx",
+      "apps/web/src/PaperCampaignPanel.tsx",
+      "apps/web/src/PaperEconomicsPanel.tsx",
+      "apps/web/src/StrategyLab.tsx"
+    ]
+  },
+  {
+    "id": "finance-paper-accounting",
+    "guide": "paper-accounting.md",
+    "paths": [
+      "src/trading/account_purpose.py",
+      "src/trading/account_redesign.py",
+      "src/trading/execution_profiles.py",
+      "src/trading/execution_replay.py",
+      "src/trading/execution_window.py",
+      "src/trading/financial_readback.py",
+      "src/trading/financial_readback_worker.py",
+      "src/trading/paper_diagnostics.py",
+      "src/trading/paper_engine.py",
+      "src/trading/paper_projection.py",
+      "src/trading/paper_runtime.py",
+      "src/trading/paper_store.py",
+      "src/trading/paper_strategy.py",
+      "src/trading/redesign_strategy.py",
+      "src/trading/trade_history.py"
+    ]
+  },
+  {
+    "id": "finance-secondary-research",
+    "guide": "secondary-research.md",
+    "paths": [
+      "src/trading/options_data.py",
+      "src/trading/options_engine.py",
+      "src/trading/options_policy.py",
+      "src/trading/options_runtime.py",
+      "src/trading/options_store.py"
+    ]
+  },
+  {
+    "id": "finance-strategy-experiments",
+    "guide": "strategy-experiments.md",
+    "paths": [
+      "src/trading/autonomous_finance.py",
+      "src/trading/autonomous_lab.py",
+      "src/trading/autonomous_spec.py",
+      "src/trading/paper_campaigns.py",
+      "src/trading/paper_challengers.py",
+      "src/trading/paper_economics.py",
+      "src/trading/paper_learning.py",
+      "src/trading/portfolio_components.py",
+      "src/trading/rule_components.py",
+      "src/trading/strategy_diagnosis.py"
+    ]
+  },
+  {
+    "id": "map-maintenance-maintenance",
+    "guide": "maintenance.md",
+    "paths": [
+      "AGENTS.md",
+      "README.md",
+      "tools/codebase_map.py"
+    ]
+  },
+  {
+    "id": "market-market-data",
+    "guide": "market-data.md",
+    "paths": [
+      "src/trading/futures_context.py",
+      "src/trading/live_quotes.py",
+      "src/trading/market.py",
+      "src/trading/pattern_memory.py",
+      "src/trading/station.py",
+      "src/trading/stream_book.py",
+      "src/trading/stream_capture.py",
+      "src/trading/stream_feed.py",
+      "src/trading/universe.py",
+      "src/trading/venue.py"
+    ]
+  },
+  {
+    "id": "market-scanner-charts",
+    "guide": "scanner-charts.md",
+    "paths": [
+      "src/trading/candle_history.py",
+      "src/trading/candle_patterns.py",
+      "src/trading/chart_indicators.py",
+      "src/trading/pattern_charts.py",
+      "src/trading/pattern_comparisons.py",
+      "src/trading/pattern_scanner.py"
+    ]
+  },
+  {
+    "id": "model-operator-tools-model-admission",
+    "guide": "model-admission.md",
+    "paths": [
+      "scripts/answer_development_role.py",
+      "scripts/benchmark_research_agents.py",
+      "scripts/evaluate_research_roles.py",
+      "scripts/llm_training_pilot.py",
+      "scripts/probe_local_research_models.py",
+      "scripts/qualify_research_role.py",
+      "scripts/qualify_rule_roles.py",
+      "scripts/run_qualification_queue.py"
+    ]
+  },
+  {
+    "id": "platform-architecture",
+    "guide": "architecture.md",
+    "paths": [
+      "src/trading/__init__.py",
+      "src/trading/__main__.py",
+      "src/trading/api.py",
+      "src/trading/config.py",
+      "src/trading/ownership.py",
+      "src/trading/runtime.py",
+      "src/trading/storage.py",
+      "src/trading/tiered_runtime.py"
+    ]
+  },
+  {
+    "id": "research-evidence-storage-training",
+    "guide": "evidence-storage-training.md",
+    "paths": [
+      "src/trading/compact_memory.py",
+      "src/trading/evidence_runtime.py",
+      "src/trading/incremental_memory.py",
+      "src/trading/knowledge_acquisition.py",
+      "src/trading/knowledge_extract.py",
+      "src/trading/llm_training.py",
+      "src/trading/llm_training_eval.py",
+      "src/trading/llm_training_preflight.py",
+      "src/trading/memory_accounts.py",
+      "src/trading/memory_dataset.py",
+      "src/trading/memory_quality.py",
+      "src/trading/prospective_review.py",
+      "src/trading/recorded_window.py",
+      "src/trading/replay.py",
+      "src/trading/replay_lab.py",
+      "src/trading/replay_worker.py",
+      "src/trading/research_data.py",
+      "src/trading/research_evidence.py",
+      "src/trading/research_knowledge.py",
+      "src/trading/research_reviews.py",
+      "src/trading/research_storage.py",
+      "src/trading/research_storage_expansion.py",
+      "src/trading/role_history.py",
+      "src/trading/training_bridge.py",
+      "src/trading/training_workflow.py"
+    ]
+  },
+  {
+    "id": "research-model-admission",
+    "guide": "model-admission.md",
+    "paths": [
+      "src/trading/cpu_topology.py",
+      "src/trading/engine_diagnostics.py",
+      "src/trading/local_role_model.py",
+      "src/trading/numerical_candidates.py",
+      "src/trading/numerical_resources.py",
+      "src/trading/peft_child_owner.py",
+      "src/trading/peft_profile.py",
+      "src/trading/peft_role_model.py",
+      "src/trading/peft_role_runner.py",
+      "src/trading/research_resources.py"
+    ]
+  },
+  {
+    "id": "research-oversight-tools",
+    "guide": "oversight-tools.md",
+    "paths": [
+      "src/trading/research_actors.py",
+      "src/trading/research_mcp.py",
+      "src/trading/reviewer_provider.py",
+      "src/trading/scoped_tools.py",
+      "src/trading/tool_journal.py"
+    ]
+  },
+  {
+    "id": "research-research-worker",
+    "guide": "research-worker.md",
+    "paths": [
+      "src/trading/context_flow.py",
+      "src/trading/experiment_lab.py",
+      "src/trading/experiment_registry.py",
+      "src/trading/experiment_worker.py",
+      "src/trading/finite_role_test.py",
+      "src/trading/lab_proposals.py",
+      "src/trading/lab_role_contract.py",
+      "src/trading/live_readiness.py",
+      "src/trading/model_trials.py",
+      "src/trading/outcome_continuation.py",
+      "src/trading/research_acquisition.py",
+      "src/trading/research_activity.py",
+      "src/trading/research_campaigns.py",
+      "src/trading/research_experiment.py",
+      "src/trading/research_inference.py",
+      "src/trading/research_lessons.py",
+      "src/trading/research_notices.py",
+      "src/trading/research_protocol.py",
+      "src/trading/research_quality.py",
+      "src/trading/research_support.py",
+      "src/trading/research_timing.py",
+      "src/trading/role_evidence.py",
+      "src/trading/role_worker.py"
+    ]
+  },
+  {
+    "id": "research-secondary-research",
+    "guide": "secondary-research.md",
+    "paths": [
+      "src/trading/stock_research.py"
+    ]
+  },
+  {
+    "id": "storage-configuration-evidence-storage-training",
+    "guide": "evidence-storage-training.md",
+    "paths": [
+      "scripts/configure_paper_projection.py",
+      "scripts/configure_research_storage.py",
+      "scripts/configure_training_lab.py"
+    ]
+  },
+  {
+    "id": "verification-verification",
+    "guide": "verification.md",
+    "paths": [
+      ".github/workflows/codebase-map.yml",
+      ".github/workflows/windows-native.yml",
+      "tests/browser/account_history_refresh.cjs",
+      "tests/browser/account_redesign_server.py",
+      "tests/browser/candle_patterns.cjs",
+      "tests/browser/candle_patterns_server.py",
+      "tests/browser/financial_monitoring.cjs",
+      "tests/browser/financial_monitoring_server.py",
+      "tests/browser/pattern_comparison.cjs",
+      "tests/browser/pattern_comparison_server.py",
+      "tests/browser/pattern_scanner.cjs",
+      "tests/browser/pattern_scanner_charts.cjs",
+      "tests/browser/pattern_scanner_server.py",
+      "tests/browser/role_archive_retry.cjs",
+      "tests/browser/role_archive_retry_server.py",
+      "tests/browser/role_pattern_evidence.cjs",
+      "tests/browser/role_pattern_evidence_server.py",
+      "tests/conftest.py",
+      "tests/financial_monitoring_fixture.py",
+      "tests/test_account_redesign.py",
+      "tests/test_activity_reader_recovery.py",
+      "tests/test_admission_evaluation_receipts.py",
+      "tests/test_admission_financial_semantics.py",
+      "tests/test_admission_recovery_candidate.py",
+      "tests/test_api.py",
+      "tests/test_autonomous_lab.py",
+      "tests/test_campaign_store.py",
+      "tests/test_candle_history.py",
+      "tests/test_candle_patterns.py",
+      "tests/test_capture_projection.py",
+      "tests/test_capture_recovery.py",
+      "tests/test_codebase_map.py",
+      "tests/test_coexistence_observer.py",
+      "tests/test_config.py",
+      "tests/test_context_flow.py",
+      "tests/test_continuous_audit.py",
+      "tests/test_continuous_safety.py",
+      "tests/test_cpu_topology.py",
+      "tests/test_daily_pattern_analyzer.py",
+      "tests/test_development_failure_receipts.py",
+      "tests/test_development_latency_measurement.py",
+      "tests/test_development_preflight.py",
+      "tests/test_economics_store.py",
+      "tests/test_efficiency_contracts.py",
+      "tests/test_engine_diagnostics.py",
+      "tests/test_evaluation_checkpoint.py",
+      "tests/test_execution_replay.py",
+      "tests/test_execution_window.py",
+      "tests/test_experiment_registry.py",
+      "tests/test_financial_readback.py",
+      "tests/test_financial_readback_worker.py",
+      "tests/test_finite_lab_authority.py",
+      "tests/test_finite_role_test.py",
+      "tests/test_futures_context.py",
+      "tests/test_incremental_memory.py",
+      "tests/test_integrated_research.py",
+      "tests/test_knowledge_postgresql.py",
+      "tests/test_knowledge_recovery.py",
+      "tests/test_lab_resilience.py",
+      "tests/test_live_candle_storage.py",
+      "tests/test_live_quotes.py",
+      "tests/test_live_readiness.py",
+      "tests/test_llm_training.py",
+      "tests/test_local_roles.py",
+      "tests/test_market.py",
+      "tests/test_memory_accounts.py",
+      "tests/test_memory_quality.py",
+      "tests/test_model_runtime_task_ownership.py",
+      "tests/test_model_trials.py",
+      "tests/test_notice_contention.py",
+      "tests/test_numerical_candidates.py",
+      "tests/test_options.py",
+      "tests/test_ownership.py",
+      "tests/test_paper_campaigns.py",
+      "tests/test_paper_diagnostics.py",
+      "tests/test_paper_economics.py",
+      "tests/test_paper_engine.py",
+      "tests/test_paper_learning.py",
+      "tests/test_paper_pilot_api.py",
+      "tests/test_paper_pilot_lifecycle.py",
+      "tests/test_paper_pilot_worker.py",
+      "tests/test_paper_projection.py",
+      "tests/test_paper_risk.py",
+      "tests/test_paper_risk_store.py",
+      "tests/test_paper_runtime.py",
+      "tests/test_paper_store.py",
+      "tests/test_paper_strategy.py",
+      "tests/test_paper_update_shutdown.py",
+      "tests/test_pattern_charts.py",
+      "tests/test_pattern_comparison_api.py",
+      "tests/test_pattern_comparisons.py",
+      "tests/test_pattern_memory.py",
+      "tests/test_pattern_next_method_comparison.py",
+      "tests/test_pattern_next_method_worker.py",
+      "tests/test_pattern_research_learning.py",
+      "tests/test_pattern_research_observation.py",
+      "tests/test_pattern_role_worker.py",
+      "tests/test_pattern_scanner.py",
+      "tests/test_peft_child_owner.py",
+      "tests/test_peft_child_resource_integration.py",
+      "tests/test_peft_development.py",
+      "tests/test_peft_finite_pilot.py",
+      "tests/test_peft_loader_contract.py",
+      "tests/test_peft_next_method.py",
+      "tests/test_peft_paper_pilot.py",
+      "tests/test_peft_pattern_learning.py",
+      "tests/test_peft_pattern_selection.py",
+      "tests/test_peft_question_selection.py",
+      "tests/test_performance_diagnostic_api.py",
+      "tests/test_performance_diagnostic_inputs.py",
+      "tests/test_performance_diagnostic_replay.py",
+      "tests/test_performance_diagnostic_threads.py",
+      "tests/test_performance_research_exclusion.py",
+      "tests/test_persistent_research.py",
+      "tests/test_portfolio_components.py",
+      "tests/test_preserved_v4_discovery.py",
+      "tests/test_projection_ram.py",
+      "tests/test_question_recovery.py",
+      "tests/test_redesign_strategy.py",
+      "tests/test_request_counts.py",
+      "tests/test_research.py",
+      "tests/test_research_acceptance.py",
+      "tests/test_research_actors.py",
+      "tests/test_research_audit_corrections.py",
+      "tests/test_research_campaigns.py",
+      "tests/test_research_data.py",
+      "tests/test_research_evidence.py",
+      "tests/test_research_lessons.py",
+      "tests/test_research_notices.py",
+      "tests/test_research_resources.py",
+      "tests/test_research_resume.py",
+      "tests/test_research_runtime.py",
+      "tests/test_research_storage.py",
+      "tests/test_research_storage_expansion.py",
+      "tests/test_research_storage_file_accounting.py",
+      "tests/test_review_background.py",
+      "tests/test_review_repairs.py",
+      "tests/test_role_archive_storage_owner.py",
+      "tests/test_role_capability_contract.py",
+      "tests/test_role_history.py",
+      "tests/test_role_packet_preflight.py",
+      "tests/test_role_question_selection.py",
+      "tests/test_role_question_selection_history.py",
+      "tests/test_role_readiness.py",
+      "tests/test_role_readiness_contract.py",
+      "tests/test_role_supervisor.py",
+      "tests/test_role_tool_requests.py",
+      "tests/test_role_tool_transport.py",
+      "tests/test_role_worker.py",
+      "tests/test_rule_component.py",
+      "tests/test_runtime.py",
+      "tests/test_scoped_tools.py",
+      "tests/test_simple_health.py",
+      "tests/test_simple_update.py",
+      "tests/test_station.py",
+      "tests/test_stock_research.py",
+      "tests/test_strategy_diagnosis.py",
+      "tests/test_streaming.py",
+      "tests/test_trade_history.py",
+      "tests/test_training_workflow.py",
+      "tests/test_windows_supervision.py"
+    ]
+  },
+  {
+    "id": "verification-and-operator-tools-verification",
+    "guide": "verification.md",
+    "paths": [
+      "scripts/audit_recorded_window.py",
+      "scripts/build_research_eval_v2.py",
+      "scripts/build_research_eval_v3.py",
+      "scripts/diagnose_public_stream.py",
+      "scripts/evaluate_admission_recovery.py",
+      "scripts/lab_fixtures.py",
+      "scripts/memory_fixtures.py",
+      "scripts/observe_model_coexistence.py",
+      "scripts/preview_audit_repairs.py",
+      "scripts/preview_paper_pilot_ui.py",
+      "scripts/preview_performance_diagnostic_ui.py",
+      "scripts/preview_research_acceptance.py",
+      "scripts/preview_role_research.py",
+      "scripts/preview_scoped_tools.py",
+      "scripts/probe_research_runtime.py",
+      "scripts/verify_components.py",
+      "scripts/verify_context.py",
+      "scripts/verify_continuous_lab.py",
+      "scripts/verify_cp3.py",
+      "scripts/verify_efficiency.py",
+      "scripts/verify_evidence.py",
+      "scripts/verify_integrated_research.py",
+      "scripts/verify_lab.py",
+      "scripts/verify_learning.py",
+      "scripts/verify_memory.py",
+      "scripts/verify_paper_pilot_ui.mjs",
+      "scripts/verify_performance_coexistence.py",
+      "scripts/verify_performance_diagnostic_ui.mjs",
+      "scripts/verify_performance_diagnostics.py",
+      "scripts/verify_replay.py",
+      "scripts/verify_research_acceptance.py",
+      "scripts/verify_resilience.py",
+      "scripts/verify_scoped_tools.py",
+      "scripts/verify_stock_sources.py",
+      "scripts/verify_trade_history.py",
+      "scripts/verify_trade_history_auth.py"
+    ]
+  },
+  {
+    "id": "windows-runtime-runtime-updates",
+    "guide": "runtime-updates.md",
+    "paths": [
+      "scripts/Build-DesktopLauncher.ps1",
+      "scripts/Initialize-PaperDatabase.ps1",
+      "scripts/Install-PaperStartup.ps1",
+      "scripts/Install-ResearchRuntime.ps1",
+      "scripts/Open-TradingDashboard.ps1",
+      "scripts/PaperProcessOwnership.ps1",
+      "scripts/PaperStartupIdentity.ps1",
+      "scripts/PaperUpdateShutdown.ps1",
+      "scripts/Publish-PrivateRepository.ps1",
+      "scripts/ResearchRuntimeOwnership.ps1",
+      "scripts/Run-PaperExperiment.ps1",
+      "scripts/Run-ResearchRuntime.ps1",
+      "scripts/Stop-ResearchRuntime.ps1",
+      "scripts/TradingDashboardLauncher.cs",
+      "scripts/Update-QTrades.ps1",
+      "scripts/qtrades_health.py",
+      "scripts/service_host.py"
+    ]
+  }
+]

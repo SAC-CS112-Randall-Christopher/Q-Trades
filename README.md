@@ -1,3 +1,20 @@
+# Development and troubleshooting
+
+Start with [Q-Trades' code-to-product map](docs/codebase-map/README.md). It connects
+the scanner, researcher, strategies/accounts, evidence/storage, model admission,
+dashboard/API and Windows runtime to current source owners, tests and recovery.
+
+```text
+python tools/codebase_map.py --tasks
+python tools/codebase_map.py --lookup PaperStore
+python tools/codebase_map.py --affected
+python tools/codebase_map.py --check
+```
+
+The map records source-candidate and installed-state boundaries. The dated product
+snapshots below remain historical context; inspect current code and accepted
+operating receipts before using their old counts, limits or activation statements.
+
 # Paper trade history
 
 Orders opens a separate **Trade history** tab: Account first, all accounts/newest
