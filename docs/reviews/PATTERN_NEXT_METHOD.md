@@ -54,8 +54,10 @@ unknown protected, qualification or prospective intervals. The original default
 p0 overlap behavior is unchanged. Incomplete or adverse outcomes are neither
 overwritten nor retried for a preferred answer.
 
-Only the new policy's model projection compacts repeated metadata to fit the
-unchanged context guard. The original detector explanation is referenced by its
+Only the new policy's model projection compacts repeated metadata. Matched byte
+measurements describe this reduction; they are not a model admission limit.
+Actual PEFT admission uses the runner's complete tokenized prompt and answer
+reserve against the approved profile. The original detector explanation is referenced by its
 SHA rather than sent as literal text; kind, time, level, volume and five-frame
 coverage remain explicit. Exact original preparation, lesson and outcome sources
 remain retained and reopenable. Original scored financial fields, samples, types

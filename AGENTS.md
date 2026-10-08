@@ -1,3 +1,20 @@
+# Current source successor - October 8, 2026, measured model admission (#66)
+
+Continue the same Goal/worktree on `codex/model-token-admission-66`, stacked on
+PR85 head `af34d417c2d48e8d67e45094fdf3c2e990bc3d72`. The human directs that
+unsupported estimates must not become admission blockers. Remove the PEFT
+transport's arbitrary UTF-8 byte cutoff; use the existing runner's complete
+tokenized prompt plus answer reserve against its approved profile. The new
+method's software fixture must measure bytes diagnostically and exercise the
+actual PEFT contract preflight, rather than invent a model-capacity threshold.
+Preserve actual profile/token, memory, timeout, financial, input, ownership,
+storage and authority checks. Original attempts/allowances are not reset or
+silently reauthorized. Source and isolated QA are authorized; no operating
+installation, restart, acquisition, actual tokenizer/model/provider call or
+research activation follows from this source repair. Preserve prior receipts
+and measured failures; report synthetic boundary tests separately from actual
+model capacity, coexistence and usefulness.
+
 # Current source successor - October 8, 2026, next supported pattern method (#66)
 
 Continue the same autonomous-research Goal/worktree on

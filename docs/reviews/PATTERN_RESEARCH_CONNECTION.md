@@ -74,13 +74,13 @@ require the exact current selection authority before allowance reservation and
 transport dispatch. Activation, financial monitoring, balance, paper freshness,
 input eligibility, storage/recording reserves, ownership and model resource limits
 remain protected. The real PEFT profile retains its 8,192-token context and
-1,024-token output limit. Its existing conservative byte preflight and the native
-runner's token guard remain authoritative. A synthetic 9,000-context fixture uses
-UTF-8 bytes as a conservative input-token bound, plus output/template reserves. It
-checks the compact model-facing summary, which references retained full evidence
-instead of transmitting raw archives. That fixture does not
-measure actual tokenizer fit, model capacity or coexistence. Those remain a separate
-proof stage.
+1,024-token output reserve. The runner checks the complete tokenized chat template
+against that approved context before loading model weights, without truncation.
+The earlier 32-KB transport cutoff has been removed: bytes are not model tokens.
+Historical synthetic 9,000-byte fixtures remain retained evidence, but do not
+establish a model capacity limit. The next-method fixture now uses PEFT contract
+preflight and records byte sizes diagnostically without that surrogate blocker.
+Actual tokenizer fit, model capacity and coexistence remain separate proof stages.
 
 Admission and snapshot validation use fresh observation clocks after the work they
 validate, while keeping the numerical causal cutoff separate. The actual final

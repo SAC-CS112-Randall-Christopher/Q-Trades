@@ -15,6 +15,7 @@ from test_paper_store import pg_store as pg_store
 from test_role_worker import ModelStub, make_lab
 
 from trading.autonomous_lab import InputWait
+from trading.lab_role_contract import VERSION, contract_hash, packet_json, prompt
 from trading.ownership import CollectorLock
 from trading.peft_child_owner import ChildOwner
 from trading.peft_profile import NAME, PROFILE, digest
@@ -116,6 +117,29 @@ def test_declaration_is_metadata_only_and_never_confers_operating_admission(decl
     assert profile["development_only"] and profile["identity"]["base_sha256"] == "b" * 64
     with pytest.raises(ValueError, match="no operating qualification"):
         model.admit("researcher")
+
+
+@pytest.mark.parametrize("role", ["researcher", "reviewer"])
+def test_contract_valid_large_packet_preflight_leaves_token_admission_to_runner(declared, role):
+    model, _, _ = declared
+    profile = model.declaration()[2]
+    packet = {
+        "contract": VERSION,
+        "question": "Inspect the complete original evidence without truncation.",
+        "evidence": {"original": "\u00e9" * 20000},
+        "financial_authority": False,
+    }
+    serialized = packet_json(packet)
+    assert len(serialized.encode()) + len(prompt(role).encode()) > 32768
+    assert profile["contract_sha256"] == contract_hash()
+    before = packet_json(packet), digest(profile)
+    # No inference/tokenizer call: contract preflight is not token-fit admission.
+    model.preflight(role, packet, profile)
+    assert (packet_json(packet), digest(profile)) == before
+    with pytest.raises(ValueError, match="contract differs"):
+        model.preflight(role, packet | {"contract": "unreviewed-role-contract"}, profile)
+    with pytest.raises(ValueError, match="RAG development packet"):
+        model.preflight(role, packet | {"retrieval_contract": "different-rag-contract"}, profile)
 
 
 @pytest.mark.parametrize("changed", ["alias", "source", "guard"])
