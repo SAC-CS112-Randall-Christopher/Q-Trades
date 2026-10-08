@@ -1,7 +1,9 @@
 # Current source successor - October 8, 2026, preserved v4 discovery (#66)
 
 Continue the same Goal/worktree on `codex/preserved-v4-discovery-66`, stacked on
-frozen PR86 head `9e60f3a6d3768c5cba8ffa1d0d40997b2a0f0817`. The actual legacy
+PR86 head `60c30f162fffe2f9962ff8cbc3d296fb603e9945`, including its separately
+reviewed scanner refusal repair. Preserve the original `9e60f3` review and QA
+receipts; the rebase does not relabel them as executions of a later head. The actual legacy
 proposer's lookback variation fails strict fixed-v4 validation after a v4 parent
 is preserved. Skip only those fixed v4 parents in the generic lookback-child
 loop, preserving the parent and allowing the existing discovery paths to run.
