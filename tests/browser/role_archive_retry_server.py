@@ -218,7 +218,9 @@ def main():
                     )
             with worker.registry.transaction():
                 worker.registry.db.execute(
-                    "INSERT INTO role_attempts VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                    "INSERT INTO role_attempts(task,stage,attempt,started,finished,status,"
+                    "profile,packet,response,reason,wall_reserved,tokens_reserved) "
+                    "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
                     (
                         identities["success"],
                         "idea",

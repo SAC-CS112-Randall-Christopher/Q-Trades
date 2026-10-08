@@ -6,6 +6,7 @@ import math
 import re
 import time
 from collections import deque
+from collections.abc import Callable
 from decimal import ROUND_HALF_EVEN, Context, Decimal, localcontext
 from pathlib import Path
 from typing import Any, Literal
@@ -393,15 +394,23 @@ class PatternComparisons:
             event_seq=chosen["seq"],
         )
 
-    def current_observation(self, request_id: str, now: float) -> dict[str, Any]:
+    def current_observation(
+        self, request_id: str, now: float, *, admission: Callable[[], Any] | None = None
+    ) -> dict[str, Any]:
         """Fresh matched inputs retained by the same owner; original preparation stays frozen."""
         if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
             raise ValueError("Invalid current comparison observation identity")
         if not math.isfinite(now) or now <= 0:
             raise ValueError("Invalid current comparison observation time")
-        proposal, evaluation, windows = self._evaluation(request_id, now)
+        proposal, evaluation, windows = (
+            self._evaluation(request_id, now, admission=admission)
+            if admission is not None
+            else self._evaluation(request_id, now)
+        )
         if evaluation["status"] == "supported_exploratory_configuration":
             with self.registry.transaction():
+                if admission is not None:
+                    admission()
                 self._permitted(windows)
                 for index, (start, end) in enumerate(windows):
                     self.registry.db.execute(
@@ -521,9 +530,11 @@ class PatternComparisons:
         }
 
     def _evaluation(
-        self, request_id: str, now: float
+        self, request_id: str, now: float, *, admission: Callable[[], Any] | None = None
     ) -> tuple[Any, Any, list[tuple[float, float]]]:
         c = self.controller
+        if admission is not None:
+            admission()
         if c is None:
             return None, {"status": "waiting", "reason": "Current Lab owner unavailable"}, []
         lab = c.paper.state.get("autonomous_lab")
@@ -618,6 +629,8 @@ class PatternComparisons:
             for offset in range(0, len(inputs), 500)
         ]
         with owner(plan) as storage:
+            if admission is not None:
+                admission()
             refs = storage.append(packets, now)
             for packet, ref in zip(packets, refs, strict=True):
                 if reopen_evidence(plan, ref) != packet:
@@ -650,7 +663,11 @@ class PatternComparisons:
         )
 
     def prepare(
-        self, command: PatternComparisonCommand, now: float | None = None
+        self,
+        command: PatternComparisonCommand,
+        now: float | None = None,
+        *,
+        admission: Callable[[], Any] | None = None,
     ) -> dict[str, Any]:
         intent = digest(command.model_dump())
         # Recovery happens first, including after source/eligibility/policy drift.
@@ -660,16 +677,22 @@ class PatternComparisons:
                 raise ValueError("Comparison request identity cannot be rewritten")
             return old
         with self.registry.pattern_comparison_lock:
-            return self._prepare_new(command, now, intent)
+            return self._prepare_new(command, now, intent, admission)
 
     def _prepare_new(
-        self, command: PatternComparisonCommand, now: float | None, intent: str
+        self,
+        command: PatternComparisonCommand,
+        now: float | None,
+        intent: str,
+        admission: Callable[[], Any] | None = None,
     ) -> dict[str, Any]:
         old = self.get(command.request_id)
         if old is not None:
             if old["intent_sha256"] != intent:
                 raise ValueError("Comparison request identity cannot be rewritten")
             return old
+        if admission is not None:
+            admission()
         now = time.time() if now is None else now
         if not math.isfinite(now) or now <= 0:
             raise ValueError("Invalid preparation observation time")
@@ -691,7 +714,11 @@ class PatternComparisons:
         c = self.controller
         policy_sha = digest(c.paper.state.get("autonomous_lab", {}).get("policy")) if c else None
         # Borrowing/appending/reopening the recorder never holds the registry lock.
-        proposal, evaluation, execution_windows = self._evaluation(command.request_id, now)
+        proposal, evaluation, execution_windows = (
+            self._evaluation(command.request_id, now, admission=admission)
+            if admission is not None
+            else self._evaluation(command.request_id, now)
+        )
         body = {
             "version": VERSION,
             "request_id": command.request_id,
@@ -716,6 +743,8 @@ class PatternComparisons:
         bundle_sha = fingerprint(body)
         windows = described["finding"]["native_proof"]["disclosed_intervals"] + execution_windows
         with self.registry.transaction():
+            if admission is not None:
+                admission()
             if self._original(selection) != {
                 k: v for k, v in described["finding"].items() if k != "native_proof"
             }:
@@ -726,6 +755,8 @@ class PatternComparisons:
                 raise ValueError("Current comparison source or policy changed during preparation")
             self.scanner._admission()
             self._permitted(windows)
+            if admission is not None:
+                admission()
             for index, (start, end) in enumerate(windows):
                 self.registry.db.execute(
                     "INSERT INTO evidence_windows VALUES(?,?,?,?)",

@@ -223,6 +223,7 @@ class RoleHistory:
                                                         "question_selection",
                                                         "selection_authority",
                                                         "predecessor_task",
+                                                        "finite_test",
                                                     )
                                                     if key in context
                                                 }

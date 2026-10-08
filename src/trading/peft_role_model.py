@@ -1,10 +1,14 @@
 """Owned trained-v2 requests; explicit paper pilot and development remain distinct."""
 
 import hashlib
+import math
 import os
+import re
 import subprocess
 import time
 import uuid
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
 from threading import Event, Lock, RLock
@@ -202,6 +206,9 @@ class PeftDevelopmentRoles:
         if len(packet_json(packet).encode()) + len(prompt(role, version).encode()) > 32768:
             raise ValueError("Role packet exceeds the development transport allowance")
 
+    def _dispatch_checkpoint(self, phase: str) -> None:
+        """Optional finite pilot fence; historical transports have no new guard."""
+
     def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
         self.preflight(role, packet, profile)
         self._consume_latency_authorization(role, packet)
@@ -230,6 +237,7 @@ class PeftDevelopmentRoles:
         cleanup_reasons: list[str] = []
         last_guard = started
         try:
+            self._dispatch_checkpoint("after_ownership")
             root = regular(Path(cfg["private_root"]) / "qtrades-development-inference")
             root.mkdir(exist_ok=True)
             job = root / uuid.uuid4().hex
@@ -286,6 +294,7 @@ class PeftDevelopmentRoles:
                 (job / "stdout.log").open("xb") as stdout,
                 (job / "stderr.log").open("xb") as stderr,
             ):
+                self._dispatch_checkpoint("before_child")
                 child = subprocess.Popen(
                     [cfg["python"], "-m", "trading.peft_role_runner", str(job)],
                     cwd=cfg["lab_root"],
@@ -305,9 +314,11 @@ class PeftDevelopmentRoles:
                 category = "child_placement"
                 if os.name == "nt":
                     constrain_child(child.pid, distinct_cores=True)
+                self._dispatch_checkpoint("before_resume")
                 (job / "owner-ready").write_text("owned", encoding="ascii")
                 owned.resume()
                 while child.poll() is None:
+                    self._dispatch_checkpoint("during_inference")
                     if self._cancelled.is_set():
                         category = "cancelled"
                         raise ValueError("Development inference was cancelled")
@@ -513,6 +524,7 @@ PAPER_PILOT_SELECTION_FORMAT = "qtrades-peft-paper-pilot-v4"
 QUESTION_SELECTION_POLICY = "evidence-question-selection-v1"
 PAPER_PILOT_PATTERN_FORMAT = "qtrades-peft-paper-pilot-v5"
 PATTERN_QUESTION_POLICY = "pattern-question-selection-v1"
+PAPER_PILOT_FINITE_FORMAT = "qtrades-peft-paper-pilot-v6"
 
 
 def _role_policy(path: Path) -> dict[str, Any]:
@@ -520,6 +532,15 @@ def _role_policy(path: Path) -> dict[str, Any]:
     if path.stat().st_size > 16384:
         raise ValueError("Role policy exceeds its bounded metadata limit")
     return read(path)
+
+
+def _finite_epoch(value: Any) -> bool:
+    if type(value) not in (int, float) or value <= 0:
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
 
 
 class PeftPaperPilotRoles(PeftDevelopmentRoles):
@@ -537,6 +558,11 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
         self._pilot_active = False
         self._pending_admission: dict[str, Any] | None = None
         self._dispatch_grant: dict[str, Any] | None = None
+        self.finite_request_verifier: Callable[..., None] | None = None
+        self._finite_dispatch: tuple[str, dict[str, Any], dict[str, Any], dict[str, Any]] | None = (
+            None
+        )
+        self._finite_claimed = False
 
     def _grant(self) -> dict[str, Any]:
         grant = _role_policy(self.policy_path)
@@ -555,10 +581,17 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             PAPER_PILOT_CAPABILITY_FORMAT,
             PAPER_PILOT_SELECTION_FORMAT,
             PAPER_PILOT_PATTERN_FORMAT,
+            PAPER_PILOT_FINITE_FORMAT,
         ):
             expected.add("role_contract")
-        if grant.get("format") in (PAPER_PILOT_SELECTION_FORMAT, PAPER_PILOT_PATTERN_FORMAT):
+        if grant.get("format") in (
+            PAPER_PILOT_SELECTION_FORMAT,
+            PAPER_PILOT_PATTERN_FORMAT,
+            PAPER_PILOT_FINITE_FORMAT,
+        ):
             expected.add("question_policy")
+        if grant.get("format") == PAPER_PILOT_FINITE_FORMAT:
+            expected.add("finite_test")
         if set(grant) != expected or (
             grant.get("format")
             not in (
@@ -567,6 +600,7 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                 PAPER_PILOT_CAPABILITY_FORMAT,
                 PAPER_PILOT_SELECTION_FORMAT,
                 PAPER_PILOT_PATTERN_FORMAT,
+                PAPER_PILOT_FINITE_FORMAT,
             )
             or (
                 grant.get("format") == PAPER_PILOT_TOOL_FORMAT
@@ -581,7 +615,7 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                 and grant.get("question_policy") != QUESTION_SELECTION_POLICY
             )
             or (
-                grant.get("format") == PAPER_PILOT_PATTERN_FORMAT
+                grant.get("format") in (PAPER_PILOT_PATTERN_FORMAT, PAPER_PILOT_FINITE_FORMAT)
                 and (
                     grant.get("role_contract") != PATTERN_VERSION
                     or grant.get("question_policy") != PATTERN_QUESTION_POLICY
@@ -599,7 +633,101 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             or not isinstance(grant.get("development_directory"), str)
         ):
             raise ValueError("Declare the explicit bounded trained-v2 paper-pilot grant")
+        if grant["format"] == PAPER_PILOT_FINITE_FORMAT:
+            from trading.pattern_comparisons import PatternFindingSelection
+
+            finite = grant["finite_test"]
+            if (
+                type(finite) is not dict
+                or set(finite)
+                != {"not_before", "expires_at", "max_requests", "selection", "finding_sha256"}
+                or any(not _finite_epoch(finite.get(key)) for key in ("not_before", "expires_at"))
+                or not 0 < finite["expires_at"] - finite["not_before"] <= 30 * 3600
+                or type(finite["max_requests"]) is not int
+                or finite["max_requests"] != 3
+                or not isinstance(finite["finding_sha256"], str)
+                or re.fullmatch(r"[a-f0-9]{64}", finite["finding_sha256"]) is None
+                or type(finite["selection"]) is not dict
+            ):
+                raise ValueError("Declare the exact finite native-pattern test bounds")
+            selection = PatternFindingSelection.model_validate(finite["selection"])
+            if (
+                selection.model_dump() != finite["selection"]
+                or selection.symbol != "BTCUSD"
+                or selection.timeframe != "5m"
+            ):
+                raise ValueError("Finite pilot requires one exact BTCUSD native-5m finding")
         return grant
+
+    @staticmethod
+    def _finite_time(grant: dict[str, Any]) -> None:
+        now = time.time()
+        finite = grant["finite_test"]
+        if not math.isfinite(now) or now < finite["not_before"]:
+            raise ValueError("Finite paper pilot has not reached its original start")
+        if now >= finite["expires_at"]:
+            raise ValueError("Finite paper pilot original deadline expired")
+
+    def finite_test(self) -> dict[str, Any] | None:
+        """Cheap grant/time identity only; no model, resource or registry observation."""
+        with self._policy_lock:
+            grant = self._grant()
+            if grant["format"] != PAPER_PILOT_FINITE_FORMAT:
+                return None
+            self._finite_time(grant)
+            return {
+                "grant_id": grant["grant_id"],
+                "grant_sha": digest(grant),
+                "profile_sha": grant["profile_sha256"],
+                "contract_version": PATTERN_VERSION,
+                "contract_sha": contract_hash(PATTERN_VERSION),
+                "question_policy": PATTERN_QUESTION_POLICY,
+                "finite_test": deepcopy(grant["finite_test"]),
+            }
+
+    @contextmanager
+    def finite_operation(self, expected_scope: dict[str, Any]) -> Iterator[Callable[[], None]]:
+        """Fence an already-owned paper operation; never enter registry from here.
+
+        The caller holds the paper writer before entry, and uses the yielded
+        cheap guard before financial effects/persistence/commit. A successful
+        admitted commit may drain past expiry; do not report it as rolled back.
+        """
+        with self._policy_lock:
+
+            def guard() -> None:
+                authority = self.finite_test()
+                if authority is None:
+                    raise ValueError("Finite operation requires the explicit finite grant")
+                finite = authority["finite_test"]
+                observed = {key: value for key, value in authority.items() if key != "finite_test"}
+                observed |= {
+                    "finite_test_sha": digest(finite),
+                    "not_before": finite["not_before"],
+                    "expires_at": finite["expires_at"],
+                }
+                if (
+                    type(expected_scope) is not dict
+                    or any(
+                        key not in expected_scope or expected_scope[key] != value
+                        for key, value in observed.items()
+                    )
+                    or any(
+                        type(expected_scope[key]) is not str
+                        for key in observed
+                        if key not in {"not_before", "expires_at"}
+                    )
+                    or any(
+                        type(expected_scope[key]) not in (int, float)
+                        for key in ("not_before", "expires_at")
+                    )
+                    or self._grant()["enabled"] is not True
+                    or self._cancelled.is_set()
+                ):
+                    raise ValueError("Finite operation scope changed or pilot paused")
+
+            guard()
+            yield guard
 
     @property
     def role_contract(self) -> str:
@@ -610,12 +738,18 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
         """Only an explicit selection grant authorizes prospective question production."""
         with self._policy_lock:
             grant = self._grant()
-            if grant["format"] not in (PAPER_PILOT_SELECTION_FORMAT, PAPER_PILOT_PATTERN_FORMAT):
+            if grant["format"] not in (
+                PAPER_PILOT_SELECTION_FORMAT,
+                PAPER_PILOT_PATTERN_FORMAT,
+                PAPER_PILOT_FINITE_FORMAT,
+            ):
                 return None
+            if grant["format"] == PAPER_PILOT_FINITE_FORMAT:
+                self._finite_time(grant)
             self.declaration()
             if self._grant() != grant:
                 raise ValueError("Question-selection grant changed while verifying authority")
-            pattern = grant["format"] == PAPER_PILOT_PATTERN_FORMAT
+            pattern = grant["format"] in (PAPER_PILOT_PATTERN_FORMAT, PAPER_PILOT_FINITE_FORMAT)
             version = PATTERN_VERSION if pattern else CAPABILITY_VERSION
             return {
                 "question_policy": PATTERN_QUESTION_POLICY
@@ -664,6 +798,8 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
     def policy(self) -> dict[str, Any]:
         with self._policy_lock:
             grant = self._grant()
+            if grant["format"] == PAPER_PILOT_FINITE_FORMAT:
+                self._finite_time(grant)
             self.declaration()
             return grant | {
                 "configured_enabled": grant["enabled"],
@@ -764,6 +900,8 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             with self._policy_lock:
                 grant = self._grant()
                 if enabled:
+                    if grant["format"] == PAPER_PILOT_FINITE_FORMAT:
+                        self._finite_time(grant)
                     self.declaration()
                     if self._protected()["admitted"] is not True:
                         raise ValueError("Protected paper-pilot admission refuses resume")
@@ -848,7 +986,7 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
 
     def _guard_authority(self) -> dict[str, Any]:
         grant = self._dispatch_grant
-        return {
+        result = {
             "paper_pilot_grant": (
                 {key: grant[key] for key in ("grant_id", "profile_sha256", "scope")}
                 | {"sha256": digest(grant)}
@@ -859,6 +997,12 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             "experimental": True,
             "qualified": False,
         }
+        if self._finite_dispatch is not None:
+            result |= {
+                "finite_request": deepcopy(self._finite_dispatch[3]),
+                "finite_dispatch_claimed": self._finite_claimed,
+            }
+        return result
 
     def admit(self, role: str) -> dict[str, Any]:
         if role not in {"researcher", "reviewer"}:
@@ -897,6 +1041,95 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
         self.preflight(role, packet, profile)
 
     def infer(self, role: str, packet: dict[str, Any], profile: dict[str, Any]) -> dict[str, Any]:
+        return self._infer(role, packet, profile, None)
+
+    def infer_reserved(
+        self,
+        role: str,
+        packet: dict[str, Any],
+        profile: dict[str, Any],
+        reservation: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Only an existing worker's exact reserved attempt can spend a finite dispatch."""
+        return self._infer(role, deepcopy(packet), deepcopy(profile), deepcopy(reservation))
+
+    def _verify_finite_dispatch(self, *, claim: bool = False) -> None:
+        bound = self._finite_dispatch
+        if bound is None:
+            raise ValueError("Finite pilot has no reserved worker attempt")
+        role, packet, profile, reservation = bound
+        authority = self.finite_test()
+        if authority is None:
+            raise ValueError("Reserved finite dispatch lost its finite grant")
+        finite = authority["finite_test"]
+        selected = {key: value for key, value in authority.items() if key != "finite_test"}
+        if (
+            type(reservation) is not dict
+            or set(reservation)
+            != {
+                "grant_id",
+                "grant_sha",
+                "root_task",
+                "task",
+                "stage",
+                "attempt",
+                "packet_sha256",
+                "expires_at",
+                "finite_test_sha",
+            }
+            or reservation["grant_id"] != authority["grant_id"]
+            or reservation["grant_sha"] != authority["grant_sha"]
+            or reservation["expires_at"] != finite["expires_at"]
+            or type(reservation["expires_at"]) not in (int, float)
+            or reservation["finite_test_sha"] != digest(finite)
+            or reservation["packet_sha256"] != digest(packet)
+            or digest(profile) != authority["profile_sha"]
+            or packet.get("selection_authority") != selected
+            or role not in {"researcher", "reviewer"}
+            or any(
+                type(reservation[key]) is not str
+                for key in (
+                    "grant_id",
+                    "grant_sha",
+                    "root_task",
+                    "task",
+                    "stage",
+                    "packet_sha256",
+                    "finite_test_sha",
+                )
+            )
+            or reservation["stage"] not in {"idea", "review", "followup"}
+            or (role == "reviewer") != (reservation["stage"] == "review")
+            or type(reservation["attempt"]) is not int
+            or not 1 <= reservation["attempt"] <= 3
+            or self._cancelled.is_set()
+        ):
+            raise ValueError("Finite pilot requires its exact reserved worker attempt")
+        with self._policy_lock:
+            if self._grant()["enabled"] is not True:
+                raise ValueError("Finite paper pilot is paused")
+        verifier = self.finite_request_verifier
+        if not callable(verifier):
+            raise ValueError("Finite pilot requires the existing worker reservation verifier")
+        # The worker may acquire policy while holding its registry transaction.
+        # Never call that registry hook under this transport's policy mutex.
+        verifier(role, packet, profile, reservation, claim=claim)
+        if claim:
+            self._finite_claimed = True
+        if self.finite_test() != authority or self._cancelled.is_set():
+            raise ValueError("Finite grant changed during reserved-attempt verification")
+
+    def _dispatch_checkpoint(self, phase: str) -> None:
+        if self._finite_dispatch is not None:
+            self._verify_finite_dispatch(claim=phase == "before_child")
+
+    def _infer(
+        self,
+        role: str,
+        packet: dict[str, Any],
+        profile: dict[str, Any],
+        reservation: dict[str, Any] | None,
+    ) -> dict[str, Any]:
         self.instance_preflight(role, packet, profile)
         if not self._request_lock.acquire(blocking=False):
             raise ValueError("Existing paper-pilot request already owns this transport")
@@ -909,6 +1142,14 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             if policy["enabled"] is not True:
                 raise ValueError("Paper-pilot grant is paused")
             current_grant = self._grant()
+            if current_grant["format"] == PAPER_PILOT_FINITE_FORMAT:
+                if reservation is None:
+                    raise ValueError("Finite pilot requires a verified reserved worker attempt")
+                self._finite_dispatch = (role, packet, profile, reservation)
+                self._finite_claimed = False
+                self._verify_finite_dispatch()
+            elif reservation is not None:
+                raise ValueError("Reserved dispatch requires the explicit finite grant")
             if "selection_authority" in packet and packet["selection_authority"][
                 "grant_sha"
             ] != digest(current_grant):
@@ -927,6 +1168,8 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                 self._pilot_active = True
             return super().infer(role, packet, profile)
         finally:
+            self._finite_dispatch = None
+            self._finite_claimed = False
             with self._latency_lock:
                 self._pilot_active = False
                 self._guard_log = None

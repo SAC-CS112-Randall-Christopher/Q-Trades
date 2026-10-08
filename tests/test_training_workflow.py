@@ -89,7 +89,9 @@ def seed_attempt(workflow, count=1, oversized=False):
                 a["response"] if i == 1 and not oversized else json.dumps({"answer": "x" * 140000})
             )
             workflow.registry.db.execute(
-                "INSERT INTO role_attempts VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO role_attempts(task,stage,attempt,started,finished,status,"
+                "profile,packet,response,reason,wall_reserved,tokens_reserved) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     original["id"],
                     "idea",

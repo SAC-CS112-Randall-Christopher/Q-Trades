@@ -2,6 +2,7 @@
 
 import json
 import time
+from collections.abc import Callable
 from typing import Any
 
 from trading.autonomous_spec import LabProposal, RuleSpec
@@ -11,6 +12,7 @@ from trading.experiment_registry import ExperimentRegistry, fingerprint
 class LabProposals:
     def __init__(self, registry: ExperimentRegistry):
         self.registry = registry
+        self.finite_validator: Callable[[dict[str, Any], LabProposal], None] | None = None
         with registry.lock:
             registry.db.executescript("""
                 CREATE TABLE IF NOT EXISTS lab_bundles(
@@ -34,6 +36,15 @@ class LabProposals:
                   OR NEW.rule_sha256<>OLD.rule_sha256 OR NEW.kind<>OLD.kind
                   OR (OLD.evaluation IS NOT NULL AND NEW.evaluation IS NOT OLD.evaluation)
                   BEGIN SELECT RAISE(ABORT,'Proposal and evaluation are frozen'); END;
+                CREATE TABLE IF NOT EXISTS lab_finite_proposals(
+                    grant_id TEXT PRIMARY KEY,proposal_id TEXT UNIQUE NOT NULL,
+                    body TEXT NOT NULL,sha256 TEXT NOT NULL);
+                CREATE TRIGGER IF NOT EXISTS lab_finite_proposal_frozen
+                  BEFORE UPDATE ON lab_finite_proposals
+                  BEGIN SELECT RAISE(ABORT,'Finite proposal authority is immutable'); END;
+                CREATE TRIGGER IF NOT EXISTS lab_finite_proposal_retained
+                  BEFORE DELETE ON lab_finite_proposals
+                  BEGIN SELECT RAISE(ABORT,'Finite proposal authority is retained'); END;
             """)
         if "next_retry" not in {
             row[1] for row in registry.db.execute("PRAGMA table_info(lab_proposals)")
@@ -101,9 +112,16 @@ class LabProposals:
         return {"sha256": sha, "bundle": body}
 
     def submit(
-        self, proposal: LabProposal, evaluation: dict[str, Any], *, rejection: str | None = None
+        self,
+        proposal: LabProposal,
+        evaluation: dict[str, Any],
+        *,
+        rejection: str | None = None,
+        _finite_scope: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         r = self.registry
+        if _finite_scope is not None:
+            _finite_scope = json.loads(json.dumps(_finite_scope, sort_keys=True, allow_nan=False))
         digest = fingerprint(proposal.model_dump())
         rule = fingerprint(proposal.strategy.model_dump())
         with r.transaction():
@@ -113,7 +131,16 @@ class LabProposals:
             if old:
                 if old["sha256"] != digest:
                     raise ValueError("Proposal identity cannot be rewritten")
+                if _finite_scope is not None and self.finite_scope(proposal) != _finite_scope:
+                    raise ValueError("Existing proposal has different finite authority")
                 return self.get(proposal.request_id)
+            if _finite_scope is not None:
+                self.validate_finite_scope(_finite_scope, proposal)
+                if r.db.execute(
+                    "SELECT 1 FROM lab_finite_proposals WHERE grant_id=? OR proposal_id=?",
+                    (_finite_scope["grant_id"], proposal.request_id),
+                ).fetchone():
+                    raise ValueError("Finite investigation already owns its one proposal")
             if not r.db.execute(
                 "SELECT 1 FROM lab_bundles WHERE sha256=?", (proposal.evidence_bundle_sha256,)
             ).fetchone():
@@ -152,6 +179,20 @@ class LabProposals:
                     "Four active proposal jobs already queued; wait for bounded dispatch"
                 )
             status = "rejected" if reason else "evaluated"
+            if _finite_scope is not None:
+                # Claim and inbox publication share the existing transaction. A
+                # failed INSERT/event publishes neither; acknowledged intent is
+                # permanent even when the model's later authority is stopped.
+                self.validate_finite_scope(_finite_scope, proposal)
+                r.db.execute(
+                    "INSERT INTO lab_finite_proposals VALUES(?,?,?,?)",
+                    (
+                        _finite_scope["grant_id"],
+                        proposal.request_id,
+                        json.dumps(_finite_scope, sort_keys=True, allow_nan=False),
+                        fingerprint(_finite_scope),
+                    ),
+                )
             r.db.execute(
                 (
                     "INSERT INTO "
@@ -181,6 +222,34 @@ class LabProposals:
                 },
             )
         return self.get(proposal.request_id)
+
+    def validate_finite_scope(self, scope: dict[str, Any], proposal: LabProposal) -> None:
+        if (
+            type(scope) is not dict
+            or scope.get("proposal_id") != proposal.request_id
+            or scope.get("proposal_sha") != fingerprint(proposal.model_dump())
+            or not callable(self.finite_validator)
+        ):
+            raise ValueError("Finite proposal requires its exact claimed worker authority")
+        self.finite_validator(scope, proposal)
+
+    def finite_scope(self, proposal: LabProposal) -> dict[str, Any] | None:
+        """Read immutable authority before acquiring the transport's dispatch fence."""
+        with self.registry.lock:
+            row = self.registry.db.execute(
+                "SELECT body,sha256 FROM lab_finite_proposals WHERE proposal_id=?",
+                (proposal.request_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        scope: dict[str, Any] = json.loads(row["body"])
+        if (
+            fingerprint(scope) != row["sha256"]
+            or scope.get("proposal_id") != proposal.request_id
+            or scope.get("proposal_sha") != fingerprint(proposal.model_dump())
+        ):
+            raise ValueError("Retained finite proposal authority differs")
+        return scope
 
     def has_capacity(self) -> bool:
         with self.registry.lock:
@@ -269,6 +338,15 @@ class LabProposals:
                     "lab_proposal_blocked",
                     {"reason": reason, "next_retry": next_retry, "financial_authority": False},
                 )
+
+    def defer_reserved(self, request_id: str, reason: str, next_retry: float) -> None:
+        """Preserve the existing reserved intent while new funding is refused."""
+        with self.registry.transaction():
+            self.registry.db.execute(
+                "UPDATE lab_proposals SET reason=?,next_retry=? "
+                "WHERE request_id=? AND status='reserved'",
+                (reason[:300], next_retry, request_id),
+            )
 
     def retry_due(self) -> float | None:
         with self.registry.lock:

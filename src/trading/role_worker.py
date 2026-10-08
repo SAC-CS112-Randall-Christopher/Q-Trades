@@ -19,6 +19,7 @@ from trading.autonomous_lab import AutonomousLab, InputWait
 from trading.autonomous_spec import LabPolicy, LabProposal, MemoryFilter, RuleSpec, contract
 from trading.evidence_runtime import plain
 from trading.experiment_registry import ExperimentRegistry, fingerprint
+from trading.finite_role_test import AUTHORITY_FIELDS, FiniteRoleTest, active, finite_scope
 from trading.lab_role_contract import (
     CAPABILITY_VERSION,
     PATTERN_VERSION,
@@ -150,6 +151,12 @@ class RoleWorker:
                   BEGIN SELECT RAISE(ABORT,'Question selection is permanent'); END;
             """)
         self.history = RoleHistory(registry, storage_owner)
+        self.finite = FiniteRoleTest(registry)
+        if callable(getattr(transport, "finite_test", None)):
+            transport.finite_request_verifier = self.validate_finite_request
+            if controller is not None:
+                controller.finite_transport = transport
+                controller.inbox.finite_validator = self.validate_finite_proposal
         self._maintenance_due: dict[str, float] = {}
         with registry.transaction():
             registry.db.execute(
@@ -175,6 +182,18 @@ class RoleWorker:
         return str(version)
 
     def _same_mode(self, task: dict[str, Any]) -> bool:
+        try:
+            finite = self._finite_scope()
+            if finite is not None or "finite_test" in task["context"]:
+                if finite is None:
+                    return False
+                with self.registry.lock:
+                    saved = self.finite.binding(task)
+                if saved != {**finite, "root_task": saved["root_task"]}:
+                    return False
+                active(finite, time.time())
+        except (ValueError, OSError, KeyError):
+            return False
         if task["context"].get("execution_mode", "qualified_roles") != self.execution_mode:
             return False
         if task["context"].get("contract", VERSION) != self._contract_version():
@@ -220,6 +239,183 @@ class RoleWorker:
             except (ValueError, OSError, KeyError):
                 return False
         return self.enabled
+
+    def _finite_scope(self) -> dict[str, Any] | None:
+        getter = getattr(self.transport, "finite_test", None)
+        value = getter() if self.paper_pilot and callable(getter) else None
+        return finite_scope(value) if value is not None else None
+
+    def _finite_current(self, task: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        try:
+            scope = self._finite_scope()
+            if scope is None:
+                if task is not None and "finite_test" in task["context"]:
+                    raise InputWait("Original finite grant is unavailable; no new effect")
+                return None
+            active(scope, time.time())
+            if task is not None:
+                with self.registry.lock:
+                    saved = self.finite.binding(task)
+                if saved != {**scope, "root_task": saved["root_task"]}:
+                    raise ValueError("Current finite grant differs from the original task scope")
+            return scope
+        except ValueError as exc:
+            raise InputWait(str(exc)) from exc
+
+    def _finite_admission(self, scope: dict[str, Any]) -> Callable[[], dict[str, Any]]:
+        """Bind out-of-lock preparation to the captured full finite authority."""
+
+        def admitted() -> dict[str, Any]:
+            current = self._finite_current()
+            if current is None or current != scope:
+                raise InputWait("Finite preparation authority changed after capture")
+            return current
+
+        return admitted
+
+    def finite_proposal(self, task: dict[str, Any], proposal: LabProposal) -> dict[str, Any] | None:
+        scope = self._finite_current(task)
+        if scope is None:
+            return None
+        if self.controller is not None:
+            self.controller.finite_transport = self.transport
+            self.controller.inbox.finite_validator = self.validate_finite_proposal
+        return self._finite_proposal_fence(task, proposal)
+
+    def _finite_proposal_fence(self, task: dict[str, Any], proposal: LabProposal) -> dict[str, Any]:
+        with self.registry.lock:
+            saved = self.finite.binding(task)
+        if task["proposal"] != proposal.model_dump() or set(task["context"]["catalog"]) != {"p0"}:
+            raise ValueError("Finite proposal must be the original fixed comparison")
+        return {
+            **{key: saved[key] for key in AUTHORITY_FIELDS},
+            "finite_test_sha": fingerprint(saved["finite_test"]),
+            "not_before": saved["finite_test"]["not_before"],
+            "expires_at": saved["finite_test"]["expires_at"],
+            "root_task": saved["root_task"],
+            "task": task["id"],
+            "proposal_id": proposal.request_id,
+            "proposal_sha": fingerprint(proposal.model_dump()),
+        }
+
+    def _finite_accepted(self, task: dict[str, Any]) -> bool:
+        if "finite_test" not in task["context"] or not task.get("proposal"):
+            return False
+        c = self.controller
+        if c is None:
+            return False
+        proposal = LabProposal.model_validate(task["proposal"])
+        fence = c.inbox.finite_scope(proposal)
+        if fence is None:
+            return False
+        if fence != self._finite_proposal_fence(task, proposal):
+            raise ValueError("Accepted finite proposal differs from its original root/task fence")
+        return True
+
+    def validate_finite_request(
+        self,
+        role: str,
+        packet: dict[str, Any],
+        profile: dict[str, Any],
+        reservation: dict[str, Any],
+        *,
+        claim: bool = False,
+    ) -> None:
+        """Verify/claim the existing attempt once; no transport-side request counter."""
+        if (
+            set(reservation)
+            != {
+                "grant_id",
+                "grant_sha",
+                "root_task",
+                "task",
+                "stage",
+                "attempt",
+                "packet_sha256",
+                "expires_at",
+                "finite_test_sha",
+            }
+            or type(reservation["attempt"]) is not int
+        ):
+            raise ValueError("Finite dispatch requires its exact reserved attempt")
+        scope = self._finite_current()
+        if scope is None:
+            raise ValueError("Finite dispatch requires the current finite grant")
+        with self.registry.transaction():
+            row = self.registry.db.execute(
+                "SELECT * FROM role_tasks WHERE id=? AND owner=? AND lease_until>=?",
+                (reservation["task"], self.owner, time.time()),
+            ).fetchone()
+            if row is None:
+                raise ValueError("Finite dispatch ownership expired or changed")
+            task = {"id": row["id"], "context": json.loads(row["context"])}
+            saved = self.finite.binding(task)
+            expected = self._finite_reservation(
+                saved, row["id"], row["stage"], reservation["attempt"], packet
+            )
+            attempt = self.registry.db.execute(
+                "SELECT * FROM role_attempts WHERE task=? AND stage=? AND attempt=?",
+                (row["id"], row["stage"], reservation["attempt"]),
+            ).fetchone()
+            if (
+                scope != {k: saved[k] for k in scope}
+                or expected != reservation
+                or role != ("reviewer" if row["stage"] == "review" else "researcher")
+                or attempt is None
+                or attempt["status"] != "running"
+                or attempt["finished"] is not None
+                or attempt["response"] is not None
+                or fingerprint(json.loads(attempt["packet"])) != fingerprint(packet)
+                or fingerprint(json.loads(attempt["profile"])) != fingerprint(profile)
+                or self.finite.count(saved) > saved["finite_test"]["max_requests"]
+            ):
+                raise ValueError("Finite dispatch differs from its charged immutable reservation")
+            active(scope, time.time())
+            if (
+                claim
+                and self.registry.db.execute(
+                    "UPDATE role_attempts SET dispatch_started=? WHERE task=? AND stage=? "
+                    "AND attempt=? AND dispatch_started IS NULL",
+                    (time.time(), row["id"], row["stage"], reservation["attempt"]),
+                ).rowcount
+                != 1
+            ):
+                raise ValueError("Finite attempt was already dispatched; no repeat")
+
+    def validate_finite_proposal(self, fence: dict[str, Any], proposal: LabProposal) -> None:
+        """Called in the inbox publication transaction; never acquires financial ownership."""
+        with self.registry.lock:
+            row = self.registry.db.execute(
+                "SELECT context,proposal FROM role_tasks WHERE id=?", (fence.get("task"),)
+            ).fetchone()
+            if row is None:
+                raise ValueError("Finite proposal has no original scoped role task")
+            expected = self.finite_proposal(
+                {
+                    "id": fence["task"],
+                    "context": json.loads(row["context"]),
+                    "proposal": json.loads(row["proposal"]) if row["proposal"] else None,
+                },
+                proposal,
+            )
+            if expected is None or expected != fence:
+                raise ValueError("Finite proposal differs from its original task/root authority")
+
+    @staticmethod
+    def _finite_reservation(
+        saved: dict[str, Any], task: str, stage: str, attempt: int, packet: dict[str, Any]
+    ) -> dict[str, Any]:
+        return {
+            "grant_id": saved["grant_id"],
+            "grant_sha": saved["grant_sha"],
+            "root_task": saved["root_task"],
+            "task": task,
+            "stage": stage,
+            "attempt": attempt,
+            "packet_sha256": fingerprint(packet),
+            "expires_at": saved["finite_test"]["expires_at"],
+            "finite_test_sha": fingerprint(saved["finite_test"]),
+        }
 
     def _requested(self, question: Question) -> str | None:
         if not question.request_id:
@@ -343,8 +539,19 @@ class RoleWorker:
         return frame
 
     def _pattern_inputs(
-        self, source: dict[str, str], question: Question, policy: dict[str, Any], now: float
+        self,
+        source: dict[str, str],
+        question: Question,
+        policy: dict[str, Any],
+        now: float,
+        *,
+        finite_authority: dict[str, Any] | None = None,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+        admission = (
+            self._finite_admission(finite_authority) if finite_authority is not None else None
+        )
+        if admission is not None:
+            admission()
         if question.horizon != "medium" or question.parent or question.lesson:
             raise ValueError("Pattern comparison is one fixed independent medium hypothesis")
         original = self._pattern_original(source)
@@ -372,7 +579,11 @@ class RoleWorker:
             }
         )
         candidate = c.evaluate(proposal, now)
+        if admission is not None:
+            admission()
         reference = c.evaluate(reversed_proposal, now)
+        if admission is not None:
+            admission()
         inputs = candidate.pop("inputs")
         if reference.pop("inputs") != inputs or not 305 <= len(inputs) <= 600:
             raise ValueError("Current matched pattern inputs differ")
@@ -380,7 +591,11 @@ class RoleWorker:
         bridge.execution_inputs(proof, original["request_id"])
         if digest(inputs) != proof["sha256"]:
             observation_id = "role-input-" + digest(inputs)[:32]
-            observation = bridge.current_observation(observation_id, now)
+            observation = bridge.current_observation(
+                observation_id,
+                now,
+                admission=admission,
+            )
             evaluation = observation["evaluation"]
             if evaluation["status"] != "supported_exploratory_configuration":
                 raise InputWait(evaluation["reason"])
@@ -507,6 +722,18 @@ class RoleWorker:
             return self.get(requested) | (
                 {"_selection_created": False} if _selection is not None else {}
             )
+        finite = self._finite_current()
+        if finite is not None:
+            if _resume_from is None and _selection is None:
+                raise InputWait("Finite test refuses an independent or unmarked manual question")
+            with self.registry.lock:
+                prior_finite = self.finite.prior(finite)
+                if _resume_from is None and prior_finite is not None:
+                    raise InputWait("Finite test already claimed its one original research chain")
+                if _resume_from is not None:
+                    self.finite.binding(_resume_from)
+                    if self.finite.count(self.finite.binding(_resume_from)) >= 3:
+                        raise InputWait("Finite lifetime request allowance is exhausted")
         pilot_grant_id = self._pilot_grant_id()
         c = self.controller
         if c is None or not c.paper.state.get("autonomous_lab"):
@@ -530,7 +757,7 @@ class RoleWorker:
         waits: dict[str, Any]
         if _pattern_comparison is not None:
             catalog, issued, causal_inputs, pattern, fixed_comparison = self._pattern_inputs(
-                _pattern_comparison, question, policy, now
+                _pattern_comparison, question, policy, now, finite_authority=finite
             )
             prior = None
             waits = {
@@ -762,6 +989,13 @@ class RoleWorker:
                 }
             )[:32]
         )
+        if finite is not None:
+            root = (
+                self.finite.binding(_resume_from)["root_task"]
+                if _resume_from is not None
+                else identity
+            )
+            context["finite_test"] = {**finite, "root_task": root}
         if self.knowledge is not None and not self.paper_pilot:
             context["knowledge"] = self.knowledge.retrieve(
                 KnowledgeQuery(
@@ -785,6 +1019,10 @@ class RoleWorker:
             if _selection_authority is not None:
                 if _selection_authority != self._selection_authority():
                     raise InputWait("Question selection grant changed before publication")
+            if finite is not None:
+                if self._finite_current() != finite:
+                    raise InputWait("Finite grant changed before atomic task publication")
+                self.finite.claim(finite, identity, context, time.time(), _resume_from)
             if _selection is not None:
                 self._check_selection(_selection, question, policy, causal_inputs, catalog, now)
                 self._selection_room(_selection["authority"], policy, now)
@@ -1340,6 +1578,16 @@ class RoleWorker:
         self, task: dict[str, Any], stage: str, status: str = "queued", **values: Any
     ) -> bool:
         with self.registry.transaction():
+            if (
+                "finite_test" in task["context"]
+                and task["stage"] != "outcome"
+                and not (task["stage"] == "submit" and self._finite_accepted(task))
+                and (
+                    stage != task["stage"]
+                    or any(k in values for k in ("proposal", "evaluation", "result"))
+                )
+            ):
+                self._finite_current(task)
             assignments = ["stage=?", "status=?", "updated=?", "owner=NULL", "lease_until=NULL"]
             progressed = (
                 stage != task["stage"]
@@ -1476,8 +1724,17 @@ class RoleWorker:
         }
 
     def _current(self, task: dict[str, Any]) -> AutonomousLab:
-        if not self._same_mode(task):
+        finite_outcome = "finite_test" in task["context"] and (
+            task["stage"] == "outcome"
+            or (task["stage"] == "submit" and self._finite_accepted(task))
+        )
+        if finite_outcome:
+            with self.registry.lock:
+                self.finite.binding(task)
+        elif not self._same_mode(task):
             raise InputWait("Retained task belongs to a different role execution mode")
+        if not finite_outcome:
+            self._finite_current(task)
         if task.get("_claimed_owner"):
             with self.registry.lock:
                 owned = self.registry.db.execute(
@@ -1497,11 +1754,13 @@ class RoleWorker:
         ):
             raise ValueError("Frozen role contract changed; replan before new inference")
         lab = c.paper.state.get("autonomous_lab")
-        if self.paper_pilot and (
-            c.paper.state.get("paused") or (lab and lab.get("proposals_paused"))
+        if (
+            self.paper_pilot
+            and not finite_outcome
+            and (c.paper.state.get("paused") or (lab and lab.get("proposals_paused")))
         ):
             raise InputWait("Operator pause prevents experimental pilot advancement")
-        if task["stage"] in {"outcome", "followup", "complete"}:
+        if finite_outcome or task["stage"] in {"outcome", "followup", "complete"}:
             # Historical results remain researchable after policy/parent changes.
             return c
         if not lab or fingerprint(lab["policy"]) != task["context"]["policy_sha256"]:
@@ -1992,6 +2251,15 @@ class RoleWorker:
             ).fetchone()
             if not owned:
                 raise InputWait("Role ownership changed before inference; no new attempt")
+            finite = self._finite_current(task)
+            reservation = None
+            if finite is not None:
+                saved_finite = self.finite.binding(task)
+                if self.finite.count(saved_finite) >= finite["finite_test"]["max_requests"]:
+                    raise InputWait("Finite lifetime request allowance is exhausted")
+                reservation = self._finite_reservation(
+                    saved_finite, task["id"], task["stage"], attempt_number, packet
+                )
             used = self.registry.db.execute(
                 "SELECT coalesce(sum(wall_reserved),0),coalesce(sum(tokens_reserved),0) "
                 "FROM role_attempt_allowances WHERE started>=? AND actor IS NULL",
@@ -2025,10 +2293,16 @@ class RoleWorker:
             )
         try:
             cancelled = None
+            infer = self.transport.infer
+            arguments: tuple[Any, ...] = (role, packet, profile)
+            if reservation is not None:
+                infer = getattr(self.transport, "infer_reserved", None)
+                if not callable(infer):
+                    raise ValueError("Finite transport requires verified reserved dispatch")
+                self.transport.finite_request_verifier = self.validate_finite_request
+                arguments += (reservation,)
             if self.paper_pilot:
-                work = asyncio.create_task(
-                    asyncio.to_thread(self.transport.infer, role, packet, profile)
-                )
+                work = asyncio.create_task(asyncio.to_thread(infer, *arguments))
                 try:
                     response = await asyncio.shield(work)
                 except asyncio.CancelledError as interrupted:
@@ -2036,7 +2310,7 @@ class RoleWorker:
                     self.transport.cancel()
                     response = await work  # The transport owns bounded child termination.
             else:
-                response = await asyncio.to_thread(self.transport.infer, role, packet, profile)
+                response = await asyncio.to_thread(infer, *arguments)
             body = json.dumps(response, sort_keys=True, allow_nan=False)
             if len(body.encode()) > 32768:
                 raise ValueError("Model final output exceeds the recorded answer bound")
@@ -2104,33 +2378,75 @@ class RoleWorker:
 
     async def step(self, now: float | None = None) -> bool:
         now = time.time() if now is None else now
-        pilot_grant_id = await asyncio.to_thread(self._pilot_grant_id)
-        selection_json = await asyncio.to_thread(self._selection_json)
-        with self.registry.transaction():
+        # Submitted finite outcomes remain observable after pause/expiry. This
+        # branch never authorizes another model request or proposal.
+        with self.registry.lock:
             row = self.registry.db.execute(
-                "SELECT id FROM role_tasks WHERE status NOT IN ('done','failed') AND "
-                "stage NOT IN ('data_wait','tool_wait') "
-                "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
-                "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
-                "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
-                "AND (json_type(context,'$.selection_authority') IS NULL "
-                "OR json_extract(context,'$.selection_authority')=json(?)) "
-                "AND retry_at<=? AND (owner IS NULL OR lease_until<?) ORDER BY updated LIMIT 1",
-                (
-                    self.execution_mode,
-                    self._contract_version(),
-                    pilot_grant_id,
-                    pilot_grant_id,
-                    selection_json,
-                    now,
-                    now,
-                ),
+                "SELECT t.id FROM role_tasks t JOIN role_finite_tasks f ON f.task=t.id "
+                "WHERE t.stage='outcome' AND t.status NOT IN ('done','failed') "
+                "AND t.retry_at<=? AND (t.owner IS NULL OR t.lease_until<?) "
+                "ORDER BY t.updated LIMIT 1",
+                (now, now),
             ).fetchone()
+            if row is None and self.controller is not None:
+                waiting_submits = self.registry.db.execute(
+                    "SELECT t.id,t.context,t.proposal FROM role_tasks t "
+                    "JOIN role_finite_tasks f ON f.task=t.id WHERE t.stage='submit' "
+                    "AND t.status NOT IN ('done','failed') AND t.retry_at<=? "
+                    "AND (t.owner IS NULL OR t.lease_until<?) ORDER BY t.updated LIMIT 8",
+                    (now, now),
+                ).fetchall()
+                for pending in waiting_submits:
+                    if self._finite_accepted(
+                        {
+                            "id": pending["id"],
+                            "context": json.loads(pending["context"]),
+                            "proposal": json.loads(pending["proposal"]),
+                        }
+                    ):
+                        row = pending
+                        break
+        finite_outcome = row is not None
+        if not finite_outcome:
+            try:
+                finite = await asyncio.to_thread(self._finite_current)
+                pilot_grant_id = await asyncio.to_thread(self._pilot_grant_id)
+                selection_json = await asyncio.to_thread(self._selection_json)
+            except InputWait:
+                return False
+        with self.registry.transaction():
+            if not finite_outcome:
+                row = self.registry.db.execute(
+                    "SELECT id FROM role_tasks WHERE status NOT IN ('done','failed') AND "
+                    "stage NOT IN ('data_wait','tool_wait') "
+                    "AND coalesce(json_extract(context,'$.execution_mode'),'qualified_roles')=? "
+                    "AND coalesce(json_extract(context,'$.contract'),'reviewed-rule-role-v5')=? "
+                    "AND (? IS NULL OR json_extract(context,'$.pilot_grant_id')=?) "
+                    "AND (json_type(context,'$.selection_authority') IS NULL "
+                    "OR json_extract(context,'$.selection_authority')=json(?)) "
+                    "AND (?=0 OR EXISTS(SELECT 1 FROM role_finite_tasks f "
+                    "WHERE f.task=role_tasks.id AND f.grant_id=?)) "
+                    "AND retry_at<=? AND (owner IS NULL OR lease_until<?) ORDER BY updated LIMIT 1",
+                    (
+                        self.execution_mode,
+                        self._contract_version(),
+                        pilot_grant_id,
+                        pilot_grant_id,
+                        selection_json,
+                        int(finite is not None),
+                        finite["grant_id"] if finite is not None else None,
+                        now,
+                        now,
+                    ),
+                ).fetchone()
             if row:
-                self.registry.db.execute(
-                    "UPDATE role_tasks SET owner=?,lease_until=? WHERE id=?",
-                    (self.owner, time.time() + 630, row["id"]),
-                )
+                claimed = self.registry.db.execute(
+                    "UPDATE role_tasks SET owner=?,lease_until=? WHERE id=? "
+                    "AND (owner IS NULL OR lease_until<?)",
+                    (self.owner, time.time() + 630, row["id"], now),
+                ).rowcount
+                if not claimed:
+                    row = None
         if not row:
             return False
         task = self.get(row["id"])
@@ -2138,9 +2454,15 @@ class RoleWorker:
         try:
             c = await asyncio.to_thread(self._current, task)
             admitted = (
-                await asyncio.to_thread(self._admitted) if self.paper_pilot else self._admitted()
+                True
+                if finite_outcome
+                else (
+                    await asyncio.to_thread(self._admitted)
+                    if self.paper_pilot
+                    else self._admitted()
+                )
             )
-            if not admitted:
+            if not admitted and not finite_outcome:
                 raise InputWait("Optional role work yields to financial processing/resource guard")
             stage = task["stage"]
             if stage in {"data_wait", "tool_wait"}:
@@ -2253,7 +2575,18 @@ class RoleWorker:
                     raise ValueError("Proposal acknowledgment identity differs")
                 if not existing and not c.inbox.has_capacity():
                     raise InputWait("Ordinary paper inbox is full; retain the approved proposal")
-                submitted = existing or c.submit(LabProposal.model_validate(task["proposal"]), now)
+                proposal = LabProposal.model_validate(task["proposal"])
+                if "finite_test" in task["context"]:
+                    if self._finite_accepted(task):
+                        submitted = existing
+                    else:
+                        submitted = c.submit(
+                            proposal, now, _finite_scope=self.finite_proposal(task, proposal)
+                        )
+                else:
+                    submitted = existing or c.submit(proposal, now)
+                if submitted is None:
+                    raise ValueError("Accepted proposal acknowledgment is unavailable")
                 self._update(
                     task,
                     "outcome",
@@ -2361,7 +2694,10 @@ class RoleWorker:
             + 86400,
         }
         try:
+            finite = self._finite_current(task)
             with self.history.storage() as store:
+                if self._finite_current() != finite:
+                    raise InputWait("Finite scope changed while waiting for archive ownership")
                 reference = store.append([packet], time.time())[0]
                 if store.reopen(reference) != packet:
                     raise InputWait("Saved role evidence detail verification failed")
@@ -2693,10 +3029,23 @@ class RoleWorker:
                 or result.get("followup", result).get("action") != "no_change"
             ):
                 raise InputWait("Original adverse/wait/result needs reviewed capability or scope")
-        selection = bridge.candidate(now)
+        finite = self._finite_current()
+        selection: PatternFindingSelection | None
+        if finite is not None:
+            with self.registry.lock:
+                if self.finite.prior(finite) is not None:
+                    raise InputWait("Finite test already claimed its one original research chain")
+            selection = PatternFindingSelection.model_validate(finite["finite_test"]["selection"])
+        else:
+            selection = bridge.candidate(now)
         if selection is None:
             raise InputWait("No supported saved BTC/native-5m daily finding")
         described = bridge.describe(selection)
+        if (
+            finite is not None
+            and described["finding_sha256"] != finite["finite_test"]["finding_sha256"]
+        ):
+            raise ValueError("Finite selection differs from the exact approved original finding")
         event_sha = self._pattern_event_identity(described["finding"])
         with self.registry.lock:
             duplicate = self.registry.db.execute(
@@ -2722,6 +3071,7 @@ class RoleWorker:
                     expected_finding_sha256=described["finding_sha256"],
                 ),
                 now,
+                admission=self._finite_admission(finite) if finite is not None else None,
             )
         elif (
             self._pattern_event_identity(original["finding"]) != event_sha
@@ -3238,6 +3588,10 @@ class RoleWorker:
         task = self.get(identity)
         if not self._same_mode(task):
             return 0
+        if "finite_test" in task["context"]:
+            with self.registry.lock:
+                if self.finite.count(self.finite.binding(task)) >= 3:
+                    return 0
         question = Question.model_validate(task["context"]["question"])
         requirement = (task["result"] or {}).get("wait_requirement")
         if not requirement:

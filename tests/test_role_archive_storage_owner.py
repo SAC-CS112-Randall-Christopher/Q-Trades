@@ -181,7 +181,8 @@ def test_hot_rollover_and_cold_read_borrow_live_owner_keep_attempts(bench, monke
             ),
         )
         bench.registry.db.execute(
-            "INSERT INTO role_attempts VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO role_attempts(task,stage,attempt,started,finished,status,profile,packet,"
+            "response,reason,wall_reserved,tokens_reserved) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 terminal,
                 "idea",
@@ -274,7 +275,8 @@ def test_registry_rollback_explicit_archive_retry_preserves_original_and_dedupli
     }
     with bench.registry.transaction():
         bench.registry.db.execute(
-            "INSERT INTO role_attempts VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO role_attempts(task,stage,attempt,started,finished,status,profile,packet,"
+            "response,reason,wall_reserved,tokens_reserved) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 bench.identity,
                 "idea",

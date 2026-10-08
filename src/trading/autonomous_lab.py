@@ -4,7 +4,8 @@ import json
 import shutil
 import sqlite3
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any
 
 import psycopg
@@ -34,6 +35,7 @@ class AutonomousLab:
         self.registry, self.paper, self.can_research = registry, paper, can_research
         self.inbox = LabProposals(registry)
         self.last_error: str | None = None
+        self.finite_transport: Any = None
 
     def start(self, policy: LabPolicy) -> dict[str, Any]:
         self.paper.require_healthy_control()
@@ -142,15 +144,35 @@ class AutonomousLab:
             }
         )
 
-    def submit(self, proposal: LabProposal, now: float | None = None) -> dict[str, Any]:
+    def submit(
+        self,
+        proposal: LabProposal,
+        now: float | None = None,
+        *,
+        _finite_scope: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         now = time.time() if now is None else now
+        if _finite_scope is not None:
+            existing = self.inbox.finite_scope(proposal)
+            if existing is not None:
+                if existing != _finite_scope:
+                    raise ValueError("Proposal recovery has different finite authority")
+                return self.inbox.get(proposal.request_id)
+            with self.registry.lock:
+                self.inbox.validate_finite_scope(_finite_scope, proposal)
+        # Existing scoped proposals are checked before fresh numerical work;
+        # exact acknowledged recovery above never reevaluates or grants funding.
+        with self._finite_dispatch(proposal):
+            pass
         evaluation = self.evaluate(proposal, now)
         rejection = None
         try:
             finance.validate_parent(self.paper.state, proposal)
         except finance.InvalidProposal as exc:
             rejection = str(exc)
-        result = self.inbox.submit(proposal, evaluation, rejection=rejection)
+        result = self.inbox.submit(
+            proposal, evaluation, rejection=rejection, _finite_scope=_finite_scope
+        )
         recorder = getattr(self.paper, "evidence", None)
         if recorder is not None and result["status"] == "evaluated":
             p = LabPolicy.model_validate(self.paper.state["autonomous_lab"]["policy"])
@@ -167,6 +189,32 @@ class AutonomousLab:
                 }
             )
         return result
+
+    @contextmanager
+    def _finite_dispatch(self, proposal: LabProposal) -> Iterator[Callable[[], None] | None]:
+        scope = self.inbox.finite_scope(proposal)
+        if scope is None:
+            yield None  # Original/unrelated proposal ownership is unchanged.
+            return
+        operation = getattr(self.finite_transport, "finite_operation", None)
+        if not callable(operation):
+            raise InputWait("Finite proposal's current authority owner is unavailable")
+        entered = False
+        try:
+            with operation(scope) as authorize:
+                entered = True
+
+                def guard() -> None:
+                    try:
+                        authorize()
+                    except (ValueError, OSError) as exc:
+                        raise InputWait("Finite proposal authority refuses: " + str(exc)) from exc
+
+                yield guard
+        except (ValueError, OSError) as exc:
+            if not entered:
+                raise InputWait("Finite proposal authority refuses: " + str(exc)) from exc
+            raise
 
     def evaluate(self, proposal: LabProposal, now: float) -> dict[str, Any]:
         """Existing deterministic prospective check; no inbox or financial effects."""
@@ -495,11 +543,25 @@ class AutonomousLab:
                 proposal = LabProposal.model_validate(queued["body"])
                 if queued["status"] in {"evaluated", "blocked"}:
                     try:
-                        submitted = self.submit(proposal, now)
-                        if submitted["status"] == "rejected":
-                            self._state(now, "rejected", submitted["reason"], 2)
-                            return True
-                        receipt = self.paper.store.lab_reserve(now, proposal)
+                        scoped = self.inbox.finite_scope(proposal) is not None
+                        recovered = self.paper.store.lab_reservation(proposal) if scoped else None
+                        if recovered is not None:
+                            receipt = recovered
+                        else:
+                            submitted = self.submit(proposal, now)
+                            if submitted["status"] == "rejected":
+                                self._state(now, "rejected", submitted["reason"], 2)
+                                return True
+                            # _step already owns the writer lock. Scope metadata
+                            # was read before entering this policy mutex; no
+                            # registry or recorder access is allowed inside it.
+                            with self._finite_dispatch(proposal) as authorize:
+                                if authorize is None:
+                                    receipt = self.paper.store.lab_reserve(now, proposal)
+                                else:
+                                    receipt = self.paper.store.lab_reserve(
+                                        now, proposal, authorize=authorize
+                                    )
                     except finance.InvalidProposal as exc:
                         self.inbox.update(proposal.request_id, "rejected", reason=str(exc))
                         self._state(now, "rejected", str(exc), 2)
@@ -519,11 +581,28 @@ class AutonomousLab:
                         self.inbox.update(proposal.request_id, "completed", trial_id)
                         self._state(now, "observe", "Retired intent retained; no resurrection", 2)
                     else:
+                        if (
+                            lab["trials"][trial_id]["status"] == "reserved"
+                            or self.inbox.finite_scope(proposal) is None
+                        ):
+                            try:
+                                with self._finite_dispatch(proposal) as authorize:
 
-                        def fund(engine: PaperEngine) -> None:
-                            finance.fund(engine, trial_id)
+                                    def fund(engine: PaperEngine) -> None:
+                                        finance.fund(engine, trial_id)
 
-                        self.paper.state = self.paper.store.transact(now, fund)
+                                    if authorize is None:
+                                        self.paper.state = self.paper.store.transact(now, fund)
+                                    else:
+                                        self.paper.state = self.paper.store.transact(
+                                            now, fund, authorize=authorize
+                                        )
+                            except (finance.AdmissionWait, InputWait) as exc:
+                                self.inbox.defer_reserved(
+                                    proposal.request_id, str(exc), now + policy.cooldown_seconds
+                                )
+                                self._state(now, "proposal_wait", str(exc), 2)
+                                return False
                         status = self.paper.state["autonomous_lab"]["trials"][trial_id]["status"]
                         if status != "reserved":
                             self.inbox.update(proposal.request_id, "funded", trial_id)

@@ -19,7 +19,18 @@ evidence only. Do not select an operating successor profile/grant, dispatch a
 model, enable scanner/research, fund/promote a strategy, consume holdouts or alter
 financial rules from this source increment. Preserve financial/data ownership,
 twenty slots, 400/100-GB policy, resource guards and private Lab separation.
+The optional finite pilot-v6 source binds one saved BTCUSD/native-5m finding,
+one permanent research chain and proposal, and three total requests within its
+original window of at most thirty hours. It remains an uninstalled source
+candidate. It does not expand the old single-attempt permission. Queued funding
+must refuse after expiry or Stop/Pause; exact committed acknowledgment recovery
+and existing position/outcome management may continue without fresh inference.
 The dated directions below retain their original scope and evidence.
+
+For isolated Windows pytest, use a fresh task-owned `--basetemp` and disable the
+cache provider. If the managed sandbox denies fixture creation/cleanup with
+WinError 5, retain that failure and rerun only the affected scope with ordinary
+user access. Do not change ACLs, force cleanup, or reuse the failed directory.
 
 # Current source follow-up — October 7, 2026, researcher archive ownership (#66)
 
