@@ -1,0 +1,1109 @@
+{
+  "references": [
+    {
+      "id": "market-public-venue",
+      "path": "src/trading/venue.py",
+      "symbol": "PublicVenue._get",
+      "description": "Allowlisted public spot GET, pacing, response bounds and explicit failures."
+    },
+    {
+      "id": "market-native-candle-venue",
+      "path": "src/trading/venue.py",
+      "symbol": "PublicVenue.historical_candles",
+      "description": "Bounded native 5m/15m/30m/1h/4h historical acquisition."
+    },
+    {
+      "id": "market-request-counts",
+      "path": "src/trading/venue.py",
+      "symbol": "PublicVenue.request_counts",
+      "description": "Per-instance bounded request-counter epoch, independent of acquisition."
+    },
+    {
+      "id": "market-decimal-parser",
+      "path": "src/trading/market.py",
+      "symbol": "decimal_string",
+      "description": "Finite bounded authoritative price/quantity Decimal strings."
+    },
+    {
+      "id": "market-book-parser",
+      "path": "src/trading/market.py",
+      "symbol": "parse_book",
+      "description": "Book sequence, ordering, unique levels and uncrossed prices."
+    },
+    {
+      "id": "market-instrument-parser",
+      "path": "src/trading/market.py",
+      "symbol": "parse_instruments",
+      "description": "Selected instrument identity and current filters."
+    },
+    {
+      "id": "market-rest-monitor",
+      "path": "src/trading/runtime.py",
+      "symbol": "Monitor.poll_once",
+      "description": "Configured metadata/depth observation and retained monitor state."
+    },
+    {
+      "id": "market-monitor-store",
+      "path": "src/trading/storage.py",
+      "symbol": "MonitorStore",
+      "description": "Bounded monitor observations, events and key-value state."
+    },
+    {
+      "id": "market-runtime-run",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime.run",
+      "description": "Starts stream/reference/fallback/capture/futures owners and paper loop."
+    },
+    {
+      "id": "market-reference-loop",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime._references",
+      "description": "Actual universe screen, minute collection and stream configuration calls."
+    },
+    {
+      "id": "market-runtime-pressure",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime.constrained",
+      "description": "Current optional-work admission and sustained-pressure checks."
+    },
+    {
+      "id": "market-universe-metadata",
+      "path": "src/trading/universe.py",
+      "symbol": "Universe.metadata",
+      "description": "Bounded eligible USD spot metadata discovery."
+    },
+    {
+      "id": "market-universe-screen",
+      "path": "src/trading/universe.py",
+      "symbol": "Universe.screen",
+      "description": "Ticker freshness/liquidity qualification, ranking and held protection."
+    },
+    {
+      "id": "market-subscription-plan",
+      "path": "src/trading/universe.py",
+      "symbol": "Universe.plan",
+      "description": "Baseline, held, fast and observation tier plan."
+    },
+    {
+      "id": "market-exchange-clock",
+      "path": "src/trading/stream_feed.py",
+      "symbol": "ExchangeClock",
+      "description": "Exchange time sample, uncertainty and clock-jump validation."
+    },
+    {
+      "id": "market-stream-configure",
+      "path": "src/trading/stream_feed.py",
+      "symbol": "StreamFeed.configure",
+      "description": "Bounded subscriptions and canceled worker ownership."
+    },
+    {
+      "id": "market-stream-loop",
+      "path": "src/trading/stream_feed.py",
+      "symbol": "StreamFeed._symbol_loop",
+      "description": "Actual public socket, REST snapshot, reconnect and sequence pipeline."
+    },
+    {
+      "id": "market-depth-apply",
+      "path": "src/trading/stream_book.py",
+      "symbol": "DepthBook.apply",
+      "description": "Absolute depth updates against exact snapshot continuity."
+    },
+    {
+      "id": "market-stream-aux",
+      "path": "src/trading/stream_feed.py",
+      "symbol": "StreamFeed.accept_aux",
+      "description": "Bounded deduplicated trade tape and closed native minute candle messages."
+    },
+    {
+      "id": "market-fresh-books",
+      "path": "src/trading/stream_feed.py",
+      "symbol": "StreamFeed.fresh_books",
+      "description": "Tier-specific event-age and clock uncertainty freshness."
+    },
+    {
+      "id": "market-rest-fallback",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime._rest_book",
+      "description": "Receipt-timed bounded REST fallback and sequence verification."
+    },
+    {
+      "id": "market-fallback-scheduler",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime._fallback_due",
+      "description": "Existing plan, cooldown, spacing and in-flight fallback admission."
+    },
+    {
+      "id": "market-current-frames",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime.current_frames",
+      "description": "Actual usable stream/fallback selection for paper frames."
+    },
+    {
+      "id": "market-live-quotes",
+      "path": "src/trading/live_quotes.py",
+      "symbol": "quote_snapshot",
+      "description": "Cheap bounded current display projection without acquisition or execution."
+    },
+    {
+      "id": "market-minute-history",
+      "path": "src/trading/paper_runtime.py",
+      "symbol": "PaperRuntime.collect_candles",
+      "description": "Closed minute bootstrap/backfill, merge and revision refusal."
+    },
+    {
+      "id": "market-closed-stream-candle",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime.closed_stream_candle",
+      "description": "Adds native closed stream bar to minute history/feature path."
+    },
+    {
+      "id": "market-minute-overlays",
+      "path": "src/trading/chart_indicators.py",
+      "symbol": "overlays",
+      "description": "Legacy minute display indicators with native gap reset."
+    },
+    {
+      "id": "market-station-live",
+      "path": "src/trading/station.py",
+      "symbol": "market_live",
+      "description": "Current quote, bounded book and trade-tape projection."
+    },
+    {
+      "id": "market-station-detail",
+      "path": "src/trading/station.py",
+      "symbol": "market_detail",
+      "description": "Bounded minute chart, selected-account evidence and universe screen."
+    },
+    {
+      "id": "market-station-evidence",
+      "path": "src/trading/station.py",
+      "symbol": "market_evidence",
+      "description": "Frozen selected market view and original indicator calculation basis."
+    },
+    {
+      "id": "market-cost-hurdle",
+      "path": "src/trading/station.py",
+      "symbol": "cost_hurdle",
+      "description": "Fresh recorded cost/spread/filter evidence used by alert evaluation."
+    },
+    {
+      "id": "market-stream-capture",
+      "path": "src/trading/stream_capture.py",
+      "symbol": "StreamCapture",
+      "description": "Bounded raw stream SQLite capture with accounted pruning."
+    },
+    {
+      "id": "market-capture-loop",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime._capture_loop",
+      "description": "Actual stream batches sent to raw capture and research recorder."
+    },
+    {
+      "id": "market-existing-storage-owner",
+      "path": "src/trading/evidence_runtime.py",
+      "symbol": "EvidenceRecorder.research_store",
+      "description": "Borrow existing writer under RLock, no alternate live recovery owner."
+    },
+    {
+      "id": "market-futures-public-client",
+      "path": "src/trading/futures_context.py",
+      "symbol": "FuturesPublicData.get",
+      "description": "Public Kraken allowlist, response/timing/rate bounds."
+    },
+    {
+      "id": "market-futures-resolve",
+      "path": "src/trading/futures_context.py",
+      "symbol": "FuturesContext.resolve",
+      "description": "Exact eligible flexible-futures USD contract identity."
+    },
+    {
+      "id": "market-futures-accept",
+      "path": "src/trading/futures_context.py",
+      "symbol": "FuturesContext.accept",
+      "description": "Funding/OI/mark/index units and original observation validation."
+    },
+    {
+      "id": "market-futures-collect",
+      "path": "src/trading/futures_context.py",
+      "symbol": "FuturesContext.collect",
+      "description": "Bounded target collection with wire/receipt retention."
+    },
+    {
+      "id": "market-futures-freshness",
+      "path": "src/trading/futures_context.py",
+      "symbol": "FuturesContext.context_for",
+      "description": "Current descriptive context expiry and clock movement checks."
+    },
+    {
+      "id": "market-futures-loop",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime._futures_loop",
+      "description": "Actual optional context producer and recorder handoff."
+    },
+    {
+      "id": "market-futures-panel",
+      "path": "apps/web/src/FuturesPanel.tsx",
+      "anchor": "export function FuturesPanel(",
+      "description": "Status-supplied descriptive futures display."
+    },
+    {
+      "id": "market-parser-tests",
+      "path": "tests/test_market.py",
+      "description": "Malformed book and numerical parser boundaries."
+    },
+    {
+      "id": "market-stream-tests",
+      "path": "tests/test_streaming.py",
+      "description": "Sequence, clocks, fallback, plans and resource recovery fixtures."
+    },
+    {
+      "id": "market-live-quote-tests",
+      "path": "tests/test_live_quotes.py",
+      "description": "Read-only quotes, missing/stale markets and fallback timestamp tests."
+    },
+    {
+      "id": "market-request-count-tests",
+      "path": "tests/test_request_counts.py",
+      "description": "Actual requested/sent/canceled distinctions and bounded counters."
+    },
+    {
+      "id": "market-futures-tests",
+      "path": "tests/test_futures_context.py",
+      "description": "Exact contract/unit/freshness and no-execution fixtures."
+    },
+    {
+      "id": "market-shared-storage-tests",
+      "path": "tests/test_live_candle_storage.py",
+      "description": "Borrowed live writer identity, no recovery, cancellation and reopen tests."
+    },
+    {
+      "id": "scanner-control-owner",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner.control",
+      "description": "Frozen manual campaign and durable exact UUID/revision controls."
+    },
+    {
+      "id": "scanner-step-owner",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner.step",
+      "description": "One bounded native acquisition/processing step under current admission."
+    },
+    {
+      "id": "scanner-lab-loop",
+      "path": "src/trading/experiment_lab.py",
+      "symbol": "ExperimentLab.run",
+      "description": "Existing producer loop actually invokes scanner step independent of UI."
+    },
+    {
+      "id": "scanner-page-retention",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._retain",
+      "description": "Borrowed writer and exact bounded raw page archive references."
+    },
+    {
+      "id": "scanner-stage-owner",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._stage",
+      "description": "Persist actual staged native rows and pending cursor."
+    },
+    {
+      "id": "scanner-work-owner",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._work",
+      "description": "Cooperative persistent detector, levels/events and actual page completion."
+    },
+    {
+      "id": "scanner-status-owner",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner.snapshot",
+      "description": "Current/saved campaign status, bounded progress and omitted counts."
+    },
+    {
+      "id": "scanner-record-page",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner.page",
+      "description": "All original progress/level/pattern/alert rows via bounded exact pages."
+    },
+    {
+      "id": "scanner-alert-evaluation",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._evaluate",
+      "description": "Original descriptive current alert checks and explicit unknown inputs."
+    },
+    {
+      "id": "scanner-daily-control",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._daily_control",
+      "description": "Exact explicit daily successor enable/pause and immutable predecessor."
+    },
+    {
+      "id": "scanner-daily-work",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._daily_work",
+      "description": "Bounded UTC day enrollment, eligibility recheck and immutable selection."
+    },
+    {
+      "id": "scanner-daily-candidate",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._daily_candidate",
+      "description": "Source-backed recognized/analyzed/pending basis with all five coverage rows."
+    },
+    {
+      "id": "scanner-daily-priority",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._priority",
+      "description": "Fixed basis/liquidity/spread/symbol priority ordering."
+    },
+    {
+      "id": "scanner-daily-status",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner._daily_status",
+      "description": "Daily disabled/blocked/pending state and fresh current roster."
+    },
+    {
+      "id": "scanner-daily-snapshot",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner.daily_snapshot",
+      "description": "Exact immutable saved day body."
+    },
+    {
+      "id": "scanner-daily-pages",
+      "path": "src/trading/pattern_scanner.py",
+      "symbol": "PatternScanner.daily_pages",
+      "description": "Bounded sequence-paged saved day summaries."
+    },
+    {
+      "id": "scanner-native-loader",
+      "path": "src/trading/candle_history.py",
+      "symbol": "load_history",
+      "description": "Bounded explicit native candle scope, cutoff and page acquisition."
+    },
+    {
+      "id": "scanner-native-analysis",
+      "path": "src/trading/candle_history.py",
+      "symbol": "analyze_history",
+      "description": "Standalone analysis with actual/requested/truncated coverage."
+    },
+    {
+      "id": "scanner-study-retention",
+      "path": "src/trading/candle_history.py",
+      "symbol": "retain_history",
+      "description": "Exact candle study raw/analysis retention through storage owner."
+    },
+    {
+      "id": "scanner-study-reopen",
+      "path": "src/trading/candle_history.py",
+      "symbol": "reopen_history",
+      "description": "Verified original chunk/manifest reopen without fresh acquisition."
+    },
+    {
+      "id": "scanner-candle-analysis",
+      "path": "src/trading/candle_patterns.py",
+      "symbol": "analyze_candles",
+      "description": "Gap-aware native display indicators and bounded standalone recognitions."
+    },
+    {
+      "id": "scanner-pivot-confirmation",
+      "path": "src/trading/candle_patterns.py",
+      "symbol": "_confirm_zones",
+      "description": "Strict two-sided pivot confirmation and causal usability."
+    },
+    {
+      "id": "scanner-pattern-visit",
+      "path": "src/trading/candle_patterns.py",
+      "symbol": "_visit",
+      "description": "Original support bounce, resistance breakout and retest definitions."
+    },
+    {
+      "id": "scanner-saved-chart",
+      "path": "src/trading/pattern_charts.py",
+      "symbol": "saved_chart",
+      "description": "Read-only processed/archive projection with original overlays and progress pin."
+    },
+    {
+      "id": "scanner-candle-workspace",
+      "path": "apps/web/src/CandleWorkspace.tsx",
+      "anchor": "export function CandleWorkspace(",
+      "description": "Standalone explicit study and exact durable receipt controller."
+    },
+    {
+      "id": "scanner-chart-renderer",
+      "path": "apps/web/src/CandleWorkspace.tsx",
+      "anchor": "export function CandleStudyChart(",
+      "description": "Candle/volume plot, native gaps, original markers and causal level lines."
+    },
+    {
+      "id": "scanner-chart-grid",
+      "path": "apps/web/src/CandleWorkspace.tsx",
+      "anchor": "export function ScannerChartGrid(",
+      "description": "Five bounded GET cards, saved window pinning and generation ownership."
+    },
+    {
+      "id": "scanner-workspace",
+      "path": "apps/web/src/ScannerWorkspace.tsx",
+      "anchor": "export function ScannerWorkspace(",
+      "description": "Campaign/daily controls, exact recovery, URL scope and evidence navigation."
+    },
+    {
+      "id": "scanner-daily-panel",
+      "path": "apps/web/src/DailyAnalyzer.tsx",
+      "anchor": "export function DailyAnalyzer(",
+      "description": "Immutable daily cards/history with separate current eligibility."
+    },
+    {
+      "id": "scanner-comparison-panel",
+      "path": "apps/web/src/PatternComparisonPanel.tsx",
+      "anchor": "export function PatternComparisonPanel(",
+      "description": "Exact mode/method-bound preparation viewer and original finding navigation."
+    },
+    {
+      "id": "scanner-year-tests",
+      "path": "tests/test_pattern_scanner.py",
+      "description": "Persistent native year/control/source/gap/dense level fixtures."
+    },
+    {
+      "id": "scanner-daily-tests",
+      "path": "tests/test_daily_pattern_analyzer.py",
+      "description": "Daily UTC ranking, immutable evidence, successor receipt and blocked-source fixtures."
+    },
+    {
+      "id": "scanner-native-history-tests",
+      "path": "tests/test_candle_history.py",
+      "description": "Native cutoff, truncation, retention and exact API request recovery tests."
+    },
+    {
+      "id": "scanner-detector-tests",
+      "path": "tests/test_candle_patterns.py",
+      "description": "Native indicators, pivot/visit causality, volume baseline and gap boundaries."
+    },
+    {
+      "id": "scanner-chart-tests",
+      "path": "tests/test_pattern_charts.py",
+      "description": "Original overlays, exact selection, progress paging and archive refusal tests."
+    },
+    {
+      "id": "scanner-candle-browser",
+      "path": "tests/browser/candle_patterns.cjs",
+      "description": "Compiled standalone study workflow with synthetic native input fixtures."
+    },
+    {
+      "id": "scanner-control-browser",
+      "path": "tests/browser/pattern_scanner.cjs",
+      "description": "Compiled original campaign/UUID workflow and deterministic two-tab refusal recovery."
+    },
+    {
+      "id": "scanner-chart-browser",
+      "path": "tests/browser/pattern_scanner_charts.cjs",
+      "description": "Compiled five-card native charts, original history and GET-only navigation fixture."
+    },
+    {
+      "id": "dashboard-api-file",
+      "path": "src/trading/api.py",
+      "description": "Local API declaration and middleware wiring; use individual route refs for calls."
+    },
+    {
+      "id": "dashboard-api-lifespan",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.lifespan",
+      "description": "Actual owner construction, scanner/worker injection and lifecycle drain."
+    },
+    {
+      "id": "dashboard-security-headers",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.local_security_headers",
+      "description": "Local CSP, API no-store and response security headers."
+    },
+    {
+      "id": "dashboard-local-operator",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.lab_operator",
+      "description": "Exact local header/Origin and registry availability fence."
+    },
+    {
+      "id": "dashboard-scoped-actor",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scoped_actor_route",
+      "description": "Actor route scope separate from dashboard/operator authority."
+    },
+    {
+      "id": "dashboard-training-body-limit",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.bounded_training_input",
+      "description": "Listed training/review/MCP body cap, not a universal API size bound."
+    },
+    {
+      "id": "dashboard-storage-failure",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.storage_failure",
+      "description": "SQLite storage errors remain 503 unavailable."
+    },
+    {
+      "id": "dashboard-status-route",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.status",
+      "description": "Monitor/paper/optional observed status projection."
+    },
+    {
+      "id": "dashboard-health-route",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.health",
+      "description": "Installed code marker, current freshness and explicit journal unknowns."
+    },
+    {
+      "id": "dashboard-live-route",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.station_live",
+      "description": "Current selected-symbol cached live station GET."
+    },
+    {
+      "id": "dashboard-detail-route",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.station_detail",
+      "description": "Threaded exact selected-account detail read."
+    },
+    {
+      "id": "dashboard-tool-accounts",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.tool_accounts",
+      "description": "Bounded current and retired identity pages."
+    },
+    {
+      "id": "dashboard-tool-runner",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.run_tool",
+      "description": "One explicit journaled tool command and owned native retention path."
+    },
+    {
+      "id": "dashboard-tool-original",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.tool_run",
+      "description": "Original run GET with conservative disclosure and native reopen."
+    },
+    {
+      "id": "dashboard-candle-request",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.candle_request",
+      "description": "Exact original candle UUID lookup without automatic dispatch."
+    },
+    {
+      "id": "dashboard-scanner-status",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_status",
+      "description": "Exact current or requested saved scanner campaign read."
+    },
+    {
+      "id": "dashboard-scanner-campaigns",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_campaigns",
+      "description": "Retained bounded campaign summaries."
+    },
+    {
+      "id": "dashboard-daily-pages",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_daily_pages",
+      "description": "Immutable daily shortlist summary pages."
+    },
+    {
+      "id": "dashboard-daily-snapshot",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_daily_snapshot",
+      "description": "Exact saved daily body GET."
+    },
+    {
+      "id": "dashboard-comparison-owner",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.pattern_comparison_owner",
+      "description": "Shared actual worker/scanner/registry identity guard."
+    },
+    {
+      "id": "dashboard-comparison-source",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_comparison_source",
+      "description": "Read-only default-method original finding description."
+    },
+    {
+      "id": "dashboard-comparison-prepare",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_prepare_comparison",
+      "description": "Strict operator preparation POST; no method/research-only public override."
+    },
+    {
+      "id": "dashboard-comparison-history",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_comparison_history",
+      "description": "Verified bounded UUID-ordered saved preparations."
+    },
+    {
+      "id": "dashboard-comparison-original",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_prepared_comparison",
+      "description": "Exact immutable preparation UUID recovery."
+    },
+    {
+      "id": "dashboard-scanner-control",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_control",
+      "description": "Original control mutation and separately read current status."
+    },
+    {
+      "id": "dashboard-scanner-request",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_request",
+      "description": "Original request receipt GET, distinct from mutable current status."
+    },
+    {
+      "id": "dashboard-chart-route",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_chart",
+      "description": "Strict native saved window, progress/cursor and selected record GET."
+    },
+    {
+      "id": "dashboard-scanner-pages",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.scanner_page",
+      "description": "Enum-controlled scoped progress/level/pattern/alert pages."
+    },
+    {
+      "id": "dashboard-collector-control",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.collector",
+      "description": "Explicit local Monitor pause/resume only."
+    },
+    {
+      "id": "dashboard-analogue-disclosure",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.historical_analogues",
+      "description": "Captured causal analogue GET records conservative disclosure."
+    },
+    {
+      "id": "dashboard-tool-start-once",
+      "path": "src/trading/tool_journal.py",
+      "symbol": "ToolJournal.start_once",
+      "description": "Original request identity and exact payload journal coalescence."
+    },
+    {
+      "id": "dashboard-main-route",
+      "path": "apps/web/src/main.tsx",
+      "anchor": "function currentPage(): Page",
+      "description": "Hash aliases and normal page resolution."
+    },
+    {
+      "id": "dashboard-app",
+      "path": "apps/web/src/main.tsx",
+      "anchor": "function App()",
+      "description": "Status polling, Lab/Risk tab routing and page mounts."
+    },
+    {
+      "id": "dashboard-market-station",
+      "path": "apps/web/src/MarketStation.tsx",
+      "anchor": "export function MarketStation(",
+      "description": "Normal market/account/live/detail/tool UI and primary scanner mount."
+    },
+    {
+      "id": "dashboard-market-scope",
+      "path": "apps/web/src/MarketStation.tsx",
+      "anchor": "const chooseScope = (market: string, owner: string, candleId?: number) => {",
+      "description": "Exact symbol/account URL selection and preserved original bookmarks."
+    },
+    {
+      "id": "dashboard-station-poll",
+      "path": "apps/web/src/MarketStation.tsx",
+      "anchor": "function usePoll<T>(",
+      "description": "Non-overlapping current station polling and canceled obsolete URL reads."
+    },
+    {
+      "id": "dashboard-evidence-read",
+      "path": "apps/web/src/useEvidenceRead.ts",
+      "anchor": "export function useEvidenceRead()",
+      "description": "Single current exact read generation/controller."
+    },
+    {
+      "id": "dashboard-station-tests",
+      "path": "tests/test_station.py",
+      "description": "Actual scoped station inputs, saved evidence, tool limits and operator API tests."
+    },
+    {
+      "id": "dashboard-comparison-api-tests",
+      "path": "tests/test_pattern_comparison_api.py",
+      "description": "Exact shared owner, strict command, original recovery and verified history tests."
+    },
+    {
+      "id": "dashboard-role-evidence-browser",
+      "path": "tests/browser/role_pattern_evidence.cjs",
+      "description": "Compiled original task/preparation/daily navigation and GET-only profile boundary fixture."
+    },
+    {
+      "id": "dashboard-api-tests",
+      "path": "tests/test_api.py",
+      "description": "Collector pause persistence and forbidden mode/order routes."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "market-stale-quote",
+      "title": "Trace a stale or missing spot quote",
+      "guide": "market-data.md",
+      "section": "stale-or-missing-quotes",
+      "references": [
+        "market-live-quotes",
+        "market-current-frames",
+        "market-exchange-clock",
+        "market-fresh-books",
+        "market-rest-fallback",
+        "market-live-quote-tests"
+      ],
+      "symptoms": [
+        "Stale price while socket is connected",
+        "REST fallback is pending",
+        "Fresh badge survives old data"
+      ]
+    },
+    {
+      "id": "market-missing-subscription",
+      "title": "Explain eligible versus subscribed markets",
+      "guide": "market-data.md",
+      "section": "universe-eligibility-and-subscriptions",
+      "references": [
+        "market-reference-loop",
+        "market-universe-screen",
+        "market-subscription-plan",
+        "market-runtime-pressure",
+        "market-stream-tests"
+      ],
+      "symptoms": [
+        "Eligible market absent from live stream",
+        "Slow observation tier",
+        "Held market should not disappear"
+      ]
+    },
+    {
+      "id": "market-sequence-gap",
+      "title": "Diagnose stream gap and snapshot rebuilding",
+      "guide": "market-data.md",
+      "section": "stream-sequence-clock-and-freshness",
+      "references": [
+        "market-stream-loop",
+        "market-depth-apply",
+        "market-stream-aux",
+        "market-stream-tests"
+      ],
+      "symptoms": [
+        "Book sequence gap",
+        "Changed content under same sequence",
+        "Trade tape has missing IDs"
+      ]
+    },
+    {
+      "id": "market-request-accounting",
+      "title": "Interpret public request counts",
+      "guide": "market-data.md",
+      "section": "public-spot-venue-and-numerical-validation",
+      "references": [
+        "market-public-venue",
+        "market-request-counts",
+        "market-request-count-tests"
+      ],
+      "symptoms": [
+        "Requested differs from sent",
+        "Canceled request outcome unknown",
+        "Counters reset after restart"
+      ]
+    },
+    {
+      "id": "market-futures-missing",
+      "title": "Diagnose missing or ambiguous futures context",
+      "guide": "market-data.md",
+      "section": "missing-futures-or-candle-context",
+      "references": [
+        "market-futures-resolve",
+        "market-futures-accept",
+        "market-futures-freshness",
+        "market-futures-tests"
+      ],
+      "symptoms": [
+        "No PF contract",
+        "Funding units unclear",
+        "Open interest change unknown"
+      ]
+    },
+    {
+      "id": "market-candle-gaps",
+      "title": "Trace minute history versus native archive gaps",
+      "guide": "market-data.md",
+      "section": "minute-candles-capture-and-storage",
+      "references": [
+        "market-minute-history",
+        "market-closed-stream-candle",
+        "market-minute-overlays",
+        "scanner-native-loader",
+        "scanner-native-history-tests"
+      ],
+      "symptoms": [
+        "Minute chart warmup missing",
+        "Closed candle revised",
+        "Native frame does not match minute display"
+      ]
+    },
+    {
+      "id": "market-writer-contention",
+      "title": "Trace unavailable configured research storage ownership",
+      "guide": "market-data.md",
+      "section": "missing-futures-or-candle-context",
+      "references": [
+        "market-existing-storage-owner",
+        "market-shared-storage-tests",
+        "scanner-page-retention"
+      ],
+      "symptoms": [
+        "Existing recorder not ready",
+        "Storage identity differs",
+        "Archive recovery busy"
+      ]
+    },
+    {
+      "id": "scanner-year-incomplete",
+      "title": "Diagnose partial or blocked native year preparation",
+      "guide": "scanner-charts.md",
+      "section": "incomplete-or-blocked-year",
+      "references": [
+        "scanner-step-owner",
+        "scanner-stage-owner",
+        "scanner-work-owner",
+        "scanner-status-owner",
+        "scanner-record-page",
+        "scanner-year-tests"
+      ],
+      "symptoms": [
+        "Year not complete",
+        "Source blocked after attempts",
+        "Fetched page still pending",
+        "Only first 100 scopes visible"
+      ]
+    },
+    {
+      "id": "scanner-daily-priority",
+      "title": "Explain daily pending/no-setup/recognized ranking",
+      "guide": "scanner-charts.md",
+      "section": "daily-shortlist-and-immutable-source-navigation",
+      "references": [
+        "scanner-daily-candidate",
+        "scanner-daily-priority",
+        "scanner-daily-work",
+        "scanner-daily-status",
+        "scanner-daily-tests"
+      ],
+      "symptoms": [
+        "Daily pick has no pattern",
+        "Only one frame prepared",
+        "Old pick is now ineligible",
+        "UTC day selection incomplete"
+      ]
+    },
+    {
+      "id": "scanner-original-event",
+      "title": "Verify a recognized move's original causal evidence",
+      "guide": "scanner-charts.md",
+      "section": "detector-definitions-and-causal-knowledge",
+      "references": [
+        "scanner-pattern-visit",
+        "scanner-pivot-confirmation",
+        "scanner-candle-analysis",
+        "scanner-detector-tests"
+      ],
+      "symptoms": [
+        "Level visible before confirmation",
+        "Volume ratio unknown",
+        "Retest explanation differs"
+      ]
+    },
+    {
+      "id": "scanner-missing-overlay",
+      "title": "Find original records beyond the chart overlay page",
+      "guide": "scanner-charts.md",
+      "section": "saved-chart-windows-and-overlay-pagination",
+      "references": [
+        "scanner-saved-chart",
+        "scanner-record-page",
+        "scanner-chart-tests",
+        "scanner-chart-grid"
+      ],
+      "symptoms": [
+        "More than 100 levels",
+        "Selected pattern not on first page",
+        "Missing selected candle"
+      ]
+    },
+    {
+      "id": "scanner-historical-refusal",
+      "title": "Explain an exact historical chart refusal",
+      "guide": "scanner-charts.md",
+      "section": "missing-overlays-or-refused-historical-link",
+      "references": [
+        "scanner-saved-chart",
+        "dashboard-chart-route",
+        "scanner-chart-grid",
+        "scanner-chart-tests",
+        "scanner-chart-browser"
+      ],
+      "symptoms": [
+        "Saved progress advanced",
+        "Historical archive unavailable",
+        "Old page changed after processing"
+      ]
+    },
+    {
+      "id": "scanner-causal-lines",
+      "title": "Inspect causal line clipping, multiple markers and chart geometry",
+      "guide": "scanner-charts.md",
+      "section": "causal-lines-and-chart-rendering",
+      "references": [
+        "scanner-chart-renderer",
+        "scanner-saved-chart",
+        "scanner-chart-browser"
+      ],
+      "symptoms": [
+        "Known level has no horizontal continuation",
+        "Multiple events on same candle",
+        "Inspect button moves",
+        "Price axis crowded"
+      ]
+    },
+    {
+      "id": "scanner-study-original",
+      "title": "Recover an original standalone candle study",
+      "guide": "scanner-charts.md",
+      "section": "native-study-and-exact-receipt-recovery",
+      "references": [
+        "scanner-candle-workspace",
+        "scanner-study-reopen",
+        "dashboard-tool-start-once",
+        "dashboard-candle-request",
+        "scanner-candle-browser"
+      ],
+      "symptoms": [
+        "Load acknowledgment lost",
+        "Year study truncated",
+        "Saved study must not refetch"
+      ]
+    },
+    {
+      "id": "scanner-preparation-handoff",
+      "title": "Reopen an original finding and mode-bound preparation",
+      "guide": "scanner-charts.md",
+      "section": "original-finding-to-preparation-handoff",
+      "references": [
+        "scanner-comparison-panel",
+        "dashboard-comparison-original",
+        "dashboard-comparison-history",
+        "dashboard-comparison-api-tests"
+      ],
+      "symptoms": [
+        "Saved preparation unavailable",
+        "Read-only observation has no Prepare button",
+        "Original check differs from later trial"
+      ]
+    },
+    {
+      "id": "dashboard-wrong-scope",
+      "title": "Trace stale market/account/campaign content after navigation",
+      "guide": "dashboard-api.md",
+      "section": "old-or-wrong-content-after-navigation",
+      "references": [
+        "dashboard-main-route",
+        "dashboard-market-scope",
+        "dashboard-evidence-read",
+        "scanner-workspace",
+        "scanner-chart-grid",
+        "dashboard-station-tests"
+      ],
+      "symptoms": [
+        "Old market response appears",
+        "Retired account selected",
+        "Reload reopens different campaign"
+      ]
+    },
+    {
+      "id": "dashboard-unknown-command",
+      "title": "Recover a scanner control without repeating POST",
+      "guide": "dashboard-api.md",
+      "section": "uncertain-command-recovery",
+      "references": [
+        "scanner-workspace",
+        "scanner-control-owner",
+        "dashboard-scanner-control",
+        "dashboard-scanner-request",
+        "scanner-control-browser"
+      ],
+      "symptoms": [
+        "Control outcome unknown",
+        "Find exact saved result",
+        "GET 404 after lost acknowledgment",
+        "Pending UUID remains"
+      ]
+    },
+    {
+      "id": "dashboard-terminal-refusal",
+      "title": "Diagnose two-tab terminal refusal cleanup",
+      "guide": "dashboard-api.md",
+      "section": "refused-or-stuck-scanner-controls",
+      "references": [
+        "scanner-workspace",
+        "scanner-control-browser",
+        "dashboard-scanner-control"
+      ],
+      "symptoms": [
+        "Start 409 after Pause",
+        "Another window saving control",
+        "Stale pending record despite definite refusal"
+      ]
+    },
+    {
+      "id": "dashboard-foreign-owner",
+      "title": "Diagnose HTTP comparison owner identity failure",
+      "guide": "dashboard-api.md",
+      "section": "api-startup-and-owner-identity",
+      "references": [
+        "dashboard-api-lifespan",
+        "dashboard-comparison-owner",
+        "dashboard-comparison-api-tests"
+      ],
+      "symptoms": [
+        "Pattern comparison owner identity unavailable",
+        "Fixture swapped scanner but cached bridge differs"
+      ]
+    },
+    {
+      "id": "dashboard-route-security",
+      "title": "Review a local operator or actor API route",
+      "guide": "dashboard-api.md",
+      "section": "local-operator-and-actor-boundaries",
+      "references": [
+        "dashboard-local-operator",
+        "dashboard-scoped-actor",
+        "dashboard-security-headers",
+        "dashboard-training-body-limit",
+        "dashboard-api-tests"
+      ],
+      "symptoms": [
+        "Local operator required",
+        "Cross-origin command refused",
+        "Actor token rejected on dashboard route"
+      ]
+    },
+    {
+      "id": "dashboard-read-disclosure",
+      "title": "Check whether a saved evidence GET records disclosure",
+      "guide": "dashboard-api.md",
+      "section": "route-families-and-effects",
+      "references": [
+        "dashboard-tool-original",
+        "dashboard-analogue-disclosure",
+        "dashboard-evidence-read"
+      ],
+      "symptoms": [
+        "Read changed training eligibility",
+        "Canceled read may have disclosed evidence"
+      ]
+    }
+  ]
+}

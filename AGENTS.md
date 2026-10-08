@@ -1,3 +1,28 @@
+# Code-to-product map — current development entry point
+
+Chris requests a comprehensive Q-Trades code map usable as a development and
+troubleshooting tool. The current isolated source increment is
+`codex/codebase-map`, starting at frozen PR87
+`c92fe024b102ce0289066b84d4ad57bebd7bb7d8`. Keep that parent and its stack intact.
+This assignment permits map/tooling source, isolated tests, independent review
+and draft publication. It does not install/restart or activate application work.
+
+For nontrivial implementation, investigation or review, start with
+[the code-to-product map](docs/codebase-map/README.md). Use
+`python tools/codebase_map.py --tasks`, `--lookup`, `--task`, `--trace`,
+`--dependencies`, `--affected` and `--check` to locate the relevant source owner,
+consumers, persistence, failure/recovery path and tests. Read current assigning
+code and actual consumers before editing; static imports and route registrations
+are navigation evidence, not execution or authority proof.
+
+The developer changing behavior owns its map update in the same PR. Review
+changed meaning and added/removed inventory before explicitly refreshing source
+hashes/index; do not auto-accept drift. See
+[maintenance](docs/codebase-map/maintenance.md). Map tests and freshness checks
+are development checks, separate from installed preservation, model coexistence
+and prospective economics. Keep private/ignored data and separate Lab/other
+projects outside the inventory. Dated permissions below retain their scopes.
+
 # Current source successor - October 8, 2026, preserved v4 discovery (#66)
 
 Continue the same Goal/worktree on `codex/preserved-v4-discovery-66`, stacked on

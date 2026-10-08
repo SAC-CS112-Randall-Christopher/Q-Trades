@@ -1,0 +1,38 @@
+{
+  "references": [
+    {"id":"platform-cli","path":"src/trading/__main__.py","symbol":"main","description":"CLI command selection, loopback service and reporting/replay paths"},
+    {"id":"platform-app","path":"src/trading/api.py","symbol":"create_app","description":"Application construction and current data/owner wiring"},
+    {"id":"platform-lifespan","path":"src/trading/api.py","symbol":"create_app.lifespan","description":"Background owner construction, optional failures and cancellation order"},
+    {"id":"platform-monitor-store","path":"src/trading/storage.py","symbol":"MonitorStore","description":"Separate public-monitor SQLite retention and event owner"},
+    {"id":"platform-collector-lock","path":"src/trading/ownership.py","symbol":"CollectorLock","description":"Monitor collector ownership lock"},
+    {"id":"platform-package","path":"pyproject.toml","description":"Package/CLI, dependencies and verification configuration"},
+    {"id":"platform-settings","path":"src/trading/config.py","symbol":"Settings","description":"Validated public-monitor settings, distinct from financial/research policies"},
+    {"id":"platform-compose","path":"compose.yaml","description":"Dedicated paper database container declaration"},
+    {"id":"runtime-service-host","path":"scripts/service_host.py","symbol":"main","description":"Windowless host for known Windows supervisors"},
+    {"id":"runtime-paper-supervisor","path":"scripts/Run-PaperExperiment.ps1","description":"Existing paper supervisor, adoption, health and owned restart"},
+    {"id":"runtime-process-ownership","path":"scripts/PaperProcessOwnership.ps1","description":"Verified launcher/child identities and existing-server adoption"},
+    {"id":"runtime-startup-identity","path":"scripts/PaperStartupIdentity.ps1","description":"Existing scheduled-task action identity"},
+    {"id":"runtime-update-shutdown","path":"scripts/PaperUpdateShutdown.ps1","description":"Controlled update shutdown with task/process identity"},
+    {"id":"runtime-supervision-tests","path":"tests/test_windows_supervision.py","description":"Windows startup/supervision source coverage"},
+    {"id":"runtime-model-ownership-tests","path":"tests/test_model_runtime_task_ownership.py","description":"Model task/child ownership and recovery coverage"},
+    {"id":"runtime-shutdown-tests","path":"tests/test_paper_update_shutdown.py","description":"Update shutdown source/failure coverage"},
+    {"id":"runtime-updater","path":"scripts/Update-QTrades.ps1","anchor":"if ($ExpectedCommit -and $commit -ne $ExpectedCommit)","description":"Fetched approved-target match before build/backup/shutdown"},
+    {"id":"runtime-updater-tests","path":"tests/test_simple_update.py","description":"Supported updater and disposable preservation/refusal coverage"},
+    {"id":"runtime-health-tests","path":"tests/test_simple_health.py","description":"Exact installed-health predicate coverage"},
+    {"id":"runtime-health-predicate","path":"scripts/qtrades_health.py","symbol":"healthy","description":"Service/mode/freshness/balance/error/commit readiness conditions"},
+    {"id":"runtime-desktop-launcher","path":"scripts/TradingDashboardLauncher.cs","description":"Current browser launcher source; not native packaged-product acceptance"},
+    {"id":"runtime-dashboard-opener","path":"scripts/Open-TradingDashboard.ps1","description":"Existing dashboard opening and task-start route"},
+    {"id":"verification-workflow","path":".github/workflows/windows-native.yml","description":"Exact native, dashboard, ownership, PG and browser job selections"},
+    {"id":"map-workflow","path":".github/workflows/codebase-map.yml","description":"Standalone standard-library map job for every PR and main push"},
+    {"id":"map-tool","path":"tools/codebase_map.py","symbol":"main","description":"Map navigation, selected traces and explicit snapshot maintenance"},
+    {"id":"map-tool-tests","path":"tests/test_codebase_map.py","description":"Isolated map-tool positive and negative behavior coverage"}
+  ],
+  "tasks": [
+    {"id":"runtime-update-mismatch","title":"Updater refuses an approved target or installed code differs","guide":"runtime-updates.md","section":"updater-target-and-preservation","references":["runtime-updater","runtime-updater-tests","runtime-health-predicate","runtime-health-tests"],"symptoms":["ExpectedCommit mismatch","installed version","merge is not rollout"]},
+    {"id":"runtime-owner-recovery","title":"Identify the existing service owner before recovery","guide":"runtime-updates.md","section":"process-and-task-identity","references":["runtime-service-host","runtime-paper-supervisor","runtime-process-ownership","runtime-startup-identity","runtime-update-shutdown","runtime-supervision-tests"],"symptoms":["worker stopped","scheduled task","duplicate server","unknown writer","NAT mapping"]},
+    {"id":"startup-optional-failure","title":"Trace startup or an optional subsystem failure","guide":"architecture.md","section":"from-startup-to-background-work","references":["platform-cli","platform-app","platform-lifespan","platform-collector-lock","platform-monitor-store","platform-settings"],"symptoms":["startup fails","research unavailable","paper continues","store unavailable"]},
+    {"id":"shutdown-storage-owner","title":"Trace cancellation and store ownership before changing shutdown","guide":"architecture.md","section":"shutdown-and-recovery","references":["platform-lifespan","platform-collector-lock","runtime-update-shutdown"],"symptoms":["close store","cancellation","shared recorder","cold recovery"]},
+    {"id":"choose-verification","title":"Choose checks and report the correct proof stage","guide":"verification.md","section":"choose-the-check-that-covers-the-outcome","references":["verification-workflow","platform-package","map-tool-tests"],"symptoms":["which tests","PostgreSQL skipped","CI failure","synthetic proof"]},
+    {"id":"map-drift","title":"Repair stale code-map coverage after a source change","guide":"maintenance.md","section":"keep-behavior-and-navigation-together","references":["map-tool","map-tool-tests"],"symptoms":["stale reference","new module","broken map","lookup missing"]}
+  ]
+}

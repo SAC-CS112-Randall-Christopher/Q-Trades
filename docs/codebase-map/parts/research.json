@@ -1,0 +1,1187 @@
+{
+  "references": [
+    {
+      "id": "evidence-training-comparison",
+      "path": "src/trading/training_workflow.py",
+      "symbol": "TrainingWorkflow.comparison",
+      "description": "Read an existing historical Lab comparison without launching evaluation"
+    },
+    {
+      "id": "evidence-knowledge-extract",
+      "path": "src/trading/knowledge_extract.py",
+      "symbol": "main",
+      "description": "Finite native PDF text extraction with explicit scanned or garbled refusal"
+    },
+    {
+      "id": "evidence-memory-accounts",
+      "path": "src/trading/memory_accounts.py",
+      "symbol": "compare_accounts",
+      "description": "Complete declared-period account memory comparison through the existing engine"
+    },
+    {
+      "id": "evidence-outcome-continuation",
+      "path": "src/trading/outcome_continuation.py",
+      "symbol": "OutcomeContinuation",
+      "description": "Bounded immutable delayed labels independent of original acquisition archives"
+    },
+    {
+      "id": "evidence-acquisition",
+      "path": "src/trading/research_acquisition.py",
+      "description": "Bounded immutable and segmented archive decision acquisition"
+    },
+    {
+      "id": "evidence-archive",
+      "path": "src/trading/research_evidence.py",
+      "symbol": "EvidenceArchive",
+      "description": "Append-only original local evidence and protection"
+    },
+    {
+      "id": "evidence-borrow-store",
+      "path": "src/trading/evidence_runtime.py",
+      "symbol": "EvidenceRecorder.research_store",
+      "description": "Borrow the existing recorder writer with exact plan identity"
+    },
+    {
+      "id": "evidence-campaigns",
+      "path": "src/trading/research_campaigns.py",
+      "symbol": "ResearchCampaigns",
+      "description": "Durable bounded numerical research campaigns"
+    },
+    {
+      "id": "evidence-compact-memory",
+      "path": "src/trading/compact_memory.py",
+      "symbol": "CompactMemory",
+      "description": "Compact linked capture and maturity descriptors"
+    },
+    {
+      "id": "evidence-context-flow",
+      "path": "src/trading/context_flow.py",
+      "description": "Frozen local condition and flow shadow evaluation"
+    },
+    {
+      "id": "evidence-experiment",
+      "path": "src/trading/research_experiment.py",
+      "symbol": "run_experiment",
+      "description": "Numerical experiment over observed quotes"
+    },
+    {
+      "id": "evidence-file-accounting",
+      "path": "src/trading/research_storage.py",
+      "symbol": "_bytes",
+      "description": "Bounded file accounting with SQLite sidecar race handling"
+    },
+    {
+      "id": "evidence-history-restore",
+      "path": "src/trading/role_history.py",
+      "symbol": "RoleHistory.restore",
+      "description": "Restore verified full cold task payload"
+    },
+    {
+      "id": "evidence-history-rollover",
+      "path": "src/trading/role_history.py",
+      "symbol": "RoleHistory.rollover",
+      "description": "Bounded hot task rollover with original lineage"
+    },
+    {
+      "id": "evidence-history-storage",
+      "path": "src/trading/role_history.py",
+      "symbol": "RoleHistory.storage",
+      "description": "Shared callback or explicit standalone archive context"
+    },
+    {
+      "id": "evidence-incremental-memory",
+      "path": "src/trading/incremental_memory.py",
+      "description": "Append-only predeclared shadow update procedure"
+    },
+    {
+      "id": "evidence-inference-profile",
+      "path": "src/trading/research_inference.py",
+      "description": "Legacy advisory prompt and protocol profile validation"
+    },
+    {
+      "id": "evidence-knowledge",
+      "path": "src/trading/research_knowledge.py",
+      "symbol": "ResearchKnowledge",
+      "description": "Versioned knowledge source and retrieval receipt owner"
+    },
+    {
+      "id": "evidence-knowledge-acquire",
+      "path": "src/trading/knowledge_acquisition.py",
+      "symbol": "acquire",
+      "description": "Operator-approved bounded public source acquisition"
+    },
+    {
+      "id": "evidence-knowledge-panel",
+      "path": "apps/web/src/KnowledgeWorkspace.tsx",
+      "description": "Knowledge permissions sources and reviewer consumer UI"
+    },
+    {
+      "id": "evidence-knowledge-permission",
+      "path": "src/trading/research_knowledge.py",
+      "symbol": "ResearchKnowledge._permitted_now",
+      "description": "Original and latest source eligibility and revocation"
+    },
+    {
+      "id": "evidence-knowledge-read",
+      "path": "src/trading/research_knowledge.py",
+      "symbol": "ResearchKnowledge.read",
+      "description": "Cutoff and current permission checked source reopen"
+    },
+    {
+      "id": "evidence-legacy-protocol",
+      "path": "src/trading/research_protocol.py",
+      "description": "Earlier versioned advisory answer contracts"
+    },
+    {
+      "id": "evidence-memory-dataset",
+      "path": "src/trading/memory_dataset.py",
+      "description": "Point-in-time memory corpus and mature dataset adapters"
+    },
+    {
+      "id": "evidence-memory-quality",
+      "path": "src/trading/memory_quality.py",
+      "description": "Frozen recognition estimator and separated execution evidence"
+    },
+    {
+      "id": "evidence-panel",
+      "path": "apps/web/src/EvidencePanel.tsx",
+      "description": "Normal original evidence inspection surface"
+    },
+    {
+      "id": "evidence-pattern-memory",
+      "path": "src/trading/pattern_memory.py",
+      "description": "Outcome-blind episode descriptors and historical matching"
+    },
+    {
+      "id": "evidence-pure-reopen",
+      "path": "src/trading/research_storage.py",
+      "symbol": "reopen_evidence",
+      "description": "Pure existing archive verification without new writer"
+    },
+    {
+      "id": "evidence-recorded-window",
+      "path": "src/trading/recorded_window.py",
+      "description": "Recorded time-window input ownership and availability"
+    },
+    {
+      "id": "evidence-recorder",
+      "path": "src/trading/evidence_runtime.py",
+      "symbol": "EvidenceRecorder",
+      "description": "Capture raw compact segmented and mature evidence"
+    },
+    {
+      "id": "evidence-role-history",
+      "path": "src/trading/role_history.py",
+      "symbol": "RoleHistory",
+      "description": "Verified hot and cold role history continuation"
+    },
+    {
+      "id": "evidence-storage",
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage",
+      "description": "Exclusive volume-bound segmented research storage"
+    },
+    {
+      "id": "evidence-storage-admission",
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage.admission",
+      "description": "Tier scratch and free reserve write admission"
+    },
+    {
+      "id": "evidence-storage-append",
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage.append",
+      "description": "Append protected immutable packets"
+    },
+    {
+      "id": "evidence-storage-housekeeping",
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage.housekeeping",
+      "description": "Protected segment maturity and bounded reclamation"
+    },
+    {
+      "id": "evidence-storage-panel",
+      "path": "apps/web/src/ResearchStoragePanel.tsx",
+      "description": "Normal storage status plan and evidence consumer"
+    },
+    {
+      "id": "evidence-storage-plan",
+      "path": "src/trading/research_storage.py",
+      "symbol": "StoragePlan",
+      "description": "Explicit tier quota reserve and volume plan identity"
+    },
+    {
+      "id": "evidence-storage-reopen",
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage.reopen",
+      "description": "Verify full original packet and reference"
+    },
+    {
+      "id": "evidence-tests-accounting",
+      "path": "tests/test_research_storage_file_accounting.py",
+      "description": "SQLite sidecar disappearance and genuine I/O accounting cases"
+    },
+    {
+      "id": "evidence-tests-context",
+      "path": "tests/test_context_flow.py",
+      "description": "Condition flow provenance and comparison cases"
+    },
+    {
+      "id": "evidence-tests-history",
+      "path": "tests/test_role_history.py",
+      "description": "Cold history original payload and allowance preservation cases"
+    },
+    {
+      "id": "evidence-tests-incremental",
+      "path": "tests/test_incremental_memory.py",
+      "description": "Shadow update and append-only journal cases"
+    },
+    {
+      "id": "evidence-tests-knowledge",
+      "path": "tests/test_knowledge_recovery.py",
+      "description": "Knowledge permission cold recovery and original revision cases"
+    },
+    {
+      "id": "evidence-tests-knowledge-pg",
+      "path": "tests/test_knowledge_postgresql.py",
+      "description": "Explicit PostgreSQL knowledge ownership cases"
+    },
+    {
+      "id": "evidence-tests-memory-quality",
+      "path": "tests/test_memory_quality.py",
+      "description": "Recognition versus execution split and estimator cases"
+    },
+    {
+      "id": "evidence-tests-storage",
+      "path": "tests/test_research_storage.py",
+      "description": "Storage identity admission pinning and reopen cases"
+    },
+    {
+      "id": "evidence-tests-training",
+      "path": "tests/test_training_workflow.py",
+      "description": "Source review handoff claim retry and recovery cases"
+    },
+    {
+      "id": "evidence-tests-training-data",
+      "path": "tests/test_llm_training.py",
+      "description": "Adjudicated candidate rights target and dataset contract cases"
+    },
+    {
+      "id": "evidence-timing",
+      "path": "src/trading/research_timing.py",
+      "description": "Recorded representation availability separate from market and label time"
+    },
+    {
+      "id": "evidence-training-bridge",
+      "path": "src/trading/training_bridge.py",
+      "symbol": "TrainingBridge",
+      "description": "Private local fixed Lab preparation bridge"
+    },
+    {
+      "id": "evidence-training-data",
+      "path": "src/trading/llm_training.py",
+      "description": "Explicit semantic review and offline role dataset construction"
+    },
+    {
+      "id": "evidence-training-dispatch",
+      "path": "src/trading/training_bridge.py",
+      "symbol": "TrainingBridge.dispatch",
+      "description": "Fixed bounded offline application handoff command"
+    },
+    {
+      "id": "evidence-training-eval",
+      "path": "src/trading/llm_training_eval.py",
+      "description": "Paired offline contract diagnostics without economic qualification"
+    },
+    {
+      "id": "evidence-training-panel",
+      "path": "apps/web/src/TrainingDataPanel.tsx",
+      "description": "Reviewed dataset and preparation UI"
+    },
+    {
+      "id": "evidence-training-preflight",
+      "path": "src/trading/llm_training_preflight.py",
+      "symbol": "preflight",
+      "description": "Bounded read-only dataset and split diagnostics"
+    },
+    {
+      "id": "evidence-training-prepare",
+      "path": "src/trading/llm_training.py",
+      "symbol": "prepare",
+      "description": "Construct reviewed point-in-time dataset with provenance"
+    },
+    {
+      "id": "evidence-training-reopen",
+      "path": "src/trading/training_bridge.py",
+      "symbol": "TrainingBridge.reopen",
+      "description": "Verify original private handoff request receipt and dataset"
+    },
+    {
+      "id": "evidence-training-workflow",
+      "path": "src/trading/training_workflow.py",
+      "symbol": "TrainingWorkflow",
+      "description": "Frozen reviewed source selection and durable preparation lifecycle"
+    },
+    {
+      "id": "model-child-close",
+      "path": "src/trading/peft_child_owner.py",
+      "symbol": "ChildOwner.close",
+      "description": "Close exact owned child Job and process handles"
+    },
+    {
+      "id": "model-child-owner",
+      "path": "src/trading/peft_child_owner.py",
+      "symbol": "ChildOwner",
+      "description": "Suspended native child membership and RSS ownership"
+    },
+    {
+      "id": "model-development",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftDevelopmentRoles",
+      "description": "Offline per-request PEFT development transport"
+    },
+    {
+      "id": "model-development-infer",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftDevelopmentRoles.infer",
+      "description": "Fixed child dispatch memory time identity and cleanup checks"
+    },
+    {
+      "id": "model-engine-pressure",
+      "path": "src/trading/engine_diagnostics.py",
+      "symbol": "EngineWorkPressurePolicy",
+      "description": "Observed work pressure and uncalibrated recovery policy"
+    },
+    {
+      "id": "model-finite-dispatch",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftPaperPilotRoles._verify_finite_dispatch",
+      "description": "Finite reservation and single dispatch claim checkpoint"
+    },
+    {
+      "id": "model-finite-operation",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftPaperPilotRoles.finite_operation",
+      "description": "Cheap financial-operation policy fence without registry acquisition"
+    },
+    {
+      "id": "model-grant",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftPaperPilotRoles._grant",
+      "description": "Strict versioned pilot grant schema and policy validation"
+    },
+    {
+      "id": "model-instance-preflight",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftPaperPilotRoles.instance_preflight",
+      "description": "Captured current authority profile and policy admission"
+    },
+    {
+      "id": "model-local",
+      "path": "src/trading/local_role_model.py",
+      "symbol": "LocalRoles",
+      "description": "Legacy local-service runtime policy and inference"
+    },
+    {
+      "id": "model-local-preflight",
+      "path": "src/trading/local_role_model.py",
+      "symbol": "LocalRoles.preflight",
+      "description": "Legacy conservative byte-based context proxy"
+    },
+    {
+      "id": "model-local-qualification",
+      "path": "src/trading/local_role_model.py",
+      "symbol": "LocalRoles.qualification",
+      "description": "Frozen task-specific holdout and placement qualification"
+    },
+    {
+      "id": "model-numerical-resources",
+      "path": "src/trading/numerical_resources.py",
+      "description": "Read-only accounting and placement for numerical children"
+    },
+    {
+      "id": "model-pilot",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftPaperPilotRoles",
+      "description": "Explicit paper pilot policy activation and dispatch owner"
+    },
+    {
+      "id": "model-pilot-infer",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftPaperPilotRoles._infer",
+      "description": "Captured grant recheck request lock and dispatch lifecycle"
+    },
+    {
+      "id": "model-profile",
+      "path": "src/trading/peft_profile.py",
+      "description": "Frozen CPU PEFT settings and metadata declarations"
+    },
+    {
+      "id": "model-runner-generate",
+      "path": "src/trading/peft_role_runner.py",
+      "symbol": "generate",
+      "description": "Actual frozen chat-template token admission before model load"
+    },
+    {
+      "id": "model-runtime-resources",
+      "path": "src/trading/research_resources.py",
+      "description": "Verified legacy Windows supervisor process resource observation"
+    },
+    {
+      "id": "model-selection-authority",
+      "path": "src/trading/peft_role_model.py",
+      "symbol": "PeftPaperPilotRoles.selection_authority",
+      "description": "Full current grant profile contract and method-policy identity"
+    },
+    {
+      "id": "model-tests-child",
+      "path": "tests/test_peft_child_owner.py",
+      "description": "Native procedural child ownership and handle cleanup cases"
+    },
+    {
+      "id": "model-tests-child-resources",
+      "path": "tests/test_peft_child_resource_integration.py",
+      "description": "Child memory placement and observation integration cases"
+    },
+    {
+      "id": "model-tests-failures",
+      "path": "tests/test_development_failure_receipts.py",
+      "description": "Retained raw response dispatch and cleanup failure cases"
+    },
+    {
+      "id": "model-tests-finite",
+      "path": "tests/test_peft_finite_pilot.py",
+      "description": "Strict finite scope dispatch expiry and cancellation cases"
+    },
+    {
+      "id": "model-tests-learning",
+      "path": "tests/test_peft_pattern_learning.py",
+      "description": "Outcome-conditioned grant and captured-authority race cases"
+    },
+    {
+      "id": "model-tests-loader",
+      "path": "tests/test_peft_loader_contract.py",
+      "description": "Mocked full-template 7168 admission and 7169 refusal before load"
+    },
+    {
+      "id": "model-tests-method",
+      "path": "tests/test_peft_next_method.py",
+      "description": "Strict method grant policy SHA and schema compatibility cases"
+    },
+    {
+      "id": "model-tests-preflight",
+      "path": "tests/test_development_preflight.py",
+      "description": "Structural PEFT preflight and byte diagnostic cases"
+    },
+    {
+      "id": "model-tiered-constraint",
+      "path": "src/trading/tiered_runtime.py",
+      "symbol": "TieredPaperRuntime.constrained",
+      "description": "Current pressure disk capture and financial readback admission"
+    },
+    {
+      "id": "oversight-activity",
+      "path": "src/trading/research_activity.py",
+      "symbol": "ResearchActivity",
+      "description": "Bounded evidence-time activity projection"
+    },
+    {
+      "id": "oversight-activity-panel",
+      "path": "apps/web/src/ResearchActivity.tsx",
+      "description": "Normal read-only activity presentation"
+    },
+    {
+      "id": "oversight-actor-panel",
+      "path": "apps/web/src/ResearchActorPanel.tsx",
+      "description": "Task grant ownership and saved result consumer"
+    },
+    {
+      "id": "oversight-actors",
+      "path": "src/trading/research_actors.py",
+      "symbol": "ResearchActors",
+      "description": "Explicit scoped actor grants charges leases and revocation"
+    },
+    {
+      "id": "oversight-api-mcp",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.research_mcp",
+      "description": "Authenticated private MCP HTTP adapter"
+    },
+    {
+      "id": "oversight-api-tool",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.tool_run",
+      "description": "Validated operator tool claim dispatch and acknowledgment"
+    },
+    {
+      "id": "oversight-attention-panel",
+      "path": "apps/web/src/ResearchAttention.tsx",
+      "description": "Normal operational attention and notice presentation"
+    },
+    {
+      "id": "oversight-browser-scanner",
+      "path": "tests/browser/pattern_scanner.cjs",
+      "description": "Fourteen scanner groups including actual terminal-refusal Web Lock queue"
+    },
+    {
+      "id": "oversight-mcp",
+      "path": "src/trading/research_mcp.py",
+      "symbol": "ResearchMCP",
+      "description": "Stateless strict private research MCP adapter"
+    },
+    {
+      "id": "oversight-mcp-call",
+      "path": "src/trading/research_mcp.py",
+      "symbol": "ResearchMCP.call",
+      "description": "Task auth charge permission and delivered citation checks"
+    },
+    {
+      "id": "oversight-mcp-client",
+      "path": "src/trading/research_mcp.py",
+      "symbol": "LocalMCPClient",
+      "description": "Client for the same enumerated local MCP surface"
+    },
+    {
+      "id": "oversight-mcp-tools",
+      "path": "src/trading/research_mcp.py",
+      "symbol": "tools",
+      "description": "Exact four read-only review tool schemas"
+    },
+    {
+      "id": "oversight-notices",
+      "path": "src/trading/research_notices.py",
+      "symbol": "ResearchNotices",
+      "description": "Saved operational conditions and unavailable-state notices"
+    },
+    {
+      "id": "oversight-provider",
+      "path": "src/trading/reviewer_provider.py",
+      "symbol": "ResponsesReviewer",
+      "description": "Approved bounded external reviewer adapter"
+    },
+    {
+      "id": "oversight-provider-review",
+      "path": "src/trading/reviewer_provider.py",
+      "symbol": "ResponsesReviewer.review",
+      "description": "Approved occurrence task grant provider execution and revocation"
+    },
+    {
+      "id": "oversight-quality",
+      "path": "src/trading/research_quality.py",
+      "symbol": "quality_report",
+      "description": "Source-defined research quality observations separate from economics"
+    },
+    {
+      "id": "oversight-review-policy",
+      "path": "src/trading/research_reviews.py",
+      "symbol": "ReviewerPolicy",
+      "description": "Disabled-by-default provider data spending and schedule policy"
+    },
+    {
+      "id": "oversight-reviews",
+      "path": "src/trading/research_reviews.py",
+      "symbol": "ResearchReviews",
+      "description": "Immutable scheduled review occurrences and explicit disposition"
+    },
+    {
+      "id": "oversight-scanner-panel",
+      "path": "apps/web/src/ScannerWorkspace.tsx",
+      "description": "Shared cross-tab UUID controls and saved evidence navigation"
+    },
+    {
+      "id": "oversight-scoped-tools",
+      "path": "src/trading/scoped_tools.py",
+      "description": "Shared bounded read-only financial evidence and disclosure tools"
+    },
+    {
+      "id": "oversight-station",
+      "path": "src/trading/station.py",
+      "symbol": "execute_tool",
+      "description": "Enumerated local operator tool execution"
+    },
+    {
+      "id": "oversight-station-panel",
+      "path": "apps/web/src/MarketStation.tsx",
+      "description": "Selected market account and tool receipt UI"
+    },
+    {
+      "id": "oversight-tests-activity",
+      "path": "tests/test_activity_reader_recovery.py",
+      "description": "Read-only activity failure and reader recovery cases"
+    },
+    {
+      "id": "oversight-tests-actors",
+      "path": "tests/test_research_actors.py",
+      "description": "Task grant charges expiry leases and revocation cases"
+    },
+    {
+      "id": "oversight-tests-diagnosis",
+      "path": "tests/test_strategy_diagnosis.py",
+      "description": "Actual cost input coverage and diagnostic receipt cases"
+    },
+    {
+      "id": "oversight-tests-review-background",
+      "path": "tests/test_review_background.py",
+      "description": "Review occurrence background recovery and lifetime cases"
+    },
+    {
+      "id": "oversight-tests-reviews",
+      "path": "tests/test_review_repairs.py",
+      "description": "Original reply draft correction and reconciliation cases"
+    },
+    {
+      "id": "oversight-tests-role-tools",
+      "path": "tests/test_role_tool_requests.py",
+      "description": "Original scoped role tool wait and continuation cases"
+    },
+    {
+      "id": "oversight-tests-tools",
+      "path": "tests/test_scoped_tools.py",
+      "description": "Exact account cutoffs read-only tools and disclosure cases"
+    },
+    {
+      "id": "oversight-tool-disclosure",
+      "path": "src/trading/scoped_tools.py",
+      "symbol": "disclose",
+      "description": "Exact result and request information-use window registration"
+    },
+    {
+      "id": "oversight-tool-journal",
+      "path": "src/trading/tool_journal.py",
+      "symbol": "ToolJournal",
+      "description": "Scoped immutable tool receipts leases and cold rollover"
+    },
+    {
+      "id": "oversight-tool-run",
+      "path": "src/trading/scoped_tools.py",
+      "symbol": "run",
+      "description": "Matched read-only selected account evidence dispatch"
+    },
+    {
+      "id": "oversight-tool-start",
+      "path": "src/trading/tool_journal.py",
+      "symbol": "ToolJournal.start_once",
+      "description": "Same UUID exact query claim without recovered redispatch"
+    },
+    {
+      "id": "research-api-wiring",
+      "path": "src/trading/api.py",
+      "description": "App lifespan owner sharing and role comparison route wiring"
+    },
+    {
+      "id": "research-browser-comparison",
+      "path": "tests/browser/pattern_comparison.cjs",
+      "description": "Compiled immutable preparation viewing and late-read recovery groups"
+    },
+    {
+      "id": "research-browser-role",
+      "path": "tests/browser/role_pattern_evidence.cjs",
+      "description": "Compiled role provenance current-mode and unavailable-mode groups"
+    },
+    {
+      "id": "research-comparison-panel",
+      "path": "apps/web/src/PatternComparisonPanel.tsx",
+      "description": "Original UUID preparations and method-exact read-only viewing"
+    },
+    {
+      "id": "research-finite-owner",
+      "path": "src/trading/finite_role_test.py",
+      "symbol": "FiniteRoleTest",
+      "description": "One finite root and original request-count ledger"
+    },
+    {
+      "id": "research-inbox",
+      "path": "src/trading/lab_proposals.py",
+      "symbol": "LabProposals",
+      "description": "Shared bundle proposal inbox and finite scope persistence"
+    },
+    {
+      "id": "research-lesson-panel",
+      "path": "apps/web/src/LessonPanel.tsx",
+      "description": "Mature lesson detail annotation and next question consumer"
+    },
+    {
+      "id": "research-lessons",
+      "path": "src/trading/research_lessons.py",
+      "symbol": "ResearchLessons",
+      "description": "Immutable mature scored body access and selection owner"
+    },
+    {
+      "id": "research-method-policy",
+      "path": "src/trading/lab_role_contract.py",
+      "symbol": "pattern_method_policy_sha",
+      "description": "Fixed p0 p1 independent v4 medium method policy digest"
+    },
+    {
+      "id": "research-pattern-comparisons",
+      "path": "src/trading/pattern_comparisons.py",
+      "symbol": "PatternComparisons",
+      "description": "Saved native finding current evaluation and immutable preparation bridge"
+    },
+    {
+      "id": "research-pattern-prior",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._pattern_learning_prior",
+      "description": "Exact own mature source and bounded inherited prior binding"
+    },
+    {
+      "id": "research-pattern-selector",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._select_pattern_question",
+      "description": "Stable saved finding and current policy-bound method selection"
+    },
+    {
+      "id": "research-question",
+      "path": "src/trading/role_worker.py",
+      "symbol": "Question",
+      "description": "Strict human question UUID parent lesson and horizon request"
+    },
+    {
+      "id": "research-registry",
+      "path": "src/trading/experiment_registry.py",
+      "symbol": "ExperimentRegistry",
+      "description": "Durable bounded evidence coordination and transaction owner"
+    },
+    {
+      "id": "research-role-contract",
+      "path": "src/trading/lab_role_contract.py",
+      "description": "Strict versioned researcher reviewer and followup grammar"
+    },
+    {
+      "id": "research-role-evidence",
+      "path": "src/trading/role_evidence.py",
+      "description": "Compact evidence backed by retained full numerical and outcome bodies"
+    },
+    {
+      "id": "research-role-panel",
+      "path": "apps/web/src/RoleResearchPanel.tsx",
+      "description": "Captured method evidence and current question-mode UI"
+    },
+    {
+      "id": "research-tests-archive-owner",
+      "path": "tests/test_role_archive_storage_owner.py",
+      "description": "Busy shared recorder archive cancellation cold retry and charge preservation"
+    },
+    {
+      "id": "research-tests-comparison-api",
+      "path": "tests/test_pattern_comparison_api.py",
+      "description": "Preparation-only API auth error classification and exact GET cases"
+    },
+    {
+      "id": "research-tests-finite",
+      "path": "tests/test_finite_role_test.py",
+      "description": "Finite root count original-attempt and expired acknowledgment recovery"
+    },
+    {
+      "id": "research-tests-finite-lab",
+      "path": "tests/test_finite_lab_authority.py",
+      "description": "Financial inbox reserve fund admission and expired saved acknowledgment cases"
+    },
+    {
+      "id": "research-tests-learning",
+      "path": "tests/test_pattern_research_learning.py",
+      "description": "Same-authority mature carry used-rule read-only and rollback cases"
+    },
+    {
+      "id": "research-tests-lessons",
+      "path": "tests/test_research_lessons.py",
+      "description": "Immutable adverse incomplete lesson access and annotation cases"
+    },
+    {
+      "id": "research-tests-next-method",
+      "path": "tests/test_pattern_next_method_worker.py",
+      "description": "Two fixed methods full-score projection and disposable engine path"
+    },
+    {
+      "id": "research-tests-selection",
+      "path": "tests/test_role_question_selection.py",
+      "description": "Stable question source captured authority and publication cases"
+    },
+    {
+      "id": "research-tests-supervision",
+      "path": "tests/test_role_supervisor.py",
+      "description": "Durable phase backoff failure recovery and cancellation cases"
+    },
+    {
+      "id": "research-tests-worker",
+      "path": "tests/test_role_worker.py",
+      "description": "Original idea evaluation reviewer submit and outcome stages"
+    },
+    {
+      "id": "research-worker",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker",
+      "description": "Durable optional role task and original attempt owner"
+    },
+    {
+      "id": "research-worker-answer",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._answer",
+      "description": "Frozen original packet profile attempt and reservation before inference"
+    },
+    {
+      "id": "research-worker-archive",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._archive_evaluation",
+      "description": "Verified full evaluation archive then lease-checked publication"
+    },
+    {
+      "id": "research-worker-current",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._current",
+      "description": "Captured authority inputs and financial prerequisites revalidation"
+    },
+    {
+      "id": "research-worker-exposure",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._pattern_numerical_exposure",
+      "description": "Atomic matched fresh numerical input exposure registration"
+    },
+    {
+      "id": "research-worker-loop",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker.run",
+      "description": "Existing optional role supervision and dispatch loop"
+    },
+    {
+      "id": "research-worker-maintenance",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._maintain",
+      "description": "Durable phase ownership backoff and exposed permanent failure"
+    },
+    {
+      "id": "research-worker-owned",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._owned",
+      "description": "Shield and drain owned threaded work on cancellation"
+    },
+    {
+      "id": "research-worker-retry",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker.retry",
+      "description": "Explicit failed archive or original unknown-attempt retry rules"
+    },
+    {
+      "id": "research-worker-step",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker.step",
+      "description": "Leased stage progression through current evaluation and mature followup"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "research-trace-task",
+      "title": "Trace a saved role task through its original stages",
+      "guide": "research-worker.md",
+      "section": "task-stages-and-durable-recovery",
+      "references": [
+        "research-worker-step",
+        "research-worker-answer",
+        "research-tests-worker",
+        "research-role-panel"
+      ],
+      "symptoms": [
+        "task stopped progressing",
+        "unknown answer",
+        "same UUID unresolved"
+      ]
+    },
+    {
+      "id": "research-repair-cold-archive",
+      "title": "Repair shared-owner archive or cold task recovery",
+      "guide": "research-worker.md",
+      "section": "task-stages-and-durable-recovery",
+      "references": [
+        "research-worker-archive",
+        "research-worker-owned",
+        "research-worker-retry",
+        "evidence-history-storage",
+        "research-tests-archive-owner"
+      ],
+      "symptoms": [
+        "recorder not ready",
+        "owner busy",
+        "archive evaluation failed",
+        "cold retry refused"
+      ]
+    },
+    {
+      "id": "research-change-selection",
+      "title": "Change policy-bound source and method selection",
+      "guide": "research-worker.md",
+      "section": "selection-policies-and-fixed-methods",
+      "references": [
+        "research-pattern-selector",
+        "research-pattern-prior",
+        "research-method-policy",
+        "model-selection-authority",
+        "research-tests-learning",
+        "research-tests-next-method"
+      ],
+      "symptoms": [
+        "duplicate selected event",
+        "foreign lesson",
+        "method not offered",
+        "stale authority"
+      ]
+    },
+    {
+      "id": "research-trace-outcome",
+      "title": "Trace an inbox acknowledgment and mature original outcome",
+      "guide": "research-worker.md",
+      "section": "original-packets-and-financial-truth",
+      "references": [
+        "research-inbox",
+        "research-worker-step",
+        "research-lessons",
+        "research-tests-finite-lab"
+      ],
+      "symptoms": [
+        "accepted proposal still waiting",
+        "trial scored but followup absent",
+        "adverse outcome lost"
+      ]
+    },
+    {
+      "id": "research-fix-packet-projection",
+      "title": "Change compact packet representation without losing original facts",
+      "guide": "research-worker.md",
+      "section": "original-packets-and-financial-truth",
+      "references": [
+        "research-role-evidence",
+        "research-worker-answer",
+        "research-tests-next-method",
+        "research-tests-learning"
+      ],
+      "symptoms": [
+        "packet missing samples",
+        "null became absent",
+        "scored source mismatch",
+        "wrong method controls"
+      ]
+    },
+    {
+      "id": "model-diagnose-admission",
+      "title": "Classify a refused model request by actual owner and limit",
+      "guide": "model-admission.md",
+      "section": "resource-and-timing-guard-interpretation",
+      "references": [
+        "model-instance-preflight",
+        "model-profile",
+        "model-tiered-constraint",
+        "model-engine-pressure",
+        "model-local-preflight"
+      ],
+      "symptoms": [
+        "optional inference constrained",
+        "context allowance refusal",
+        "stale runtime resource status"
+      ]
+    },
+    {
+      "id": "model-change-token-boundary",
+      "title": "Inspect actual PEFT token admission and caller diagnostics",
+      "guide": "model-admission.md",
+      "section": "actual-peft-request-lifetime",
+      "references": [
+        "model-runner-generate",
+        "model-development-infer",
+        "model-tests-loader",
+        "model-tests-preflight",
+        "research-tests-next-method"
+      ],
+      "symptoms": [
+        "prompt too long",
+        "byte guard mistaken for tokens",
+        "generation attempted before refusal"
+      ]
+    },
+    {
+      "id": "model-repair-child-lifetime",
+      "title": "Repair an owned inference child lifetime failure",
+      "guide": "model-admission.md",
+      "section": "actual-peft-request-lifetime",
+      "references": [
+        "model-child-owner",
+        "model-child-close",
+        "model-development-infer",
+        "model-tests-child",
+        "model-tests-failures"
+      ],
+      "symptoms": [
+        "child did not close",
+        "handles remain open",
+        "response identity mismatch",
+        "cancelled inference"
+      ]
+    },
+    {
+      "id": "model-review-grant-change",
+      "title": "Review a strict grant or dispatch authority change",
+      "guide": "model-admission.md",
+      "section": "grant-formats-and-dispatch-authority",
+      "references": [
+        "model-grant",
+        "model-pilot-infer",
+        "model-selection-authority",
+        "model-finite-dispatch",
+        "model-tests-method",
+        "model-tests-finite"
+      ],
+      "symptoms": [
+        "grant changed during admission",
+        "absent selection authority",
+        "finite dispatch refused",
+        "profile fingerprint changed"
+      ]
+    },
+    {
+      "id": "evidence-trace-reference",
+      "title": "Trace an original evidence reference across tiers",
+      "guide": "evidence-storage-training.md",
+      "section": "shared-writer-and-cold-recovery",
+      "references": [
+        "evidence-borrow-store",
+        "evidence-storage-reopen",
+        "evidence-pure-reopen",
+        "evidence-tests-storage",
+        "evidence-tests-accounting"
+      ],
+      "symptoms": [
+        "reference unavailable",
+        "volume identity changed",
+        "quota reached",
+        "sidecar stat race"
+      ]
+    },
+    {
+      "id": "evidence-review-permission",
+      "title": "Trace current knowledge permission and original disclosure",
+      "guide": "evidence-storage-training.md",
+      "section": "time-exposure-and-knowledge-permission",
+      "references": [
+        "evidence-knowledge-permission",
+        "evidence-knowledge-read",
+        "oversight-tool-disclosure",
+        "evidence-tests-knowledge"
+      ],
+      "symptoms": [
+        "source revoked",
+        "citation refused",
+        "protected interval",
+        "old revision unavailable"
+      ]
+    },
+    {
+      "id": "evidence-change-memory",
+      "title": "Change a memory or shadow experiment with correct provenance",
+      "guide": "evidence-storage-training.md",
+      "section": "memory-and-research-families",
+      "references": [
+        "evidence-pattern-memory",
+        "evidence-memory-quality",
+        "evidence-context-flow",
+        "evidence-incremental-memory",
+        "evidence-memory-dataset"
+      ],
+      "symptoms": [
+        "recognition mistaken for execution",
+        "shadow score changed",
+        "family split overlap",
+        "episode cutoff wrong"
+      ]
+    },
+    {
+      "id": "evidence-recover-training-preparation",
+      "title": "Recover a reviewed dataset or interrupted private Lab preparation",
+      "guide": "evidence-storage-training.md",
+      "section": "training-review-and-private-lab-handoff",
+      "references": [
+        "evidence-training-workflow",
+        "evidence-training-dispatch",
+        "evidence-training-reopen",
+        "evidence-training-data",
+        "evidence-tests-training"
+      ],
+      "symptoms": [
+        "preparing interrupted",
+        "source review drift",
+        "dataset hash mismatch",
+        "prior handoff failed"
+      ]
+    },
+    {
+      "id": "oversight-recover-tool",
+      "title": "Recover a scoped tool acknowledgment without redispatch",
+      "guide": "oversight-tools.md",
+      "section": "scoped-local-evidence-and-uuid-recovery",
+      "references": [
+        "oversight-tool-start",
+        "oversight-tool-run",
+        "oversight-api-tool",
+        "oversight-tests-tools"
+      ],
+      "symptoms": [
+        "tool acknowledgment lost",
+        "request belongs to different scope",
+        "wrong account evidence"
+      ]
+    },
+    {
+      "id": "oversight-review-mcp",
+      "title": "Review a private MCP tool or actor-scope change",
+      "guide": "oversight-tools.md",
+      "section": "private-mcp-and-actor-allowances",
+      "references": [
+        "oversight-mcp-tools",
+        "oversight-mcp-call",
+        "oversight-actors",
+        "oversight-api-mcp",
+        "oversight-tests-actors"
+      ],
+      "symptoms": [
+        "tool outside permitted surface",
+        "task token refused",
+        "citation not delivered",
+        "allowance exhausted"
+      ]
+    },
+    {
+      "id": "oversight-reconcile-review",
+      "title": "Reconcile an external review occurrence and permission",
+      "guide": "oversight-tools.md",
+      "section": "review-occurrences-and-provider-policy",
+      "references": [
+        "oversight-reviews",
+        "oversight-provider-review",
+        "oversight-review-policy",
+        "evidence-knowledge-permission",
+        "oversight-tests-reviews"
+      ],
+      "symptoms": [
+        "review unknown completion",
+        "provider not dispatched",
+        "permission revoked",
+        "cost reserve refused"
+      ]
+    },
+    {
+      "id": "oversight-fix-stale-ui",
+      "title": "Repair original-result adoption or terminal command cleanup",
+      "guide": "oversight-tools.md",
+      "section": "normal-oversight-surfaces",
+      "references": [
+        "oversight-scanner-panel",
+        "research-comparison-panel",
+        "oversight-browser-scanner",
+        "research-browser-comparison"
+      ],
+      "symptoms": [
+        "late source refusal overwrote original",
+        "another window saving",
+        "definite 409 remains pending",
+        "wrong saved UUID"
+      ]
+    }
+  ]
+}
