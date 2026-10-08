@@ -13,6 +13,7 @@ type Receipt = Description & { request_id: string; intent_sha256: string; prepar
   status: "supported" | "waiting" | "research_only"; reason: string | null; evaluation: Record<string, unknown>;
   proposal: Record<string, unknown> | null; issued_bundle_sha256: string | null; submitted: false;
   research_only?: true; dispatch_available?: false; dispatch_reason?: string;
+  method_id?: "p1"; method_policy_sha256?: string; question_policy?: string;
   readonly_comparison_template?: Record<string, unknown> | null };
 type PreparationSummary = { request_id: string; finding_sha256: string; status: "supported" | "waiting" | "research_only";
   prepared_at: number; issued_bundle_sha256: string; selection: PatternComparisonSelection };
@@ -30,6 +31,14 @@ const selectionKey = (value: PatternComparisonSelection | null) => value ?
   `${value.daily_id}:${value.symbol}:${value.timeframe}:${value.event_kind}:${value.event_seq}` : "";
 const canonicalCommand = (command: Command) => JSON.stringify(Object.fromEntries(
   Object.entries(command).sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)));
+const methodPolicy = "bounded-pattern-method-question-v1";
+
+function validMapping(value: unknown) {
+  if (!object(value) || value.reference !== "cost-breakout-v1" || value.rule_version !== "reviewed-lab-rules-v4" || value.holding_horizon !== "medium") return false;
+  return value.method_id === "p1" ? value.strategy === "trend-pullback-v1" &&
+    value.question_policy === methodPolicy && hash(value.method_policy_sha256) :
+    value.method_id === undefined && value.method_policy_sha256 === undefined && value.question_policy === undefined && value.strategy === "breakout-retest-v1";
+}
 
 function validSelection(value: unknown): value is PatternComparisonSelection {
   return object(value) && typeof value.daily_id === "string" && /^daily-[a-f0-9]{24}$/.test(value.daily_id) &&
@@ -72,8 +81,7 @@ function validateDescription(value: unknown, selection: PatternComparisonSelecti
     !value.finding.coverage.some(row => object(row) && row.timeframe === "5m" && hash(row.progress_sha256)) ||
     !object(value.finding.native_proof) || value.finding.native_proof.archive_verified !== true ||
     !hash(value.finding.native_proof.input_window_sha256) || !hash(value.finding.native_proof.pivot_sha256) ||
-    !object(value.mapping) || value.mapping.strategy !== "breakout-retest-v1" || value.mapping.reference !== "cost-breakout-v1" ||
-    value.mapping.rule_version !== "reviewed-lab-rules-v4" || value.mapping.holding_horizon !== "medium" || value.financial_authority !== false) {
+    !validMapping(value.mapping) || value.financial_authority !== false) {
     throw new Error("The returned finding does not match the original daily record. No current finding was substituted.");
   }
 }
@@ -82,12 +90,21 @@ function validateReceipt(value: unknown, command: Command): asserts value is Rec
   const row: Record<string, unknown> = value;
   validateDescription(value, command);
   const readonly = row.research_only === true;
+  const nextMethod = value.mapping.method_id === "p1";
+  const template = readonly ? row.readonly_comparison_template : row.proposal;
   if (row.request_id !== command.request_id || value.finding_sha256 !== command.expected_finding_sha256 ||
     !hash(row.intent_sha256) || typeof row.prepared_at !== "number" || !Number.isFinite(row.prepared_at) ||
     !(readonly ? ["research_only", "waiting"] : ["supported", "waiting"]).includes(String(row.status)) || !(row.reason === null || typeof row.reason === "string") || !object(row.evaluation) ||
     !(row.proposal === null || object(row.proposal)) || !(row.issued_bundle_sha256 === null || hash(row.issued_bundle_sha256)) ||
     row.status === "supported" && (row.evaluation.status !== "supported_exploratory_configuration" || !object(row.proposal) || !hash(row.issued_bundle_sha256)) ||
     row.status === "waiting" && row.evaluation.status !== "waiting" ||
+    (nextMethod ? row.method_id !== "p1" || row.question_policy !== methodPolicy || row.method_policy_sha256 !== value.mapping.method_policy_sha256 :
+      row.method_id !== undefined || row.method_policy_sha256 !== undefined || row.question_policy !== undefined) ||
+    nextMethod && template !== null && (!object(template) || !object(template.strategy) || !object(template.reference) ||
+      template.strategy.family !== "trend-pullback-v1" || template.reference.family !== "cost-breakout-v1" ||
+      template.strategy.version !== "reviewed-lab-rules-v4" || template.reference.version !== "reviewed-lab-rules-v4" ||
+      template.strategy.holding_horizon !== "medium" || template.reference.holding_horizon !== "medium" ||
+      template.kind !== "independent" || template.parent_trial !== null) ||
     readonly && (row.proposal !== null || row.dispatch_available !== false || typeof row.dispatch_reason !== "string" || !row.dispatch_reason ||
       !(row.readonly_comparison_template === null || object(row.readonly_comparison_template)) ||
       row.status === "research_only" && (row.evaluation.status !== "supported_research_observation" || !object(row.readonly_comparison_template) || !hash(row.issued_bundle_sha256))) ||
@@ -95,7 +112,9 @@ function validateReceipt(value: unknown, command: Command): asserts value is Rec
 }
 async function validateIntent(value: Receipt, command: Command) {
   // All command keys/values are bounded ASCII; this matches the server's sorted compact JSON.
-  const intent = value.research_only === true ? JSON.stringify({ command: JSON.parse(canonicalCommand(command)), research_only: true }) : canonicalCommand(command);
+  const intent = value.method_id === "p1" ? JSON.stringify({ command: JSON.parse(canonicalCommand(command)), method_id: "p1",
+    method_policy_sha256: value.method_policy_sha256, ...(value.research_only === true ? { research_only: true } : {}) }) :
+    value.research_only === true ? JSON.stringify({ command: JSON.parse(canonicalCommand(command)), research_only: true }) : canonicalCommand(command);
   const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(intent));
   const digest = [...new Uint8Array(bytes)].map(byte => byte.toString(16).padStart(2, "0")).join("");
   if (value.intent_sha256 !== digest) throw new Error("The saved preparation intent differs from the original exact payload. Its outcome remains unknown.");
@@ -167,8 +186,9 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
     validateReceipt(value, command);
     await validateIntent(value, command);
     if (!isCurrent()) return;
+    if (value.method_id === "p1" && !explicitOriginal) throw new Error("A saved next-method comparison cannot acknowledge an ordinary preparation request. Its original identity remains retained.");
     if (value.research_only === true && !explicitOriginal) throw new Error("A read-only observation cannot acknowledge an ordinary preparation request. Its original identity remains retained.");
-    if (value.research_only !== true) await preparationLock(() => {
+    if (value.research_only !== true && value.method_id !== "p1") await preparationLock(() => {
       const saved = savedCommand(pendingKey);
       const completed = savedCommand(completedKey);
       if (saved.error || completed.error) {
@@ -197,7 +217,7 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
   }
 
   async function prepare() {
-    if (receipt?.research_only === true || !selection || !description || selectionKey(description.finding.selection) !== scope || dispatching.current || pending || storageError) return;
+    if (receipt?.research_only === true || receipt?.method_id === "p1" || !selection || !description || description.mapping.method_id === "p1" || selectionKey(description.finding.selection) !== scope || dispatching.current || pending || storageError) return;
     const expectedScope = scope;
     const command: Command = { ...selection, request_id: crypto.randomUUID(), expected_finding_sha256: description.finding_sha256 };
     const signal = AbortSignal.timeout(30000);
@@ -280,7 +300,9 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
   const matched = receipt && object(receipt.evaluation.matched_inputs) ? receipt.evaluation.matched_inputs : null;
   return <section id="pattern-comparison-panel" className="daily-analyzer pattern-comparison-panel" aria-labelledby="pattern-comparison-title">
     <header><div><p className="station-kicker">PROSPECTIVE RESEARCH PREPARATION</p><h4 id="pattern-comparison-title">Review prospective comparison</h4></div><span>BTC / USD · native 5m finding</span></header>
-    <p>A saved scanner breakout or retest can motivate a fixed v4 breakout-retest comparison against cost-breakout. The scanner's confirmed pivot zones and the bank's rolling-range retest are different mechanisms. Preparation does not run this experiment or establish an economic result.</p>
+    {reviewed?.mapping.method_id === "p1" ? <p>This saved finding motivated an independent fixed v4 trend-pullback comparison against cost-breakout. The scanner's confirmed pivot recognition and the bank's trend-pullback are different mechanisms. This original record does not establish an economic result or switch an incumbent strategy.</p> :
+      <p>A saved scanner breakout or retest can motivate a fixed v4 breakout-retest comparison against cost-breakout. The scanner's confirmed pivot zones and the bank's rolling-range retest are different mechanisms. Preparation does not run this experiment or establish an economic result.</p>}
+    {reviewed?.mapping.method_id === "p1" && <p>Saved method p1: trend-pullback-v1 versus cost-breakout-v1. Method policy SHA256 {metric(reviewed.mapping.method_policy_sha256)}.</p>}
     <p>Fixed prospective timing: up to six hours holding, a 24-hour medium-horizon review. Current numerical inputs are captured separately from the original finding; unknown or unavailable inputs remain an explicit wait.</p>
     {(receipt?.finding.selection ?? selection) && <p>Selected original finding: {(receipt?.finding.selection ?? selection)!.daily_id} · BTCUSD · 5m · {(receipt?.finding.selection ?? selection)!.event_kind} #{(receipt?.finding.selection ?? selection)!.event_seq}.</p>}
     {requestedOriginal && <p>Requested original preparation UUID {requestedOriginal}.</p>}
@@ -292,18 +314,18 @@ export function PatternComparisonPanel({ selection, onOpenFinding, onReviewFindi
     {!pending && completed.command && <div className="scanner-controls"><button type="button" disabled={reading || sending} onClick={() => void recover(completed.command!, true)}>Reopen original preparation</button>
       {scope && scope !== selectionKey(completed.command) && <button type="button" onClick={() => onReviewFinding(completed.command!)}>Review original preparation finding</button>}
       <span>Saved UUID {completed.command.request_id}</span></div>}
-    {reviewed && !receipt && <div className="scanner-controls"><button type="button" disabled={reading || sending || alreadyPrepared || !!pending || !!storageError || !!completed.error || !navigator.locks} onClick={() => void prepare()}>Prepare fixed comparison</button></div>}
+    {reviewed && !receipt && reviewed.mapping.method_id !== "p1" && <div className="scanner-controls"><button type="button" disabled={reading || sending || alreadyPrepared || !!pending || !!storageError || !!completed.error || !navigator.locks} onClick={() => void prepare()}>Prepare fixed comparison</button></div>}
     {!navigator.locks && <p role="alert">Safe request coordination is unavailable. Original evidence can still be read; no preparation will be sent.</p>}
     {receipt && <div className="scanner-status" role="status"><strong>{receipt.research_only === true ? receipt.status === "research_only" ? "Read-only research observation" : "Read-only research observation waiting" : receipt.status === "supported" ? "Preparation supported by the captured numerical check" : "Preparation waiting"}</strong>
-      <p>{receipt.research_only === true ? receipt.dispatch_reason : receipt.reason ?? "The separate current input check supported this exploratory configuration; no comparison has run."}</p>
+      <p>{receipt.research_only === true ? receipt.dispatch_reason : receipt.reason ?? "This original preparation retains a numerical check; it does not contain the later trial outcome."}</p>
       {receipt.research_only === true && receipt.reason && <p>{receipt.reason}</p>}<p>Original UUID {receipt.request_id} · saved {new Date(receipt.prepared_at * 1000).toLocaleString()}.</p>
-      <p>Lab inbox submission: no. Account funding: no. Model dispatch: no. A supported input check is not a trading outcome.</p>
+      <p>Effects of this preparation record: Lab inbox submission: no. Account funding: no. Model dispatch: no. This view does not inspect later trial activity. A supported input check is not a trading outcome.</p>
       <p>This is the original preparation-time check, not current executable readiness. Its evaluation timestamps and expiry remain in the saved numerical evidence below.</p>
       {matched && <p>Separate current execution inputs: {metric(matched.count)} closed minute candles, {nativeTime(matched.start_ms)} to {nativeTime(matched.end_ms)}. Original matched input SHA256 {metric(matched.sha256)}. This is a current deterministic check, not a replay of the scanner event.</p>}
       <details><summary>Separate current numerical check and original issued bundle</summary><pre>{JSON.stringify(receipt.evaluation, null, 2)}</pre><p>Issued bundle SHA256 {receipt.issued_bundle_sha256 ?? "not issued in this wait"}.</p></details>
       <details><summary>{receipt.research_only === true ? "Read-only fixed comparison template" : "Original prospective proposal"}</summary><pre>{JSON.stringify(receipt.research_only === true ? receipt.readonly_comparison_template : receipt.proposal, null, 2)}</pre></details>
       <p>{receipt.research_only === true ? "Dispatch unavailable. This observation reuses an already-attempted fixed comparison as research evidence. It is not a new Lab submission proposal; this view has no Prepare, submission or activation control." : "The preparation can be inspected before a separately authorized Lab submission through the existing Lab workflow. This panel has no submission or activation control."}</p></div>}
-    {receipt?.status === "waiting" && receipt.research_only !== true && <><button type="button" disabled={reading || sending || !!pending} onClick={() => {
+    {receipt?.status === "waiting" && receipt.research_only !== true && receipt.method_id !== "p1" && <><button type="button" disabled={reading || sending || !!pending} onClick={() => {
       const original = receipt.finding.selection;
       setSeparateObservation({ scope: selectionKey(original), requestId: receipt.request_id });
       onReviewFinding(original); setReviewNonce(value => value + 1);

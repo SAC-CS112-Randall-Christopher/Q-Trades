@@ -84,6 +84,8 @@ jobs:
             tests/test_peft_question_selection.py `
             tests/test_peft_pattern_selection.py tests/test_pattern_role_worker.py `
             tests/test_peft_pattern_learning.py tests/test_pattern_research_learning.py `
+            tests/test_peft_next_method.py tests/test_pattern_next_method_worker.py `
+            tests/test_pattern_next_method_comparison.py `
             tests/test_pattern_research_observation.py `
             tests/test_finite_role_test.py tests/test_finite_lab_authority.py `
             tests/test_peft_finite_pilot.py `

@@ -18,6 +18,11 @@ from trading.autonomous_spec import LabPolicy, LabProposal, RuleSpec, contract
 from trading.candle_history import native_bar
 from trading.candle_patterns import ZONE_HALF_WIDTH, _visit, _volume_ratio, _Zone
 from trading.experiment_registry import fingerprint
+from trading.lab_role_contract import (
+    PATTERN_METHOD_QUESTION_POLICY,
+    PATTERN_METHODS,
+    pattern_method_policy_sha,
+)
 from trading.pattern_scanner import VERSION as SCANNER_VERSION
 from trading.pattern_scanner import PatternScanner
 from trading.research_evidence import canonical, digest
@@ -108,21 +113,54 @@ class PatternComparisons:
             for name in ("redesign_strategy.py", "autonomous_spec.py", "rule_components.py")
         }
 
+    @staticmethod
+    def _validate_method(method_id: str) -> None:
+        if type(method_id) is not str or method_id not in {"p0", "p1"}:
+            raise ValueError("No reviewed comparison method for this identity")
+
+    @staticmethod
+    def _readonly_reason(method_id: str) -> str:
+        return (
+            RESEARCH_ONLY_REASON
+            if method_id == "p0"
+            else (
+                f"Read-only observation of the already-used fixed {method_id} comparison; "
+                "no new Lab dispatch"
+            )
+        )
+
+    @staticmethod
+    def _method_binding(method_id: str) -> dict[str, str]:
+        return (
+            {}
+            if method_id == "p0"
+            else {
+                "method_id": method_id,
+                "method_policy_sha256": pattern_method_policy_sha(),
+                "question_policy": PATTERN_METHOD_QUESTION_POLICY,
+            }
+        )
+
     def _permitted(
-        self, windows: list[tuple[float, float]], *, research_only: bool = False
+        self,
+        windows: list[tuple[float, float]],
+        *,
+        research_only: bool = False,
+        method_id: str = "p0",
     ) -> None:
         # Called under the registry transaction at publication, just as Lab bundles
         # serialize disclosure with holdout creation. Unknown origins fail closed.
         r = self.registry
         if type(research_only) is not bool:
             raise ValueError("Research-only mode must be an explicit boolean")
+        self._validate_method(method_id)
         prospective = r.db.execute(
             "SELECT 1 FROM sqlite_master WHERE name='prospective_plans'"
         ).fetchone()
         for start, end in windows:
             if not all(math.isfinite(v) for v in (start, end)) or start > end:
                 raise ValueError("Invalid disclosed input interval")
-            if research_only:
+            if research_only or method_id != "p0":
                 overlap = r.db.execute(
                     "SELECT 1 FROM evidence_windows WHERE start<=? AND end>=? "
                     "AND origin NOT IN (?,?,?,?,?,?,?,?) LIMIT 1",
@@ -367,25 +405,40 @@ class PatternComparisons:
         }
 
     def describe(
-        self, selection: PatternFindingSelection, *, research_only: bool = False
+        self,
+        selection: PatternFindingSelection,
+        *,
+        research_only: bool = False,
+        method_id: str = "p0",
     ) -> dict[str, Any]:
         if type(research_only) is not bool:
             raise ValueError("Research-only mode must be an explicit boolean")
+        self._validate_method(method_id)
         if research_only:
-            self._require_used_p0()
+            self._require_used(method_id)
+        method: dict[str, Any] = {} if method_id == "p0" else {"method_id": method_id}
+        binding = self._method_binding(method_id)
         finding = self._original(selection)
         # Internal verification does not return raw archived page payloads.
         finding["native_proof"] = self._native(finding)
         with self.registry.lock:
             if research_only:
-                self._permitted(finding["native_proof"]["disclosed_intervals"], research_only=True)
+                self._permitted(
+                    finding["native_proof"]["disclosed_intervals"], research_only=True, **method
+                )
             else:
-                self._permitted(finding["native_proof"]["disclosed_intervals"])
+                self._permitted(finding["native_proof"]["disclosed_intervals"], **method)
+        mapping = {**MAPPING, "source_sha256": self._method_sources()}
+        if method_id != "p0":
+            strategy, reference = PATTERN_METHODS[method_id]
+            mapping.update(strategy=strategy, reference=reference, **binding)
+            if self._method_binding(method_id) != binding:
+                raise ValueError("Comparison method policy changed during finding review")
         return {
             "version": VERSION,
             "finding_sha256": digest(finding),
             "finding": finding,
-            "mapping": {**MAPPING, "source_sha256": self._method_sources()},
+            "mapping": mapping,
             "financial_authority": False,
         }
 
@@ -430,6 +483,7 @@ class PatternComparisons:
         *,
         admission: Callable[[], Any] | None = None,
         research_only: bool = False,
+        method_id: str = "p0",
     ) -> dict[str, Any]:
         """Fresh matched inputs retained by the same owner; original preparation stays frozen."""
         if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
@@ -438,15 +492,18 @@ class PatternComparisons:
             raise ValueError("Invalid current comparison observation time")
         if type(research_only) is not bool:
             raise ValueError("Research-only mode must be an explicit boolean")
+        self._validate_method(method_id)
+        method: dict[str, Any] = {} if method_id == "p0" else {"method_id": method_id}
+        binding = self._method_binding(method_id)
         if research_only:
             proposal, evaluation, windows = self._evaluation(
-                request_id, now, admission=admission, research_only=True
+                request_id, now, admission=admission, research_only=True, **method
             )
         else:
             proposal, evaluation, windows = (
-                self._evaluation(request_id, now, admission=admission)
+                self._evaluation(request_id, now, admission=admission, **method)
                 if admission is not None
-                else self._evaluation(request_id, now)
+                else self._evaluation(request_id, now, **method)
             )
         supported = (
             "supported_research_observation"
@@ -457,16 +514,18 @@ class PatternComparisons:
             with self.registry.transaction():
                 if admission is not None:
                     admission()
+                if method_id != "p0" and self._method_binding(method_id) != binding:
+                    raise ValueError("Comparison method policy changed during observation")
                 if research_only:
-                    self._require_used_p0()
+                    self._require_used(method_id)
                     if self.controller is None or not self.controller.inbox.has_capacity():
                         raise ValueError(
                             "Existing inbox capacity changed before observation disclosure"
                         )
                 if research_only:
-                    self._permitted(windows, research_only=True)
+                    self._permitted(windows, research_only=True, **method)
                 else:
-                    self._permitted(windows)
+                    self._permitted(windows, **method)
                 for index, (start, end) in enumerate(windows):
                     self.registry.db.execute(
                         "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,?)",
@@ -484,9 +543,29 @@ class PatternComparisons:
                 readonly_comparison_template=proposal,
                 research_only=True,
                 dispatch_available=False,
-                dispatch_reason=RESEARCH_ONLY_REASON,
+                dispatch_reason=self._readonly_reason(method_id),
             )
+        if method_id != "p0":
+            if self._method_binding(method_id) != binding:
+                raise ValueError("Comparison method policy changed during observation")
+            result.update(binding)
         return result
+
+    def _require_used(self, method_id: str) -> None:
+        if method_id == "p0":
+            self._require_used_p0()
+            return
+        strategy = RuleSpec.model_validate(
+            {
+                "version": "reviewed-lab-rules-v4",
+                "family": PATTERN_METHODS[method_id][0],
+                "holding_horizon": "medium",
+            }
+        )
+        if self.controller is None or not self.controller.inbox.used(
+            fingerprint(strategy.model_dump())
+        ):
+            raise ValueError(f"Read-only observation requires the existing used {method_id} marker")
 
     def _require_used_p0(self) -> None:
         strategy = RuleSpec(
@@ -612,14 +691,17 @@ class PatternComparisons:
         *,
         admission: Callable[[], Any] | None = None,
         research_only: bool = False,
+        method_id: str = "p0",
     ) -> tuple[Any, Any, list[tuple[float, float]]]:
         if type(research_only) is not bool:
             raise ValueError("Research-only mode must be an explicit boolean")
+        self._validate_method(method_id)
+        method: dict[str, Any] = {} if method_id == "p0" else {"method_id": method_id}
         c = self.controller
         if admission is not None:
             admission()
         if research_only:
-            self._require_used_p0()
+            self._require_used(method_id)
         if c is None:
             return None, {"status": "waiting", "reason": "Current Lab owner unavailable"}, []
         lab = c.paper.state.get("autonomous_lab")
@@ -627,11 +709,26 @@ class PatternComparisons:
             return None, {"status": "waiting", "reason": "No declared current Lab policy"}, []
         policy = LabPolicy.model_validate(lab["policy"])
         strategy = RuleSpec(
-            version="reviewed-lab-rules-v4", family="breakout-retest-v1", holding_horizon="medium"
+            version="reviewed-lab-rules-v4",
+            family="breakout-retest-v1",
+            holding_horizon="medium",
         )
         reference = RuleSpec(
             version="reviewed-lab-rules-v4", family="cost-breakout-v1", holding_horizon="medium"
         )
+        if method_id != "p0":
+            strategy = RuleSpec.model_validate(
+                {
+                    **strategy.model_dump(),
+                    "family": PATTERN_METHODS[method_id][0],
+                }
+            )
+            reference = RuleSpec.model_validate(
+                {
+                    **reference.model_dump(),
+                    "family": PATTERN_METHODS[method_id][1],
+                }
+            )
         proposal = LabProposal(
             request_id=request_id,
             policy_id=policy.request_id,
@@ -641,9 +738,19 @@ class PatternComparisons:
             reference=reference,
             mechanism=(
                 "Saved native resistance recognition motivates the fixed retest bank hypothesis"
+                if method_id == "p0"
+                else (
+                    "Saved native resistance recognition motivates an independent "
+                    "fixed trend-pullback bank hypothesis"
+                )
             ),
             question=(
                 "Does fixed breakout-retest improve future after-cost outcomes over cost-breakout?"
+                if method_id == "p0"
+                else (
+                    "Does fixed trend-pullback improve future after-cost outcomes "
+                    "over cost-breakout?"
+                )
             ),
             evidence_bundle_sha256="0" * 64,
         )
@@ -700,9 +807,9 @@ class PatternComparisons:
         windows = [(inputs[0]["open_ms"] / 1000, (inputs[-1]["close_ms"] + 1) / 1000)]
         with self.registry.lock:
             if research_only:
-                self._permitted(windows, research_only=True)
+                self._permitted(windows, research_only=True, **method)
             else:
-                self._permitted(windows)
+                self._permitted(windows, **method)
         owner, plan = self.scanner.storage_owner, self.scanner.plan
         if owner is None or plan is None:
             raise ValueError("Existing shared archive owner is unavailable")
@@ -761,14 +868,26 @@ class PatternComparisons:
         *,
         admission: Callable[[], Any] | None = None,
         research_only: bool = False,
+        method_id: str = "p0",
     ) -> dict[str, Any]:
         if type(research_only) is not bool:
             raise ValueError("Research-only mode must be an explicit boolean")
+        self._validate_method(method_id)
+        binding = self._method_binding(method_id)
         intent = digest(
             {"command": command.model_dump(), "research_only": True}
             if research_only
             else command.model_dump()
         )
+        if method_id != "p0":
+            method_intent: dict[str, Any] = {
+                "command": command.model_dump(),
+                "method_id": method_id,
+                "method_policy_sha256": binding["method_policy_sha256"],
+            }
+            if research_only:
+                method_intent["research_only"] = True
+            intent = digest(method_intent)
         # Recovery happens first, including after source/eligibility/policy drift.
         old = self.get(command.request_id)
         if old is not None:
@@ -776,7 +895,17 @@ class PatternComparisons:
                 raise ValueError("Comparison request identity cannot be rewritten")
             return old
         with self.registry.pattern_comparison_lock:
-            return self._prepare_new(command, now, intent, admission, research_only=research_only)
+            method: dict[str, Any] = (
+                {}
+                if method_id == "p0"
+                else {
+                    "method_id": method_id,
+                    "method_binding": binding,
+                }
+            )
+            return self._prepare_new(
+                command, now, intent, admission, research_only=research_only, **method
+            )
 
     def _prepare_new(
         self,
@@ -786,6 +915,8 @@ class PatternComparisons:
         admission: Callable[[], Any] | None = None,
         *,
         research_only: bool = False,
+        method_id: str = "p0",
+        method_binding: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         old = self.get(command.request_id)
         if old is not None:
@@ -800,10 +931,13 @@ class PatternComparisons:
         selection = PatternFindingSelection.model_validate(
             command.model_dump(exclude={"request_id", "expected_finding_sha256"})
         )
+        method: dict[str, Any] = {} if method_id == "p0" else {"method_id": method_id}
+        if method_id != "p0" and self._method_binding(method_id) != method_binding:
+            raise ValueError("Comparison method policy changed before preparation")
         described = (
-            self.describe(selection, research_only=True)
+            self.describe(selection, research_only=True, **method)
             if research_only
-            else self.describe(selection)
+            else self.describe(selection, **method)
         )
         if described["finding_sha256"] != command.expected_finding_sha256:
             raise ValueError("Original finding identity differs from the reviewed selection")
@@ -821,13 +955,13 @@ class PatternComparisons:
         # Borrowing/appending/reopening the recorder never holds the registry lock.
         if research_only:
             proposal, evaluation, execution_windows = self._evaluation(
-                command.request_id, now, admission=admission, research_only=True
+                command.request_id, now, admission=admission, research_only=True, **method
             )
         else:
             proposal, evaluation, execution_windows = (
-                self._evaluation(command.request_id, now, admission=admission)
+                self._evaluation(command.request_id, now, admission=admission, **method)
                 if admission is not None
-                else self._evaluation(command.request_id, now)
+                else self._evaluation(command.request_id, now, **method)
             )
         body = {
             "version": VERSION,
@@ -856,8 +990,10 @@ class PatternComparisons:
                 readonly_comparison_template=proposal,
                 research_only=True,
                 dispatch_available=False,
-                dispatch_reason=RESEARCH_ONLY_REASON,
+                dispatch_reason=self._readonly_reason(method_id),
             )
+        if method_id != "p0":
+            body.update(method_binding or {})
         encoded = json.dumps(body, sort_keys=True, allow_nan=False)
         if len(encoded.encode()) > 65536:
             raise ValueError("Comparison issued bundle exceeds existing 64KiB bound")
@@ -874,15 +1010,20 @@ class PatternComparisons:
                 c and digest(c.paper.state.get("autonomous_lab", {}).get("policy")) != policy_sha
             ):
                 raise ValueError("Current comparison source or policy changed during preparation")
+            if method_id != "p0" and (
+                self._method_binding(method_id) != method_binding
+                or any(described["mapping"].get(k) != v for k, v in (method_binding or {}).items())
+            ):
+                raise ValueError("Comparison method policy changed before preparation publication")
             self.scanner._admission()
             if research_only:
-                self._permitted(windows, research_only=True)
+                self._permitted(windows, research_only=True, **method)
             else:
-                self._permitted(windows)
+                self._permitted(windows, **method)
             if admission is not None:
                 admission()
             if research_only:
-                self._require_used_p0()
+                self._require_used(method_id)
                 if evaluation["status"] == "supported_research_observation" and (
                     c is None or not c.inbox.has_capacity()
                 ):

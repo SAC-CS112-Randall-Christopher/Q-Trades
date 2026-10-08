@@ -67,7 +67,7 @@ type QuestionSelection = {
   };
   scope_sha: string;
   selection_sha?: string;
-  method: "r1" | "p0";
+  method: "r1" | "p0" | "p1";
   horizon: string;
   source_sha: string;
   source_start: number;
@@ -108,7 +108,7 @@ type Task = {
     selected_contract: string | null;
   };
   execution: {kind: string; actor?: string; lease_until: number | null};
-  context: { execution_mode?: string; experimental?: boolean; question_selection?: QuestionSelection; pattern_comparison?: PatternComparison; fixed_comparison?: { p0: FixedMethod }; question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; closed_bar_sha256?: string; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
+  context: { execution_mode?: string; experimental?: boolean; question_selection?: QuestionSelection; pattern_method?: { method_id: string }; pattern_comparison?: PatternComparison; fixed_comparison?: Partial<Record<"p0" | "p1", FixedMethod>>; question: { question: string; horizon: string; parent: string | null }; issued: unknown; tool_evidence: { source_basis: string; security: string; closed_bar_count: number; closed_bar_sha256?: string; observed_at: number; features: Record<string, { eligible?: boolean; reason?: string; close?: string; atr?: string }> }; catalog: unknown };
   proposal: { request_id: string; kind: string; strategy: {version?: string; family: string; lookback: number; entry_filter?: {kind: string; horizon_seconds: number; marginal_daily_usd: string; fallback: string; artifact: {sha256: string}}}; reference: { family: string; lookback: number } } | null;
   evaluation: { input_count: number; evaluated_at: number; feature: { eligible?: boolean; reason?: string }; replay: string; detail_reference?: string } | null;
   result: { action?: string; tool_request?: ToolRequest | null; evidence_ids?: string[]; rationale?: string; falsification?: string; proposal_id?: string; trial_id?: string; review?: { action: string; rationale: string }; outcome?: {body: {outcome: string; reason: string; window_start: number; window_end: number; available_at: number; delta_usd: string | null; net_after_operating_usd: {candidate: string; reference: string}; qualification: string}}; followup?: { action: string; rationale: string; dependency: string | null } } | null;
@@ -161,6 +161,14 @@ function patternLinks(pattern: PatternComparison) {
   const requestValid = /^[A-Za-z0-9_-]{8,64}$/.test(pattern.preparation_request_id);
   if (requestValid) preparation.set("pattern_comparison_request", pattern.preparation_request_id);
   return { finding: `#markets?${finding}`, preparation: requestValid ? `#markets?${preparation}` : null, capturedChart: finding.has("scanner_chart_progress_sha256") };
+}
+
+function capturedFixedMethod(task: Task): FixedMethod | undefined {
+  const context = task.context;
+  // Only an absent explicit method permits the historical p0 projection.
+  const method = "pattern_method" in context ? context.pattern_method?.method_id :
+    context.question_selection && "method" in context.question_selection ? context.question_selection.method : "p0";
+  return method === "p0" || method === "p1" ? context.fixed_comparison?.[method] : undefined;
 }
 
 function PatternTaskEvidence({ pattern, fixed }: { pattern: PatternComparison; fixed?: FixedMethod }) {
@@ -447,7 +455,7 @@ export function RoleResearchPanel() {
         {!!task.context.question_selection.limitations.length && <><h5>Uncertainties and limits</h5><ul>{task.context.question_selection.limitations.map((limit, index) => <li key={index}>{limit}</li>)}</ul></>}
         <details><summary>Saved selection provenance and frozen comparison identities</summary><pre>{JSON.stringify(task.context.question_selection, null, 2)}</pre></details>
       </section>}
-      {task.context.pattern_comparison && <PatternTaskEvidence pattern={task.context.pattern_comparison} fixed={task.context.fixed_comparison?.p0} />}
+      {task.context.pattern_comparison && <PatternTaskEvidence pattern={task.context.pattern_comparison} fixed={capturedFixedMethod(task)} />}
       {task.result?.action === "request_tool" && task.result.tool_request && <section aria-label="Requested research tool">
         <h4>Tool requested · pending implementation review</h4>
         <p><strong>{toolKinds[task.result.tool_request.kind]}:</strong> {task.result.tool_request.identifier}</p>
@@ -466,7 +474,7 @@ export function RoleResearchPanel() {
       <h4>{task.context.pattern_comparison ? "Separate execution evidence at task capture" : "Captured causal evidence"}</h4><p>{task.context.tool_evidence.security} · {task.context.tool_evidence.closed_bar_count} closed bars · captured {stamp(task.context.tool_evidence.observed_at)} · {task.context.tool_evidence.source_basis}</p>
       <FrozenComponentPanel task={task.id} catalog={task.context.catalog} />
       <ul>{Object.entries(task.context.tool_evidence.features).map(([key, feature]) => <li key={key}>{key}: {feature.eligible ? "Entry qualified at capture" : "No eligible entry at capture"}. {feature.reason} {feature.close ? `Close $${feature.close}.` : ""}</li>)}</ul>
-      <details><summary>{task.context.pattern_comparison ? "Execution evidence summary and permitted capabilities" : "Exact evidence, executed input tool and permitted capabilities"}</summary>{task.context.pattern_comparison && <p>The complete inputs remain retained with this task. This display preserves the captured count and digest without exposing archive file paths.</p>}<pre>{JSON.stringify({ inputs: task.context.pattern_comparison ? { security: task.context.tool_evidence.security, source_basis: task.context.tool_evidence.source_basis, closed_bar_count: task.context.tool_evidence.closed_bar_count, closed_bar_sha256: task.context.tool_evidence.closed_bar_sha256, observed_at: task.context.tool_evidence.observed_at, features: task.context.tool_evidence.features, matched_inputs: task.context.fixed_comparison?.p0.current_inputs } : task.context.tool_evidence, issued: task.context.issued, capabilities: task.context.catalog }, null, 2)}</pre></details>
+      <details><summary>{task.context.pattern_comparison ? "Execution evidence summary and permitted capabilities" : "Exact evidence, executed input tool and permitted capabilities"}</summary>{task.context.pattern_comparison && <p>The complete inputs remain retained with this task. This display preserves the captured count and digest without exposing archive file paths.</p>}<pre>{JSON.stringify({ inputs: task.context.pattern_comparison ? { security: task.context.tool_evidence.security, source_basis: task.context.tool_evidence.source_basis, closed_bar_count: task.context.tool_evidence.closed_bar_count, closed_bar_sha256: task.context.tool_evidence.closed_bar_sha256, observed_at: task.context.tool_evidence.observed_at, features: task.context.tool_evidence.features, matched_inputs: capturedFixedMethod(task)?.current_inputs } : task.context.tool_evidence, issued: task.context.issued, capabilities: task.context.catalog }, null, 2)}</pre></details>
       {task.evaluation && <><h4>{task.context.pattern_comparison ? "Numerical evaluation for this task" : "Computed method check"}</h4><p>{task.evaluation.input_count} causal input bars checked at {stamp(task.evaluation.evaluated_at)}. {task.evaluation.feature.reason} {task.evaluation.replay}</p>{task.context.pattern_comparison && <p>This task-stage calculation is separate from the original preparation-time check. Its recorded time does not establish current readiness or a measured trading result.</p>}<details><summary>Exact calculated result and saved input reference</summary><pre>{JSON.stringify(task.evaluation, null, 2)}</pre></details></>}
       {task.result?.review && <p>{task.context.execution_mode === "paper_research_pilot" ? "Experimental model review" : "Independent review"}: {task.result.review.action} · {task.result.review.rationale}</p>}
       {task.proposal && <><p>{task.proposal.strategy.version === "reviewed-lab-rules-v4" ? `Proposed ${task.proposal.kind}: fixed ${task.proposal.strategy.family}, compared with fixed ${task.proposal.reference.family}.` : `Proposed ${task.proposal.kind}: ${task.proposal.strategy.family} with ${task.proposal.strategy.lookback} bars, compared with ${task.proposal.reference.family} using ${task.proposal.reference.lookback} bars.`}</p><details><summary>Validated ordinary paper proposal</summary><pre>{JSON.stringify(task.proposal, null, 2)}</pre></details></>}

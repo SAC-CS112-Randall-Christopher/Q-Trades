@@ -11,6 +11,26 @@ VERSION = "reviewed-rule-role-v5"
 TOOL_REQUEST_VERSION = "reviewed-rule-role-v6"
 CAPABILITY_VERSION = "reviewed-rule-role-v7"
 PATTERN_VERSION = "reviewed-rule-role-v8"
+PATTERN_METHOD_QUESTION_POLICY = "bounded-pattern-method-question-v1"
+PATTERN_METHODS = {
+    "p0": ("breakout-retest-v1", "cost-breakout-v1"),
+    "p1": ("trend-pullback-v1", "cost-breakout-v1"),
+}
+
+
+def pattern_method_policy_sha() -> str:
+    """Explicit method authority, separate from unchanged answer grammar."""
+    return fingerprint(
+        {
+            "policy": PATTERN_METHOD_QUESTION_POLICY,
+            "methods": PATTERN_METHODS,
+            "kind": "independent",
+            "rule_version": "reviewed-lab-rules-v4",
+            "holding_horizon": "medium",
+        }
+    )
+
+
 ToolKind = Literal["strategy_family", "feature", "analysis_tool"]
 ToolIdentifier = Annotated[
     str, Field(min_length=1, max_length=64, pattern=r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
