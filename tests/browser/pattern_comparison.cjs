@@ -112,8 +112,8 @@ const bounded = async (work, ms, label) => {
       const initial = await probe(); save("initial-probe.json", initial);
       if (researchObservation) {
       const setup = initial.research_observation; assert(setup);
-      assert.equal(initial.lab_inbox_count, 1); assert.equal(initial.retained_preparations.length, 3);
-      assert.equal(initial.role_tasks, 0); assert.equal(initial.role_attempts, 0);
+      assert.equal(initial.lab_inbox_count, 2); assert.equal(initial.retained_preparations.length, 8);
+      assert.equal(initial.role_tasks, 1); assert.equal(initial.role_attempts, 0); assert.equal(initial.stub_inference_callbacks, 0);
       phase = "saved-readonly-observation-history-exact-mode";
       await fresh(initial);
       const readonly = await reopen(setup.research_request_id); save("readonly-original.json", readonly);
@@ -232,6 +232,118 @@ const bounded = async (work, ms, label) => {
       assert.equal(await bounded(panel().evaluate(element => element.scrollWidth <= element.clientWidth), 5000, "Readonly geometry deadline"), true);
       await panel().screenshot({ path: path.join(directory, "comparison-research-mobile.png") });
       groups.push({ name: phase, original_wait_not_upgraded: waiting.request_id, no_new_observation_control: true, original_finding_navigation: true, mobile_no_horizontal_overflow: true });
+
+      phase = "saved-p1-independent-method-intent-and-no-default-p0-action";
+      await page.setViewportSize({ width: 1440, height: 1100 });
+      const next = await reopen(setup.next_method_request_id); save("p1-original.json", next);
+      assert.equal(next.method_id, "p1"); assert.equal(next.mapping.method_id, "p1");
+      assert.equal(next.status, "supported"); assert.equal(next.question_policy, "bounded-pattern-method-question-v1");
+      assert.equal(next.method_policy_sha256, next.mapping.method_policy_sha256);
+      assert.equal(next.proposal.strategy.family, "trend-pullback-v1");
+      assert.equal(next.proposal.reference.family, "cost-breakout-v1");
+      assert.equal(next.proposal.kind, "independent"); assert.equal(next.proposal.parent_trial, null);
+      assert.equal(next.evaluation.matched_inputs.count, 600);
+      const nextCommand = { ...next.finding.selection, request_id: next.request_id, expected_finding_sha256: next.finding_sha256 };
+      const nextSorted = Object.fromEntries(Object.entries(nextCommand).sort(([a], [b]) => a.localeCompare(b)));
+      assert.equal(next.intent_sha256, sha(JSON.stringify({ command: nextSorted, method_id: "p1", method_policy_sha256: next.method_policy_sha256 })));
+      await panel().getByText(/Saved method p1: trend-pullback-v1 versus cost-breakout-v1/).waitFor();
+      assert.equal(await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).count(), 0);
+      assert(await panel().innerText().then(text => text.includes("does not contain the later trial outcome") && text.includes("Effects of this preparation record")));
+      const nextOrdinaryWait = await reopen(setup.next_ordinary_waiting_request_id); save("p1-original-ordinary-wait.json", nextOrdinaryWait);
+      assert.equal(nextOrdinaryWait.status, "waiting"); assert.equal(nextOrdinaryWait.method_id, "p1");
+      assert.equal(await panel().getByRole("button", { name: "Review a separate current observation", exact: true }).count(), 0);
+      assert.equal(await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).count(), 0);
+      groups.push({ name: phase, exact_method: "p1", reference: "cost-breakout-v1", independent: true,
+        method_bound_intent_verified: true, no_default_p0_prepare_or_observe: true, no_later_trial_claim: true });
+
+      phase = "saved-p1-readonly-and-wait-reload-original-after-source-drift";
+      const nextReadonly = await reopen(setup.next_research_request_id); save("p1-readonly-original.json", nextReadonly);
+      assert.equal(nextReadonly.method_id, "p1"); assert.equal(nextReadonly.status, "research_only");
+      assert.equal(nextReadonly.proposal, null); assert.equal(nextReadonly.dispatch_available, false);
+      assert.equal(nextReadonly.readonly_comparison_template.strategy.family, "trend-pullback-v1");
+      assert.equal(nextReadonly.readonly_comparison_template.reference.family, "cost-breakout-v1");
+      const readonlyCommand = { ...nextReadonly.finding.selection, request_id: nextReadonly.request_id, expected_finding_sha256: nextReadonly.finding_sha256 };
+      const readonlySorted = Object.fromEntries(Object.entries(readonlyCommand).sort(([a], [b]) => a.localeCompare(b)));
+      assert.equal(nextReadonly.intent_sha256, sha(JSON.stringify({ command: readonlySorted, method_id: "p1",
+        method_policy_sha256: nextReadonly.method_policy_sha256, research_only: true })));
+      await mode("source_drift");
+      const nextRecovered = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
+      await page.reload(); const originalP1 = await nextRecovered;
+      assert.equal(originalP1.status(), 200); assert.deepEqual(await bounded(originalP1.json(), 5000, "P1 original body deadline"), nextReadonly);
+      await panel().getByText(/Saved method p1: trend-pullback-v1 versus cost-breakout-v1/).waitFor();
+      await panel().getByText("Read-only research observation", { exact: true }).waitFor();
+      assert.equal(await panel().getByRole("alert").count(), 0);
+      const readonlyWaiting = await reopen(setup.next_waiting_request_id); save("p1-readonly-original-wait.json", readonlyWaiting);
+      assert.equal(readonlyWaiting.method_id, "p1"); assert.equal(readonlyWaiting.status, "waiting");
+      assert.equal(readonlyWaiting.proposal, null); assert.equal(readonlyWaiting.dispatch_available, false);
+      assert.equal(await panel().getByRole("button", { name: "Review a separate current observation", exact: true }).count(), 0);
+      await mode("restore_source"); await reopen(nextReadonly.request_id);
+      assert.equal(await page.evaluate(() => localStorage.getItem("qtrades-pattern-comparison-receipt-v1")), null);
+      assert.equal(await page.evaluate(() => localStorage.getItem("qtrades-pattern-comparison-pending-v1")), null);
+      await page.evaluate(() => { document.activeElement?.blur(); const element = document.querySelector("#pattern-comparison-panel");
+        const caption = document.createElement("p"); caption.className = "station-kicker"; caption.textContent = "SOURCE QA · SYNTHETIC NATIVE FINDING / 600 CURRENT MINUTES · SAVED P1 TREND-PULLBACK EVIDENCE · NO MODEL OR FUNDED TRIAL"; element.prepend(caption); });
+      await page.setViewportSize({ width: 1440, height: 2400 });
+      await panel().screenshot({ path: path.join(directory, "comparison-next-method-readonly.png") });
+      groups.push({ name: phase, original_request_id: nextReadonly.request_id, immutable_readonly_equal: true,
+        method_bound_readonly_intent_verified: true, dispatch_available: false, proposal_null: true, local_p0_ownership_unchanged: true });
+
+      phase = "p1-corrupt-method-or-policy-intent-refused-with-original-retained";
+      const originalIds = (await probe()).retained_preparations;
+      for (const action of ["corrupt_method", "corrupt_method_sha"]) {
+        await mode(action);
+        const response = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
+        await page.reload(); const corrupt = await response; assert.equal(corrupt.status(), 200);
+        save(`${action}-delivery.json`, await bounded(corrupt.json(), 5000, "P1 corrupted delivery body deadline"));
+        await panel().getByRole("alert").waitFor();
+        assert.equal(await panel().getByText(`Original UUID ${nextReadonly.request_id}`, { exact: false }).count(), 0);
+        assert.equal(new URLSearchParams(new URL(page.url()).hash.split("?")[1]).get("pattern_comparison_request"), nextReadonly.request_id);
+        assert.equal(await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).count(), 0);
+      }
+      await mode("normal");
+      const restoredP1 = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
+      await page.reload(); const restoredResponse = await restoredP1; assert.equal(restoredResponse.status(), 200);
+      assert.deepEqual(await bounded(restoredResponse.json(), 5000, "P1 restored original body deadline"), nextReadonly);
+      await panel().getByText("Read-only research observation", { exact: true }).waitFor();
+      assert.deepEqual((await probe()).retained_preparations, originalIds);
+      groups.push({ name: phase, deliberately_corrupted_delivery_only: true, unknown_method_refused: true,
+        changed_policy_sha_intent_refused: true, original_UUID_and_bundle_unchanged: true, recovery_GET_only: true });
+
+      phase = "actual-queued-p1-task-controls-inputs-and-original-preparation-link";
+      await page.setViewportSize({ width: 1440, height: 1100 });
+      const taskResponse = waitApi("GET", url => url.pathname === `/api/lab/roles/tasks/${setup.next_task_id}`);
+      await page.goto(`${origin}/#role-research?task=${setup.next_task_id}`);
+      const actualTaskResponse = await taskResponse; assert.equal(actualTaskResponse.status(), 200);
+      const actualTask = await bounded(actualTaskResponse.json(), 5000, "Actual p1 task body deadline"); save("p1-saved-task.json", actualTask);
+      assert.equal(actualTask.context.pattern_method.method_id, "p1");
+      assert.equal(actualTask.context.question_selection.method, "p1");
+      assert.deepEqual(Object.keys(actualTask.context.fixed_comparison), ["p1"]);
+      const fixed = actualTask.context.fixed_comparison.p1;
+      assert.equal(fixed.current_inputs.count, 600); assert.equal(fixed.current_inputs.archive_verified, true);
+      const taskEvidence = page.getByRole("region", { name: "Saved pattern research evidence", exact: true });
+      await taskEvidence.getByRole("heading", { name: "Frozen method and separately captured execution inputs", exact: true }).waitFor();
+      await taskEvidence.getByText("Fixed candidate and reference controls with task input identity", { exact: true }).click();
+      const evidenceText = await taskEvidence.innerText();
+      assert(evidenceText.includes("trend-pullback-v1") && evidenceText.includes("cost-breakout-v1"));
+      assert(evidenceText.includes(fixed.candidate.entry) && evidenceText.includes(fixed.reference.entry));
+      assert(evidenceText.includes(fixed.current_inputs.sha256));
+      assert(!evidenceText.includes("controls or separate input identity are unavailable"));
+      const originalLink = taskEvidence.getByRole("link", { name: "Reopen original preparation", exact: true });
+      assert.equal(new URLSearchParams((await originalLink.getAttribute("href")).split("?")[1]).get("pattern_comparison_request"), setup.next_task_preparation_id);
+      await page.evaluate(() => { document.activeElement?.blur(); const element = document.querySelector('[aria-label="Saved pattern research evidence"]');
+        const caption = document.createElement("p"); caption.className = "station-kicker"; caption.textContent = "SOURCE QA · ACTUAL SELECTOR-CREATED P1 TASK / SYNTHETIC NATIVE INPUTS · ZERO MODEL/ATTEMPT/FUNDED TRIAL"; element.prepend(caption); });
+      await page.setViewportSize({ width: 1440, height: 2400 });
+      await taskEvidence.screenshot({ path: path.join(directory, "p1-task-fixed-controls.png") });
+      const originalTaskPreparation = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${setup.next_task_preparation_id}`);
+      await originalLink.click(); const linkedResponse = await originalTaskPreparation;
+      assert.equal(linkedResponse.status(), 200);
+      const linkedPreparation = await bounded(linkedResponse.json(), 5000, "P1 task preparation body deadline"); save("p1-task-linked-preparation.json", linkedPreparation);
+      assert.equal(linkedPreparation.request_id, setup.next_task_preparation_id); assert.equal(linkedPreparation.method_id, "p1");
+      assert.equal(linkedPreparation.finding_sha256, actualTask.context.pattern_comparison.finding_sha256);
+      await panel().getByText(/Saved method p1: trend-pullback-v1 versus cost-breakout-v1/).waitFor();
+      assert.equal(await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).count(), 0);
+      groups.push({ name: phase, selector_created_task: setup.next_task_id, captured_method: "p1",
+        actual_current_input_sha256: fixed.current_inputs.sha256, current_inputs: 600,
+        original_preparation: setup.next_task_preparation_id, no_fallback_p0: true, stub_inference_callbacks: 0 });
       } else {
       phase = "recognized-card-read-only-review";
       await fresh(initial); const described = await review(initial.selection); save("described-source.json", described);
@@ -333,7 +445,7 @@ const bounded = async (work, ms, label) => {
       phase = "unchanged-financial-and-no-dispatch-final-bind";
       const final = await probe(); save("final-probe.json", final);
       assert.equal(final.financial_state_unchanged, true); assert.equal(final.auxiliary_dashboard_state_unchanged, true);
-      assert.equal(final.lab_inbox_count, researchObservation ? 1 : 0); assert.equal(final.model_calls, 0); assert.equal(final.financial_database, false);
+      assert.equal(final.lab_inbox_count, researchObservation ? 2 : 0); assert.equal(final.model_calls, 0); assert.equal(final.financial_database, false);
       assert.deepEqual(final.source_hashes_after, final.source_hashes); assert.deepEqual(pageErrors, []); assert.deepEqual(externalRequests, []);
       if (readOnly) {
         assert.equal(final.posts.length, 0); assert.equal(final.retained_preparations.length, 0);
@@ -344,7 +456,8 @@ const bounded = async (work, ms, label) => {
       }
       if (researchObservation) {
         assert.equal(final.posts.length, 0); assert.deepEqual(final.retained_preparations, initial.retained_preparations);
-        assert.equal(final.role_tasks, 0); assert.equal(final.role_attempts, 0);
+        assert.equal(final.role_tasks, initial.role_tasks); assert.equal(final.role_attempts, 0);
+        assert.deepEqual(final.task_context_hashes, initial.task_context_hashes); assert.equal(final.stub_inference_callbacks, 0);
         assert(apiRequests.every(request => request.method === "GET"));
       }
       groups.push({ name: phase, retained_preparations: final.retained_preparations.length, native_source_calls: final.native_calls.length,

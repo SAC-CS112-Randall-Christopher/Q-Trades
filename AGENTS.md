@@ -1,3 +1,34 @@
+# Current source successor - October 8, 2026, next supported pattern method (#66)
+
+Continue the same autonomous-research Goal/worktree on
+`codex/pattern-next-method-66`, stacked on frozen PR84 head
+`1f066fc1d6091d196f207e403aae54968ba3813b`. Preserve PR75 and PR84 as distinct
+reviewed source/operating choices. Source and isolated QA remain authorized;
+neither pending operating decision expands to this successor.
+
+Propose an explicit disabled pilot-v8 / bounded-pattern-method-question-v1
+source policy over two already implemented independent v4 comparisons: p0
+breakout-retest-v1 versus cost-breakout-v1, then p1 trend-pullback-v1 versus
+the same cost-breakout-v1 reference. This is an independent alternative
+hypothesis, not a parameter refinement, proved improvement or incumbent switch.
+Bind its exact immutable method policy and distinguish predecessor method from
+next method. Carry exact same-authority mature outcome/lesson facts; no foreign
+grant adoption, preferred result replacement or duplicate used candidate.
+
+Reuse the existing v8 answer grammar/profile, preparation, matched-input
+evaluation, reviewer, inbox, financial writer and outcome/lesson owners. Preserve
+all earlier v1-v7 source formats/policies and finite-v6 meaning. Keep medium
+horizon, original hold/review/cost/risk controls, protected inputs, recording and
+storage guards, twenty-slot capacity, sole writer and 400/100-GB policy.
+
+Verify a genuine isolated two-comparison path and retained adverse/incomplete
+feedback with unchanged protected accounting, exact hot/cold recovery and normal
+saved-source navigation. No operating installation, restart, profile/grant
+selection, scanner acquisition, research activation, model/tokenizer/provider
+call, training, promotion or financial-rule change follows from this source
+proposal. Reuse accepted c653 and R10 receipts; do not repeat unchanged admission,
+ownership or rollout acceptance. The dated directions below retain their scopes.
+
 # Current source successor - October 8, 2026, outcome-informed pattern research (#66)
 
 The active autonomous-research Goal exposed a source gap: later pattern questions

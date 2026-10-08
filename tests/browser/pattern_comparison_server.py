@@ -19,6 +19,7 @@ from trading.api import create_app
 from trading.autonomous_spec import LabProposal
 from trading.config import Settings
 from trading.pattern_comparisons import PatternComparisonCommand
+from trading.research_storage import save_plan
 from trading.role_worker import RoleWorker
 
 
@@ -51,12 +52,20 @@ def main():
         "src/trading/research_evidence.py",
         "src/trading/experiment_registry.py",
         "src/trading/role_worker.py",
+        "src/trading/lab_role_contract.py",
+        "src/trading/role_evidence.py",
         "tests/test_pattern_comparisons.py",
+        "tests/test_pattern_next_method_comparison.py",
+        "tests/test_pattern_next_method_worker.py",
+        "tests/test_pattern_role_worker.py",
+        "tests/test_pattern_research_learning.py",
+        "tests/test_role_question_selection.py",
         "tests/test_pattern_scanner.py",
         "tests/test_daily_pattern_analyzer.py",
         "tests/browser/pattern_comparison_server.py",
         "tests/browser/pattern_comparison.cjs",
         "apps/web/src/PatternComparisonPanel.tsx",
+        "apps/web/src/RoleResearchPanel.tsx",
         "apps/web/src/DailyAnalyzer.tsx",
         "apps/web/src/ScannerWorkspace.tsx",
         "apps/web/src/scanner-workspace.css",
@@ -96,6 +105,7 @@ def main():
     original_history = copy.deepcopy(f.paper.history)
     original_plan = f.scanner.plan
     observation_setup = None
+    observation_worker = None
     if args.research_observation_check:
 
         def preparation(number):
@@ -114,14 +124,61 @@ def main():
         waiting = bridge.prepare(preparation(3), f.now, research_only=True)
         assert waiting["status"] == "waiting" and waiting["research_only"] is True
         f.paper.history = copy.deepcopy(original_history)
+        from test_pattern_next_method_worker import MethodTransport
+        from test_role_question_selection import causal_frame
+
+        save_plan(source_folder, f.plan)
+        f.paper.ready_at = f.now - 60
+        f.paper._candle_errors = {}
+        f.paper.state["last_tick"] = f.now
+        f.paper.control_frames = lambda: {"BTCUSD": causal_frame(f.now, f.paper.history["BTCUSD"])}
+        observation_worker = RoleWorker(
+            f.registry,
+            original_controller,
+            MethodTransport(),
+            f.scanner.storage_owner,
+            pattern_comparisons=bridge,
+        )
+        observation_worker.enabled = True
+        observation_worker.paper_admission = lambda: True
+        assert observation_worker.select_fresh_question(f.now) == 1
+        selected = f.registry.db.execute("SELECT id FROM role_tasks").fetchone()["id"]
+        selected_task = observation_worker.view(selected)
+        assert selected_task["context"]["pattern_method"]["method_id"] == "p1"
+        assert set(selected_task["context"]["fixed_comparison"]) == {"p1"}
+        assert not observation_worker.transport.calls
+        observation_worker.enabled = False
+        next_method = bridge.prepare(preparation(4), f.now, method_id="p1")
+        next_marker = original_controller.submit(
+            LabProposal.model_validate(next_method["proposal"]), f.now
+        )
+        assert next_marker["status"] == "evaluated"
+        next_readonly = bridge.prepare(preparation(5), f.now, method_id="p1", research_only=True)
+        assert next_readonly["status"] == "research_only"
+        f.paper.history["BTCUSD"] = f.paper.history["BTCUSD"][-20:]
+        next_waiting = bridge.prepare(preparation(6), f.now, method_id="p1", research_only=True)
+        assert next_waiting["status"] == "waiting" and next_waiting["research_only"] is True
+        f.paper.history = copy.deepcopy(original_history)
+        next_ordinary_wait = bridge.prepare(preparation(7), f.now, method_id="p1")
+        assert next_ordinary_wait["status"] == "waiting"
         observation_setup = {
             "ordinary_request_id": normal["request_id"],
             "research_request_id": readonly["request_id"],
             "waiting_request_id": waiting["request_id"],
-            "setup_inbox_markers": 1,
-            "setup_preparations": 3,
+            "next_method_request_id": next_method["request_id"],
+            "next_research_request_id": next_readonly["request_id"],
+            "next_waiting_request_id": next_waiting["request_id"],
+            "next_ordinary_waiting_request_id": next_ordinary_wait["request_id"],
+            "next_task_id": selected,
+            "next_task_preparation_id": selected_task["context"]["pattern_comparison"][
+                "preparation_request_id"
+            ],
+            "setup_inbox_markers": 2,
+            "setup_preparations": 8,
+            "setup_role_tasks": 1,
             "model_callbacks": 0,
         }
+        original = copy.deepcopy(f.paper.state)
     auxiliary = args.directory / "dashboard"
     auxiliary.mkdir()
     paper = runtime.__wrapped__(auxiliary, book.__wrapped__())
@@ -158,6 +215,10 @@ def main():
             role_attempts = f.registry.db.execute("SELECT count(*) FROM role_attempts").fetchone()[
                 0
             ]
+            task_context_hashes = {
+                row["id"]: hashlib.sha256(row["context"].encode()).hexdigest()
+                for row in f.registry.db.execute("SELECT id,context FROM role_tasks")
+            }
         lab = app.state.lab
         worker = lab.roles
         owner = worker.pattern_comparisons
@@ -177,6 +238,10 @@ def main():
             "model_calls": 0,
             "role_tasks": role_tasks,
             "role_attempts": role_attempts,
+            "task_context_hashes": task_context_hashes,
+            "stub_inference_callbacks": 0
+            if worker.transport is None
+            else len(worker.transport.calls),
             "comparison_owner": {
                 "same_bridge": owner is bridge,
                 "scanner_matches": owner.scanner is app.state.pattern_scanner,
@@ -200,7 +265,7 @@ def main():
             old_registry, old_controller = lab.registry, lab.autonomous
             old_worker, old_lab_scanner = lab.roles, lab.pattern_scanner
             old_paper, old_scanner = application.state.paper, application.state.pattern_scanner
-            worker = RoleWorker(
+            worker = observation_worker or RoleWorker(
                 f.registry,
                 original_controller,
                 storage_owner=f.scanner.storage_owner,
@@ -239,6 +304,31 @@ def main():
             reads.append({"method": request.method, "path": route, "query": str(request.url.query)})
             if args.research_observation_check and request.method != "GET":
                 return JSONResponse({"detail": "Read-only observation fixture"}, status_code=405)
+            if args.research_observation_check and route in {
+                "/api/research/activity",
+                "/api/autonomous",
+                "/api/autonomous/history",
+            }:
+                return JSONResponse(
+                    {"detail": "Disposable GET-only pattern fixture has no financial store"},
+                    status_code=503,
+                )
+        if (
+            args.research_observation_check
+            and request.method == "GET"
+            and route.startswith("/api/research/pattern-scanner/comparisons/")
+            and mode in {"corrupt_method", "corrupt_method_sha"}
+        ):
+            saved = await asyncio.to_thread(bridge.get, route.rsplit("/", 1)[-1])
+            if saved is not None and saved.get("method_id") == "p1":
+                corrupt = copy.deepcopy(saved)
+                if mode == "corrupt_method":
+                    corrupt["method_id"] = corrupt["mapping"]["method_id"] = "p2"
+                else:
+                    corrupt["method_policy_sha256"] = "0" * 64
+                    corrupt["mapping"]["method_policy_sha256"] = "0" * 64
+                # Deliberately corrupted delivery; the real immutable bundle is untouched.
+                return JSONResponse(corrupt)
         if request.method != "POST" or route != "/api/research/pattern-scanner/comparisons":
             return await call_next(request)
         if len(posts) >= 12:
@@ -317,7 +407,15 @@ def main():
             app.state.lab.autonomous = None
             bridge.controller = app.state.lab.roles.controller = None
             return {"current_controller_unavailable": True, "original_findings_retained": True}
-        if action in {"normal", "lost_ack", "corrupt_ack", "delay_ack", "unknown"}:
+        if action in {
+            "normal",
+            "lost_ack",
+            "corrupt_ack",
+            "delay_ack",
+            "unknown",
+            "corrupt_method",
+            "corrupt_method_sha",
+        }:
             mode = action
             return {"mode": mode}
         raise HTTPException(404, "Unknown disposable fixture control")
