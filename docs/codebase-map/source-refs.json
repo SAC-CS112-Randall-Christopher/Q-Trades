@@ -20463,7 +20463,7 @@
       "local_imports": [],
       "path": "tests/browser/pattern_scanner.cjs",
       "routes": [],
-      "sha256": "b29175d0e876a9adc8e743f1a2e73ef345431c12c02798e8e34638bcba642b8f"
+      "sha256": "f1e0b14a5f85a8889733f42d8cb2debae88ba75d1b24f57b1bb8f6ca58eec3a1"
     },
     {
       "area": "verification-verification",
@@ -20502,47 +20502,47 @@
         },
         {
           "kind": "function",
-          "line": 122,
+          "line": 121,
           "name": "main.tick"
         },
         {
           "kind": "function",
-          "line": 167,
+          "line": 166,
           "name": "main.native"
         },
         {
           "kind": "function",
-          "line": 248,
+          "line": 247,
           "name": "main.financial_unchanged"
         },
         {
           "kind": "function",
-          "line": 254,
+          "line": 253,
           "name": "main.lifespan"
         },
         {
           "kind": "function",
-          "line": 260,
+          "line": 259,
           "name": "main.lifespan.storage_owner"
         },
         {
           "kind": "function",
-          "line": 303,
+          "line": 302,
           "name": "main.failures"
         },
         {
           "kind": "function",
-          "line": 391,
+          "line": 390,
           "name": "main.authorize"
         },
         {
           "kind": "function",
-          "line": 396,
+          "line": 395,
           "name": "main.held_start_identity"
         },
         {
           "kind": "function",
-          "line": 405,
+          "line": 404,
           "name": "main.probe"
         },
         {
@@ -20577,7 +20577,7 @@
         },
         {
           "kind": "function",
-          "line": 670,
+          "line": 674,
           "name": "main.control"
         }
       ],
@@ -20674,24 +20674,24 @@
         },
         {
           "handler": "held_start_identity",
-          "line": 396,
+          "line": 395,
           "method": "GET",
           "route": "/__qa/held_start"
         },
         {
           "handler": "probe",
-          "line": 405,
+          "line": 404,
           "method": "GET",
           "route": "/__qa/probe"
         },
         {
           "handler": "control",
-          "line": 670,
+          "line": 674,
           "method": "POST",
           "route": "/__qa/{action}"
         }
       ],
-      "sha256": "f31aa8fd6bc14cb1b6087eaaf009ee9d818b8d7c1f69470ce8796780d3865a6f"
+      "sha256": "7dc302834f3354d1a42b609859f199f21cc69c5e76dd53564925e9c9f3f20ff3"
     },
     {
       "area": "verification-verification",
@@ -39313,7 +39313,7 @@
     "docs/codebase-map/paper-accounting.md": "b6c250540be90b46bab2b04c5ee72143fc7018e6d10ac82436f0c5d079759a89",
     "docs/codebase-map/research-worker.md": "b87173a1bb634139162fe018c7a9d60c4025297fd140ab6d47c107dbcf0ec809",
     "docs/codebase-map/runtime-updates.md": "934878e0476e582e257832ea188fe49cfdad13a0150f940e8a5e192358a4a7f2",
-    "docs/codebase-map/scanner-charts.md": "2aeb2499216e01a014f3e8aac014e54fa0ac9bf2fbf2ceb3ffd3413de08ce148",
+    "docs/codebase-map/scanner-charts.md": "5cacc517dbef07d4c6764dad3661e046598136706ede70b895802a95b397c86f",
     "docs/codebase-map/secondary-research.md": "2d1e61f2f8e6c3ae2e8aa3da1255ec2834d05c1920f6c30315a85634aee0448a",
     "docs/codebase-map/strategy-experiments.md": "32c6137810c560f42b4dafe290ff2b73888ae0d7e03ba372865c2280109dbbfe",
     "docs/codebase-map/verification.md": "cc25a2f0c7cd075259352901fda256ed0ab91391efd04b47701854fff35fe95f"

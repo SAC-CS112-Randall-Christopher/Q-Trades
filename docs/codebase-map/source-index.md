@@ -2867,9 +2867,9 @@ Exact native, dashboard, ownership, PG and browser job selections — [.github/w
 | POST | `/__qa/chart_alert_setup` | [prepare_alert_charts](../../tests/browser/pattern_scanner_server.py#L535) |
 | POST | `/__qa/chart_setup` | [prepare_charts](../../tests/browser/pattern_scanner_server.py#L494) |
 | POST | `/__qa/daily_advance` | [daily_advance](../../tests/browser/pattern_scanner_server.py#L469) |
-| GET | `/__qa/held_start` | [held_start_identity](../../tests/browser/pattern_scanner_server.py#L396) |
-| GET | `/__qa/probe` | [probe](../../tests/browser/pattern_scanner_server.py#L405) |
-| POST | `/__qa/{action}` | [control](../../tests/browser/pattern_scanner_server.py#L670) |
+| GET | `/__qa/held_start` | [held_start_identity](../../tests/browser/pattern_scanner_server.py#L395) |
+| GET | `/__qa/probe` | [probe](../../tests/browser/pattern_scanner_server.py#L404) |
+| POST | `/__qa/{action}` | [control](../../tests/browser/pattern_scanner_server.py#L674) |
 | GET | `/__qa/held` | [observe_held](../../tests/browser/role_archive_retry_server.py#L308) |
 | GET | `/__qa/probe` | [observation](../../tests/browser/role_archive_retry_server.py#L303) |
 | POST | `/__qa/{action}` | [control](../../tests/browser/role_archive_retry_server.py#L314) |
@@ -5892,22 +5892,22 @@ Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/tra
 - [main](../../tests/browser/pattern_scanner_server.py#L31) — function
 - [main.current_hashes](../../tests/browser/pattern_scanner_server.py#L68) — function
 - [main.scanner_now](../../tests/browser/pattern_scanner_server.py#L112) — function
-- [main.tick](../../tests/browser/pattern_scanner_server.py#L122) — function
-- [main.native](../../tests/browser/pattern_scanner_server.py#L167) — function
-- [main.financial_unchanged](../../tests/browser/pattern_scanner_server.py#L248) — function
-- [main.lifespan](../../tests/browser/pattern_scanner_server.py#L254) — function
-- [main.lifespan.storage_owner](../../tests/browser/pattern_scanner_server.py#L260) — function
-- [main.failures](../../tests/browser/pattern_scanner_server.py#L303) — function
-- [main.authorize](../../tests/browser/pattern_scanner_server.py#L391) — function
-- [main.held_start_identity](../../tests/browser/pattern_scanner_server.py#L396) — function
-- [main.probe](../../tests/browser/pattern_scanner_server.py#L405) — function
+- [main.tick](../../tests/browser/pattern_scanner_server.py#L121) — function
+- [main.native](../../tests/browser/pattern_scanner_server.py#L166) — function
+- [main.financial_unchanged](../../tests/browser/pattern_scanner_server.py#L247) — function
+- [main.lifespan](../../tests/browser/pattern_scanner_server.py#L253) — function
+- [main.lifespan.storage_owner](../../tests/browser/pattern_scanner_server.py#L259) — function
+- [main.failures](../../tests/browser/pattern_scanner_server.py#L302) — function
+- [main.authorize](../../tests/browser/pattern_scanner_server.py#L390) — function
+- [main.held_start_identity](../../tests/browser/pattern_scanner_server.py#L395) — function
+- [main.probe](../../tests/browser/pattern_scanner_server.py#L404) — function
 - [main.fixture_control](../../tests/browser/pattern_scanner_server.py#L456) — function
 - [main.daily_advance](../../tests/browser/pattern_scanner_server.py#L469) — function
 - [main.prepare_charts](../../tests/browser/pattern_scanner_server.py#L494) — function
 - [main.prepare_alert_charts](../../tests/browser/pattern_scanner_server.py#L535) — function
 - [main.advance_saved_charts](../../tests/browser/pattern_scanner_server.py#L588) — function
 - [main.advance](../../tests/browser/pattern_scanner_server.py#L630) — function
-- [main.control](../../tests/browser/pattern_scanner_server.py#L670) — function
+- [main.control](../../tests/browser/pattern_scanner_server.py#L674) — function
 Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/trading/candle_history.py](../../src/trading/candle_history.py), [src/trading/config.py](../../src/trading/config.py), [src/trading/pattern_charts.py](../../src/trading/pattern_charts.py), [src/trading/pattern_scanner.py](../../src/trading/pattern_scanner.py), [src/trading/research_storage.py](../../src/trading/research_storage.py), [src/trading/venue.py](../../src/trading/venue.py)
 
 ### tests/browser/role_archive_retry_server.py

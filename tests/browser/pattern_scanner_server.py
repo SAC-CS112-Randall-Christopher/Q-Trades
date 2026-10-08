@@ -97,9 +97,9 @@ def main():
     mode = "normal"
     blocked = False
     clock_offset = 0
-    # Historical chart assertions describe one closed window. Wall-clock candle
+    # Historical fixture assertions describe one closed window. Wall-clock candle
     # boundaries must not start live monitoring while that window is prepared.
-    chart_clock_anchor = time.time() if args.chart_check else None
+    fixture_clock_anchor = time.time() if args.chart_check else None
     prospective_cutoff = None
     chart_setup = None
     daily_roster_changed = False
@@ -110,14 +110,13 @@ def main():
     calls, posts, advances, reads, setup_controls = [], [], [], [], []
 
     def scanner_now():
-        anchor = chart_clock_anchor if chart_clock_anchor is not None else time.time()
+        anchor = fixture_clock_anchor if fixture_clock_anchor is not None else time.time()
         return anchor + clock_offset
 
     scanner_module.time = SimpleNamespace(time=scanner_now, perf_counter=time.perf_counter)
-    if args.chart_check or args.daily_check:
-        # The synthetic prospective close clock belongs to both the scanner and
-        # its read projection. Global and financial runtime clocks stay real.
-        charts_module.time = SimpleNamespace(time=scanner_now)
+    # The synthetic prospective close clock belongs to both the scanner and
+    # its read projection. Global and financial runtime clocks stay real.
+    charts_module.time = SimpleNamespace(time=scanner_now)
 
     def tick():
         now = scanner_now()
@@ -439,7 +438,8 @@ def main():
             "financial_database": False,
             "model_calls": 0,
             "daily_check": args.daily_check,
-            "synthetic_chart_clock_anchor_seconds": chart_clock_anchor,
+            "synthetic_clock_anchor_seconds": fixture_clock_anchor,
+            "synthetic_now_seconds": scanner_now(),
             "synthetic_clock_offset_seconds": clock_offset,
             "financial_state_preserved_except_fixture_tick": financial_unchanged(),
             "source_hashes": hashes,
@@ -657,6 +657,10 @@ def main():
                     break
                 if blocked:
                     break
+        if mode == "sparse_4h" and not all(row["status"] == "monitoring" for row in scopes):
+            raise ValueError("Finite synthetic four-hour history did not complete")
+        if mode == "future_4h" and not prospective:
+            raise ValueError("Finite synthetic prospective observation produced no alert")
         result = {
             "steps": steps,
             "maximum_levels": maximum,
@@ -668,7 +672,7 @@ def main():
 
     @app.post("/__qa/{action}")
     def control(action: str, x_qa_token: str = Header()):
-        nonlocal mode, blocked, clock_offset, prospective_cutoff
+        nonlocal mode, blocked, clock_offset, prospective_cutoff, fixture_clock_anchor
         nonlocal daily_roster_changed, daily_roster_unavailable
         authorize(x_qa_token)
         if action == "stop":
@@ -711,6 +715,8 @@ def main():
             blocked = action == "block"
             return {"synthetic_admission_blocked": blocked}
         if action == "sparse_4h":
+            fixture_clock_anchor = time.time()
+            clock_offset = 0
             prospective_cutoff = int(scanner_now() * 1000) // 14400000 * 14400000
         if action == "future_4h":
             if prospective_cutoff is None:

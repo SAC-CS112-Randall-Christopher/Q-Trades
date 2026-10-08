@@ -109,6 +109,24 @@ and server exited zero and the owned port was released. Its receipt is
 Global financial clocks, real performance timers and product scanner scheduling
 are unchanged. Final hosted status belongs to the eventual exact commit.
 
+The next hosted browser run at `7e7493ae3afccd860d51449be4648da00ff06dc9`
+stopped earlier in the separate scanner-control fixture. Its retained 5m scope
+was still preparing, with 100,000 of 105,120 missing intervals accounted for and
+an explicit storage-owner retry; the other scopes had reached their cutoffs.
+The same page-poll isolation now covers this fixture's synthetic advance after
+its normal UI prepare/start controls. Its clock freezes for this explicit phase,
+and both the historical cutoff and exact prospective advance are asserted.
+The finite advance helper also refuses incomplete setup explicitly. The earlier
+control concurrency and subsequent normal UI checks remain intact. This failed
+result is preserved as [run 37814986699](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/37814986699).
+The combined correction passed **14 scanner-control groups** in 26.06 seconds
+and **16 saved-chart groups** in 40.50 seconds locally. Both owned browser/server
+pairs exited zero and released their ports. Final local receipts:
+`scanner-control-clock-01/browser/receipt.json` SHA256
+`f1ab4672da982343291fc2218438549c1c6847e61b45043afd702976ed88f3e7`;
+`scanner-clock-03/browser/receipt.json` SHA256
+`4489ce3439c00c8cb89ecfaf7da281211f5fd2a31d4a5eea15b17b06d7423c44`.
+
 ## Next authorized checkpoint
 
 This draft completes the source/disposable repair checkpoint for A1/A2/A3/A6 and

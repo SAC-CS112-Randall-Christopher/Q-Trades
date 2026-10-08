@@ -327,9 +327,13 @@ const bounded = async (work, milliseconds, label) => {
     const prospectiveCampaign = await control("Prepare selected markets", "prepare");
     assert.equal(prospectiveCampaign.current_status.progress_total, 5);
     await control("Start / resume scanner", "start");
+    // Normal controls above are exercised through the UI. Stop its polling
+    // while constructing the finite historical and prospective input fixture.
+    await page.goto("about:blank");
     let advanced = await page.request.post(`${origin}/__qa/advance`, { headers, timeout: 30000 });
     assert.equal(advanced.status(), 200, await advanced.text());
     const historicalComplete = await probe();
+    assert(historicalComplete.state.progress.every(row => row.cursor_ms === row.cutoff_ms));
     const fourHour = historicalComplete.state.progress.find(row => row.timeframe === "4h");
     assert.equal(fourHour.observed_bars, 2190);
     assert.equal(fourHour.status, "monitoring");
@@ -337,6 +341,9 @@ const bounded = async (work, milliseconds, label) => {
     await mode("future_4h");
     advanced = await page.request.post(`${origin}/__qa/advance`, { headers, timeout: 30000 });
     assert.equal(advanced.status(), 200, await advanced.text());
+    const prospectiveComplete = await probe();
+    assert.equal(prospectiveComplete.synthetic_now_seconds - historicalComplete.synthetic_now_seconds, 14400);
+    await page.goto(`${origin}/#markets`); await workspace().waitFor();
     await refresh();
     await workspace().getByLabel("Scanner evidence market").selectOption("BTCUSD");
     await workspace().getByLabel("Scanner evidence interval").selectOption("4h");
