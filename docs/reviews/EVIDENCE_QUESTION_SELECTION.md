@@ -1,5 +1,54 @@
 # Evidence-backed first and next questions — #66
 
+## Current archive owner and recovery repair
+
+PR75 is reconciled with the accepted current source at
+`3d26941652efa72b20a7b532da1994e45b76c2cb`. The clock correction below remains;
+the native scanner, account redesign and financial/storage owners from that base
+are retained. This is a source proposal, with no operating update or activation.
+
+A disposable recorder fixture reproduced a second-owner failure: constructing
+the role archive's separate `ResearchStorage` while capture held the storage
+writer lock returned a recovery-busy wait. History reads could also raise that
+constructor error before their recovery handling. This proves a source defect;
+it does not establish how often it occurred in the installed application. The
+original active capture segment stayed active and its retained data was intact.
+
+Live role archives and history now borrow the initialized recorder's existing
+storage owner, as the scanner and tool journal already do. A configured owner
+that is closed, unready or bound to a changed plan refuses access; it never falls
+back to another constructor. Explicit standalone callers retain their existing
+construction path. Exact append/reopen work runs off the event loop. Its borrow
+is released before registry publication, preserving registry-to-storage lock
+order. Native archive and threaded maintenance work drain on cancellation before
+the API closes their registry and recorder owners.
+
+If archive publication fails after detail was saved, the original full evaluation
+remains on the failed task. The normal task panel offers **Retry saved evidence
+archive** through the existing local-operator retry route. That explicit action
+requires the same execution mode, an unchanged failed/unowned archive stage,
+the retained full inputs and an available active-question slot. It requeues only
+the archive stage and records an archive-specific event. Cold tasks first restore
+through the existing verified history owner, keeping original answers and charges.
+It does not authorize,
+replace or refund any model attempt. A duplicate or uncertain acknowledgment is
+resolved by inspecting the original task, without an automatic second POST.
+Model transport retry retains its separate existing controls. Completed adverse
+verdicts remain retained and cannot be retried for a preferred answer.
+
+The dashboard checks retry acknowledgment identity and preserves a subsequently
+selected question when an earlier request finishes. Source fixtures cover exact
+evaluation/capture/attempt preservation, serialized capture and archive work,
+hot rollover/cold reopening, unavailable owner refusal, registry rollback and
+explicit recovery, cancellation drain and explicit standalone use. Executed
+counts, setup/fixture failures, browser results and hosted checks belong to the
+current #66 ledger; they are separate from installed coexistence acceptance.
+
+The daily chart analyzer in PR83 is a separate source proposal. Its historical
+pattern findings do not yet become supported autonomous model experiments in
+this worker's frozen method catalog. No scanner evidence is silently added to
+an original model packet, profile or grant by this repair.
+
 ## Current observation clock repair
 
 The source follow-up to installed PR73 preserves the original question's causal

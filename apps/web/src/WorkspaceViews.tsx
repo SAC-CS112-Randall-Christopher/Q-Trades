@@ -20,6 +20,7 @@ import { PaperCampaignPanel } from "./PaperCampaignPanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
 import { TradeHistory } from "./TradeHistory";
 import { PerformanceDiagnosticPanel } from "./PerformanceDiagnosticPanel";
+import { OriginalStrategyPanel, isOriginalAccount } from "./OriginalStrategyPanel";
 
 const money = (value: string | number | null | undefined) =>
   value == null || !Number.isFinite(Number(value))
@@ -953,8 +954,16 @@ function AccountInspector({
         Clearing an entry pause does not clear a global pause, hard stop or
         valuation block. Funding and all earlier losses are preserved.
       </p>
-      <PaperCampaignJournal key={name} account={name} />
+      <PaperCampaignJournal key={`journal-${name}`} account={name} />
+      {isOriginalAccount(name) && <OriginalStrategyPanel key={`strategy-${name}`} name={name} account={a} unavailable={unavailable} />}
     </section>
+  );
+}
+
+function isResearchAccount(a: Account): boolean {
+  return (
+    a.campaign_id?.startsWith("forward-") === true ||
+    a.campaign_id === "autonomous-lab"
   );
 }
 
@@ -981,9 +990,7 @@ export function AccountsView({
   if (!paper) return <EmptyPaper />;
   const t = totals(paper, unavailable);
   const accounts = Object.entries(paper.accounts);
-  const research = accounts.filter(([, a]) =>
-    a.campaign_id?.startsWith("forward-"),
-  ).length;
+  const research = accounts.filter(([, a]) => isResearchAccount(a)).length;
   const diagnostics = accounts.filter(([, a]) => a.purpose === "performance_diagnostic").length;
   const matching = accounts.filter(
     ([name, a]) =>
@@ -991,7 +998,7 @@ export function AccountsView({
         .toLowerCase()
         .includes(query.toLowerCase()) &&
       (filter === "all" ||
-        (filter === "research" && a.campaign_id?.startsWith("forward-")) ||
+        (filter === "research" && isResearchAccount(a)) ||
         (filter === "diagnostic" && a.purpose === "performance_diagnostic") ||
         accountState(a, paper, unavailable).key === filter),
   );
@@ -1008,6 +1015,17 @@ export function AccountsView({
     start = shownPage * pageSize;
   return (
     <>
+      <section className="workspace-card">
+        <div className="card-heading">
+          <p>
+            This view shows current managed accounts. Completed trials that retire
+            after becoming flat remain in the continuous paper lab's retained history.
+          </p>
+          <a className="button secondary" href="#research">
+            Retained trial history <ArrowRight size={14} />
+          </a>
+        </div>
+      </section>
       <div className="metrics-grid account-metrics">
         <article className="metric-card">
           <div className="metric-label">
@@ -1048,7 +1066,7 @@ export function AccountsView({
               aria-label="Account filters"
             >
               {[
-                ["all", "All", t.count],
+                ["all", "All current accounts", t.count],
                 ["active", "Scanning", t.active],
                 ["paused", "Paused", t.paused],
                 ["research", "Research", research],
@@ -1086,7 +1104,7 @@ export function AccountsView({
             <div className="table-scroll">
               <table
                 className="market-table accounts-table"
-                aria-label="All paper accounts"
+                aria-label="Current paper accounts"
               >
                 <thead>
                   <tr>

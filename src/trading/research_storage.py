@@ -8,6 +8,7 @@ import math
 import os
 import shutil
 import sqlite3
+import stat
 import time
 from collections.abc import Iterator
 from contextlib import ExitStack, closing, contextmanager
@@ -113,7 +114,28 @@ def save_plan(directory: Path, plan: StoragePlan) -> None:
 
 def _bytes(directory: Path) -> int:
     # Only owned files, including index/WAL/SHM, transfer scratch and unexpected files.
-    return sum(p.stat().st_size for p in directory.iterdir() if p.is_file())
+    recounted = False
+    while True:
+        total = 0
+        for path in directory.iterdir():
+            try:
+                observed = path.stat()
+            except FileNotFoundError as exc:
+                if not path.name.endswith((".sqlite-wal", ".sqlite-shm")):
+                    raise
+                if recounted:
+                    raise OSError(
+                        "SQLite files changed during storage recount; admission refused"
+                    ) from exc
+                # Last-connection close/checkpoint can remove a sidecar and grow a
+                # main database already counted. Recount everything once, never
+                # admit using the partial tally or retry continued churn.
+                recounted = True
+                break
+            if stat.S_ISREG(observed.st_mode):
+                total += observed.st_size
+        else:
+            return total
 
 
 class ResearchStorage:

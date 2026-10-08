@@ -1,4 +1,65 @@
-# Current source follow-up — October 6, 2026, evidence-backed questions (#66)
+# Current source follow-up — October 7, 2026, researcher archive ownership (#66)
+
+Continue the existing draft PR75 lane on the accepted current main source.
+Preserve its causal/current observation clock correction. Live role archive and
+history operations must use the existing recorder's storage owner; unavailable
+configured ownership must refuse without a second constructor. Verify exact
+retention, lock order, cancellation drain, rollback and explicit archive-only
+recovery through the normal panel. Existing model retry and allowance authority
+must remain unchanged. See `docs/reviews/EVIDENCE_QUESTION_SELECTION.md`.
+
+This follow-up permits source, disposable QA, independent review, commit/push and
+checkpoint publication. It does not install/restart, resume research, dispatch a
+model, change packets/profiles/grants or financial rules, or activate daily public
+candle work. PR83 remains a separate reviewed source proposal awaiting its own
+exact-target operating decision. Preserve installed receipts and original adverse
+answers; do not repeat completed acceptance or consumed attempts.
+
+# Previous source follow-up — October 7, 2026, saved scanner charts (#66)
+
+Chris expects an analyzed crypto to have five native candle charts (5m, 15m,
+30m, 1h and 4h), a breakdown of its recorded findings, named pattern annotations,
+and horizontal support/resistance alert zones. Historical event selection must
+open that event's saved candles rather than a fresh, unrelated tool study.
+Show available VWAP, moving averages and volume alongside the original event;
+these display relationships are not a newly validated predictive mechanism.
+
+Reuse the existing Markets workspace, scanner registry, immutable native input
+archives and chart library. Preserve the scanner's frozen implementation identity,
+actual progress cutoff, gaps, source references, every paginated retained level,
+original alert evaluations and all financial/research owners. Bounded read-only
+chart projection and source/disposable QA are authorized. Keep a separate candle
+study's existing request/receipt recovery owner intact.
+
+The approved scanner rollout at de51151173ae9455521728e5e44ac6fdfac9fdb6 is
+complete within its documented receipt scope. Reuse that receipt; do not repeat
+the rollout or manufacture strict ownership/full-coverage acceptance. This new
+visual follow-up requires source checks, independent review and an owning draft
+PR before its separately reviewable exact-target merge/install decision. Do not
+start an operating scanner campaign, dispatch a model, retry consumed attempts,
+reopen/refund retired trials, change financial rules or activate research here.
+
+# Previous source follow-up — October 6, 2026, original account redesign (#66)
+
+Chris requested redesign after the original six breakout baselines recorded
+poor after-cost outcomes. The other two older long-horizon accounts have no
+completed trades; do not classify them as losing. This isolated lane proposes
+eight fixed causal exploratory mechanisms and an explicit, prospective change
+for flat original spot accounts through their existing financial writer.
+Keep original versions, balances, funding, fees, losses, journal, pauses, risk
+ceilings, immutable lab contracts, capacity and storage policy. No automatic
+selection, new funds, cheaper assumed fills or trading-edge claim follows.
+The older lab pair must retire through its existing draining/archive owner
+before a distinct replacement comparison; never rewrite its frozen trial.
+
+Verify pure inputs/signals, native transaction/restart/duplicate/rollback and
+normal disposable UI behavior. Source, tests, independent review, commits/push
+and a draft PR are authorized. New merge/install/restart and operating rule
+cutover require their separately reviewable exact-target approval. No model
+dispatch, preferred-answer retry, qualification, external/paid activation,
+training/download/conversion or financial-policy change is part of this lane.
+
+# Previous source follow-up — October 6, 2026, evidence-backed questions (#66)
 
 Continue the existing draft PR73 lane within source and isolated-QA permission.
 The explicit v4 paper-pilot selection policy is a source proposal only; existing

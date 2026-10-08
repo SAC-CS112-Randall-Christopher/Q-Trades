@@ -24,7 +24,9 @@ from fastapi.staticfiles import StaticFiles
 from psycopg.conninfo import make_conninfo
 from pydantic import BaseModel, ConfigDict, Field
 
+from trading.account_redesign import StrategyChange
 from trading.autonomous_spec import LabControl, LabPolicy, LabProposal
+from trading.candle_history import analyze_history, load_history, reopen_history, retain_history
 from trading.compact_memory import compact_evidence
 from trading.config import Settings
 from trading.evidence_runtime import feature_reproduction
@@ -38,8 +40,16 @@ from trading.ownership import CollectorLock
 from trading.paper_campaigns import CampaignSpec
 from trading.paper_engine import LEGACY_POLICY, policy
 from trading.paper_store import PaperStore, load_dsn
+from trading.pattern_charts import saved_chart
+from trading.pattern_scanner import PatternScanner
 from trading.peft_role_model import PeftPaperPilotRoles, local_role_transport
 from trading.prospective_review import ProspectiveSpec
+from trading.redesign_strategy import (
+    MAXIMUM_HOLD_SECONDS,
+    PROGRESS_SECONDS,
+    REDESIGN_VERSION,
+    STRATEGIES,
+)
 from trading.replay_lab import ReplayLab, ReplayPlan
 from trading.research_actors import ActorAnswer, ActorClaim, ActorGrant, ActorTask, ResearchActors
 from trading.research_campaigns import ResearchCampaignSpec
@@ -75,7 +85,7 @@ from trading.role_worker import Question, RoleWorker
 from trading.runtime import Monitor
 from trading.scoped_tools import disclose, outcome_page, reader
 from trading.scoped_tools import run as scoped_tool
-from trading.station import HISTORICAL_TOOLS, TOOLS, market_detail, market_live
+from trading.station import HISTORICAL_TOOLS, TOOLS, market_detail, market_live, validate_symbol
 from trading.stock_research import StockQuestion, StockResearch
 from trading.storage import MonitorStore
 from trading.tiered_runtime import TieredPaperRuntime as PaperRuntime
@@ -163,6 +173,25 @@ class ToolRequest(BaseModel):
     )
     request_id: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9-]{12,64}$")
     start: float = Field(default=0, ge=0, allow_inf_nan=False)
+    timeframe: Literal["5m", "15m", "30m", "1h", "4h"] = "5m"
+    window: Literal["recent", "week", "month", "six_months", "year"] = "recent"
+
+
+class CandleStudyRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    symbol: str = Field(min_length=3, max_length=24, pattern=r"^[A-Z0-9]+$")
+    timeframe: Literal["5m", "15m", "30m", "1h", "4h"]
+    window: Literal["recent", "week", "month", "six_months", "year"]
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,64}$")
+
+
+class PatternControl(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    action: Literal["prepare", "start", "pause"]
+    request_id: str = Field(pattern=r"^[a-zA-Z0-9-]{12,64}$")
+    symbols: list[str] = Field(default_factory=list, max_length=2000)
+    campaign_id: str | None = Field(default=None, pattern=r"^patterns-[a-f0-9]{24}$")
+    expected_revision: int | None = Field(default=None, ge=0)
 
 
 def create_app(
@@ -240,6 +269,8 @@ def create_app(
                     app.state.paper = PaperRuntime(
                         paper_store, paper_venue, database.parent / "paper-stream.sqlite"
                     )
+                    if tool_journal is not None:
+                        tool_journal.storage_owner = app.state.paper.evidence.research_store
                     paper_task = asyncio.create_task(app.state.paper.run()) if background else None
                     # Fresh CP1 experiments are spot-only. Existing options history stays
                     # under its original policy; no migration or new account is implied.
@@ -281,6 +312,7 @@ def create_app(
                 except (sqlite3.Error, OSError):
                     app.state.lab_error = "Research storage unavailable; paper management continues"
                 app.state.lab = lab
+                app.state.pattern_scanner = None
                 app.state.knowledge = None
                 app.state.manual_review_task = None
                 app.state.reviews = None
@@ -316,11 +348,30 @@ def create_app(
                             lab.registry, app.state.paper, lambda: lab.can_research()
                         )
                     local_roles = local_role_transport(database.parent)
-                    lab.roles = RoleWorker(lab.registry, lab.autonomous, local_roles)
+                    lab.roles = RoleWorker(
+                        lab.registry,
+                        lab.autonomous,
+                        local_roles,
+                        storage_owner=(
+                            app.state.paper.evidence.research_store if app.state.paper else None
+                        ),
+                    )
                     lab.roles.activation = lambda: bool(local_roles.policy().get("enabled", False))
                     if isinstance(local_roles, PeftPaperPilotRoles):
                         lab.roles.paper_admission = local_roles.can_research
                     plan = load_plan(database.parent)
+                    try:
+                        scanner = PatternScanner(
+                            lab.registry,
+                            app.state.paper,
+                            public_venue,
+                            plan,
+                            app.state.paper.evidence.research_store if app.state.paper else None,
+                        )
+                        lab.pattern_scanner = scanner
+                        app.state.pattern_scanner = scanner
+                    except (sqlite3.Error, OSError, ValueError):
+                        app.state.pattern_error = "Pattern preparation storage unavailable"
                     if plan is not None:
                         try:
                             knowledge_storage = ResearchStorage(plan)
@@ -1757,6 +1808,12 @@ def create_app(
             result = await asyncio.to_thread(journal.get, run_id) if journal else None
             if result:
                 await asyncio.to_thread(disclose_tool, request, result)
+                if result["tool"] == "candle_patterns" and result.get("result"):
+                    if journal is None or journal.storage_plan is None:
+                        raise ValueError("Candle study retention is unavailable")
+                    await asyncio.to_thread(
+                        reopen_history, journal.storage_plan, journal.namespace, result
+                    )
         except (ValueError, LookupError, OSError, sqlite3.Error) as exc:
             raise HTTPException(
                 503, "Exact saved receipt unavailable; no current-data substitute"
@@ -1764,6 +1821,143 @@ def create_app(
         if result is None:
             raise HTTPException(404, "Tool receipt not found")
         return result
+
+    @app.get("/api/research/candle-patterns/requests/{request_id}")
+    async def candle_request(request: Request, request_id: str) -> dict[str, Any]:
+        if not re.fullmatch(r"[a-zA-Z0-9-]{12,64}", request_id):
+            raise HTTPException(422, "Invalid candle request identity")
+        journal: ToolJournal | None = request.app.state.tool_journal
+        if journal is None:
+            raise HTTPException(503, "Tool receipt storage is unavailable")
+        try:
+            saved = await asyncio.to_thread(journal.find_request, request_id)
+        except (ValueError, OSError, sqlite3.Error) as exc:
+            raise HTTPException(503, "Saved request lookup is unavailable") from exc
+        if saved is None or saved["tool"] != "candle_patterns":
+            raise HTTPException(404, "No saved candle request found yet; dispatch is not repeated")
+        return await tool_run(request, saved["id"])
+
+    def scanner_owner(request: Request) -> PatternScanner:
+        value = request.app.state.pattern_scanner
+        if not isinstance(value, PatternScanner):
+            raise HTTPException(503, "Pattern preparation owner unavailable")
+        return value
+
+    @app.get("/api/research/pattern-scanner")
+    async def scanner_status(
+        request: Request, campaign_id: str | None = Query(None, pattern=r"^patterns-[a-f0-9]{24}$")
+    ) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(scanner_owner(request).snapshot, campaign_id)
+        except (sqlite3.Error, OSError, ValueError) as exc:
+            raise HTTPException(503, "Saved pattern preparation status unavailable") from exc
+
+    @app.get("/api/research/pattern-scanner/campaigns")
+    async def scanner_campaigns(request: Request) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(scanner_owner(request).campaigns)
+        except (sqlite3.Error, OSError, ValueError) as exc:
+            raise HTTPException(503, "Retained campaign identities unavailable") from exc
+
+    @app.post("/api/research/pattern-scanner/control")
+    async def scanner_control(command: PatternControl, request: Request) -> dict[str, Any]:
+        lab_operator(request)
+        scanner = scanner_owner(request)
+        try:
+            receipt = await asyncio.to_thread(scanner.control, command.model_dump())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except (sqlite3.Error, OSError) as exc:
+            raise HTTPException(
+                503,
+                "Control acknowledgment unknown; reconcile its exact request without redispatch",
+            ) from exc
+        try:
+            status = await asyncio.to_thread(scanner.snapshot)
+        except (sqlite3.Error, OSError, ValueError) as exc:
+            raise HTTPException(
+                503, "Control committed; exact request acknowledgment requires reconciliation"
+            ) from exc
+        return {**receipt, "current_status": status}
+
+    @app.get("/api/research/pattern-scanner/requests/{request_id}")
+    async def scanner_request(request_id: str, request: Request) -> dict[str, Any]:
+        if not re.fullmatch(r"[a-zA-Z0-9-]{12,64}", request_id):
+            raise HTTPException(422, "Invalid original control identity")
+        scanner = scanner_owner(request)
+        try:
+            receipt = await asyncio.to_thread(scanner.request, request_id)
+            if receipt is None:
+                raise HTTPException(
+                    404, "No retained acknowledgment; do not repeat an unknown Start"
+                )
+            return {**receipt, "current_status": await asyncio.to_thread(scanner.snapshot)}
+        except (sqlite3.Error, OSError, ValueError) as exc:
+            raise HTTPException(503, "Original control receipt unavailable") from exc
+
+    @app.get("/api/research/pattern-scanner/chart")
+    async def scanner_chart(
+        request: Request,
+        campaign_id: str = Query(pattern=r"^patterns-[a-f0-9]{24}$"),
+        symbol: str = Query(pattern=r"^[A-Z0-9]{3,24}$"),
+        timeframe: Literal["5m", "15m", "30m", "1h", "4h"] = Query(),
+        at_ms: int | None = Query(None, ge=0, le=9223372036854775807),
+        before_ms: int | None = Query(None, ge=0, le=9223372036854775807),
+        levels_before: int = Query(0, ge=0, le=9223372036854775807),
+        patterns_before: int = Query(0, ge=0, le=9223372036854775807),
+        alerts_before: int = Query(0, ge=0, le=9223372036854775807),
+        expected_progress_sha256: str | None = Query(None, pattern=r"^[a-f0-9]{64}$"),
+        selected_kind: Literal["levels", "patterns", "alerts"] | None = Query(None),
+        selected_seq: int | None = Query(None, ge=1, le=9223372036854775807),
+    ) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(
+                saved_chart,
+                scanner_owner(request),
+                campaign_id,
+                symbol,
+                timeframe,
+                at_ms,
+                before_ms,
+                levels_before,
+                patterns_before,
+                alerts_before,
+                expected_progress_sha256,
+                selected_kind,
+                selected_seq,
+            )
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (sqlite3.Error, OSError, KeyError, TypeError) as exc:
+            raise HTTPException(
+                503, "Exact saved scanner chart unavailable; no fresh substitute"
+            ) from exc
+
+    @app.get("/api/research/pattern-scanner/{kind}")
+    async def scanner_page(
+        kind: Literal["levels", "patterns", "alerts", "progress"],
+        request: Request,
+        campaign_id: str = Query(pattern=r"^patterns-[a-f0-9]{24}$"),
+        symbol: str = Query("", pattern=r"^[A-Z0-9]{0,24}$"),
+        timeframe: str = Query(""),
+        before: int = Query(0, ge=0),
+    ) -> dict[str, Any]:
+        try:
+            return await asyncio.to_thread(
+                scanner_owner(request).page, kind, campaign_id, symbol, timeframe, before
+            )
+        except LookupError as exc:
+            raise HTTPException(404, str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from exc
+        except (sqlite3.Error, OSError) as exc:
+            raise HTTPException(503, "Exact saved pattern page unavailable") from exc
+
+    @app.post("/api/research/candle-patterns")
+    async def candle_study(command: CandleStudyRequest, request: Request) -> dict[str, Any]:
+        return await run_tool(ToolRequest(tool="candle_patterns", **command.model_dump()), request)
 
     @app.get("/api/research/tools/runs/{run_id}/detail")
     async def tool_detail(
@@ -1842,18 +2036,21 @@ def create_app(
         request.app.state.last_tool_at = time.monotonic()
         try:
             request_id = command.request_id or str(uuid.uuid4())
-            run_id = await asyncio.to_thread(
-                journal.start,
+            run_id, created = await asyncio.to_thread(
+                journal.start_once,
                 command.tool,
                 command.symbol,
                 account=command.account,
                 request_id=request_id,
-                query=command.model_dump(exclude={"request_id"}),
+                query=command.model_dump(
+                    exclude={"request_id"}
+                    if command.tool == "candle_patterns"
+                    else {"request_id", "timeframe", "window"}
+                ),
             )
             existing = await asyncio.to_thread(journal.get, run_id)
-            if existing and existing["status"] != "running":
-                await asyncio.to_thread(disclose_tool, request, existing)
-                return existing
+            if not created or existing and existing["status"] != "running":
+                return await tool_run(request, run_id)
             result = None
             error = None
             try:
@@ -1861,15 +2058,41 @@ def create_app(
                     raise ValueError(
                         "Outcome interval begins after the available observation cutoff"
                     )
-                result = await asyncio.to_thread(
-                    scoped_tool,
-                    paper,
-                    command.tool,
-                    command.symbol,
-                    command.account,
-                    request_id,
-                    start=command.start,
-                )
+                if command.tool == "candle_patterns":
+                    validate_symbol(command.symbol, paper)
+                    if journal.storage_plan is None:
+                        raise ValueError(
+                            "Configure existing research storage before saving candle studies"
+                        )
+                    async with asyncio.timeout(25):
+                        scope, raw = await load_history(
+                            request.app.state.monitor.venue,
+                            command.symbol,
+                            command.timeframe,
+                            command.window,
+                            time.time(),
+                        )
+                    analysis = await asyncio.to_thread(analyze_history, scope, raw)
+                    result = await asyncio.to_thread(
+                        retain_history,
+                        journal.storage_plan,
+                        journal.namespace,
+                        run_id,
+                        analysis,
+                        raw,
+                        command.account,
+                        storage_owner=journal.storage_owner,
+                    )
+                else:
+                    result = await asyncio.to_thread(
+                        scoped_tool,
+                        paper,
+                        command.tool,
+                        command.symbol,
+                        command.account,
+                        request_id,
+                        start=command.start,
+                    )
             except (ValueError, KeyError, ArithmeticError) as exc:
                 error = str(exc)
             except Exception as exc:
@@ -1879,8 +2102,7 @@ def create_app(
             await asyncio.to_thread(journal.finish, run_id, result, error)
             saved = await asyncio.to_thread(journal.get, run_id)
             assert saved is not None
-            await asyncio.to_thread(disclose_tool, request, saved)
-            return saved
+            return await tool_run(request, run_id)
         except (sqlite3.Error, OSError, ValueError, psycopg.Error) as exc:
             raise HTTPException(
                 503, "Tool receipt could not be saved; inspect local storage"
@@ -2045,6 +2267,60 @@ def create_app(
             raise HTTPException(
                 503, "Account control not confirmed; refresh before retrying"
             ) from exc
+
+    @app.get("/api/paper/strategies")
+    def replacement_strategies() -> dict[str, Any]:
+        return {
+            "version": REDESIGN_VERSION,
+            "strategies": [
+                {
+                    "id": identity,
+                    "label": identity.removesuffix("-v1").replace("-", " ").title(),
+                    "hypothesis": hypothesis,
+                    "feature_seconds": 300,
+                    "maximum_hold_seconds": MAXIMUM_HOLD_SECONDS,
+                    "progress_seconds": PROGRESS_SECONDS,
+                    "limitations": (
+                        "Exploratory fixed hypothesis; volatility cost hurdle is not a forecast. "
+                        "Shared markets are correlated; fees, stops and risk are unchanged."
+                    ),
+                }
+                for identity, hypothesis in STRATEGIES.items()
+            ],
+        }
+
+    @app.post("/api/paper/accounts/{account}/strategy")
+    def change_paper_strategy(
+        account: str, spec: StrategyChange, request: Request
+    ) -> dict[str, Any]:
+        paper = campaign_operator(request)
+        if account not in paper.state["accounts"]:
+            raise HTTPException(404, "Paper account not found")
+        try:
+            return paper.strategy_change(account, spec)
+        except (ValueError, ArithmeticError) as exc:
+            raise HTTPException(409, str(exc)) from exc
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Rule-change outcome is unconfirmed; reopen this exact request receipt"
+            ) from exc
+
+    @app.get("/api/paper/accounts/{account}/strategy/{request_id}")
+    def paper_strategy_receipt(account: str, request_id: str, request: Request) -> dict[str, Any]:
+        if not re.fullmatch(r"[a-zA-Z0-9-]{12,64}", request_id):
+            raise HTTPException(422, "Invalid rule-change request identity")
+        paper: PaperRuntime | None = request.app.state.paper
+        if paper is None:
+            raise HTTPException(409, "Paper experiment is not enabled")
+        try:
+            receipt = paper.strategy_receipt(account, request_id)
+        except psycopg.Error as exc:
+            raise HTTPException(
+                503, "Rule-change receipt unavailable; no execution conclusion follows"
+            ) from exc
+        if receipt is None:
+            raise HTTPException(404, "No receipt for this account and request in this read")
+        return receipt
 
     @app.post("/api/paper/learning/control/{candidate}")
     async def matched_forward_control(request: Request, candidate: str) -> dict[str, Any]:

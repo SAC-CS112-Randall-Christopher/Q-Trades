@@ -8,6 +8,8 @@ import json
 import secrets
 import sqlite3
 import time
+from collections.abc import Callable, Iterator
+from contextlib import AbstractContextManager, closing, contextmanager
 from pathlib import Path
 from threading import RLock
 from typing import Any
@@ -29,6 +31,9 @@ class ToolJournal:
         self.lock = RLock()
         self.owner = secrets.token_hex(16)
         self.storage_plan = storage_plan
+        self.storage_owner: (
+            Callable[[StoragePlan], AbstractContextManager[ResearchStorage]] | None
+        ) = None
         self.connection = sqlite3.connect(path, check_same_thread=False, timeout=1)
         self.connection.row_factory = sqlite3.Row
         self.connection.executescript("""
@@ -81,11 +86,17 @@ class ToolJournal:
             self.connection.execute("SELECT value FROM tool_meta WHERE key=?", (key,)).fetchone()[0]
         )
 
-    def _storage(self) -> ResearchStorage:
+    @contextmanager
+    def _storage(self) -> Iterator[ResearchStorage]:
         if self.storage_plan is None:
             raise ValueError("Tool journal capacity requires configured research storage")
-        store = ResearchStorage(self.storage_plan)
-        store.db.executescript("""
+        access = (
+            self.storage_owner(self.storage_plan)
+            if self.storage_owner
+            else closing(ResearchStorage(self.storage_plan))
+        )
+        with access as store:
+            store.db.executescript("""
             CREATE TABLE IF NOT EXISTS tool_receipt_index(
                 namespace TEXT NOT NULL, id INTEGER NOT NULL, reference TEXT NOT NULL,
                 metadata TEXT NOT NULL, request_id TEXT, query TEXT,
@@ -93,7 +104,7 @@ class ToolJournal:
             CREATE UNIQUE INDEX IF NOT EXISTS cold_tool_request
               ON tool_receipt_index(namespace,request_id);
         """)
-        return store
+            yield store
 
     def _rollover(self) -> None:
         page_size = self.connection.execute("PRAGMA page_size").fetchone()[0]
@@ -104,8 +115,7 @@ class ToolJournal:
             and (pages - free) * page_size < 48 * 1024**2
         ):
             return
-        store = self._storage()
-        try:
+        with self._storage() as store:
             rows = self.connection.execute(
                 "SELECT * FROM tool_runs WHERE status IN ('completed','failed','interrupted') "
                 "ORDER BY id LIMIT 8"
@@ -143,8 +153,6 @@ class ToolJournal:
                 # Exact cold commit precedes hot removal; restart accepts either copy.
                 with self.connection:
                     self.connection.execute("DELETE FROM tool_runs WHERE id=?", (row["id"],))
-        finally:
-            store.close()
 
     def start(
         self,
@@ -155,6 +163,21 @@ class ToolJournal:
         request_id: str | None = None,
         query: dict[str, Any] | None = None,
     ) -> int:
+        run_id, _ = self.start_once(
+            tool, symbol, account=account, request_id=request_id, query=query
+        )
+        return run_id
+
+    def start_once(
+        self,
+        tool: str,
+        symbol: str,
+        *,
+        account: str = "primary",
+        request_id: str | None = None,
+        query: dict[str, Any] | None = None,
+    ) -> tuple[int, bool]:
+        """Return whether this call created work, never redispatch a recovered request."""
         identity = encoded(query or {"tool": tool, "symbol": symbol, "account": account})
         with self.lock:
             if request_id:
@@ -162,20 +185,17 @@ class ToolJournal:
                     "SELECT id,query FROM tool_runs WHERE request_id=?", (request_id,)
                 ).fetchone()
                 if old is None and self.storage_plan:
-                    store = self._storage()
-                    try:
+                    with self._storage() as store:
                         old = store.db.execute(
                             "SELECT id,query FROM tool_receipt_index "
                             "WHERE namespace=? AND request_id=?",
                             (self.namespace, request_id),
                         ).fetchone()
-                    finally:
-                        store.close()
                 if old:
                     if old["query"] != identity:
                         raise ValueError("Request ID belongs to a different evidence scope")
                     self._recover()
-                    return int(old["id"])
+                    return int(old["id"]), False
             self._recover()
             self._rollover()
             with self.connection:
@@ -204,7 +224,21 @@ class ToolJournal:
                 self.connection.execute(
                     "UPDATE tool_meta SET value=CAST(value AS INTEGER)+1 WHERE key='logical_count'"
                 )
-            return run_id
+            return run_id, True
+
+    def find_request(self, request_id: str) -> dict[str, Any] | None:
+        """Resolve a lost acknowledgment through the existing hot/cold request index."""
+        with self.lock:
+            row = self.connection.execute(
+                "SELECT id FROM tool_runs WHERE request_id=?", (request_id,)
+            ).fetchone()
+            if row is None and self.storage_plan:
+                with self._storage() as store:
+                    row = store.db.execute(
+                        "SELECT id FROM tool_receipt_index WHERE namespace=? AND request_id=?",
+                        (self.namespace, request_id),
+                    ).fetchone()
+            return self.get(row[0]) if row is not None else None
 
     def _recover(self) -> None:
         with self.connection:
@@ -251,8 +285,7 @@ class ToolJournal:
         body = row["result"]
         result = json.loads(body) if body else None
         if self.storage_plan and result and result.get("envelope"):
-            store = self._storage()
-            try:
+            with self._storage() as store:
                 packet = {
                     "kind": "tool_detail",
                     "at": row["finished"],
@@ -284,8 +317,6 @@ class ToolJournal:
                         "Durable totals; captured event page remains in exact detail"
                     )
                 body = encoded(result)
-            finally:
-                store.close()
         if result and result.get("envelope"):
             result["envelope"]["overview_utf8_bytes"] = 0
             for _ in range(4):
@@ -368,16 +399,13 @@ class ToolJournal:
             ).fetchall()
             merged = {row["id"]: self._metadata(dict(row)) for row in rows}
             if self.storage_plan:
-                store = self._storage()
-                try:
+                with self._storage() as store:
                     for row in store.db.execute(
                         "SELECT id,metadata FROM tool_receipt_index WHERE namespace=? AND id<? "
                         "ORDER BY id DESC LIMIT 21",
                         (self.namespace, before),
                     ).fetchall():
                         merged.setdefault(row["id"], json.loads(row["metadata"]))
-                finally:
-                    store.close()
             page = sorted(merged.values(), key=lambda row: row["id"], reverse=True)
             return {
                 "runs": page[:20],
@@ -396,8 +424,7 @@ class ToolJournal:
             ).fetchone()
             value = dict(row) if row else None
             if value is None and self.storage_plan:
-                store = self._storage()
-                try:
+                with self._storage() as store:
                     cold = store.db.execute(
                         "SELECT reference FROM tool_receipt_index WHERE namespace=? AND id=?",
                         (self.namespace, run_id),
@@ -410,8 +437,6 @@ class ToolJournal:
                         ):
                             raise ValueError("Archived receipt membership differs")
                         value = packet["receipt"]
-                finally:
-                    store.close()
             if value is None:
                 return None
             body = value["result"]
@@ -443,14 +468,11 @@ class ToolJournal:
                 offset = int(claims["offset"])
             result = receipt["result"]
             if reference:
-                store = self._storage()
-                try:
+                with self._storage() as store:
                     packet = store.reopen(reference)
                     if packet["namespace"] != self.namespace or packet["run_id"] != run_id:
                         raise ValueError("Captured detail membership differs")
                     result = packet["result"]
-                finally:
-                    store.close()
             facts = copy.deepcopy(result["result"])
             total = 1
             if receipt["tool"] == "market_evidence":

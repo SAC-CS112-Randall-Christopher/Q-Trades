@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { TrainingCandidateExport } from "./TrainingCandidateExport";
 import { LessonPanel } from "./LessonPanel";
 import { StockResearchPanel } from "./StockResearchPanel";
@@ -129,6 +129,8 @@ export function RoleResearchPanel() {
   const [state, setState] = useState<RoleState | null>(null);
   const [task, setTask] = useState<Task | null>(null);
   const [selected, setSelected] = useState(() => linkedTask() ?? localStorage.getItem("qtrades-role-task") ?? "");
+  const selectedTask = useRef(selected);
+  selectedTask.current = selected;
   const [before, setBefore] = useState(0);
   const [beforeId, setBeforeId] = useState("");
   const [search, setSearch] = useState("");
@@ -194,6 +196,7 @@ export function RoleResearchPanel() {
     return () => { live = false; controller.abort(); clearTimeout(timer); };
   }, [selected, before, beforeId, search, refresh]);
   const open = (id: string) => {
+    selectedTask.current = id;
     if (id !== selected) { setTask(null); setTaskError(null); }
     setSelected(id);
     localStorage.setItem("qtrades-role-task", id);
@@ -202,7 +205,7 @@ export function RoleResearchPanel() {
     location.hash = `role-research?${params}`;
   };
   useEffect(() => {
-    const restore = () => { const id = linkedTask(); if (id !== null) { setTask(null); setTaskError(null); setSelected(id); } };
+    const restore = () => { const id = linkedTask(); if (id !== null) { selectedTask.current = id; setTask(null); setTaskError(null); setSelected(id); } };
     window.addEventListener("hashchange", restore);
     return () => window.removeEventListener("hashchange", restore);
   }, []);
@@ -240,16 +243,19 @@ export function RoleResearchPanel() {
     event.preventDefault();
     void submit({ question, horizon, parent: parent || null, request_id: crypto.randomUUID() });
   };
-  const retryTransport = async () => {
+  const retryStage = async () => {
     if (!task) return;
+    const identity = task.id;
     setBusy(true);
     try {
-      const response = await fetch(`/api/lab/roles/tasks/${encodeURIComponent(task.id)}/retry`, { method: "POST", headers: { "X-Local-Operator": "1" }, signal: AbortSignal.timeout(6000) });
+      const response = await fetch(`/api/lab/roles/tasks/${encodeURIComponent(identity)}/retry`, { method: "POST", headers: { "X-Local-Operator": "1" }, signal: AbortSignal.timeout(6000) });
       const value = await response.json();
       if (!response.ok) throw new Error(value.detail ?? "This completed verdict cannot be retried.");
-      setTask(value as Task); setRefresh(r => r + 1);
-      setError(current => current?.kind === "task-retry" && current.task === task.id ? null : current);
-    } catch (cause) { setError({ kind: "task-retry", task: task.id, message: cause instanceof Error ? cause.message : "Retry acknowledgment unavailable; inspect the retained task." }); }
+      if (value.id !== identity) throw new Error("Retry acknowledgment belongs to another task; inspect the retained task.");
+      if (selectedTask.current === identity) setTask(value as Task);
+      setRefresh(r => r + 1);
+      setError(current => current?.kind === "task-retry" && current.task === identity ? null : current);
+    } catch (cause) { setError({ kind: "task-retry", task: identity, message: cause instanceof Error ? cause.message : "Retry acknowledgment unavailable; inspect the retained task." }); }
     finally { setBusy(false); }
   };
   const controlPilot = async (action: PilotControl) => {
@@ -376,7 +382,8 @@ export function RoleResearchPanel() {
         {task.result.rationale && <p><strong>Reason for the request:</strong> {task.result.rationale}</p>}
         {task.result.falsification && <p><strong>What would disprove the idea:</strong> {task.result.falsification}</p>}
       </section>}
-      {task.status === "failed" && task.attempts.length > 0 && !task.attempts.at(-1)?.response && (!pilot || task.context.execution_mode === "paper_research_pilot") && <button disabled={busy} type="button" onClick={() => void retryTransport()}>Authorize one recorded transport retry</button>}
+      {task.status === "failed" && task.stage === "archive_evaluation" && (!pilot || task.context.execution_mode === "paper_research_pilot") && <button disabled={busy} type="button" onClick={() => void retryStage()}>Retry saved evidence archive</button>}
+      {task.status === "failed" && ["idea", "review", "followup"].includes(task.stage) && task.attempts.length > 0 && !task.attempts.at(-1)?.response && (!pilot || task.context.execution_mode === "paper_research_pilot") && <button disabled={busy} type="button" onClick={() => void retryStage()}>Authorize one recorded transport retry</button>}
       <h4>Captured causal evidence</h4><p>{task.context.tool_evidence.security} · {task.context.tool_evidence.closed_bar_count} closed bars · captured {stamp(task.context.tool_evidence.observed_at)} · {task.context.tool_evidence.source_basis}</p>
       <FrozenComponentPanel task={task.id} catalog={task.context.catalog} />
       <ul>{Object.entries(task.context.tool_evidence.features).map(([key, feature]) => <li key={key}>{key}: {feature.eligible ? "Entry qualified at capture" : "No eligible entry at capture"}. {feature.reason} {feature.close ? `Close $${feature.close}.` : ""}</li>)}</ul>

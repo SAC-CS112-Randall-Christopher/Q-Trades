@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from trading.execution_profiles import PROFILES, execution
 from trading.paper_strategy import VARIANTS
+from trading.redesign_strategy import STRATEGIES
 
 if TYPE_CHECKING:
     from trading.paper_engine import PaperEngine
@@ -71,9 +72,7 @@ def create_campaign(engine: "PaperEngine", spec: CampaignSpec) -> dict[str, Any]
             raise ValueError("This launch request already names a different configuration")
         return {"status": "already_applied", "campaign": previous}
     if campaigns:
-        raise ValueError(
-            "One campaign is retained; history cannot be reset"
-        )
+        raise ValueError("One campaign is retained; history cannot be reset")
     # Reserve the two original universe accounts even before the feed creates them.
     retained = set(engine.state["accounts"]) | {"universe-wide-v1", "universe-control-v1"}
     if len(retained) + len(spec.accounts) > 20:
@@ -143,7 +142,7 @@ def control_account(
             from trading.numerical_candidates import validate_artifact
 
             validate_artifact(candidate["numerical_artifact"])
-        elif candidate["version"] not in VARIANTS:
+        elif candidate["version"] not in VARIANTS and candidate["version"] not in STRATEGIES:
             raise ValueError("Account strategy needs repair before recovery")
         if engine.state.get("campaigns"):
             frames = engine.campaign_frames(frames)

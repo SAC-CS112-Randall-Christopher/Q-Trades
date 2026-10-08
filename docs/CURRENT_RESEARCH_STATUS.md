@@ -1,4 +1,26 @@
-# Current source follow-up — October 5, 2026, R63-1 monitoring recovery
+# Current source follow-up — October 7, 2026, native candle scanner (#66)
+
+The authorized PR #79 rollout installed
+`f9bd8574f71badf7218ace0952ad2709ac1a7461` once through ExpectedCommit and
+the existing paper task. Individual preservation, current balanced audit and
+installed-code checks passed. The actual recording and first saved 5m study
+retained failures; strict receipt coverage and direct NAT writer mapping remain
+unresolved. Do not repeat an update or replace its collector to turn these into
+successful acceptance. Read [PATTERN_SCANNER.md](PATTERN_SCANNER.md).
+
+The scanner is a source/isolated-QA proposal within the existing registry and
+lab worker. It retains full native-year scopes, every confirmed level and
+candidate reasons, with no order authority. The accompanying storage correction
+reuses the initialized recorder for optional writes and read-only saved reopening.
+It has not repaired operating recording until separately installed and accepted.
+The selected research worker stays disabled; the original two consumed
+attempts/two allowances and immutable question history are preserved. No model,
+qualification, paid request, strategy change or research activation follows.
+
+Earlier headings below describe their dated source/operating snapshots, not
+the current installation or permission to dispatch another attempt.
+
+# Historical source follow-up — October 5, 2026, R63-1 monitoring recovery
 
 Draft PR #63 continues the C60 repairs. Its follow-up R63-1 correction is
 `5c8eca9ab128dfbc242f8ea87d2c3aaac89b2443`: a newer completed audit preserves

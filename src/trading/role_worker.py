@@ -7,7 +7,7 @@ import secrets
 import sqlite3
 import time
 from collections.abc import Callable
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from typing import TYPE_CHECKING, Any, Literal
 
 import psycopg
@@ -35,7 +35,7 @@ from trading.research_knowledge import KnowledgeQuery, ResearchKnowledge
 if TYPE_CHECKING:
     from trading.research_reviews import ResearchReviews
 from trading.research_lessons import ResearchLessons
-from trading.research_storage import ResearchStorage, load_plan
+from trading.research_storage import ResearchStorage, StoragePlan
 from trading.role_evidence import (
     artifact_summary,
     bundle_summary,
@@ -64,7 +64,12 @@ class Question(BaseModel):
 
 class RoleWorker:
     def __init__(
-        self, registry: ExperimentRegistry, controller: AutonomousLab | None, transport: Any = None
+        self,
+        registry: ExperimentRegistry,
+        controller: AutonomousLab | None,
+        transport: Any = None,
+        storage_owner: Callable[[StoragePlan], AbstractContextManager[ResearchStorage]]
+        | None = None,
     ):
         self.registry, self.controller, self.transport = registry, controller, transport
         self.lessons = ResearchLessons(registry)
@@ -124,7 +129,7 @@ class RoleWorker:
                   BEFORE DELETE ON role_question_selections
                   BEGIN SELECT RAISE(ABORT,'Question selection is permanent'); END;
             """)
-        self.history = RoleHistory(registry)
+        self.history = RoleHistory(registry, storage_owner)
         self._maintenance_due: dict[str, float] = {}
         with registry.transaction():
             registry.db.execute(
@@ -992,6 +997,38 @@ class RoleWorker:
         task = self.get(identity)
         if not self._same_mode(task):
             raise ValueError("Retained task belongs to a different role execution mode")
+        if task["stage"] == "archive_evaluation" and task["status"] == "failed":
+            evaluation = task.get("evaluation")
+            if not isinstance(evaluation, dict) or not isinstance(evaluation.get("inputs"), list):
+                raise ValueError("Original full evaluation is unavailable; archive retry refused")
+            self.history.restore(identity)
+            with self.registry.transaction():
+                if (
+                    self.registry.db.execute(
+                        "SELECT count(*) FROM role_tasks WHERE status NOT IN ('done','failed')"
+                    ).fetchone()[0]
+                    >= 8
+                ):
+                    raise ValueError("Eight active role questions; retry when a slot is available")
+                retained = self.registry.db.execute(
+                    "SELECT evaluation FROM role_tasks WHERE id=?", (identity,)
+                ).fetchone()
+                if retained is None or json.loads(retained["evaluation"] or "null") != evaluation:
+                    raise ValueError("Original evaluation changed; archive retry refused")
+                changed = self.registry.db.execute(
+                    "UPDATE role_tasks SET status='queued',retry_at=0 "
+                    "WHERE id=? AND stage='archive_evaluation' AND status='failed' "
+                    "AND owner IS NULL AND lease_until IS NULL AND evaluation=?",
+                    (identity, retained["evaluation"]),
+                ).rowcount
+                if changed != 1:
+                    raise ValueError("Retained archive stage changed; inspect its current owner")
+                self.registry.event(
+                    identity,
+                    "role_archive_retry_authorized",
+                    {"stage": task["stage"], "model_attempts_unchanged": True},
+                )
+            return self.view(identity)
         if task["stage"] not in {"idea", "review", "followup"} or task["status"] != "failed":
             raise ValueError("Only a failed model transport attempt can be explicitly retried")
         self.history.restore(identity)
@@ -1731,37 +1768,7 @@ class RoleWorker:
                 )
                 self._update(task, "archive_evaluation", evaluation=evaluation)
             elif stage == "archive_evaluation":
-                plan = load_plan(self.registry.path.parent)
-                if plan is None:
-                    raise InputWait(
-                        "Configure existing G: research tiers before saving role input detail"
-                    )
-                store = ResearchStorage(plan)
-                try:
-                    packet = {
-                        "kind": "role_evaluation",
-                        "at": task["evaluation"]["evaluated_at"],
-                        "task": task["id"],
-                        "evaluation": task["evaluation"],
-                        "protected_until": task["evaluation"]["evaluated_at"]
-                        + max(
-                            task["context"]["policy"]["horizon_seconds"],
-                            RuleSpec.model_validate(task["proposal"]["strategy"]).timing["review"],
-                        )
-                        + 86400,
-                    }
-                    reference = store.append([packet], time.time())[0]
-                    if store.reopen(reference) != packet:
-                        raise InputWait("Saved role evidence detail verification failed")
-                    compact = {k: v for k, v in task["evaluation"].items() if k != "inputs"}
-                    compact.update(
-                        input_count=len(task["evaluation"]["inputs"]),
-                        input_sha256=fingerprint(task["evaluation"]["inputs"]),
-                        detail_reference=reference,
-                    )
-                    self._update(task, "review", evaluation=compact)
-                finally:
-                    store.close()
+                await self._owned(self._archive_evaluation, task)
             elif stage == "submit":
                 try:
                     existing = c.inbox.get(task["proposal"]["request_id"])
@@ -1850,6 +1857,50 @@ class RoleWorker:
         except Exception as exc:
             self._update(task, task["stage"], "failed", reason=str(exc)[:500])
             return False
+
+    async def _owned(self, function: Callable[..., Any], *args: Any) -> Any:
+        """Drain native archive/maintenance work before shared owners can close."""
+        work = asyncio.create_task(asyncio.to_thread(function, *args))
+        try:
+            return await asyncio.shield(work)
+        except asyncio.CancelledError as cancelled:
+            try:
+                await work
+            except Exception:
+                self.reason = (
+                    "Owned research work failed during shutdown; original records retained"
+                )
+            raise cancelled
+
+    def _archive_evaluation(self, task: dict[str, Any]) -> None:
+        packet = {
+            "kind": "role_evaluation",
+            "at": task["evaluation"]["evaluated_at"],
+            "task": task["id"],
+            "evaluation": task["evaluation"],
+            "protected_until": task["evaluation"]["evaluated_at"]
+            + max(
+                task["context"]["policy"]["horizon_seconds"],
+                RuleSpec.model_validate(task["proposal"]["strategy"]).timing["review"],
+            )
+            + 86400,
+        }
+        try:
+            with self.history.storage() as store:
+                reference = store.append([packet], time.time())[0]
+                if store.reopen(reference) != packet:
+                    raise InputWait("Saved role evidence detail verification failed")
+        except HistoryUnavailable as exc:
+            raise InputWait(str(exc)) from exc
+        compact = {k: v for k, v in task["evaluation"].items() if k != "inputs"}
+        compact.update(
+            input_count=len(task["evaluation"]["inputs"]),
+            input_sha256=fingerprint(task["evaluation"]["inputs"]),
+            detail_reference=reference,
+        )
+        # History rollover takes registry then storage. Release storage before this
+        # lease-checked publication so evaluation cannot reverse that lock order.
+        self._update(task, "review", evaluation=compact)
 
     def _selection_authority(self) -> dict[str, Any] | None:
         authority = getattr(self.transport, "selection_authority", None)
@@ -2279,7 +2330,7 @@ class RoleWorker:
             if state and state["retry_at"] > now:
                 return
             if thread:
-                await asyncio.to_thread(operation)
+                await self._owned(operation)
             else:
                 await operation()
             if phase != "questions":

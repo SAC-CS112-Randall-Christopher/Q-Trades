@@ -15,6 +15,7 @@ from trading.execution_profiles import walk_book as walk_book
 from trading.market import Book
 from trading.paper_economics import observe as observe_economics
 from trading.paper_strategy import VARIANTS
+from trading.redesign_strategy import MAXIMUM_HOLD_SECONDS, PROGRESS_SECONDS, STRATEGIES
 
 D = Decimal
 FEE = D("0.001")
@@ -260,8 +261,13 @@ class PaperEngine:
             event["body"] = {**body, "purpose": PERFORMANCE_DIAGNOSTIC_PURPOSE}
             diagnostic = a.get("diagnostic", {})
             run = diagnostic.get("runs", {}).get(diagnostic.get("active_request_id"))
-            counter = {"order_intent": "intents", "fill": "fills", "order_cancelled": "cancels",
-                       "account_fault": "errors", "trade_closed": "completed"}.get(kind)
+            counter = {
+                "order_intent": "intents",
+                "fill": "fills",
+                "order_cancelled": "cancels",
+                "account_fault": "errors",
+                "trade_closed": "completed",
+            }.get(kind)
             if run and counter:
                 run[counter] += 1
         self.events.append(event)
@@ -652,6 +658,20 @@ class PaperEngine:
             return "Position or pending order already exists"
         if self.now < a["cooldowns"].get(symbol, 0):
             return "Ten-minute symbol cooldown"
+        if a["version"] in STRATEGIES:
+            available = feature.get("input_available_at")
+            chosen_at = a.get("last_strategy_change", {}).get("at")
+            if (
+                not isinstance(available, (int, float))
+                or isinstance(available, bool)
+                or not isinstance(chosen_at, (int, float))
+                or isinstance(chosen_at, bool)
+                or not math.isfinite(available)
+                or not math.isfinite(chosen_at)
+                or not chosen_at < available <= self.now
+                or self.now - available > 300
+            ):
+                return "Awaiting a subsequent complete five-minute bar after this rule change"
         if a.get("rule_spec"):
             available = feature.get("input_available_at")
             if (
@@ -659,7 +679,8 @@ class PaperEngine:
                 or isinstance(available, bool)
                 or not math.isfinite(available)
                 or not a["admitted_at"] < available <= self.now
-                or self.now - available > 90
+                or self.now - available
+                > (300 if a["rule_spec"]["version"] == "reviewed-lab-rules-v4" else 90)
             ):
                 return "Awaiting a fresh subsequent closed candle for this trial"
         if not feature["eligible"]:
@@ -670,6 +691,16 @@ class PaperEngine:
         rules = frame["rules"]
         if D(book.metrics()["spread_bps"]) > D(25):
             return "Spread exceeds 25 bps"
+        if a["version"] in STRATEGIES or feature.get("redesign_version"):
+            movement = D(feature["atr"]) * D("1.5") / book.asks[0][0] * 10000
+            hurdle = 2 * (fee_rate + D(profile.slippage)) * 10000 + D(book.metrics()["spread_bps"])
+            feature["modeled_cost_hurdle_bps"] = str(hurdle)
+            feature["movement_proxy_bps_at_entry"] = str(movement)
+            if movement <= hurdle:
+                return (
+                    "Volatility scale does not exceed modeled round-trip costs; "
+                    "no expected return is implied"
+                )
         limit = floor_step(book.asks[0][0] * D("1.001"), rules["tick"])
         if not rules["min_price"] <= limit <= rules["max_price"]:
             return "Limit outside venue price range"
@@ -728,7 +759,9 @@ class PaperEngine:
             "created_at": self.now,
             "features": feature,
             "reason": (
-                "Frozen numerical signal"
+                STRATEGIES[feature["mechanism"] if a.get("rule_spec") else a["version"]]
+                if feature.get("redesign_version")
+                else "Frozen numerical signal"
                 if a.get("numerical_artifact")
                 else "Reviewed range excursion"
                 if a.get("rule_spec", {}).get("family") == "range_reversion"
@@ -776,6 +809,8 @@ class PaperEngine:
         artifact = a.get("numerical_artifact")
         invalid_artifact = False
         maximum_hold, progress_seconds = 2700, 600
+        if pos["version"] in STRATEGIES:
+            maximum_hold, progress_seconds = MAXIMUM_HOLD_SECONDS, PROGRESS_SECONDS
         if a.get("rule_spec"):
             from trading.autonomous_spec import RuleSpec
 
@@ -816,13 +851,13 @@ class PaperEngine:
         elif elapsed >= maximum_hold:
             reason = (
                 "Frozen maximum hold"
-                if a.get("numerical_artifact") or a.get("rule_spec")
+                if a.get("numerical_artifact") or a.get("rule_spec") or pos["version"] in STRATEGIES
                 else "45-minute maximum hold"
             )
         elif elapsed >= progress_seconds and not pos["one_r"]:
             reason = (
                 "No 1R progress by frozen horizon checkpoint"
-                if a.get("rule_spec")
+                if a.get("rule_spec") or pos["version"] in STRATEGIES
                 else "No 1R progress after ten minutes"
             )
         if not reason:
@@ -923,7 +958,8 @@ class PaperEngine:
             "outcome": "open",
         }
         if name == "primary":
-            a["version"] = "selective-v1"
+            if a["version"] not in STRATEGIES:
+                a["version"] = "selective-v1"
         self.emit(
             "replenishment",
             name,
@@ -948,6 +984,12 @@ class PaperEngine:
         candidates = []
         rejections = {}
         for version in VARIANTS:
+            if incumbent in STRATEGIES:
+                rejections[version] = (
+                    "Retain the explicit exploratory operator rule; "
+                    "legacy bank selection cannot replace it"
+                )
+                continue
             if version == incumbent:
                 continue
             reason = "Two complete aligned account windows are required"
@@ -1131,7 +1173,9 @@ class PaperEngine:
                 if order["side"] == "buy":
                     self.cancel(name, a, symbol, "Account failure; entry cancelled")
         if (
-            not diagnostic and fresh and D(a["equity"]) >= 1000
+            not diagnostic
+            and fresh
+            and D(a["equity"]) >= 1000
             and a["attempt"]["outcome"] == "open"
         ):
             a["attempt"]["outcome"] = "won"
@@ -1170,6 +1214,9 @@ class PaperEngine:
             feature = study.get(symbol, {}).get(a["version"])
             if not frame or not feature or not fresh_frame(frame, self.now):
                 continue
+            if feature.get("redesign_version"):
+                # Entry cost evidence belongs to this account's own execution profile.
+                feature = dict(feature)
             bar_id = feature.get("bar_open_ms")
             last_bar = a["last_decision"].get(symbol, {}).get("bar")
             if bar_id is None or (last_bar is not None and bar_id <= last_bar):
@@ -1196,7 +1243,10 @@ class PaperEngine:
             self.emit("decision", name, decision)
 
     def tick(
-        self, frames: dict[str, dict[str, Any]], study: dict[str, Any], *,
+        self,
+        frames: dict[str, dict[str, Any]],
+        study: dict[str, Any],
+        *,
         diagnostic_allowed: bool = True,
     ) -> None:
         self.diagnostic_allowed = diagnostic_allowed

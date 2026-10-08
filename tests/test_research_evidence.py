@@ -291,3 +291,247 @@ def test_cancel_during_failed_write_terminates_and_retains_failure(tmp_path, mon
         assert not recorder.pending
 
     asyncio.run(run())
+
+
+def replacement_packet(decision_packet, version, *, v4=False):
+    """Synthetic retained causal inputs; no service, model or financial database."""
+    from collections import deque
+
+    from test_redesign_strategy import fixture, observed_at
+
+    from trading.account_redesign import StrategyChange, change_strategy
+    from trading.autonomous_spec import RuleSpec, rule_feature
+    from trading.experiment_registry import fingerprint
+    from trading.paper_engine import initial_state
+    from trading.paper_strategy import VARIANTS, features
+    from trading.research_evidence import digest
+
+    recorder, _, _, _ = decision_packet
+    bars = fixture(version)
+    cutoff = observed_at(bars)
+    frames = {"BTCUSD": {**frame(cutoff), "source": "synthetic-redesign-evidence"}}
+    state = initial_state(cutoff)
+    account = state["accounts"]["primary"]
+    account.update(valuation_fresh=True, valuation_at=cutoff - 2)
+    available = bars[-1].close_ms / 1000
+    if v4:
+        spec = RuleSpec(version="reviewed-lab-rules-v4", family=version, holding_horizon="medium")
+        account.update(
+            version="lab-rule-" + fingerprint(spec.model_dump())[:24],
+            rule_spec=spec.model_dump(),
+            admitted_at=available - 1,
+            symbols=["BTCUSD"],
+        )
+        replacement = rule_feature(bars, cutoff, spec, account["execution_profile"])
+        replacement["input_checked_at"] = cutoff
+    else:
+        change_strategy(
+            PaperEngine(state, available - 1),
+            "primary",
+            StrategyChange(
+                request_id="synthetic-evidence-redesign-001",
+                strategy=version,
+                expected_strategy=account["version"],
+                expected_control_version=0,
+            ),
+        )
+        from trading.redesign_strategy import features as replacement_features
+
+        replacement = replacement_features(bars, cutoff, version)
+    study = {"BTCUSD": {v: features(bars, cutoff, v) for v in VARIANTS}}
+    study["BTCUSD"][account["version"]] = replacement
+    packet = recorder.prepare(
+        cutoff,
+        frames,
+        study,
+        {"BTCUSD": bars},
+        {"BTCUSD": cutoff},
+        0,
+        {},
+        state,
+        [],
+        {"BTCUSD": deque()},
+        {},
+    )
+    engine = PaperEngine(copy.deepcopy(state), cutoff)
+    engine.tick(copy.deepcopy(frames), copy.deepcopy(study))
+    recorder.complete(packet, engine.events, engine.state, [], {}, time.monotonic())
+    return recorder, {"id": 1, "payload": packet, "sha256": digest(packet)}, account["version"]
+
+
+@pytest.mark.parametrize(
+    "version",
+    [
+        "cost-breakout-v1",
+        "breakout-retest-v1",
+        "trend-pullback-v1",
+        "vwap-reclaim-v1",
+        "range-fade-v1",
+        "momentum-followthrough-v1",
+        "compression-breakout-v1",
+        "washout-rebound-v1",
+    ],
+)
+@pytest.mark.parametrize("v4", [False, True])
+def test_replacement_original_inputs_are_reproduced_for_every_frozen_method(
+    decision_packet, version, v4
+):
+    _, record, key = replacement_packet(decision_packet, version, v4=v4)
+    before = copy.deepcopy(record)
+    result = feature_reproduction(record["payload"])
+    closed = result["closed_bar_features"]["BTCUSD"]
+    kind = "replacement_rule_features" if v4 else "replacement_features"
+    assert result["book_features_match"] and closed["matched"] is True
+    assert closed[kind][key]["matched"] is True
+    assert closed[kind][key]["reproduced"] == record["payload"]["study"]["BTCUSD"][key]
+    assert record == before
+
+
+@pytest.mark.parametrize("v4", [False, True])
+@pytest.mark.parametrize(
+    "field,value", [("eligible", False), ("atr", "999"), ("movement_proxy_bps", "0")]
+)
+def test_altered_replacement_feature_is_not_silently_omitted(decision_packet, v4, field, value):
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1", v4=v4)
+    record["payload"]["study"]["BTCUSD"][key][field] = value
+    result = feature_reproduction(record["payload"])
+    assert result["closed_bar_features"]["BTCUSD"]["matched"] is False
+
+
+@pytest.mark.parametrize("v4", [False, True])
+def test_missing_executing_replacement_feature_remains_unmatched(decision_packet, v4):
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1", v4=v4)
+    record["payload"]["study"]["BTCUSD"].pop(key)
+    assert (
+        feature_reproduction(record["payload"])["closed_bar_features"]["BTCUSD"]["matched"] is False
+    )
+
+
+@pytest.mark.parametrize("field", ["input_cutoff", "input_checked_at", "input_bars_sha256"])
+def test_v4_missing_original_input_identity_cannot_claim_reproduction(decision_packet, field):
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1", v4=True)
+    record["payload"]["study"]["BTCUSD"][key].pop(field)
+    result = feature_reproduction(record["payload"])
+    assert (
+        result["closed_bar_features"]["BTCUSD"]["replacement_rule_features"][key]["matched"]
+        is False
+    )
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("input_cutoff", float("nan")),
+        ("input_cutoff", True),
+        ("input_checked_at", float("inf")),
+        ("input_checked_at", True),
+        ("input_bars_sha256", "0" * 64),
+    ],
+)
+def test_v4_invalid_cutoff_or_different_original_prefix_remains_unmatched(
+    decision_packet, field, value
+):
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1", v4=True)
+    record["payload"]["study"]["BTCUSD"][key][field] = value
+    assert (
+        feature_reproduction(record["payload"])["closed_bar_features"]["BTCUSD"]["matched"] is False
+    )
+
+
+@pytest.mark.parametrize("field", ["input_cutoff", "input_checked_at"])
+def test_v4_future_or_reversed_observation_cannot_backdate_original_inputs(decision_packet, field):
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1", v4=True)
+    selected = record["payload"]["study"]["BTCUSD"][key]
+    selected[field] = record["payload"]["at"] + 1
+    assert (
+        feature_reproduction(record["payload"])["closed_bar_features"]["BTCUSD"]["matched"] is False
+    )
+
+
+@pytest.mark.parametrize("v4", [False, True])
+@pytest.mark.parametrize("condition", ["startup", "stale", "candle_error"])
+def test_replacement_unavailable_feature_reproduces_the_protected_observation(
+    decision_packet, v4, condition
+):
+    from trading.research_evidence import book_features
+
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1", v4=v4)
+    packet = record["payload"]
+    origin = packet["feature_origin"]["BTCUSD"]
+    selected = packet["study"]["BTCUSD"][key]
+    if condition == "startup":
+        origin["ready_at"] = packet["at"]
+        reason = (
+            "Bootstrap only; awaiting a subsequent complete five-minute bar"
+            if v4
+            else "Bootstrap only; awaiting new closed bar"
+        )
+        for name, feature in packet["study"]["BTCUSD"].items():
+            feature.update(
+                eligible=False,
+                reason=reason if name == key else "Bootstrap only; awaiting new closed bar",
+            )
+    elif condition == "stale":
+        packet["at"] += 301
+        for feature in packet["study"]["BTCUSD"].values():
+            feature.update(eligible=False, reason="Closed candle is stale")
+    else:
+        origin["candle_error"] = "Retained causal candle disagreement"
+        for feature in packet["study"]["BTCUSD"].values():
+            feature.update(eligible=False, reason=origin["candle_error"])
+    packet["book_features"] = {
+        s: book_features(f, packet["at"]) for s, f in packet["frames"].items()
+    }
+    before = copy.deepcopy(packet)
+    result = feature_reproduction(packet)["closed_bar_features"]["BTCUSD"]
+    assert selected["eligible"] is False and result["matched"] is True
+    assert packet == before
+
+
+def test_v4_distinguishes_cached_calculation_from_current_minute_input_check(decision_packet):
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1", v4=True)
+    packet = record["payload"]
+    selected = packet["study"]["BTCUSD"][key]
+    packet["at"] += 95
+    selected.update(
+        input_checked_at=packet["at"],
+        eligible=False,
+        reason="Awaiting a fresh subsequent closed candle",
+    )
+    result = feature_reproduction(packet)["closed_bar_features"]["BTCUSD"]
+    # Legacy minute features are stale; compare the new v4 branch separately.
+    assert result["replacement_rule_features"][key]["matched"] is True
+    assert selected["input_cutoff"] < selected["input_checked_at"]
+
+
+@pytest.mark.parametrize("ready_offset,blocked", [(0.001, True), (-0.001, False)])
+def test_bank_exact_five_minute_startup_boundary_uses_actual_closed_availability(
+    decision_packet, ready_offset, blocked
+):
+    _, record, key = replacement_packet(decision_packet, "cost-breakout-v1")
+    packet = record["payload"]
+    selected = packet["study"]["BTCUSD"][key]
+    origin = packet["feature_origin"]["BTCUSD"]
+    origin["ready_at"] = selected["input_available_at"] + ready_offset
+    if blocked:
+        # The nominal five-minute end equals startup, but its actual closed
+        # observation precedes startup by one millisecond and is not new input.
+        assert selected["bar_open_ms"] + 300000 == round(origin["ready_at"] * 1000)
+        selected.update(eligible=False, reason="Bootstrap only; awaiting new closed bar")
+    before = copy.deepcopy(packet)
+    result = feature_reproduction(packet)["closed_bar_features"]["BTCUSD"]
+    assert result["matched"] is True and selected["eligible"] is not blocked
+    assert packet == before
+
+
+def test_recorder_binds_new_causal_strategy_source(decision_packet):
+    import hashlib
+    from pathlib import Path
+
+    import trading.redesign_strategy
+
+    recorder, _, _, _ = decision_packet
+    assert (
+        recorder.source_files["redesign_strategy.py"]
+        == hashlib.sha256(Path(trading.redesign_strategy.__file__).read_bytes()).hexdigest()
+    )
