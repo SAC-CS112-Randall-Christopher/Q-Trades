@@ -348,6 +348,22 @@ jobs:
             QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58973 \
             node tests/browser/role_archive_retry.cjs
           wait "$archive_pid"
+      - name: Verify original finding preparation and immutable comparison recovery
+        run: |
+          python -B tests/browser/pattern_comparison_server.py \
+            --directory "$RUNNER_TEMP/comparison-browser-workspace" \
+            --web-dist "$GITHUB_WORKSPACE/apps/web/dist" --port 58974 \
+            > "$RUNNER_TEMP/comparison-browser-server.log" 2>&1 &
+          comparison_pid=$!
+          trap 'kill "$comparison_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:58974/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          QTRADES_BROWSER_QA_OUTPUT="$RUNNER_TEMP/browser-output/pattern-comparisons" \
+            QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58974 \
+            node tests/browser/pattern_comparison.cjs
+          wait "$comparison_pid"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
@@ -388,4 +404,4 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m mypy --platform win32 src
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py tests/test_candle_patterns.py tests/test_candle_history.py tests/test_pattern_scanner.py tests/test_pattern_charts.py tests/test_live_candle_storage.py
+          python -B -m pytest -q -p no:cacheprovider --tb=long --durations=20 tests/test_persistent_research.py tests/test_knowledge_recovery.py tests/test_review_background.py tests/test_review_repairs.py tests/test_candle_patterns.py tests/test_candle_history.py tests/test_pattern_scanner.py tests/test_daily_pattern_analyzer.py tests/test_pattern_charts.py tests/test_live_candle_storage.py tests/test_pattern_comparisons.py tests/test_pattern_comparison_api.py

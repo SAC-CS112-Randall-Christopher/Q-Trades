@@ -1,3 +1,26 @@
+# Current source follow-up - October 8, 2026, pattern-driven research (#66)
+
+Chris authorized the reviewed PR83 merge/install and continuing the autonomous
+research Goal. PR83 merged at c653b136f4f0d4fac3f9855bbbb4c40b21a3c8a9;
+its separately recorded installation is not a new research/model grant.
+Continue the existing PR75 worker/archive owner on that exact main content.
+
+Connect saved native-pattern motivation to one supported fixed v4 comparison
+through an explicit successor role contract and selection-policy source branch.
+Reuse the scanner/comparison owner, existing worker loop, Lab inbox, shared
+storage, deterministic evaluation, independent review and outcome/lesson owners.
+Original v5-v7 contracts, packets, profiles, grants, questions and every attempt,
+answer, wait and adverse outcome remain unchanged. New source authority must be
+explicit and disabled until its separately reviewed operating decision.
+
+Source implementation, disposable QA, independent review, commit/push and the
+existing draft PR/ledger are authorized. Stubbed model responses are software
+evidence only. Do not select an operating successor profile/grant, dispatch a
+model, enable scanner/research, fund/promote a strategy, consume holdouts or alter
+financial rules from this source increment. Preserve financial/data ownership,
+twenty slots, 400/100-GB policy, resource guards and private Lab separation.
+The dated directions below retain their original scope and evidence.
+
 # Current source follow-up — October 7, 2026, researcher archive ownership (#66)
 
 Continue the existing draft PR75 lane on the accepted current main source.
@@ -14,6 +37,46 @@ model, change packets/profiles/grants or financial rules, or activate daily publ
 candle work. PR83 remains a separate reviewed source proposal awaiting its own
 exact-target operating decision. Preserve installed receipts and original adverse
 answers; do not repeat completed acceptance or consumed attempts.
+# Current source follow-up — October 7, 2026, pattern research and preparation (#66)
+
+Chris asks which chart patterns Q-Trades should recognize. Verify primary
+research, distinguish study results from this project's detector definitions,
+and continue the existing daily-analyzer lane toward a genuine supported
+experiment. A bounded preparation may bind an immutable BTCUSD/native-5m
+breakout or retest finding to the existing fixed v4 retest-versus-breakout
+comparison, with original archive verification and separately captured current
+numerical inputs. The scanner detector and trading-bank mechanism differ;
+preparation does not establish a trading edge or run a comparison.
+
+Use the existing registry, issued Lab bundles, storage owner and numerical
+evaluation. Preparation must not enqueue a model, submit an experiment to the
+inbox, fund accounts, change a policy or consume attempts. Preserve original
+questions, grants, profiles, packets, adverse answers and financial decisions.
+Source/disposable checks, independent review, commit/push and draft PR delivery
+remain authorized. New installation, restart, scanner/research activation and
+actual model or prospective comparison require their applicable authorization.
+
+# Previous source follow-up — October 7, 2026, daily automated chart analysis (#66)
+
+Chris requests hands-off daily history analysis and five next research candidates
+from eligible USD crypto markets, with recognized patterns and five native candle
+charts. Reuse the existing scanner, registry, retained inputs, resource/storage
+owner and Lab loop. Enroll new scopes once, then process new closed candles;
+do not redownload a year or create a new frozen campaign every day.
+
+Keep daily picks immutable with actual eligibility, ranking inputs, coverage,
+source identity and detector definitions. Pending history is a research priority,
+not a detected pattern or a win-probability score. Preserve original v1 campaigns,
+controls, financial decisions, accounts/history, every adverse result and attempt.
+Daily policy source/isolated QA, independent review, commits/push and an owning
+draft PR are authorized. No installation, restart, model dispatch, changed guard,
+account funding or strategy promotion follows from this implementation.
+
+The installed chart target remains 3d26941652efa72b20a7b532da1994e45b76c2cb.
+Root completed the separately approved first BTCUSD fixed-year/five-frame run
+once: Prepare, Start, then Pause within ten minutes. Retained coverage is partial;
+that consumed bounded approval does not activate the proposed daily policy or
+authorize another operating scan.
 
 # Previous source follow-up — October 7, 2026, saved scanner charts (#66)
 
