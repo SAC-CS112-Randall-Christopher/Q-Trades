@@ -97,6 +97,9 @@ def main():
     mode = "normal"
     blocked = False
     clock_offset = 0
+    # Historical chart assertions describe one closed window. Wall-clock candle
+    # boundaries must not start live monitoring while that window is prepared.
+    chart_clock_anchor = time.time() if args.chart_check else None
     prospective_cutoff = None
     chart_setup = None
     daily_roster_changed = False
@@ -105,16 +108,19 @@ def main():
     held_start_event = None
     held_start_entered = asyncio.Event()
     calls, posts, advances, reads, setup_controls = [], [], [], [], []
-    scanner_module.time = SimpleNamespace(
-        time=lambda: time.time() + clock_offset, perf_counter=time.perf_counter
-    )
+
+    def scanner_now():
+        anchor = chart_clock_anchor if chart_clock_anchor is not None else time.time()
+        return anchor + clock_offset
+
+    scanner_module.time = SimpleNamespace(time=scanner_now, perf_counter=time.perf_counter)
     if args.chart_check or args.daily_check:
         # The synthetic prospective close clock belongs to both the scanner and
         # its read projection. Global and financial runtime clocks stay real.
-        charts_module.time = SimpleNamespace(time=lambda: time.time() + clock_offset)
+        charts_module.time = SimpleNamespace(time=scanner_now)
 
     def tick():
-        now = time.time() + clock_offset
+        now = scanner_now()
         paper.state["last_tick"] = now
         paper.metadata_at = now
         paper.universe.metadata_at = now
@@ -179,7 +185,7 @@ def main():
             # other slots as missing. Default scanner QA remains unchanged.
             row_limit = min(row_limit, 360)
         for at in list(range(start, end + 1, step))[:row_limit]:
-            daily_cutoff = int((time.time() + clock_offset) * 1000) // step * step
+            daily_cutoff = int(scanner_now() * 1000) // step * step
             if args.daily_check and at < daily_cutoff - 32 * step:
                 # A genuine sparse synthetic year: older requested slots are
                 # absent, explicitly counted by the unchanged scanner.
@@ -433,6 +439,7 @@ def main():
             "financial_database": False,
             "model_calls": 0,
             "daily_check": args.daily_check,
+            "synthetic_chart_clock_anchor_seconds": chart_clock_anchor,
             "synthetic_clock_offset_seconds": clock_offset,
             "financial_state_preserved_except_fixture_tick": financial_unchanged(),
             "source_hashes": hashes,
@@ -533,7 +540,8 @@ def main():
         chart_setup["status"] = "preparing_alert"
         scanner = app.state.pattern_scanner
         clock_offset = 0
-        prospective_cutoff = int(time.time() * 1000) // 14400000 * 14400000
+        history_at_ms = int(scanner_now() * 1000)
+        prospective_cutoff = history_at_ms // 14400000 * 14400000
         mode = "sparse_4h"
         tick()
         prepared = fixture_control(scanner, "prepare", symbols=["BTCUSD"])
@@ -570,6 +578,8 @@ def main():
             history_steps=history_steps,
             alert_steps=alert_steps,
             four_hour_history=historical,
+            synthetic_history_at_ms=history_at_ms,
+            synthetic_prospective_at_ms=int(scanner_now() * 1000),
             synthetic_clock_offset_seconds=clock_offset,
         )
         return chart_setup
@@ -682,7 +692,7 @@ def main():
             if not args.daily_check:
                 raise HTTPException(409, "Explicit daily workflow required")
             if action == "daily_next_day":
-                current = time.time() + clock_offset
+                current = scanner_now()
                 clock_offset += (int(current // 86400) + 1) * 86400 - current + 1
             elif action == "daily_roster_change":
                 daily_roster_changed = True
@@ -701,7 +711,7 @@ def main():
             blocked = action == "block"
             return {"synthetic_admission_blocked": blocked}
         if action == "sparse_4h":
-            prospective_cutoff = int(time.time() * 1000) // 14400000 * 14400000
+            prospective_cutoff = int(scanner_now() * 1000) // 14400000 * 14400000
         if action == "future_4h":
             if prospective_cutoff is None:
                 raise HTTPException(409, "An actual historical preparation is required")

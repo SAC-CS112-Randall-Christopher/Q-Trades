@@ -2541,7 +2541,7 @@ Exact native, dashboard, ownership, PG and browser job selections — [.github/w
 | [tests/browser/pattern_comparison_server.py](../../tests/browser/pattern_comparison_server.py) | [verification-verification](verification.md) | 9 |
 | [tests/browser/pattern_scanner.cjs](../../tests/browser/pattern_scanner.cjs) | [verification-verification](verification.md) | 0 |
 | [tests/browser/pattern_scanner_charts.cjs](../../tests/browser/pattern_scanner_charts.cjs) | [verification-verification](verification.md) | 0 |
-| [tests/browser/pattern_scanner_server.py](../../tests/browser/pattern_scanner_server.py) | [verification-verification](verification.md) | 18 |
+| [tests/browser/pattern_scanner_server.py](../../tests/browser/pattern_scanner_server.py) | [verification-verification](verification.md) | 19 |
 | [tests/browser/role_archive_retry.cjs](../../tests/browser/role_archive_retry.cjs) | [verification-verification](verification.md) | 0 |
 | [tests/browser/role_archive_retry_server.py](../../tests/browser/role_archive_retry_server.py) | [verification-verification](verification.md) | 11 |
 | [tests/browser/role_pattern_evidence.cjs](../../tests/browser/role_pattern_evidence.cjs) | [verification-verification](verification.md) | 0 |
@@ -2862,14 +2862,14 @@ Exact native, dashboard, ownership, PG and browser job selections — [.github/w
 | POST | `/__qa/r63-1/{mode}` | [transition](../../tests/browser/financial_monitoring_server.py#L135) |
 | GET | `/__qa/probe` | [read_probe](../../tests/browser/pattern_comparison_server.py#L377) |
 | POST | `/__qa/{action}` | [qa_control](../../tests/browser/pattern_comparison_server.py#L382) |
-| POST | `/__qa/advance` | [advance](../../tests/browser/pattern_scanner_server.py#L620) |
-| POST | `/__qa/chart_advance_saved_scope` | [advance_saved_charts](../../tests/browser/pattern_scanner_server.py#L578) |
-| POST | `/__qa/chart_alert_setup` | [prepare_alert_charts](../../tests/browser/pattern_scanner_server.py#L528) |
-| POST | `/__qa/chart_setup` | [prepare_charts](../../tests/browser/pattern_scanner_server.py#L487) |
-| POST | `/__qa/daily_advance` | [daily_advance](../../tests/browser/pattern_scanner_server.py#L462) |
-| GET | `/__qa/held_start` | [held_start_identity](../../tests/browser/pattern_scanner_server.py#L390) |
-| GET | `/__qa/probe` | [probe](../../tests/browser/pattern_scanner_server.py#L399) |
-| POST | `/__qa/{action}` | [control](../../tests/browser/pattern_scanner_server.py#L660) |
+| POST | `/__qa/advance` | [advance](../../tests/browser/pattern_scanner_server.py#L630) |
+| POST | `/__qa/chart_advance_saved_scope` | [advance_saved_charts](../../tests/browser/pattern_scanner_server.py#L588) |
+| POST | `/__qa/chart_alert_setup` | [prepare_alert_charts](../../tests/browser/pattern_scanner_server.py#L535) |
+| POST | `/__qa/chart_setup` | [prepare_charts](../../tests/browser/pattern_scanner_server.py#L494) |
+| POST | `/__qa/daily_advance` | [daily_advance](../../tests/browser/pattern_scanner_server.py#L469) |
+| GET | `/__qa/held_start` | [held_start_identity](../../tests/browser/pattern_scanner_server.py#L396) |
+| GET | `/__qa/probe` | [probe](../../tests/browser/pattern_scanner_server.py#L405) |
+| POST | `/__qa/{action}` | [control](../../tests/browser/pattern_scanner_server.py#L670) |
 | GET | `/__qa/held` | [observe_held](../../tests/browser/role_archive_retry_server.py#L308) |
 | GET | `/__qa/probe` | [observation](../../tests/browser/role_archive_retry_server.py#L303) |
 | POST | `/__qa/{action}` | [control](../../tests/browser/role_archive_retry_server.py#L314) |
@@ -5891,22 +5891,23 @@ Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/tra
 
 - [main](../../tests/browser/pattern_scanner_server.py#L31) — function
 - [main.current_hashes](../../tests/browser/pattern_scanner_server.py#L68) — function
-- [main.tick](../../tests/browser/pattern_scanner_server.py#L116) — function
-- [main.native](../../tests/browser/pattern_scanner_server.py#L161) — function
-- [main.financial_unchanged](../../tests/browser/pattern_scanner_server.py#L242) — function
-- [main.lifespan](../../tests/browser/pattern_scanner_server.py#L248) — function
-- [main.lifespan.storage_owner](../../tests/browser/pattern_scanner_server.py#L254) — function
-- [main.failures](../../tests/browser/pattern_scanner_server.py#L297) — function
-- [main.authorize](../../tests/browser/pattern_scanner_server.py#L385) — function
-- [main.held_start_identity](../../tests/browser/pattern_scanner_server.py#L390) — function
-- [main.probe](../../tests/browser/pattern_scanner_server.py#L399) — function
-- [main.fixture_control](../../tests/browser/pattern_scanner_server.py#L449) — function
-- [main.daily_advance](../../tests/browser/pattern_scanner_server.py#L462) — function
-- [main.prepare_charts](../../tests/browser/pattern_scanner_server.py#L487) — function
-- [main.prepare_alert_charts](../../tests/browser/pattern_scanner_server.py#L528) — function
-- [main.advance_saved_charts](../../tests/browser/pattern_scanner_server.py#L578) — function
-- [main.advance](../../tests/browser/pattern_scanner_server.py#L620) — function
-- [main.control](../../tests/browser/pattern_scanner_server.py#L660) — function
+- [main.scanner_now](../../tests/browser/pattern_scanner_server.py#L112) — function
+- [main.tick](../../tests/browser/pattern_scanner_server.py#L122) — function
+- [main.native](../../tests/browser/pattern_scanner_server.py#L167) — function
+- [main.financial_unchanged](../../tests/browser/pattern_scanner_server.py#L248) — function
+- [main.lifespan](../../tests/browser/pattern_scanner_server.py#L254) — function
+- [main.lifespan.storage_owner](../../tests/browser/pattern_scanner_server.py#L260) — function
+- [main.failures](../../tests/browser/pattern_scanner_server.py#L303) — function
+- [main.authorize](../../tests/browser/pattern_scanner_server.py#L391) — function
+- [main.held_start_identity](../../tests/browser/pattern_scanner_server.py#L396) — function
+- [main.probe](../../tests/browser/pattern_scanner_server.py#L405) — function
+- [main.fixture_control](../../tests/browser/pattern_scanner_server.py#L456) — function
+- [main.daily_advance](../../tests/browser/pattern_scanner_server.py#L469) — function
+- [main.prepare_charts](../../tests/browser/pattern_scanner_server.py#L494) — function
+- [main.prepare_alert_charts](../../tests/browser/pattern_scanner_server.py#L535) — function
+- [main.advance_saved_charts](../../tests/browser/pattern_scanner_server.py#L588) — function
+- [main.advance](../../tests/browser/pattern_scanner_server.py#L630) — function
+- [main.control](../../tests/browser/pattern_scanner_server.py#L670) — function
 Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/trading/candle_history.py](../../src/trading/candle_history.py), [src/trading/config.py](../../src/trading/config.py), [src/trading/pattern_charts.py](../../src/trading/pattern_charts.py), [src/trading/pattern_scanner.py](../../src/trading/pattern_scanner.py), [src/trading/research_storage.py](../../src/trading/research_storage.py), [src/trading/venue.py](../../src/trading/venue.py)
 
 ### tests/browser/role_archive_retry_server.py

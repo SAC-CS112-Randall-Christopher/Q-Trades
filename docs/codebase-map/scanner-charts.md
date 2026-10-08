@@ -125,6 +125,14 @@ Check original campaign/frame and event kind/sequence, overlay total/cursor, sel
 
 Source tests: [chart projection tests](source-index.md#scanner-chart-tests), [detector tests](source-index.md#scanner-detector-tests) and [compiled chart workflow fixture](source-index.md#scanner-chart-browser). They cover original overlays versus recomputed indicators, >100 overlays, exact selection beyond a page, missing selected candles, archive corruption, progress-bound paging, multiple markers, normal geometry and GET-only navigation. [Legacy candle browser](source-index.md#scanner-candle-browser) and [scanner control browser](source-index.md#scanner-control-browser) cover separate original UUID and campaign workflows.
 
+The compiled chart fixture freezes its shared scanner/chart/tick clock while
+building historical inputs, then explicitly advances four hours for the alert.
+Its historical counters therefore describe the original cutoff; an operating
+scanner can legitimately add observed or missing intervals after that cutoff
+while other scopes are still preparing. Page polling is stopped during this
+finite synthetic setup and resumes for the normal saved-chart workflow. Real
+performance timers and financial clocks are unchanged.
+
 ## Coverage limits
 
 The mapped source requests all five scopes, but a rendered five-card grid is not five complete years. Recognized daily evidence can come from one prepared frame with missing native history. A historical pattern, a current candidate label, a supported preparation and a mature comparison outcome are not interchangeable. No source/test inventory proves a live full-roster year, daily predictive ranking, resource capacity at every eligible market, profitability, 28-day qualification or installed activation. Retained synthetic/browser/native/hosted/operating receipts must preserve their actual revision, inputs, failures, skips and authority scopes.

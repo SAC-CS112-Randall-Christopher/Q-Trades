@@ -86,6 +86,29 @@ review found no material issue in that correction. A later hosted run must pass
 at the corrected head; the earlier focused success does not make this failed full
 run green.
 
+At `325aef358b5d1a5e13d5bcb958a8a7f2e9f95b8d`, the corrected PostgreSQL job
+passed **2,463 tests, 98 skipped** and native Windows passed **1,698 tests,
+262 skipped, two deselected**. Five other checks passed; the chart browser failed:
+its synthetic history preparation crossed 17:00 UTC, so the unchanged scanner
+correctly added one missing monitoring interval in the 15m/30m/1h scopes before
+all historical scopes finished. The retained fixture proves each excess cursor
+and missing count. This is [run 37812529428](https://github.com/SAC-CS112-Randall-Christopher/Q-Trades/actions/runs/37812529428),
+which remains a failed hosted run.
+
+The chart fixture now holds its historical scanner/chart/tick clock constant and
+explicitly advances four hours for its prospective alert. Historical coverage
+assertions remain intact, with added cutoff and exact clock-advance assertions.
+An initial local rerun exposed page polling contending with setup storage; that
+failed 12-group receipt remains preserved. The fixture now stops page polling
+during historical setup and returns to the normal UI for every saved-chart check.
+The corrected local chart run passed all **16 groups** in 39.45 seconds, with no
+page errors, model calls, financial database or application API writes. Browser
+and server exited zero and the owned port was released. Its receipt is
+`scanner-clock-02/browser/receipt.json`, SHA256
+`20f286d713b8b1b2b0dfcc6bb5ac4962feb341b0339f3728edf1d5e25c1fa6b1`.
+Global financial clocks, real performance timers and product scanner scheduling
+are unchanged. Final hosted status belongs to the eventual exact commit.
+
 ## Next authorized checkpoint
 
 This draft completes the source/disposable repair checkpoint for A1/A2/A3/A6 and

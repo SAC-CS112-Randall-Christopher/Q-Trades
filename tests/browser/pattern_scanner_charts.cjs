@@ -354,8 +354,13 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     groups.push({ name: phase, explicit_fixture_steps: advanced.steps, refusal_status: 422, original_progress_sha256: historical.source.progress_sha256, deliberate_latest_progress_sha256: updated.source.progress_sha256, implicit_window_expansion: false });
 
     phase = "actual-sparse-year-and-prospective-alert-fixture";
+    // Build the finite historical fixture without dashboard polling competing
+    // for its storage owner; normal UI reads resume after setup completes.
+    await page.goto("about:blank");
     const alertSetup = await qa("chart_alert_setup", 60000); save("prospective-synthetic-setup.json", alertSetup);
     assert.equal(alertSetup.status, "alert_prepared");
+    assert.equal(alertSetup.synthetic_prospective_at_ms - alertSetup.synthetic_history_at_ms, 14400000);
+    assert(alertSetup.four_hour_history.every(row => row.cursor_ms === row.cutoff_ms));
     const fourHour = alertSetup.four_hour_history.find(row => row.timeframe === "4h");
     assert.equal(fourHour.observed_bars, 2190); assert.equal(fourHour.missing_bars, 0);
     assert(alertSetup.four_hour_history.filter(row => row.timeframe !== "4h").every(row => row.observed_bars === 0 && row.missing_bars === row.expected_bars));
