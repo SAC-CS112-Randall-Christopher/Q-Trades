@@ -83,6 +83,8 @@ jobs:
             tests/test_role_question_selection.py tests/test_role_question_selection_history.py `
             tests/test_peft_question_selection.py `
             tests/test_peft_pattern_selection.py tests/test_pattern_role_worker.py `
+            tests/test_peft_pattern_learning.py tests/test_pattern_research_learning.py `
+            tests/test_pattern_research_observation.py `
             tests/test_finite_role_test.py tests/test_finite_lab_authority.py `
             tests/test_peft_finite_pilot.py `
             tests/test_paper_pilot_worker.py tests/test_paper_pilot_api.py tests/test_peft_paper_pilot.py `
@@ -367,6 +369,24 @@ jobs:
             QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58974 \
             node tests/browser/pattern_comparison.cjs
           wait "$comparison_pid"
+      - name: Verify read-only learned comparison recovery and delayed source refusal
+        run: |
+          python -B tests/browser/pattern_comparison_server.py \
+            --directory "$RUNNER_TEMP/research-observation-browser-workspace" \
+            --web-dist "$GITHUB_WORKSPACE/apps/web/dist" --port 58976 \
+            --research-observation-check \
+            > "$RUNNER_TEMP/research-observation-browser-server.log" 2>&1 &
+          observation_pid=$!
+          trap 'kill "$observation_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:58976/api/health > /dev/null; then break; fi
+            sleep 1
+          done
+          QTRADES_BROWSER_QA_OUTPUT="$RUNNER_TEMP/browser-output/research-observation" \
+            QTRADES_BROWSER_QA_ORIGIN=http://127.0.0.1:58976 \
+            QTRADES_PATTERN_COMPARISON_QA_RESEARCH_OBSERVATION=1 \
+            node tests/browser/pattern_comparison.cjs
+          wait "$observation_pid"
       - name: Verify researcher original native finding and preparation navigation
         run: |
           python -B tests/browser/role_pattern_evidence_server.py \

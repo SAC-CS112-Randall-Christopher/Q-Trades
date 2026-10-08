@@ -6,6 +6,7 @@ never an observation, vote or training weight. Selection has no risk authority.
 
 import json
 import time
+from contextlib import nullcontext
 from typing import Any
 
 from trading.experiment_registry import ExperimentRegistry, fingerprint
@@ -143,32 +144,37 @@ class ResearchLessons:
         score = body["source"]["body"]
         if score["available_at"] > time.time():
             raise ValueError("Referenced outcome is not available at the current cutoff")
-        # This transaction commits BEFORE returning either full or summarized outcomes.
-        with self.registry.transaction():
-            self.registry.db.execute(
-                "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,'lesson disclosure')",
-                ("lesson:" + row["id"], score["window_start"], score["available_at"]),
+        # Standalone reads commit before return. Publication joins its existing
+        # transaction so disclosure and the question become visible together.
+        with self.registry.lock:
+            transaction = (
+                nullcontext() if self.registry.db.in_transaction else self.registry.transaction()
             )
-            self.registry.db.execute(
-                "INSERT INTO lesson_access VALUES(?,1,?) ON CONFLICT(id) DO UPDATE "
-                "SET reads=reads+1,last_read=excluded.last_read",
-                (row["id"], time.time()),
-            )
-            access = dict(
+            with transaction:
                 self.registry.db.execute(
-                    "SELECT reads,last_read FROM lesson_access WHERE id=?", (row["id"],)
-                ).fetchone()
-            )
-            notes = [
-                dict(n)
-                for n in self.registry.db.execute(
-                    "SELECT * FROM lesson_notes WHERE lesson=? ORDER BY seq DESC LIMIT 20",
-                    (row["id"],),
+                    "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,'lesson disclosure')",
+                    ("lesson:" + row["id"], score["window_start"], score["available_at"]),
                 )
-            ]
-            selection = self.registry.db.execute(
-                "SELECT * FROM research_selection WHERE lesson=?", (row["id"],)
-            ).fetchone()
+                self.registry.db.execute(
+                    "INSERT INTO lesson_access VALUES(?,1,?) ON CONFLICT(id) DO UPDATE "
+                    "SET reads=reads+1,last_read=excluded.last_read",
+                    (row["id"], time.time()),
+                )
+                access = dict(
+                    self.registry.db.execute(
+                        "SELECT reads,last_read FROM lesson_access WHERE id=?", (row["id"],)
+                    ).fetchone()
+                )
+                notes = [
+                    dict(n)
+                    for n in self.registry.db.execute(
+                        "SELECT * FROM lesson_notes WHERE lesson=? ORDER BY seq DESC LIMIT 20",
+                        (row["id"],),
+                    )
+                ]
+                selection = self.registry.db.execute(
+                    "SELECT * FROM research_selection WHERE lesson=?", (row["id"],)
+                ).fetchone()
         return body | {
             "sha256": row["sha"],
             "access": access,
@@ -249,21 +255,26 @@ class ResearchLessons:
             return int(cursor.lastrowid or 0)
 
     def selected(self, lesson: str, state: str, reason: str, next_task: str | None = None) -> None:
-        with self.registry.transaction():
-            self.registry.db.execute(
-                "INSERT INTO research_selection VALUES(?,?,?,?,?,?) ON CONFLICT(lesson) DO UPDATE "
-                "SET state=excluded.state,next_task=excluded.next_task,reason=excluded.reason,"
-                "retry_at=excluded.retry_at,updated=CASE WHEN state<>excluded.state OR "
-                "reason<>excluded.reason OR next_task IS NOT excluded.next_task "
-                "THEN excluded.updated ELSE updated END "
-                "WHERE state<>excluded.state OR reason<>excluded.reason "
-                "OR next_task IS NOT excluded.next_task OR state='deferred'",
-                (
-                    lesson,
-                    state,
-                    next_task,
-                    reason,
-                    time.time(),
-                    time.time() + 60 if state == "deferred" else 0,
-                ),
+        with self.registry.lock:
+            transaction = (
+                nullcontext() if self.registry.db.in_transaction else self.registry.transaction()
             )
+            with transaction:
+                self.registry.db.execute(
+                    "INSERT INTO research_selection VALUES(?,?,?,?,?,?) "
+                    "ON CONFLICT(lesson) DO UPDATE "
+                    "SET state=excluded.state,next_task=excluded.next_task,reason=excluded.reason,"
+                    "retry_at=excluded.retry_at,updated=CASE WHEN state<>excluded.state OR "
+                    "reason<>excluded.reason OR next_task IS NOT excluded.next_task "
+                    "THEN excluded.updated ELSE updated END "
+                    "WHERE state<>excluded.state OR reason<>excluded.reason "
+                    "OR next_task IS NOT excluded.next_task OR state='deferred'",
+                    (
+                        lesson,
+                        state,
+                        next_task,
+                        reason,
+                        time.time(),
+                        time.time() + 60 if state == "deferred" else 0,
+                    ),
+                )

@@ -16,7 +16,9 @@ from fastapi import Header, HTTPException
 from starlette.responses import JSONResponse
 
 from trading.api import create_app
+from trading.autonomous_spec import LabProposal
 from trading.config import Settings
+from trading.pattern_comparisons import PatternComparisonCommand
 from trading.role_worker import RoleWorker
 
 
@@ -27,6 +29,7 @@ def main():
     parser.add_argument("--directory", type=Path, required=True)
     parser.add_argument("--web-dist", type=Path, required=True)
     parser.add_argument("--port", type=int, default=58974)
+    parser.add_argument("--research-observation-check", action="store_true")
     args = parser.parse_args()
     if not 1024 <= args.port <= 65535 or args.port in {8780, 5432, 54544}:
         raise ValueError("A separate disposable QA port is required")
@@ -92,6 +95,33 @@ def main():
     original = copy.deepcopy(f.paper.state)
     original_history = copy.deepcopy(f.paper.history)
     original_plan = f.scanner.plan
+    observation_setup = None
+    if args.research_observation_check:
+
+        def preparation(number):
+            return PatternComparisonCommand(
+                **selection.model_dump(),
+                request_id=f"10000000-0000-4000-8000-{number:012d}",
+                expected_finding_sha256=bridge.describe(selection)["finding_sha256"],
+            )
+
+        normal = bridge.prepare(preparation(1), f.now)
+        marker = original_controller.submit(LabProposal.model_validate(normal["proposal"]), f.now)
+        assert marker["status"] == "evaluated"
+        readonly = bridge.prepare(preparation(2), f.now, research_only=True)
+        assert readonly["status"] == "research_only" and readonly["proposal"] is None
+        f.paper.history["BTCUSD"] = f.paper.history["BTCUSD"][-20:]
+        waiting = bridge.prepare(preparation(3), f.now, research_only=True)
+        assert waiting["status"] == "waiting" and waiting["research_only"] is True
+        f.paper.history = copy.deepcopy(original_history)
+        observation_setup = {
+            "ordinary_request_id": normal["request_id"],
+            "research_request_id": readonly["request_id"],
+            "waiting_request_id": waiting["request_id"],
+            "setup_inbox_markers": 1,
+            "setup_preparations": 3,
+            "model_callbacks": 0,
+        }
     auxiliary = args.directory / "dashboard"
     auxiliary.mkdir()
     paper = runtime.__wrapped__(auxiliary, book.__wrapped__())
@@ -131,7 +161,7 @@ def main():
         lab = app.state.lab
         worker = lab.roles
         owner = worker.pattern_comparisons
-        return {
+        result = {
             "fixture": "real_native_finding_and_current_lab_check_synthetic_inputs",
             "selection": selection.model_dump(),
             "campaign_id": f.campaign,
@@ -159,6 +189,9 @@ def main():
             "source_hashes": before,
             "source_hashes_after": hashes(),
         }
+        if observation_setup is not None:
+            result["research_observation"] = observation_setup
+        return result
 
     @asynccontextmanager
     async def lifespan(application):
@@ -204,6 +237,8 @@ def main():
             if len(reads) >= 1200:
                 return JSONResponse({"detail": "Finite QA request bound"}, status_code=503)
             reads.append({"method": request.method, "path": route, "query": str(request.url.query)})
+            if args.research_observation_check and request.method != "GET":
+                return JSONResponse({"detail": "Read-only observation fixture"}, status_code=405)
         if request.method != "POST" or route != "/api/research/pattern-scanner/comparisons":
             return await call_next(request)
         if len(posts) >= 12:

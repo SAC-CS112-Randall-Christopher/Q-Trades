@@ -8,6 +8,7 @@ const origin = process.env.QTRADES_BROWSER_QA_ORIGIN || "http://127.0.0.1:58974"
 const directory = process.env.QTRADES_BROWSER_QA_OUTPUT;
 const token = process.env.QTRADES_BROWSER_QA_TOKEN;
 const readOnly = process.env.QTRADES_PATTERN_COMPARISON_QA_READ_ONLY === "1";
+const researchObservation = process.env.QTRADES_PATTERN_COMPARISON_QA_RESEARCH_OBSERVATION === "1";
 const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 const bounded = async (work, ms, label) => {
   let timer;
@@ -26,6 +27,7 @@ const bounded = async (work, ms, label) => {
     operating_acceptance: false, model_calls: 0, financial_database: false,
     trading_edge_or_full_year_coverage: false, submission_or_funding: false,
     read_only_affected_group: readOnly,
+    research_observation_affected_groups: researchObservation,
     harness_sha256: sha(fs.readFileSync(__filename)), groups, pageErrors, apiRequests, externalRequests, cleanupFailures };
   const headers = { "x-qa-token": token };
   const save = (name, value) => fs.writeFileSync(path.join(directory, name), JSON.stringify(value, null, 2));
@@ -86,13 +88,13 @@ const bounded = async (work, ms, label) => {
     if (await details.getAttribute("open") === null) await details.locator(":scope > summary").click();
     const response = waitApi("GET", url => url.pathname === "/api/research/pattern-scanner/comparisons");
     await details.getByRole("button", { name: "Read saved preparations", exact: true }).click();
-    const actual = await response; assert.equal(actual.status(), 200); return actual.json();
+    const actual = await response; assert.equal(actual.status(), 200); return researchObservation ? bounded(actual.json(), 5000, "Readonly history body deadline") : actual.json();
   };
   const reopen = async id => {
     await history();
     const response = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${id}`);
     await panel().getByRole("button", { name: `Reopen preparation ${id}`, exact: true }).click();
-    const actual = await response; assert.equal(actual.status(), 200); const value = await actual.json();
+    const actual = await response; assert.equal(actual.status(), 200); const value = await (researchObservation ? bounded(actual.json(), 5000, "Readonly original body deadline") : actual.json());
     await panel().getByText(`Original UUID ${id}`, { exact: false }).waitFor();
     return value;
   };
@@ -108,6 +110,129 @@ const bounded = async (work, ms, label) => {
     receipt.runtime = { playwright: require("playwright/package.json").version, browser: browser.version() };
     await bounded((async () => {
       const initial = await probe(); save("initial-probe.json", initial);
+      if (researchObservation) {
+      const setup = initial.research_observation; assert(setup);
+      assert.equal(initial.lab_inbox_count, 1); assert.equal(initial.retained_preparations.length, 3);
+      assert.equal(initial.role_tasks, 0); assert.equal(initial.role_attempts, 0);
+      phase = "saved-readonly-observation-history-exact-mode";
+      await fresh(initial);
+      const readonly = await reopen(setup.research_request_id); save("readonly-original.json", readonly);
+      assert.equal(readonly.status, "research_only"); assert.equal(readonly.research_only, true);
+      assert.equal(readonly.proposal, null); assert.equal(readonly.dispatch_available, false);
+      assert.equal(readonly.evaluation.status, "supported_research_observation");
+      assert.equal(readonly.evaluation.matched_inputs.count, 600);
+      assert.equal(readonly.evaluation.matched_inputs.archive_verified, true);
+      const command = { ...readonly.finding.selection, request_id: readonly.request_id, expected_finding_sha256: readonly.finding_sha256 };
+      const sorted = Object.fromEntries(Object.entries(command).sort(([a], [b]) => a.localeCompare(b)));
+      assert.equal(readonly.intent_sha256, sha(JSON.stringify({ command: sorted, research_only: true })));
+      for (const control of [readonly.evaluation.controls.candidate, readonly.evaluation.controls.reference]) {
+        assert.equal(control.proposal, undefined); assert(control.proposal_without_bundle_digest);
+      }
+      await panel().getByText("Read-only research observation", { exact: true }).waitFor();
+      assert.equal(await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).count(), 0);
+      assert.equal(await panel().getByRole("button", { name: "Review a separate current observation", exact: true }).count(), 0);
+      await panel().getByText("Read-only fixed comparison template", { exact: true }).click();
+      assert(await panel().innerText().then(text => text.includes("Dispatch unavailable") && text.includes("600 closed minute candles")));
+      assert.equal(await page.evaluate(() => localStorage.getItem("qtrades-pattern-comparison-receipt-v1")), null);
+      groups.push({ name: phase, request_id: readonly.request_id, mode_bound_intent_verified: true, proposal_null: true, dispatch_available: false, displayed_current_inputs: 600, no_prepare_control: true });
+      await page.evaluate(() => { document.activeElement?.blur(); const element = document.querySelector("#pattern-comparison-panel");
+        const caption = document.createElement("p"); caption.className = "station-kicker"; caption.textContent = "SOURCE QA · SYNTHETIC NATIVE FINDING / 600 CURRENT MINUTES · READ-ONLY OBSERVATION · NO MODEL OR FUNDED COMPARISON"; element.prepend(caption); });
+      await page.setViewportSize({ width: 1440, height: 2400 }); await panel().screenshot({ path: path.join(directory, "comparison-research-observation.png") });
+
+      phase = "same-finding-digest-race-preserves-latest-selected-uuid";
+      await page.evaluate(() => {
+        const original = crypto.subtle.digest.bind(crypto.subtle);
+        globalThis.__qaReadonlyDigest = { holdNext: true, entered: false, finished: false, release: null };
+        crypto.subtle.digest = async (...args) => {
+          const held = globalThis.__qaReadonlyDigest;
+          let delayed = false;
+          if (held.holdNext && new TextDecoder().decode(args[1]).includes('"research_only":true')) {
+            held.holdNext = false; held.entered = true; delayed = true;
+            await new Promise(resolve => { held.release = resolve; });
+          }
+          const result = await original(...args); if (delayed) held.finished = true; return result;
+        };
+      });
+      await history();
+      await panel().getByRole("button", { name: `Reopen preparation ${readonly.request_id}`, exact: true }).click();
+      await page.waitForFunction(() => globalThis.__qaReadonlyDigest?.entered === true, null, { timeout: 5000 });
+      const waitingUrl = new URL(page.url()); const waitingParams = new URLSearchParams(waitingUrl.hash.split("?")[1]);
+      waitingParams.set("pattern_comparison_request", setup.waiting_request_id); waitingUrl.hash = `markets?${waitingParams}`;
+      const laterOriginal = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${setup.waiting_request_id}`);
+      await page.goto(waitingUrl.href); assert.equal((await laterOriginal).status(), 200);
+      await panel().getByText("Read-only research observation waiting", { exact: true }).waitFor();
+      await page.evaluate(() => globalThis.__qaReadonlyDigest.release());
+      await page.waitForFunction(() => globalThis.__qaReadonlyDigest?.finished === true, null, { timeout: 5000 });
+      await bounded(page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))),
+        5000, "Readonly published-state render deadline");
+      await page.waitForFunction(id => new URLSearchParams(location.hash.split("?")[1]).get("pattern_comparison_request") === id,
+        setup.waiting_request_id, { timeout: 5000 });
+      await panel().getByText("Read-only research observation waiting", { exact: true }).waitFor();
+      assert.equal(await panel().getByText(`Original UUID ${readonly.request_id}`, { exact: false }).count(), 0);
+      groups.push({ name: phase, original_body_get_real: true, digest_boundary_held_in_qa: true, latest_selected_uuid: setup.waiting_request_id, older_digest_did_not_publish: true });
+      await reopen(readonly.request_id);
+
+      phase = "readonly-exact-bookmark-reload-after-current-source-drift";
+      await mode("source_drift");
+      await page.evaluate(() => {
+        const original = fetch.bind(window);
+        globalThis.__qaReadonlySource = { entered: false, released: false, release: null, status: null, body: null };
+        window.fetch = async (...args) => {
+          const actual = await original(...args);
+          if (new URL(actual.url).pathname.endsWith("/comparison-source")) {
+            const held = globalThis.__qaReadonlySource;
+            held.status = actual.status; held.body = await actual.clone().text(); held.entered = true;
+            await new Promise(resolve => { held.release = resolve; });
+            held.released = true;
+          }
+          return actual; // Hold the actual server refusal; do not fabricate its body or status.
+        };
+      });
+      const sourceDetails = daily().locator("details").filter({ has: page.locator("summary").filter({ hasText: new RegExp(`original #${initial.selection.event_seq}$`) }) }).first();
+      if (await sourceDetails.getAttribute("open") === null) await sourceDetails.locator(":scope > summary").click();
+      await sourceDetails.getByRole("button", { name: "Review prospective comparison", exact: true }).click();
+      await page.waitForFunction(() => globalThis.__qaReadonlySource?.entered === true, null, { timeout: 5000 });
+      const heldRefusal = await bounded(page.evaluate(() => ({ status: globalThis.__qaReadonlySource.status, body: globalThis.__qaReadonlySource.body })),
+        5000, "Actual source refusal capture deadline");
+      save("late-comparison-source-refusal.json", heldRefusal);
+      assert.equal(heldRefusal.status, 422); assert.equal(typeof JSON.parse(heldRefusal.body).detail, "string");
+      const originalUrl = new URL(page.url()); const originalParams = new URLSearchParams(originalUrl.hash.split("?")[1]);
+      originalParams.set("pattern_comparison_request", readonly.request_id); originalUrl.hash = `markets?${originalParams}`;
+      const adoptedResponse = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${readonly.request_id}`);
+      await page.goto(originalUrl.href); assert.equal((await adoptedResponse).status(), 200);
+      await panel().getByText("Read-only research observation", { exact: true }).waitFor();
+      await page.evaluate(() => globalThis.__qaReadonlySource.release());
+      await page.waitForFunction(() => globalThis.__qaReadonlySource?.released === true, null, { timeout: 5000 });
+      await bounded(page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))),
+        5000, "Late source refusal render deadline");
+      assert.equal(await panel().getByRole("alert").count(), 0);
+      await panel().getByText(`Original UUID ${readonly.request_id}`, { exact: false }).waitFor();
+      const recoveredResponse = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${readonly.request_id}`);
+      await page.reload(); const recovered = await recoveredResponse; assert.equal(recovered.status(), 200);
+      assert.deepEqual(await bounded(recovered.json(), 5000, "Readonly body deadline"), readonly);
+      await panel().getByText("Read-only research observation", { exact: true }).waitFor();
+      assert.equal(new URLSearchParams(new URL(page.url()).hash.split("?")[1]).get("pattern_comparison_request"), readonly.request_id);
+      assert.equal((await probe()).posts.length, 0); await mode("restore_source");
+      const ordinary = await reopen(setup.ordinary_request_id); assertSupported(ordinary);
+      await panel().getByText("Preparation supported by the captured numerical check", { exact: true }).waitFor();
+      assert.equal(ordinary.research_only, undefined);
+      groups.push({ name: phase, immutable_readonly_equal: true, exact_bookmark: readonly.request_id, ordinary_receipt_validation_unchanged: true, browser_posts: 0,
+        actual_source_refusal_status: heldRefusal.status, source_refusal_held_until_sealed_receipt_adopted: true, late_source_alert_not_published: true });
+
+      phase = "readonly-wait-has-no-new-observation-write-control";
+      const waiting = await reopen(setup.waiting_request_id); save("readonly-original-wait.json", waiting);
+      assert.equal(waiting.research_only, true); assert.equal(waiting.status, "waiting"); assert.equal(waiting.proposal, null);
+      await panel().getByText("Read-only research observation waiting", { exact: true }).waitFor();
+      assert.equal(await panel().getByRole("button", { name: "Review a separate current observation", exact: true }).count(), 0);
+      assert.equal(await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).count(), 0);
+      await panel().getByRole("button", { name: "Return to original daily finding", exact: true }).click();
+      await daily().locator(`[data-daily-id="${initial.selection.daily_id}"]`).waitFor();
+      assert.equal(new URLSearchParams(new URL(page.url()).hash.split("?")[1]).get("daily_shortlist"), initial.selection.daily_id);
+      await reopen(readonly.request_id); await page.setViewportSize({ width: 390, height: 844 });
+      assert.equal(await bounded(panel().evaluate(element => element.scrollWidth <= element.clientWidth), 5000, "Readonly geometry deadline"), true);
+      await panel().screenshot({ path: path.join(directory, "comparison-research-mobile.png") });
+      groups.push({ name: phase, original_wait_not_upgraded: waiting.request_id, no_new_observation_control: true, original_finding_navigation: true, mobile_no_horizontal_overflow: true });
+      } else {
       phase = "recognized-card-read-only-review";
       await fresh(initial); const described = await review(initial.selection); save("described-source.json", described);
       assert.equal((await probe()).posts.length, 0);
@@ -203,11 +328,12 @@ const bounded = async (work, ms, label) => {
       assert.deepEqual(JSON.parse(await page.evaluate(() => localStorage.getItem("qtrades-pattern-comparison-pending-v1"))), unknown.command);
       assert.equal((await probe()).posts.length, 8); groups.push({ name: phase, retained_uuid: unknown.command.request_id, get_status: 404, total_posts: 8, original_unknown_not_repeated: true });
       }
+      }
 
       phase = "unchanged-financial-and-no-dispatch-final-bind";
       const final = await probe(); save("final-probe.json", final);
       assert.equal(final.financial_state_unchanged, true); assert.equal(final.auxiliary_dashboard_state_unchanged, true);
-      assert.equal(final.lab_inbox_count, 0); assert.equal(final.model_calls, 0); assert.equal(final.financial_database, false);
+      assert.equal(final.lab_inbox_count, researchObservation ? 1 : 0); assert.equal(final.model_calls, 0); assert.equal(final.financial_database, false);
       assert.deepEqual(final.source_hashes_after, final.source_hashes); assert.deepEqual(pageErrors, []); assert.deepEqual(externalRequests, []);
       if (readOnly) {
         assert.equal(final.posts.length, 0); assert.equal(final.retained_preparations.length, 0);
@@ -216,8 +342,13 @@ const bounded = async (work, ms, label) => {
           registry_matches: true, controller_matches: true, worker_enabled: false, transport_configured: false });
         assert(apiRequests.every(request => request.method === "GET"));
       }
+      if (researchObservation) {
+        assert.equal(final.posts.length, 0); assert.deepEqual(final.retained_preparations, initial.retained_preparations);
+        assert.equal(final.role_tasks, 0); assert.equal(final.role_attempts, 0);
+        assert(apiRequests.every(request => request.method === "GET"));
+      }
       groups.push({ name: phase, retained_preparations: final.retained_preparations.length, native_source_calls: final.native_calls.length,
-        financial_state_unchanged: true, lab_inbox_count: 0, model_calls: 0, source_and_compiled_unchanged: true });
+        financial_state_unchanged: true, lab_inbox_count: final.lab_inbox_count, model_calls: 0, source_and_compiled_unchanged: true });
       receipt.passed = true;
     })(), 150000, "Finite preparation browser QA deadline reached");
   } catch (error) {

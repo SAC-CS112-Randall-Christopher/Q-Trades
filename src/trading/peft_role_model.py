@@ -525,6 +525,8 @@ QUESTION_SELECTION_POLICY = "evidence-question-selection-v1"
 PAPER_PILOT_PATTERN_FORMAT = "qtrades-peft-paper-pilot-v5"
 PATTERN_QUESTION_POLICY = "pattern-question-selection-v1"
 PAPER_PILOT_FINITE_FORMAT = "qtrades-peft-paper-pilot-v6"
+PAPER_PILOT_PATTERN_LEARNING_FORMAT = "qtrades-peft-paper-pilot-v7"
+PATTERN_LEARNING_QUESTION_POLICY = "outcome-conditioned-pattern-question-v1"
 
 
 def _role_policy(path: Path) -> dict[str, Any]:
@@ -582,12 +584,14 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             PAPER_PILOT_SELECTION_FORMAT,
             PAPER_PILOT_PATTERN_FORMAT,
             PAPER_PILOT_FINITE_FORMAT,
+            PAPER_PILOT_PATTERN_LEARNING_FORMAT,
         ):
             expected.add("role_contract")
         if grant.get("format") in (
             PAPER_PILOT_SELECTION_FORMAT,
             PAPER_PILOT_PATTERN_FORMAT,
             PAPER_PILOT_FINITE_FORMAT,
+            PAPER_PILOT_PATTERN_LEARNING_FORMAT,
         ):
             expected.add("question_policy")
         if grant.get("format") == PAPER_PILOT_FINITE_FORMAT:
@@ -601,6 +605,7 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                 PAPER_PILOT_SELECTION_FORMAT,
                 PAPER_PILOT_PATTERN_FORMAT,
                 PAPER_PILOT_FINITE_FORMAT,
+                PAPER_PILOT_PATTERN_LEARNING_FORMAT,
             )
             or (
                 grant.get("format") == PAPER_PILOT_TOOL_FORMAT
@@ -619,6 +624,13 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                 and (
                     grant.get("role_contract") != PATTERN_VERSION
                     or grant.get("question_policy") != PATTERN_QUESTION_POLICY
+                )
+            )
+            or (
+                grant.get("format") == PAPER_PILOT_PATTERN_LEARNING_FORMAT
+                and (
+                    grant.get("role_contract") != PATTERN_VERSION
+                    or grant.get("question_policy") != PATTERN_LEARNING_QUESTION_POLICY
                 )
             )
             or type(grant.get("enabled")) is not bool
@@ -742,6 +754,7 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                 PAPER_PILOT_SELECTION_FORMAT,
                 PAPER_PILOT_PATTERN_FORMAT,
                 PAPER_PILOT_FINITE_FORMAT,
+                PAPER_PILOT_PATTERN_LEARNING_FORMAT,
             ):
                 return None
             if grant["format"] == PAPER_PILOT_FINITE_FORMAT:
@@ -749,12 +762,20 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             self.declaration()
             if self._grant() != grant:
                 raise ValueError("Question-selection grant changed while verifying authority")
-            pattern = grant["format"] in (PAPER_PILOT_PATTERN_FORMAT, PAPER_PILOT_FINITE_FORMAT)
+            pattern = grant["format"] in (
+                PAPER_PILOT_PATTERN_FORMAT,
+                PAPER_PILOT_FINITE_FORMAT,
+                PAPER_PILOT_PATTERN_LEARNING_FORMAT,
+            )
             version = PATTERN_VERSION if pattern else CAPABILITY_VERSION
             return {
-                "question_policy": PATTERN_QUESTION_POLICY
-                if pattern
-                else QUESTION_SELECTION_POLICY,
+                "question_policy": (
+                    PATTERN_LEARNING_QUESTION_POLICY
+                    if grant["format"] == PAPER_PILOT_PATTERN_LEARNING_FORMAT
+                    else PATTERN_QUESTION_POLICY
+                    if pattern
+                    else QUESTION_SELECTION_POLICY
+                ),
                 "grant_id": grant["grant_id"],
                 "grant_sha": digest(grant),
                 "profile_sha": grant["profile_sha256"],
@@ -1021,6 +1042,10 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
     def instance_preflight(
         self, role: str, packet: dict[str, Any], profile: dict[str, Any]
     ) -> None:
+        if "selection_authority" not in packet:
+            with self._policy_lock:
+                if self._grant()["format"] == PAPER_PILOT_PATTERN_LEARNING_FORMAT:
+                    raise ValueError("Pattern learning requires its exact current v7 authority")
         if "selection_authority" in packet:
             with self._policy_lock:
                 authority = self.selection_authority()
@@ -1032,7 +1057,14 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
                     or any(type(value) is not str for value in supplied.values())
                     or digest(profile) != authority["profile_sha"]
                 ):
-                    version = "v5" if packet.get("contract") == PATTERN_VERSION else "v4"
+                    version = (
+                        "v7"
+                        if authority is not None
+                        and authority["question_policy"] == PATTERN_LEARNING_QUESTION_POLICY
+                        else "v5"
+                        if packet.get("contract") == PATTERN_VERSION
+                        else "v4"
+                    )
                     raise ValueError(
                         f"Question selection requires its exact current {version} authority"
                     )
@@ -1142,6 +1174,11 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             if policy["enabled"] is not True:
                 raise ValueError("Paper-pilot grant is paused")
             current_grant = self._grant()
+            if (
+                current_grant["format"] == PAPER_PILOT_PATTERN_LEARNING_FORMAT
+                and "selection_authority" not in packet
+            ):
+                raise ValueError("Pattern learning requires its exact current v7 authority")
             if current_grant["format"] == PAPER_PILOT_FINITE_FORMAT:
                 if reservation is None:
                     raise ValueError("Finite pilot requires a verified reserved worker attempt")

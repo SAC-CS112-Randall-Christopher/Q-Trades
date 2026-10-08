@@ -24,6 +24,9 @@ from trading.research_evidence import canonical, digest
 from trading.research_storage import reopen_evidence
 
 VERSION = "saved-pattern-comparison-preparation-v1"
+RESEARCH_ONLY_REASON = (
+    "Read-only observation of the already-used fixed p0 comparison; no new Lab dispatch"
+)
 MAX_REQUESTS = 512
 MAX_REFERENCES = 16
 TRAINING_ORIGINS = (
@@ -31,6 +34,12 @@ TRAINING_ORIGINS = (
     "Exact retained native pattern input slice, including continuing observations",
     "lab proposer disclosure",
     "Pattern comparison preparation disclosure",
+)
+RESEARCH_TRAINING_ORIGINS = (
+    "role outcome disclosure",
+    "lesson disclosure",
+    "role dependency disclosure",
+    "role task disclosure",
 )
 MAPPING = {
     "version": VERSION,
@@ -99,21 +108,32 @@ class PatternComparisons:
             for name in ("redesign_strategy.py", "autonomous_spec.py", "rule_components.py")
         }
 
-    def _permitted(self, windows: list[tuple[float, float]]) -> None:
+    def _permitted(
+        self, windows: list[tuple[float, float]], *, research_only: bool = False
+    ) -> None:
         # Called under the registry transaction at publication, just as Lab bundles
         # serialize disclosure with holdout creation. Unknown origins fail closed.
         r = self.registry
+        if type(research_only) is not bool:
+            raise ValueError("Research-only mode must be an explicit boolean")
         prospective = r.db.execute(
             "SELECT 1 FROM sqlite_master WHERE name='prospective_plans'"
         ).fetchone()
         for start, end in windows:
             if not all(math.isfinite(v) for v in (start, end)) or start > end:
                 raise ValueError("Invalid disclosed input interval")
-            overlap = r.db.execute(
-                "SELECT 1 FROM evidence_windows WHERE start<=? AND end>=? "
-                "AND origin NOT IN (?,?,?,?) LIMIT 1",
-                (end, start, *TRAINING_ORIGINS),
-            ).fetchone()
+            if research_only:
+                overlap = r.db.execute(
+                    "SELECT 1 FROM evidence_windows WHERE start<=? AND end>=? "
+                    "AND origin NOT IN (?,?,?,?,?,?,?,?) LIMIT 1",
+                    (end, start, *TRAINING_ORIGINS, *RESEARCH_TRAINING_ORIGINS),
+                ).fetchone()
+            else:
+                overlap = r.db.execute(
+                    "SELECT 1 FROM evidence_windows WHERE start<=? AND end>=? "
+                    "AND origin NOT IN (?,?,?,?) LIMIT 1",
+                    (end, start, *TRAINING_ORIGINS),
+                ).fetchone()
             if overlap:
                 raise ValueError("Protected evaluation overlaps these research inputs")
             if (
@@ -346,12 +366,21 @@ class PatternComparisons:
             "coverage_claim": "Only exact retained pages and local recognition window verified",
         }
 
-    def describe(self, selection: PatternFindingSelection) -> dict[str, Any]:
+    def describe(
+        self, selection: PatternFindingSelection, *, research_only: bool = False
+    ) -> dict[str, Any]:
+        if type(research_only) is not bool:
+            raise ValueError("Research-only mode must be an explicit boolean")
+        if research_only:
+            self._require_used_p0()
         finding = self._original(selection)
         # Internal verification does not return raw archived page payloads.
         finding["native_proof"] = self._native(finding)
         with self.registry.lock:
-            self._permitted(finding["native_proof"]["disclosed_intervals"])
+            if research_only:
+                self._permitted(finding["native_proof"]["disclosed_intervals"], research_only=True)
+            else:
+                self._permitted(finding["native_proof"]["disclosed_intervals"])
         return {
             "version": VERSION,
             "finding_sha256": digest(finding),
@@ -395,23 +424,49 @@ class PatternComparisons:
         )
 
     def current_observation(
-        self, request_id: str, now: float, *, admission: Callable[[], Any] | None = None
+        self,
+        request_id: str,
+        now: float,
+        *,
+        admission: Callable[[], Any] | None = None,
+        research_only: bool = False,
     ) -> dict[str, Any]:
         """Fresh matched inputs retained by the same owner; original preparation stays frozen."""
         if not re.fullmatch(r"[A-Za-z0-9_-]{8,64}", request_id):
             raise ValueError("Invalid current comparison observation identity")
         if not math.isfinite(now) or now <= 0:
             raise ValueError("Invalid current comparison observation time")
-        proposal, evaluation, windows = (
-            self._evaluation(request_id, now, admission=admission)
-            if admission is not None
-            else self._evaluation(request_id, now)
+        if type(research_only) is not bool:
+            raise ValueError("Research-only mode must be an explicit boolean")
+        if research_only:
+            proposal, evaluation, windows = self._evaluation(
+                request_id, now, admission=admission, research_only=True
+            )
+        else:
+            proposal, evaluation, windows = (
+                self._evaluation(request_id, now, admission=admission)
+                if admission is not None
+                else self._evaluation(request_id, now)
+            )
+        supported = (
+            "supported_research_observation"
+            if research_only
+            else "supported_exploratory_configuration"
         )
-        if evaluation["status"] == "supported_exploratory_configuration":
+        if evaluation["status"] == supported:
             with self.registry.transaction():
                 if admission is not None:
                     admission()
-                self._permitted(windows)
+                if research_only:
+                    self._require_used_p0()
+                    if self.controller is None or not self.controller.inbox.has_capacity():
+                        raise ValueError(
+                            "Existing inbox capacity changed before observation disclosure"
+                        )
+                if research_only:
+                    self._permitted(windows, research_only=True)
+                else:
+                    self._permitted(windows)
                 for index, (start, end) in enumerate(windows):
                     self.registry.db.execute(
                         "INSERT OR IGNORE INTO evidence_windows VALUES(?,?,?,?)",
@@ -422,7 +477,25 @@ class PatternComparisons:
                             "Pattern comparison preparation disclosure",
                         ),
                     )
-        return {"proposal_without_bundle_digest": proposal, "evaluation": evaluation}
+        result = {"proposal_without_bundle_digest": proposal, "evaluation": evaluation}
+        if research_only:
+            result.update(
+                proposal_without_bundle_digest=None,
+                readonly_comparison_template=proposal,
+                research_only=True,
+                dispatch_available=False,
+                dispatch_reason=RESEARCH_ONLY_REASON,
+            )
+        return result
+
+    def _require_used_p0(self) -> None:
+        strategy = RuleSpec(
+            version="reviewed-lab-rules-v4", family="breakout-retest-v1", holding_horizon="medium"
+        )
+        if self.controller is None or not self.controller.inbox.used(
+            fingerprint(strategy.model_dump())
+        ):
+            raise ValueError("Read-only observation requires the existing used p0 marker")
 
     def execution_inputs(self, proof: dict[str, Any], request_id: str) -> list[dict[str, Any]]:
         """Reopen the exact bounded current-input archive; metadata alone is insufficient."""
@@ -486,7 +559,10 @@ class PatternComparisons:
         if body["proposal"] is not None:
             body["proposal"]["evidence_bundle_sha256"] = row["bundle_sha256"]
             LabProposal.model_validate(body["proposal"])
-        for control in body["evaluation"].get("controls", {}).values():
+        controls = (
+            {} if body.get("research_only") is True else body["evaluation"].get("controls", {})
+        )
+        for control in controls.values():
             if isinstance(control, dict) and "proposal_without_bundle_digest" in control:
                 control["proposal"] = control.pop("proposal_without_bundle_digest")
                 control["proposal"]["evidence_bundle_sha256"] = row["bundle_sha256"]
@@ -530,11 +606,20 @@ class PatternComparisons:
         }
 
     def _evaluation(
-        self, request_id: str, now: float, *, admission: Callable[[], Any] | None = None
+        self,
+        request_id: str,
+        now: float,
+        *,
+        admission: Callable[[], Any] | None = None,
+        research_only: bool = False,
     ) -> tuple[Any, Any, list[tuple[float, float]]]:
+        if type(research_only) is not bool:
+            raise ValueError("Research-only mode must be an explicit boolean")
         c = self.controller
         if admission is not None:
             admission()
+        if research_only:
+            self._require_used_p0()
         if c is None:
             return None, {"status": "waiting", "reason": "Current Lab owner unavailable"}, []
         lab = c.paper.state.get("autonomous_lab")
@@ -595,7 +680,9 @@ class PatternComparisons:
                 {"status": "waiting", "reason": "Current BTC eligibility unavailable"},
                 [],
             )
-        if not c.inbox.has_capacity() or c.inbox.used(fingerprint(strategy.model_dump())):
+        if not c.inbox.has_capacity() or (
+            not research_only and c.inbox.used(fingerprint(strategy.model_dump()))
+        ):
             return (
                 proposal_body,
                 {"status": "waiting", "reason": "Existing inbox capacity or used-rule gate"},
@@ -612,7 +699,10 @@ class PatternComparisons:
             raise ValueError("Matched current execution inputs differ or exceed their bound")
         windows = [(inputs[0]["open_ms"] / 1000, (inputs[-1]["close_ms"] + 1) / 1000)]
         with self.registry.lock:
-            self._permitted(windows)
+            if research_only:
+                self._permitted(windows, research_only=True)
+            else:
+                self._permitted(windows)
         owner, plan = self.scanner.storage_owner, self.scanner.plan
         if owner is None or plan is None:
             raise ValueError("Existing shared archive owner is unavailable")
@@ -653,7 +743,9 @@ class PatternComparisons:
         return (
             proposal_body,
             {
-                "status": "supported_exploratory_configuration",
+                "status": "supported_research_observation"
+                if research_only
+                else "supported_exploratory_configuration",
                 "candidate": candidate,
                 "reference": baseline,
                 "matched_inputs": proof,
@@ -668,8 +760,15 @@ class PatternComparisons:
         now: float | None = None,
         *,
         admission: Callable[[], Any] | None = None,
+        research_only: bool = False,
     ) -> dict[str, Any]:
-        intent = digest(command.model_dump())
+        if type(research_only) is not bool:
+            raise ValueError("Research-only mode must be an explicit boolean")
+        intent = digest(
+            {"command": command.model_dump(), "research_only": True}
+            if research_only
+            else command.model_dump()
+        )
         # Recovery happens first, including after source/eligibility/policy drift.
         old = self.get(command.request_id)
         if old is not None:
@@ -677,7 +776,7 @@ class PatternComparisons:
                 raise ValueError("Comparison request identity cannot be rewritten")
             return old
         with self.registry.pattern_comparison_lock:
-            return self._prepare_new(command, now, intent, admission)
+            return self._prepare_new(command, now, intent, admission, research_only=research_only)
 
     def _prepare_new(
         self,
@@ -685,6 +784,8 @@ class PatternComparisons:
         now: float | None,
         intent: str,
         admission: Callable[[], Any] | None = None,
+        *,
+        research_only: bool = False,
     ) -> dict[str, Any]:
         old = self.get(command.request_id)
         if old is not None:
@@ -699,7 +800,11 @@ class PatternComparisons:
         selection = PatternFindingSelection.model_validate(
             command.model_dump(exclude={"request_id", "expected_finding_sha256"})
         )
-        described = self.describe(selection)
+        described = (
+            self.describe(selection, research_only=True)
+            if research_only
+            else self.describe(selection)
+        )
         if described["finding_sha256"] != command.expected_finding_sha256:
             raise ValueError("Original finding identity differs from the reviewed selection")
         with self.registry.lock:
@@ -714,11 +819,16 @@ class PatternComparisons:
         c = self.controller
         policy_sha = digest(c.paper.state.get("autonomous_lab", {}).get("policy")) if c else None
         # Borrowing/appending/reopening the recorder never holds the registry lock.
-        proposal, evaluation, execution_windows = (
-            self._evaluation(command.request_id, now, admission=admission)
-            if admission is not None
-            else self._evaluation(command.request_id, now)
-        )
+        if research_only:
+            proposal, evaluation, execution_windows = self._evaluation(
+                command.request_id, now, admission=admission, research_only=True
+            )
+        else:
+            proposal, evaluation, execution_windows = (
+                self._evaluation(command.request_id, now, admission=admission)
+                if admission is not None
+                else self._evaluation(command.request_id, now)
+            )
         body = {
             "version": VERSION,
             "request_id": command.request_id,
@@ -737,6 +847,17 @@ class PatternComparisons:
             "financial_authority": False,
             "submitted": False,
         }
+        if research_only:
+            body.update(
+                status="research_only"
+                if evaluation["status"] == "supported_research_observation"
+                else "waiting",
+                proposal_without_bundle_digest=None,
+                readonly_comparison_template=proposal,
+                research_only=True,
+                dispatch_available=False,
+                dispatch_reason=RESEARCH_ONLY_REASON,
+            )
         encoded = json.dumps(body, sort_keys=True, allow_nan=False)
         if len(encoded.encode()) > 65536:
             raise ValueError("Comparison issued bundle exceeds existing 64KiB bound")
@@ -754,9 +875,20 @@ class PatternComparisons:
             ):
                 raise ValueError("Current comparison source or policy changed during preparation")
             self.scanner._admission()
-            self._permitted(windows)
+            if research_only:
+                self._permitted(windows, research_only=True)
+            else:
+                self._permitted(windows)
             if admission is not None:
                 admission()
+            if research_only:
+                self._require_used_p0()
+                if evaluation["status"] == "supported_research_observation" and (
+                    c is None or not c.inbox.has_capacity()
+                ):
+                    raise ValueError(
+                        "Existing inbox capacity changed before preparation publication"
+                    )
             for index, (start, end) in enumerate(windows):
                 self.registry.db.execute(
                     "INSERT INTO evidence_windows VALUES(?,?,?,?)",
