@@ -19,6 +19,7 @@ from test_pattern_role_worker import (
     select,
 )
 from test_role_question_selection import abstention, causal_frame
+from test_role_tool_requests import ToolFixture
 
 from trading.autonomous_finance import slots
 from trading.autonomous_lab import AutonomousLab
@@ -280,6 +281,315 @@ def test_first_unused_p0_is_captured_in_all_owners(fixture):
     worker.transport.preflight("researcher", packet, worker.transport.admit("researcher"))
     assert worker.select_fresh_question(f.now + 61) == 0
     assert not rows(worker, "role_attempts")
+
+
+@pytest.mark.parametrize("issue", ["unsupported_claim", "untrusted_instruction", "unequal_costs"])
+def test_scientific_rejection_can_yield_only_to_a_distinct_method(fixture, monkeypatch, issue):
+    f, worker, _ = fixture
+    original_infer = worker.transport.infer
+
+    def reject(role, packet, profile):
+        response = original_infer(role, packet, profile)
+        if role == "reviewer":
+            response["answer"].update(
+                action="reject",
+                issues=[issue],
+                rationale="The retained hypothesis does not support its declared claim.",
+            )
+        return response
+
+    monkeypatch.setattr(worker.transport, "infer", reject)
+    first = select(f, worker)
+    for _ in range(4):
+        assert asyncio.run(worker.step(f.now)), worker.get(first["id"])["reason"]
+    first = worker.get(first["id"])
+    assert first["status"] == "done" and first["result"]["review"]["action"] == "reject"
+    attempts = copy.deepcopy(rows(worker, "role_attempts"))
+    if issue != "unsupported_claim":
+        advance(f, 86400 + 600)
+        from test_pattern_role_worker import publish_native_event
+
+        publish_native_event(f)
+        assert worker.select_fresh_question(f.now) == 0
+        assert len(rows(worker, "role_tasks")) == 1
+        return
+    new = restarted(f, worker)
+    second = later(f, new)
+    assert second["context"]["pattern_method"]["method_id"] == "p1"
+    learning = second["context"]["pattern_learning"]
+    assert learning["state"] == "scientific_rejection" and learning["lesson"] is None
+    _, packet = new._packet(second)
+    assert packet["evidence"]["e5"]["predecessor_observation"]["result"] == first["result"]
+    assert new.get(first["id"])["result"] == first["result"]
+    assert rows(new, "role_attempts") == attempts and not rows(new, "lab_proposals")
+    new.transport.action = "no_change"
+    assert asyncio.run(new.step(f.now)), new.get(second["id"])["reason"]
+    advance(f, 86400 + 600)
+    assert new.select_fresh_question(f.now) == 0
+    assert "All fixed methods" in new.question_selection_status()["reason"]
+    assert len(rows(new, "role_question_selections")) == 2
+
+
+@pytest.mark.parametrize("stage", ["tool_wait", "data_wait", "outcome"])
+def test_quiescent_method_yields_without_losing_its_original_claim(fixture, stage):
+    f, worker, _ = fixture
+    first = select(f, worker)
+    # Controlled retained dependency, not a model or funded/mature result.
+    assert worker._update(first, stage, "waiting", result={"dependency_fixture": stage})
+    with worker.registry.transaction():
+        worker.registry.db.execute(
+            "UPDATE role_tasks SET retry_at=? WHERE id=?", (f.now + 3 * 86400, first["id"])
+        )
+    first = worker.get(first["id"])
+    second = later(f, worker)
+    assert second["context"]["pattern_method"]["method_id"] == "p1"
+    assert second["context"]["pattern_learning"]["state"] == "pending_dependency"
+    assert second["context"]["lesson"] is None
+    # Resumption of the original task must not invalidate the independent packet.
+    assert worker._update(first, "idea", "queued", result=first["result"])
+    worker._pattern_learning_admission(
+        second["context"]["pattern_learning"],
+        worker.transport.authority,
+        second["context"]["policy"],
+    )()
+    worker._pattern_learning_admission(
+        first["context"]["pattern_learning"],
+        worker.transport.authority,
+        first["context"]["policy"],
+    )()
+    assert worker.get(first["id"])["result"] == first["result"]
+    assert len(rows(worker, "role_question_selections")) == 2
+    assert not rows(worker, "role_attempts") and not rows(worker, "lab_proposals")
+
+
+@pytest.mark.parametrize("action", ["request_tool", "reject"])
+def test_resumed_descendant_uses_root_selection_for_independent_method(
+    fixture, monkeypatch, action
+):
+    f, worker, _ = fixture
+    worker.transport.action = "request_data"
+    root = select(f, worker)
+    assert asyncio.run(worker.step(f.now))
+    root_answer = copy.deepcopy(worker.get(root["id"])["result"])
+    advance(f, 120)
+    f.paper.history["BTCUSD"] = bars_at(f.now - 400 * 60)[-200:] + bars_at(f.now)
+    assert worker.resume_sources(f.now) == 1
+    child = next(t for t in worker.page()["tasks"] if t["id"] != root["id"])
+    original_infer = worker.transport.infer
+    worker.transport.action = "propose_experiment"
+
+    def retained_answer(role, packet, profile):
+        response = original_infer(role, packet, profile)
+        if action == "request_tool":
+            response["answer"] = copy.deepcopy(ToolFixture().answer)
+        elif role == "reviewer":
+            response["answer"].update(action="reject", issues=["unsupported_claim"])
+        return response
+
+    monkeypatch.setattr(worker.transport, "infer", retained_answer)
+    for _ in range(1 if action == "request_tool" else 4):
+        assert asyncio.run(worker.step(f.now)), worker.get(child["id"])["reason"]
+    child = worker.get(child["id"])
+    assert "question_selection" not in child["context"]
+    assert child["stage"] == ("tool_wait" if action == "request_tool" else "complete")
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    worker.history.rollover()
+    new = restarted(f, worker)
+    attempts = rows(new, "role_attempts")
+    second = later(f, new)
+    learning = second["context"]["pattern_learning"]
+    assert second["context"]["pattern_method"]["method_id"] == "p1"
+    assert learning["predecessor_task"] == child["id"]
+    assert (
+        learning["predecessor_observation"]["selection_sha"]
+        == (root["context"]["question_selection"]["selection_sha"])
+    )
+    assert new.get(root["id"])["archive_reference"]
+    assert new.get(root["id"])["result"] == root_answer
+    assert new.get(child["id"])["result"] == child["result"]
+    assert rows(new, "role_attempts") == attempts and not rows(new, "lab_proposals")
+    new._pattern_learning_admission(learning, new.transport.authority, child["context"]["policy"])()
+
+
+@pytest.mark.parametrize("legacy", [True, False])
+def test_repeated_terminal_selections_consume_legacy_method_without_hiding_p1(
+    fixture, monkeypatch, legacy
+):
+    f, worker, _ = fixture
+    worker.transport.action = "no_change"
+    original_prior = worker._pattern_learning_prior
+
+    def legacy_prior(*args, **kwargs):
+        binding = original_prior(*args, **kwargs)
+        binding.pop("method_claims", None)
+        return binding
+
+    # Reproduce the former selector's permanent unfunded p0 history. The other
+    # case represents conflicting new claims and must still fail closed.
+    with monkeypatch.context() as setup:
+        setup.setattr(worker, "_pattern_method_claims", lambda *args: {})
+        if legacy:
+            setup.setattr(worker, "_pattern_learning_prior", legacy_prior)
+        originals = []
+        for index in range(4):
+            task = select(f, worker) if index == 0 else later(f, worker)
+            assert task["context"]["pattern_method"]["method_id"] == "p0"
+            assert asyncio.run(worker.step(f.now))
+            originals.append(worker.get(task["id"]))
+    prior_selections = rows(worker, "role_question_selections")
+    new = restarted(f, worker)
+    if legacy:
+        second = later(f, new)
+        assert second["context"]["pattern_method"]["method_id"] == "p1"
+        assert second["context"]["pattern_learning"]["method_claims"] == {
+            "p0": originals[0]["context"]["pattern_comparison"]["preparation_request_id"]
+        }
+        assert asyncio.run(new.step(f.now)), new.get(second["id"])["reason"]
+        assert rows(new, "role_question_selections")[:4] == prior_selections
+    else:
+        advance(f, 86400 + 600)
+        assert new.select_fresh_question(f.now) == 0
+        assert "conflicting original question" in new.question_selection_status()["reason"]
+    assert all(new.get(task["id"])["result"] == task["result"] for task in originals)
+    assert not rows(new, "lab_proposals")
+
+
+def test_followup_tool_wait_preserves_mature_score_without_claiming_a_lesson(fixture, monkeypatch):
+    f, worker, _ = fixture
+    first = mature(f, worker, followup=False)
+    original_infer = worker.transport.infer
+
+    def request_tool(role, packet, profile):
+        response = original_infer(role, packet, profile)
+        response["answer"] = copy.deepcopy(ToolFixture().answer)
+        response["answer"]["evidence_ids"] = ["e1"]
+        return response
+
+    monkeypatch.setattr(worker.transport, "infer", request_tool)
+    assert asyncio.run(worker.step(f.now)), worker.get(first["id"])["reason"]
+    first = worker.get(first["id"])
+    assert first["stage"] == "tool_wait" and "outcome" in first["result"]
+    assert not rows(worker, "research_lessons")
+    second = later(f, worker)
+    learning = second["context"]["pattern_learning"]
+    observation = learning["predecessor_observation"]
+    assert observation["result"] == first["result"] and learning["lesson"] is None
+    assert "no supported lesson" in observation["scope"]
+    _, packet = worker._packet(second)
+    projected = packet["evidence"]["e5"]["predecessor_observation"]["result"]["outcome"]
+    assert restore_scored_body(projected) == first["result"]["outcome"]["body"]
+    assert projected["source_sha256"] == fingerprint(first["result"]["outcome"])
+    assert worker.get(first["id"])["result"] == first["result"]
+    assert second["context"]["pattern_method"]["method_id"] == "p1"
+    assert not rows(worker, "research_lessons")
+
+
+def test_legacy_wait_resumes_after_independent_method_publishes(fixture, monkeypatch):
+    f, worker, _ = fixture
+    original_prior = worker._pattern_learning_prior
+
+    def legacy_prior(*args, **kwargs):
+        binding = original_prior(*args, **kwargs)
+        binding.pop("method_claims", None)
+        return binding
+
+    with monkeypatch.context() as setup:
+        setup.setattr(worker, "_pattern_learning_prior", legacy_prior)
+        root = select(f, worker)
+    worker.transport.action = "request_data"
+    assert asyncio.run(worker.step(f.now))
+    answer = copy.deepcopy(worker.get(root["id"])["result"])
+    # Controlled future retry while the independent method's native input matures.
+    retry_at = f.now + 2 * 86400
+    with worker.registry.transaction():
+        worker.registry.db.execute(
+            "UPDATE role_tasks SET retry_at=? WHERE id=?", (retry_at, root["id"])
+        )
+    new = restarted(f, worker)
+    second = later(f, new)
+    assert second["context"]["pattern_method"]["method_id"] == "p1"
+    new.transport.action = "propose_experiment"
+    for _ in range(5):
+        assert asyncio.run(new.step(f.now)), new.get(second["id"])["reason"]
+    second = new.get(second["id"])
+    assert second["stage"] == "outcome" and second["proposal"] is not None
+    assert new._pattern_method_used() == {"p0": False, "p1": True}
+    advance(f, retry_at - f.now + 1)
+    f.paper.history["BTCUSD"] = bars_at(f.now - 400 * 60)[-200:] + bars_at(f.now)
+    assert new.resume_sources(f.now) == 1
+    child = next(
+        new.get(t["id"]) for t in new.page()["tasks"] if t["id"] not in {root["id"], second["id"]}
+    )
+    assert child["context"]["pattern_method"]["method_id"] == "p0"
+    assert "method_claims" not in child["context"]["pattern_learning"]
+    new.transport.action = "no_change"
+    for _ in range(2):
+        asyncio.run(new.step(f.now))
+        if new.get(child["id"])["status"] == "done":
+            break
+    assert new.get(child["id"])["result"]["action"] == "no_change"
+    assert new.get(root["id"])["result"] == answer
+    assert len(rows(new, "lab_proposals")) == 1
+
+
+def test_read_only_observation_descendant_retains_original_mature_lesson(fixture, monkeypatch):
+    f, worker, _ = fixture
+    mark_used(worker, "p1")
+    mature_source = mature(f, worker)
+    observation = later(f, worker)
+    assert observation["context"]["pattern_learning"]["dispatch_available"] is False
+    original_infer = worker.transport.infer
+
+    def request_data(role, packet, profile):
+        response = original_infer(role, packet, profile)
+        response["answer"].update(action="request_data", dependency="new_closed_bars")
+        return response
+
+    with monkeypatch.context() as callback:
+        callback.setattr(worker.transport, "infer", request_data)
+        assert asyncio.run(worker.step(f.now)), worker.get(observation["id"])["reason"]
+    original_answer = copy.deepcopy(worker.get(observation["id"])["result"])
+    advance(f, 120)
+    f.paper.history["BTCUSD"] = bars_at(f.now - 400 * 60)[-200:] + bars_at(f.now)
+    assert worker.resume_sources(f.now) == 1
+    child = max(worker.page()["tasks"], key=lambda t: t["created"])
+    assert asyncio.run(worker.step(f.now)), worker.get(child["id"])["reason"]
+    child = worker.get(child["id"])
+    assert child["result"]["action"] == "no_change"
+    assert "question_selection" not in child["context"]
+    proposals = rows(worker, "lab_proposals")
+    next_observation = later(f, restarted(f, worker))
+    learning = next_observation["context"]["pattern_learning"]
+    assert learning["state"] == "mature_outcome" and learning["dispatch_available"] is False
+    assert learning["source_task"] == mature_source["id"]
+    assert learning["predecessor_task"] == child["id"]
+    assert next_observation["context"]["catalog"] == {}
+    assert worker.get(observation["id"])["result"] == original_answer
+    assert worker.get(mature_source["id"])["result"] == mature_source["result"]
+    assert rows(worker, "lab_proposals") == proposals
+
+
+@pytest.mark.parametrize("state", ["due", "leased", "failed"])
+def test_due_or_unreconciled_work_keeps_priority_over_new_question(fixture, state):
+    f, worker, _ = fixture
+    first = select(f, worker)
+    assert worker._update(first, "data_wait", "waiting", result={"dependency_fixture": True})
+    advance(f, 86400 + 600)
+    from test_pattern_role_worker import publish_native_event
+
+    publish_native_event(f)
+    with worker.registry.transaction():
+        if state == "leased":
+            worker.registry.db.execute(
+                "UPDATE role_tasks SET owner='fixture-owner',lease_until=?,retry_at=? WHERE id=?",
+                (f.now + 60, f.now + 60, first["id"]),
+            )
+        elif state == "failed":
+            worker.registry.db.execute(
+                "UPDATE role_tasks SET status='failed' WHERE id=?", (first["id"],)
+            )
+    assert worker.select_fresh_question(f.now) == 0
+    assert len(rows(worker, "role_tasks")) == 1 and not rows(worker, "role_attempts")
 
 
 def test_foreign_used_p0_starts_p1_without_foreign_lesson(fixture):

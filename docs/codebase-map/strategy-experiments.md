@@ -68,6 +68,16 @@ Used methods have a separate research-only route: immutable receipt and current 
 
 [AutonomousLab._step](source-index.md#lab-step) first checks its schedule, paper health, resource/storage availability and work budget. It then recovers committed outcome acknowledgments and scores mature sealed windows before the proposal-pause gate. New reserve/fund/discovery also require capture availability, capacity and current input evaluation. Reserve and fund happen through the existing financial transaction; registry transactions are not held across PostgreSQL writer work. Optional finite grants add exact saved proposal fences and expiry/one-chain/attempt constraints through [finite dispatch](source-index.md#lab-finite-dispatch) and the existing finite owner, not a second financial engine. Already committed outcome/account management has different continuation semantics from a new effect.
 
+One local step mutex serializes optional Lab calls. A short financial lock captures
+the detached state; registry/storage/proposal/evaluation work runs after release.
+State publication uses the existing runtime transaction owner. Reserve/fund
+recheck current policy, pauses, health, executable-frame freshness, evaluation
+expiry, resource admission and finite authority inside the sole writer. Capacity,
+parent and funding rules still execute against fresh engine state. Concurrent
+retirement is checked before scoring; retained acknowledgments remain recoverable.
+Proposal publication and operator proposal controls share a short nonfinancial
+mutex, without retaining the writer during registry or recorder work.
+
 ## Observed outcome and account retirement
 
 [Reserve](source-index.md#lab-finance-reserve) freezes the exact matched contract; [fund](source-index.md#lab-finance-fund) creates separately funded candidate/reference accounts. Only a valid variation marks its preserved parent as branched. Review is due from actual funding plus the larger of the policy horizon and fixed rule review interval. V4's six-hour maximum holding duration is not its 24-hour minimum review window.
@@ -112,6 +122,14 @@ The later paths retain used-rule, family/reserve and timing gates. Exact replica
 [Campaign tests](source-index.md#paper-campaign-tests) cover cash isolation, individual/global entry pauses and sibling rollback; [numerical candidate tests](source-index.md#numerical-candidate-tests) cover frozen preprocessing, missing history, later signals and atomic admission without duplicate funding.
 
 ## Forward qualification and designation
+
+Fixed RuleSpec Lab results have no implemented handoff into this numerical-only
+qualification policy. The learning snapshot and ordinary Forward learning panel
+identify retained scored rule candidates as `qualification_handoff_not_implemented`.
+Waiting longer cannot repair a missing candidate-type transition. A future
+extension must preserve exact frozen rule identity, matched incumbent controls,
+cost/risk policy, retained trial evidence, capacity and prospective approval;
+fabricating a numerical artifact is not a valid bridge.
 
 [Whole-account economics](source-index.md#paper-economics) use funding-adjusted executable equity, cash and full-period passive exposure controls. Unknown operating costs remain unknown. Paid fees and spread/slippage already represented in fills/marks are not deducted twice. Window eligibility depends on matching configuration, capital/funding, risk, instrument universe and fresh coverage.
 

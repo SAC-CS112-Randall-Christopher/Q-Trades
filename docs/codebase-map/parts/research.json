@@ -722,7 +722,19 @@
       "id": "research-pattern-prior",
       "path": "src/trading/role_worker.py",
       "symbol": "RoleWorker._pattern_learning_prior",
-      "description": "Exact own mature source and bounded inherited prior binding"
+      "description": "Exact mature source or retained waiting/rejected predecessor observation"
+    },
+    {
+      "id": "research-pattern-root-selection",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._pattern_root_selection",
+      "description": "Immutable root selection for hot or archived dependency continuations"
+    },
+    {
+      "id": "research-method-claims",
+      "path": "src/trading/role_worker.py",
+      "symbol": "RoleWorker._pattern_method_claims",
+      "description": "Bounded permanent method ownership including repeated legacy no-change history"
     },
     {
       "id": "research-pattern-selector",
@@ -790,7 +802,7 @@
     {
       "id": "research-tests-next-method",
       "path": "tests/test_pattern_next_method_worker.py",
-      "description": "Two fixed methods full-score projection and disposable engine path"
+      "description": "Distinct method succession, legacy/cold wait recovery, lossless scores and disposable engine path"
     },
     {
       "id": "research-tests-selection",
@@ -913,6 +925,8 @@
       "references": [
         "research-pattern-selector",
         "research-pattern-prior",
+        "research-pattern-root-selection",
+        "research-method-claims",
         "research-method-policy",
         "model-selection-authority",
         "research-tests-learning",
@@ -922,7 +936,9 @@
         "duplicate selected event",
         "foreign lesson",
         "method not offered",
-        "stale authority"
+        "stale authority",
+        "old wait blocks selection",
+        "rejected method blocks next question"
       ]
     },
     {

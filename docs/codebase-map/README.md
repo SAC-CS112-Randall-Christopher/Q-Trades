@@ -5,13 +5,35 @@ choose meaningful verification. Start with a symptom or workflow, then inspect
 the linked current functions and their consumers before editing.
 
 The reviewed application starting baseline is
-`c92fe024b102ce0289066b84d4ad57bebd7bb7d8` (the PR87 source stack). The
+`9ac64e09d04b2fd4e055b8a8d26066172e6fc5f4` (the audited PR88 source stack). The
 [generated index](source-index.md) records current normalized file hashes and
 exact reference locations. That source includes proposed research behavior beyond
 the separately accepted installed `c653b136f4f0d4fac3f9855bbbb4c40b21a3c8a9`.
 This map does not claim the stack is installed or research is currently enabled.
 Refresh GitHub, the checked-out branch and installed receipts when investigating
 operating behavior; a source map cannot identify a running process by itself.
+
+## Product handoffs and outstanding acceptance
+
+The strict finite grant owns one original chain and at most three reserved model
+requests. The later question/method policies are separate authorities with hourly
+allowances, daily selection ceilings, one inference at a time and bounded active
+work; hourly allowances are not a total experiment budget. Neither authority is
+enabled by this map or by a passing source test.
+
+| Handoff | Producer and actual consumer | Normal UI and durable recovery | Source status and remaining acceptance |
+| --- | --- | --- | --- |
+| Saved finding → current preparation | Scanner/daily captures → PatternComparisons → RoleWorker | Saved question links reopen the exact original wait/finding; current inputs have separate retained references | Bounded retained selection and wait recovery implemented. See [A1/A6 evidence](../reviews/CLOSED_LOOP_AUDIT.md). Installed recovery remains separate. |
+| Proposal/rejection → next investigation | Worker review/dependency stages → method selector | Original task/verdict stays accessible; immutable selection owns its method | Scientific rejection or quiescent dependency can yield to the other offered method. Due work, unsafe/failed results and finite scope remain protected. See [scheduling](research-worker.md#selection-policies-and-fixed-methods). |
+| Optional research → financial owner | AutonomousLab preparation → PaperStore/PaperEngine | Inbox and permanent reserve/fund/score receipts reconcile missing acknowledgments | Optional work releases the writer lock; fresh financial admission remains inside it. [Concurrency evidence](../reviews/CLOSED_LOOP_AUDIT.md) is disposable software proof. |
+| Mature result → lesson → next question | Scored event → ResearchLessons → exact later role packet | Original task, lesson and next-task provenance | Source and fixture paths exist; actual authorized model interpretation and normal operating continuation remain unproved by this source checkpoint. |
+| Fixed-rule result → stronger qualification | Lab frozen RuleSpec → paper_learning | Forward learning shows an explicit unavailable handoff for retained scored candidates | Missing implementation. Numerical qualification cannot accept a substituted artifact. Exact RuleSpec admission, matched incumbent controls and prospective approval need a separate bounded extension. |
+| Two methods → continuing refinement | p0/p1 catalog → supported strategy bank | Current selection states the two-method ceiling and retained exhausted work | Not implemented. Actual grounded p0/p1 acceptance precedes one justified versioned refinement; a different trial alone is not evidence of learning. |
+| Reviewed examples → Training Lab preparation | Retained examples → existing preparation owner | Saved preparation preserves `trained=false` and `evaluated=false` | Intentional preparation boundary. Training/evaluation needs its own applicable authorization. |
+
+The [audit repair ledger](../reviews/CLOSED_LOOP_AUDIT.md) records executed checks
+and their limits. Code present, source tests, installed operation, actual model
+usefulness and prospective economics are five different claims.
 
 ## Find the right workflow
 

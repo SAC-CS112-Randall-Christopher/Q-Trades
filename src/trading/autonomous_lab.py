@@ -3,9 +3,10 @@
 import json
 import shutil
 import sqlite3
+import threading
 import time
 from collections.abc import Callable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from typing import Any
 
 import psycopg
@@ -36,6 +37,8 @@ class AutonomousLab:
         self.inbox = LabProposals(registry)
         self.last_error: str | None = None
         self.finite_transport: Any = None
+        self._step_lock = threading.Lock()
+        self._proposal_lock = threading.Lock()
 
     def start(self, policy: LabPolicy) -> dict[str, Any]:
         self.paper.require_healthy_control()
@@ -46,9 +49,10 @@ class AutonomousLab:
     def control(self, action: str, target: str | None) -> dict[str, Any]:
         self.paper.require_healthy_control()
         result: dict[str, Any] = {}
-        self.paper._transact_state(
-            time.time(), lambda e: result.update(finance.control(e, action, target))
-        )
+        with self._proposal_lock:
+            self.paper._transact_state(
+                time.time(), lambda e: result.update(finance.control(e, action, target))
+            )
         return result
 
     def bundle(self, now: float) -> dict[str, Any]:
@@ -170,11 +174,23 @@ class AutonomousLab:
             finance.validate_parent(self.paper.state, proposal)
         except finance.InvalidProposal as exc:
             rejection = str(exc)
-        result = self.inbox.submit(
-            proposal, evaluation, rejection=rejection, _finite_scope=_finite_scope
-        )
+        with self._proposal_lock:
+            # Serialize publication with proposal controls without holding the
+            # financial lock during registry or recorder I/O.
+            state = self.paper.state
+            lab = state.get("autonomous_lab")
+            if not lab or lab["proposals_paused"] or state["paused"]:
+                raise InputWait("Operator pause prevents new lab proposals")
+            result = self.inbox.submit(
+                proposal, evaluation, rejection=rejection, _finite_scope=_finite_scope
+            )
+        if result["status"] == "evaluated":
+            self._retain_inputs(proposal, evaluation, now)
+        return result
+
+    def _retain_inputs(self, proposal: LabProposal, evaluation: dict[str, Any], now: float) -> None:
         recorder = getattr(self.paper, "evidence", None)
-        if recorder is not None and result["status"] == "evaluated":
+        if recorder is not None:
             p = LabPolicy.model_validate(self.paper.state["autonomous_lab"]["policy"])
             recorder.enqueue(
                 {
@@ -188,33 +204,72 @@ class AutonomousLab:
                     + 86400,
                 }
             )
-        return result
 
     @contextmanager
-    def _finite_dispatch(self, proposal: LabProposal) -> Iterator[Callable[[], None] | None]:
+    def _finite_dispatch(
+        self, proposal: LabProposal, *, financial: bool = False
+    ) -> Iterator[Callable[[], None] | None]:
+        # Resolve registry ownership before the financial -> policy lock order.
         scope = self.inbox.finite_scope(proposal)
-        if scope is None:
-            yield None  # Original/unrelated proposal ownership is unchanged.
-            return
-        operation = getattr(self.finite_transport, "finite_operation", None)
-        if not callable(operation):
-            raise InputWait("Finite proposal's current authority owner is unavailable")
-        entered = False
-        try:
-            with operation(scope) as authorize:
-                entered = True
+        with self.paper.store.transaction_lock if financial else nullcontext():
+            if scope is None:
+                yield None  # Original/unrelated proposal ownership is unchanged.
+                return
+            operation = getattr(self.finite_transport, "finite_operation", None)
+            if not callable(operation):
+                raise InputWait("Finite proposal's current authority owner is unavailable")
+            entered = False
+            try:
+                with operation(scope) as authorize:
+                    entered = True
 
-                def guard() -> None:
-                    try:
-                        authorize()
-                    except (ValueError, OSError) as exc:
-                        raise InputWait("Finite proposal authority refuses: " + str(exc)) from exc
+                    def guard() -> None:
+                        try:
+                            authorize()
+                        except (ValueError, OSError) as exc:
+                            raise InputWait(
+                                "Finite proposal authority refuses: " + str(exc)
+                            ) from exc
 
-                yield guard
-        except (ValueError, OSError) as exc:
-            if not entered:
-                raise InputWait("Finite proposal authority refuses: " + str(exc)) from exc
-            raise
+                    yield guard
+            except (ValueError, OSError) as exc:
+                if not entered:
+                    raise InputWait("Finite proposal authority refuses: " + str(exc)) from exc
+                raise
+
+    def _financial_admission(
+        self,
+        policy: LabPolicy,
+        evaluation: dict[str, Any],
+        now: Callable[[], float],
+        finite: Callable[[], None] | None,
+    ) -> Callable[[], None]:
+        """Recheck mutable admission inside the sole writer, without optional I/O."""
+
+        def check() -> None:
+            if finite is not None:
+                finite()
+            at = now()
+            state = self.paper.state
+            lab = state.get("autonomous_lab")
+            frame = self.paper.control_frames().get("BTCUSD")
+            if (
+                not lab
+                or fingerprint(lab["policy"]) != fingerprint(policy.model_dump())
+                or lab["proposals_paused"]
+                or state["paused"]
+                or not self.paper.running
+                or self.paper.error
+                or not 0 <= at - state["last_tick"] <= 10
+                or not self.can_research()
+                or frame is None
+                or not fresh_frame(frame, at)
+                or not frame.get("entry_allowed", True)
+                or not evaluation["evaluated_at"] <= at <= evaluation["expires_at"]
+            ):
+                raise InputWait("Fresh paper, policy, inputs or resource admission changed")
+
+        return check
 
     def evaluate(self, proposal: LabProposal, now: float) -> dict[str, Any]:
         """Existing deterministic prospective check; no inbox or financial effects."""
@@ -422,9 +477,13 @@ class AutonomousLab:
         def apply(engine: Any) -> None:
             lab = engine.state["autonomous_lab"]
             finance.periods(lab, now)
-            lab.update(phase=phase, reason=reason, next_action_at=now + delay)
+            if lab["proposals_paused"] and phase == "evaluated":
+                lab.update(phase="paused", reason="Proposals paused; retained work remains")
+            else:
+                lab.update(phase=phase, reason=reason)
+            lab["next_action_at"] = now + delay
 
-        self.paper.state = self.paper.store.transact(now, apply)
+        self.paper._transact_state(now, apply)
 
     def _budget(self, now: float, elapsed: float | None = None) -> None:
         def apply(engine: Any) -> None:
@@ -432,6 +491,12 @@ class AutonomousLab:
             finance.periods(lab, now)
             b = lab["budget"]
             if elapsed is None:
+                policy = LabPolicy.model_validate(lab["policy"])
+                if (
+                    b["steps"] >= policy.hourly_steps
+                    or b["compute_seconds"] + 1 > policy.hourly_compute_seconds
+                ):
+                    raise InputWait("UTC hourly work/allocated-time budget exhausted")
                 # Commit conservative consumption BEFORE dispatch; crashes cannot
                 # restore that hour's allowance. There is no provider spending.
                 b["steps"] += 1
@@ -441,19 +506,25 @@ class AutonomousLab:
                 b["measured_seconds"] += elapsed
                 b["compute_seconds"] += max(0, elapsed - 1)
 
-        self.paper.state = self.paper.store.transact(now, apply)
+        self.paper._transact_state(now, apply)
 
     def step(self, now: float | None = None) -> bool:
-        with self.paper.store.transaction_lock:
-            try:
+        if not self._step_lock.acquire(blocking=False):
+            return False
+        try:
+            at, started = time.time() if now is None else now, time.perf_counter()
+            with self.paper.store.transaction_lock:
                 self.paper.state = self.paper.store.read()
-                return self._step(time.time() if now is None else now)
-            except (psycopg.Error, RuntimeError, sqlite3.Error, OSError, ValueError) as exc:
-                self.last_error = str(exc)[:300]
-                return False
+                state = self.paper.state
+            return self._step(at, state, started)
+        except (psycopg.Error, RuntimeError, sqlite3.Error, OSError, ValueError) as exc:
+            self.last_error = str(exc)[:300]
+            return False
+        finally:
+            self._step_lock.release()
 
-    def _step(self, now: float) -> bool:
-        lab = self.paper.state.get("autonomous_lab")
+    def _step(self, now: float, state: dict[str, Any], started: float) -> bool:
+        lab = state.get("autonomous_lab")
         if not lab or now < lab["next_action_at"]:
             return False
         self.last_error = None
@@ -501,15 +572,20 @@ class AutonomousLab:
                 3600 - now % 3600,
             )
             return False
-        started = time.perf_counter()
+
+        def current_time() -> float:
+            return now + time.perf_counter() - started
+
+        work_started = time.perf_counter()
         self._budget(now)
         try:
             for pending in self.inbox.unfinished_funded():
-                scored = self.paper.store.connection.execute(
-                    "SELECT id FROM paper_events WHERE kind IN "
-                    "('lab_trial_scored','lab_trial_retired') AND body->>'trial_id'=%s LIMIT 1",
-                    (pending["trial_id"],),
-                ).fetchone()
+                with self.paper.store.transaction_lock:
+                    scored = self.paper.store.connection.execute(
+                        "SELECT id FROM paper_events WHERE kind IN "
+                        "('lab_trial_scored','lab_trial_retired') AND body->>'trial_id'=%s LIMIT 1",
+                        (pending["trial_id"],),
+                    ).fetchone()
                 if scored:
                     self.inbox.update(pending["request_id"], "completed", pending["trial_id"])
                     self._state(now, "recovered", "Recovered committed outcome acknowledgment", 2)
@@ -520,13 +596,32 @@ class AutonomousLab:
                     trial = t["id"]
 
                     def score(
-                        engine: PaperEngine, result: dict[str, Any] = result, trial: str = trial
+                        engine: PaperEngine,
+                        result: dict[str, Any] = result,
+                        trial: str = trial,
+                        proposal_id: str = t["proposal_id"],
                     ) -> None:
+                        current = engine.state["autonomous_lab"]["trials"].get(trial)
+                        if (
+                            not current
+                            or current["status"] != "active"
+                            or not current.get("sealed")
+                            or current["proposal_id"] != proposal_id
+                        ):
+                            result.update(
+                                changed=True,
+                                reason="Trial changed before review; "
+                                "retained outcome recovery is next",
+                            )
+                            return
                         result.update(finance.review(engine, trial))
 
-                    self.paper.state = self.paper.store.transact(now, score)
-                    self.inbox.update(t["proposal_id"], "completed", t["id"])
-                    self._state(now, "scored", result["reason"], 2)
+                    self.paper._transact_state(now, score)
+                    if not result.get("changed"):
+                        self.inbox.update(t["proposal_id"], "completed", t["id"])
+                    self._state(
+                        now, "observe" if result.get("changed") else "scored", result["reason"], 2
+                    )
                     return True
             if lab["proposals_paused"] or self.paper.state["paused"]:
                 self._state(now, "paused", "Proposals paused; management and history continue", 30)
@@ -546,25 +641,24 @@ class AutonomousLab:
                 proposal = LabProposal.model_validate(queued["body"])
                 if queued["status"] in {"evaluated", "blocked"}:
                     try:
-                        scoped = self.inbox.finite_scope(proposal) is not None
-                        recovered = self.paper.store.lab_reservation(proposal) if scoped else None
+                        recovered = self.paper.store.lab_reservation(proposal)
                         if recovered is not None:
                             receipt = recovered
                         else:
-                            submitted = self.submit(proposal, now)
-                            if submitted["status"] == "rejected":
-                                self._state(now, "rejected", submitted["reason"], 2)
-                                return True
-                            # _step already owns the writer lock. Scope metadata
-                            # was read before entering this policy mutex; no
-                            # registry or recorder access is allowed inside it.
-                            with self._finite_dispatch(proposal) as authorize:
-                                if authorize is None:
-                                    receipt = self.paper.store.lab_reserve(now, proposal)
-                                else:
-                                    receipt = self.paper.store.lab_reserve(
-                                        now, proposal, authorize=authorize
-                                    )
+                            with self._finite_dispatch(proposal):
+                                pass
+                            evaluation = self.evaluate(proposal, now)
+                            self._retain_inputs(proposal, evaluation, now)
+                            with self._finite_dispatch(proposal, financial=True) as authorize:
+                                self.paper.state = self.paper.store.read()
+                                receipt = self.paper.store.lab_reserve(
+                                    current_time(),
+                                    proposal,
+                                    authorize=self._financial_admission(
+                                        policy, evaluation, current_time, authorize
+                                    ),
+                                )
+                                self.paper.state = self.paper.store.read()
                     except finance.InvalidProposal as exc:
                         self.inbox.update(proposal.request_id, "rejected", reason=str(exc))
                         self._state(now, "rejected", str(exc), 2)
@@ -575,38 +669,53 @@ class AutonomousLab:
                         )
                         self._state(now, "proposal_wait", str(exc), 2)
                         return False
-                    self.paper.state = self.paper.store.read()
+                    with self.paper.store.transaction_lock:
+                        self.paper.state = self.paper.store.read()
                     self.inbox.update(proposal.request_id, "reserved", receipt["trial_id"])
                     self._state(now, "reserved", "Durable slot intent reserved; funding is next", 2)
                 else:
                     trial_id = queued["trial_id"]
+                    with self.paper.store.transaction_lock:
+                        self.paper.state = self.paper.store.read()
+                        lab = self.paper.state["autonomous_lab"]
                     if trial_id not in lab["trials"]:
                         self.inbox.update(proposal.request_id, "completed", trial_id)
                         self._state(now, "observe", "Retired intent retained; no resurrection", 2)
                     else:
-                        if (
-                            lab["trials"][trial_id]["status"] == "reserved"
-                            or self.inbox.finite_scope(proposal) is None
-                        ):
+                        if lab["trials"][trial_id]["status"] == "reserved":
                             try:
-                                with self._finite_dispatch(proposal) as authorize:
+                                with self._finite_dispatch(proposal):
+                                    pass
+                                evaluation = self.evaluate(proposal, now)
+                                self._retain_inputs(proposal, evaluation, now)
+                                with self._finite_dispatch(proposal, financial=True) as authorize:
+                                    self.paper.state = self.paper.store.read()
 
                                     def fund(engine: PaperEngine) -> None:
-                                        finance.fund(engine, trial_id)
+                                        if trial_id in engine.state["autonomous_lab"]["trials"]:
+                                            finance.fund(engine, trial_id)
 
-                                    if authorize is None:
-                                        self.paper.state = self.paper.store.transact(now, fund)
-                                    else:
-                                        self.paper.state = self.paper.store.transact(
-                                            now, fund, authorize=authorize
-                                        )
+                                    self.paper.state = self.paper.store.transact(
+                                        current_time(),
+                                        fund,
+                                        authorize=self._financial_admission(
+                                            policy, evaluation, current_time, authorize
+                                        ),
+                                    )
                             except (finance.AdmissionWait, InputWait) as exc:
                                 self.inbox.defer_reserved(
                                     proposal.request_id, str(exc), now + policy.cooldown_seconds
                                 )
                                 self._state(now, "proposal_wait", str(exc), 2)
                                 return False
-                        status = self.paper.state["autonomous_lab"]["trials"][trial_id]["status"]
+                        current = self.paper.state["autonomous_lab"]["trials"].get(trial_id)
+                        if current is None:
+                            self.inbox.update(proposal.request_id, "completed", trial_id)
+                            self._state(
+                                now, "observe", "Retired intent retained; no resurrection", 2
+                            )
+                            return True
+                        status = current["status"]
                         if status != "reserved":
                             self.inbox.update(proposal.request_id, "funded", trial_id)
                         self._state(
@@ -654,7 +763,7 @@ class AutonomousLab:
             self._state(now, "waiting", self.last_error, policy.cooldown_seconds)
             return False
         finally:
-            self._budget(now, time.perf_counter() - started)
+            self._budget(now, time.perf_counter() - work_started)
 
     def snapshot(self) -> dict[str, Any]:
         now = time.time()

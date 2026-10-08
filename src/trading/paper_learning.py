@@ -464,6 +464,27 @@ def snapshot(state: dict[str, Any]) -> dict[str, Any]:
             and a.get("numerical_artifact")
             and a.get("campaign_id") == "forward-research"
         ],
+        "unavailable_handoffs": [
+            {
+                "account": n,
+                "label": a.get("label", n),
+                "trial_id": a.get("lab_trial"),
+                "rule_sha256": fingerprint(a["rule_spec"]),
+                "state": "qualification_handoff_not_implemented",
+                "reason": "Exploratory result retained; qualification handoff not implemented "
+                "for this strategy type. More elapsed time cannot complete this handoff.",
+            }
+            for n, a in state["accounts"].items()
+            if research_account(a, n)
+            and a.get("rule_spec")
+            and a.get("campaign_id") == "autonomous-lab"
+            and a.get("lab_role") == "candidate"
+            and state.get("autonomous_lab", {})
+            .get("trials", {})
+            .get(a.get("lab_trial"), {})
+            .get("score")
+            is not None
+        ],
         "changes": POLICY["changes"],
         "live_execution": False,
     }

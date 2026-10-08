@@ -77,6 +77,7 @@ type QuestionSelection = {
   strategy_sha: string;
   reference_sha: string;
   lesson?: { id: string; sha256: string } | null;
+  learning?: {state:string;predecessor_task:string|null;predecessor_observation?:{at:number;stage:string;status:string;scope:string}};
   reason: string;
   falsification: string;
   limitations: string[];
@@ -93,7 +94,7 @@ type PatternComparison = {
   coverage: { timeframe: string; status: string; observed_bars?: number; expected_bars?: number; missing_bars?: number; gap_count?: number; progress_sha256: string | null }[];
   native_proof: { archive_verified: boolean; recognition_rows: number; pivot_rows: number; contiguous_relevant_window: boolean; recognition_start_ms: number; recognition_end_ms: number; input_window_sha256: string; pivot_sha256: string; coverage_claim: string };
   mapping: { strategy: string; reference: string; rule_version: string; holding_horizon: string; limits: string[]; source_sha256: Record<string, string> };
-  original_evaluation: { status: string; evaluated_at?: number; expires_at?: number; matched_inputs?: Pick<CurrentInputs, "count" | "sha256" | "cutoff" | "archive_verified"> };
+  original_evaluation: { status: string; reason?: string; evaluated_at?: number | null; expires_at?: number | null; matched_inputs?: Pick<CurrentInputs, "count" | "sha256" | "cutoff" | "archive_verified"> | null };
   financial_authority: false;
 };
 type CurrentInputs = { count: number; sha256: string; cutoff: number; start_ms: number; end_ms: number; archive_verified: boolean; retained_at?: number };
@@ -186,6 +187,7 @@ function PatternTaskEvidence({ pattern, fixed }: { pattern: PatternComparison; f
     <ul>{pattern.coverage.map(row => <li key={row.timeframe}>{row.timeframe}: {row.status} · {row.observed_bars ?? "unknown"} of {row.expected_bars ?? "unknown"} bars · {row.missing_bars ?? "unknown"} missing · {row.gap_count ?? "unknown"} gaps.</li>)}</ul>
     <h5>Preparation-time proof and numerical check</h5>
     <p>Prepared {stamp(pattern.prepared_at)}. Original numerical status: <strong>{original.status}</strong>{original.evaluated_at != null ? ` · evaluated ${stamp(original.evaluated_at)}` : ""}{original.expires_at != null ? ` · original expiry ${stamp(original.expires_at)}` : ""}. This retained check is not current admission or an economic outcome.</p>
+    {original.status === "waiting" && <p>Original preparation wait retained: {original.reason ?? "Original inputs were unavailable"}. This task continued with the separately captured execution inputs below; the old receipt and any consumed attempts remain unchanged.</p>}
     <p>Native archive verification: {pattern.native_proof.archive_verified === true ? "recorded" : "unverified"} · {pattern.native_proof.recognition_rows} recognition rows · {pattern.native_proof.pivot_rows} pivot rows · relevant window {pattern.native_proof.contiguous_relevant_window === true ? "contiguous" : "unknown or incomplete"}. {pattern.native_proof.coverage_claim}</p>
     {original.matched_inputs && <p>Original preparation used {original.matched_inputs.count} matched closed-minute inputs · cutoff {stamp(original.matched_inputs.cutoff)} · archive verification {original.matched_inputs.archive_verified === true ? "recorded" : "unverified"}.</p>}
     <details><summary>Original finding, preparation digests and proof</summary><pre>{JSON.stringify({ selection: pattern.selection, campaign_id: pattern.campaign_id, original_event: pattern.original_event, coverage: pattern.coverage, preparation_request_id: pattern.preparation_request_id, issued_bundle_sha256: pattern.issued_bundle_sha256, finding_sha256: pattern.finding_sha256, native_proof: pattern.native_proof, original_evaluation: original }, null, 2)}</pre></details>
@@ -390,6 +392,7 @@ export function RoleResearchPanel() {
     <section aria-label="Evidence-driven question selection">
       {state?.question_selection ? <>
         <p role="status">{statusError ? "Last observed question selection" : "Current question selection"}: <strong>{selectionLabels[state.question_selection.state]}</strong> · {state.question_selection.reason}</p>
+        {state.question_selection.policy === "bounded-pattern-method-question-v1" && <p>This pilot offers two fixed comparisons: breakout-retest and trend-pullback, each against cost-breakout. After both methods are used or own a retained question, no further strategy refinement is implemented. Original waits and rejected results remain available.</p>}
         {state.question_selection.task && <p><button type="button" onClick={() => open(state.question_selection!.task!)}>Open the selected saved question</button></p>}
         {state.question_selection.evidence != null && <details><summary>{statusError ? "Last observed selection evidence" : "Selection evidence"}</summary><pre>{JSON.stringify(state.question_selection.evidence, null, 2)}</pre></details>}
       </> : <p role="status">{!state && !statusError ? "Loading question selection status…" : "Automatic question selection status is unavailable."}</p>}
@@ -452,6 +455,11 @@ export function RoleResearchPanel() {
         <p><strong>Captured source:</strong> {task.context.question_selection.source_count} closed bars · {stamp(task.context.question_selection.source_start)} to {stamp(task.context.question_selection.source_end)} · {task.context.question_selection.horizon} horizon.</p>
         {task.context.question_selection.source_basis && <p><strong>Recorded source basis:</strong> {task.context.question_selection.source_basis}</p>}
         <p><strong>Prior lesson reference:</strong> {task.context.question_selection.lesson?.id ?? (task.context.question_selection.lesson === null ? "No prior lesson used for this selection." : "Unavailable in this saved selection.")}</p>
+        {task.context.question_selection.learning?.predecessor_observation && <p>
+          <strong>Retained prior investigation:</strong> {task.context.question_selection.learning.state.replaceAll("_", " ")} at {stamp(task.context.question_selection.learning.predecessor_observation.at)}.
+          {" "}{task.context.question_selection.learning.predecessor_observation.scope}.
+          {task.context.question_selection.learning.predecessor_task && <button type="button" onClick={()=>open(task.context.question_selection!.learning!.predecessor_task!)}>Open original prior question and verdict</button>}
+        </p>}
         {!!task.context.question_selection.limitations.length && <><h5>Uncertainties and limits</h5><ul>{task.context.question_selection.limitations.map((limit, index) => <li key={index}>{limit}</li>)}</ul></>}
         <details><summary>Saved selection provenance and frozen comparison identities</summary><pre>{JSON.stringify(task.context.question_selection, null, 2)}</pre></details>
       </section>}

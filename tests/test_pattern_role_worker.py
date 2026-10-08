@@ -198,6 +198,20 @@ def test_actual_v8_packet_fits_unchanged_9000_conservative_context_guard(fixture
     assert measured["reserved_total"] <= 9000
 
 
+def test_unavailable_top_candidate_does_not_hide_another_verified_original(fixture, monkeypatch):
+    f, worker, selection = fixture
+    missing = selection.model_copy(update={"event_seq": selection.event_seq + 10000})
+    bridge = worker.pattern_comparisons
+    monkeypatch.setattr(bridge, "candidates", lambda now: [missing, selection])
+    selected = select(f, worker)
+    evidence = selected["context"]["question_selection"]
+    assert selected["context"]["pattern_comparison"]["selection"] == selection.model_dump()
+    assert evidence["candidate_search"]["considered"] == 2
+    assert evidence["candidate_search"]["skipped_count"] == 1
+    assert str(missing.event_seq) in evidence["candidate_search"]["skipped"][0]
+    assert worker.transport.calls == [] and not rows(worker, "role_attempts")
+
+
 def restore_scored_body(projected):
     body = copy.deepcopy(projected["body"])
     if "execution_samples" in body:
@@ -591,18 +605,66 @@ def test_protected_missing_or_stale_input_never_creates_task_or_attempt(fixture,
     assert worker.transport.calls == []
 
 
-def test_waiting_original_preparation_is_not_reobserved_for_preferred_ready_answer(fixture):
+@pytest.mark.parametrize("lost_ack", [False, True])
+def test_waiting_preparation_recovers_once_without_rewriting_receipt_or_spending_attempt(
+    fixture, monkeypatch, lost_ack
+):
     f, worker, _ = fixture
     f.paper.history["BTCUSD"] = f.paper.history["BTCUSD"][-304:]
     assert worker.select_fresh_question(f.now) == 0
     old = rows(worker, "pattern_comparison_requests")
     assert len(old) == 1
+    original = worker.pattern_comparisons.get(old[0][0])
+    assert original["status"] == "waiting"
+    assert not rows(worker, "role_attempts")
     f.paper.history["BTCUSD"] = bars_at(f.now - 400 * 60)[-200:] + bars_at(f.now)
     f.now += 61
     f.paper.state["last_tick"] = f.now
-    assert worker.select_fresh_question(f.now) == 0
+    restarted = RoleWorker(
+        f.registry,
+        worker.controller,
+        worker.transport,
+        f.scanner.storage_owner,
+        pattern_comparisons=PatternComparisons(f.scanner, worker.controller),
+    )
+    restarted.enabled, restarted.paper_admission = True, lambda: True
+    if lost_ack:
+        enqueue = restarted.enqueue
+
+        def unacknowledged(*args, **kwargs):
+            enqueue(*args, **kwargs)
+            raise OSError("Synthetic lost publication acknowledgment")
+
+        monkeypatch.setattr(restarted, "enqueue", unacknowledged)
+        with pytest.raises(OSError, match="lost publication acknowledgment"):
+            restarted.select_fresh_question(f.now)
+        monkeypatch.setattr(restarted, "enqueue", enqueue)
+        assert restarted.select_fresh_question(f.now) == 0
+    else:
+        assert restarted.select_fresh_question(f.now) == 1, restarted.question_selection_status()
+    saved = task(restarted)
+    context = saved["context"]
+    assert context["pattern_comparison"]["preparation_request_id"] == original["request_id"]
+    assert context["pattern_comparison"]["original_evaluation"] == {
+        "status": "waiting",
+        "evaluated_at": None,
+        "expires_at": None,
+        "matched_inputs": None,
+        "reason": original["evaluation"]["reason"],
+    }
+    assert context["tool_evidence"]["matched_inputs"]["archive_verified"] is True
+    assert context["tool_evidence"]["closed_bar_count"] == 600
     assert rows(worker, "pattern_comparison_requests") == old
-    assert not rows(worker, "role_tasks")
+    assert worker.pattern_comparisons.get(original["request_id"]) == original
+    assert not rows(worker, "role_attempts") and not rows(worker, "lab_proposals")
+    assert asyncio.run(restarted.step(f.now))
+    attempts = rows(worker, "role_attempts")
+    assert len(attempts) == 1 and len(worker.transport.calls) == 1
+    advance(f, 61)
+    assert restarted.select_fresh_question(f.now) == 0
+    assert len(rows(worker, "role_tasks")) == 1
+    assert rows(worker, "role_attempts") == attempts
+    assert worker.pattern_comparisons.get(original["request_id"]) == original
 
 
 def test_live_admission_and_frame_tick_advances_do_not_rewrite_causal_cutoff(fixture):

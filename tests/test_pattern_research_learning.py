@@ -86,7 +86,7 @@ def fixture(tmp_path, monkeypatch):
         f.close()
 
 
-def mature(f, worker, *, outcome="data_blocked", record=True):
+def mature(f, worker, *, outcome="data_blocked", record=True, followup=True):
     """Actual software callbacks/evaluation/inbox, then financial-shaped fixture evidence.
 
     The outcome is not a funded trial or economic qualification. Existing sample
@@ -136,6 +136,8 @@ def mature(f, worker, *, outcome="data_blocked", record=True):
     original_outcome = {"id": 1, "at": end, "body": score}
     assert worker._update(first, "followup", result=first["result"] | {"outcome": original_outcome})
     advance(f, 86400)
+    if not followup:
+        return worker.get(first["id"])
     original_record = worker.lessons.record
     if not record:
         # Simulate missing lesson persistence without modifying a permanent row.

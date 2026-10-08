@@ -86,6 +86,12 @@ const bounded = async (promise, milliseconds, label) => {
     assert(text.includes("breakout-retest-v1") && text.includes("cost-breakout-v1"));
     for (const row of pattern.coverage) assert(text.includes(`${row.timeframe}: ${row.status}`));
     assert.equal(original.attempts.length, 0); assert.equal(original.inbox_count, 0); assert.equal(original.stub_inference_callbacks, 0);
+    if (original.audit_recovery) {
+      assert.equal(original.original_preparation.status, "waiting");
+      assert(text.includes("Original preparation wait retained"));
+      assert(text.includes(original.original_preparation.evaluation.reason));
+      assert((await page.getByRole("region", { name: "Evidence-driven question selection" }).innerText()).includes("no further strategy refinement is implemented"));
+    }
     groups.push({ name: phase, task: original.task_id, original_finding: pattern.finding_sha256, coverage_rows: pattern.coverage.length });
 
     phase = "exact-fixed-controls-and-distinct-input-proof";
@@ -116,7 +122,11 @@ const bounded = async (promise, milliseconds, label) => {
     assert.deepEqual(preparation, original.original_preparation);
     save("original-preparation-reopen.json", preparation);
     const preparationPanel = page.getByRole("region", { name: "Review prospective comparison", exact: true });
-    await preparationPanel.getByText("Preparation supported by the captured numerical check", { exact: true }).waitFor();
+    if (original.audit_recovery) {
+      await preparationPanel.getByText(original.original_preparation.evaluation.reason, { exact: false }).first().waitFor();
+    } else {
+      await preparationPanel.getByText("Preparation supported by the captured numerical check", { exact: true }).waitFor();
+    }
     await preparationPanel.getByText(`Original UUID ${pattern.preparation_request_id}`, { exact: false }).waitFor();
     groups.push({ name: phase, request_id: preparation.request_id, exact_original_receipt: true });
 
@@ -156,6 +166,17 @@ const bounded = async (promise, milliseconds, label) => {
     assert(geometry.width <= geometry.viewport && geometry.document <= geometry.viewport + 1, JSON.stringify(geometry));
     await page.screenshot({ path: path.join(directory, "role-pattern-mobile.png"), timeout: 5000 });
     groups.push({ name: phase, exact_task_reload: true, mobile_geometry: geometry });
+    if (original.audit_recovery) {
+      phase = "fixed-rule-result-missing-qualification-handoff";
+      await page.setViewportSize({ width: 1440, height: 1100 });
+      await page.goto(`${origin}/#forward-learning`, { waitUntil: "domcontentloaded", timeout: remaining(10000) });
+      const handoff = page.getByRole("article", { name: "Unavailable qualification handoff" });
+      await handoff.waitFor();
+      assert((await handoff.innerText()).includes("qualification handoff not implemented for this strategy type"));
+      assert.equal(await handoff.getByRole("button").count(), 0);
+      await handoff.screenshot({ path: path.join(directory, "missing-rule-qualification.png"), timeout: 5000 });
+      groups.push({ name: phase, synthetic_scored_rule: true, no_qualification_authority: true });
+    }
     }
 
     phase = "current-profile-controls-manual-form-not-historical-task";

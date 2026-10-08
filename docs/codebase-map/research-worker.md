@@ -55,6 +55,37 @@ The [worker step](source-index.md#research-worker-step) claims an eligible task 
 
 ## Selection policies and fixed methods
 
+The method policy now uses immutable `role_question_selections` as ownership of
+each dispatch-capable method before inbox publication. A waiting or rejected p0
+cannot be rebranded as a fresh p0 to seek a preferred verdict. A separate p1 can
+proceed after a scientific rejection (`reject` with no issues or only
+`unsupported_claim`) or an unleased tool wait/future data or outcome retry.
+Runnable work and due followups retain priority. Failed/unknown work, unsafe or
+invalid review issues and the strict finite one-chain policy still refuse this
+continuation. The existing active-task and allowance bounds remain authoritative.
+
+For a quiescent predecessor, the new task retains its immutable original
+selection and observation at selection time, without asserting a supported lesson.
+An already-scored tool wait preserves its exact outcome using the existing
+lossless score projection. A dependency child resolves its selection through the
+checked root, including when that root is archived. This also applies to inherited
+mature lessons in read-only observation continuations.
+Later resumption of that predecessor does not invalidate the independent task's
+frozen packet. Its original method claim remains available only to its own
+dependency lineage. For a scientific rejection the original verdict is rechecked.
+Actual mature lessons keep their existing exact source/cost/protection checks.
+Legacy repeated unfunded selections consume their method rather than hiding the
+other method. Legacy active bindings can also resume after an independent method
+publishes; their own method availability and frozen controls remain checked.
+
+Automatic selection examines at most 32 distinct retained candidate events across
+seven recent daily captures. It skips unusable or duplicate top candidates while
+retaining original availability, spacing, source exposure, native BTCUSD/5m and
+current executable-input restrictions. A saved preparation wait is immutable:
+recovery uses the existing separately retained current observation and publishes
+one task for the original event. No model allowance is charged by selection.
+The ordinary task surface distinguishes that old wait from current input evidence.
+
 [Question](source-index.md#research-question) is a strict request schema with optional UUID, parent, and lesson. Automatic selections have additional immutable source and authority records. The [contract inventory](source-index.md#research-role-contract) and [method policy digest](source-index.md#research-method-policy) separate three things: answer grammar, current grant policy, and offered financial method mapping.
 
 | Policy family | Source behavior to preserve |

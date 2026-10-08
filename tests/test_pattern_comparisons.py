@@ -91,7 +91,9 @@ def build_fixture(
             request_id="comparison-fixture-policy", holding_horizons=("medium",)
         ).model_dump(),
         "trials": {},
+        "proposals_paused": False,
     }
+    f.paper.state["paused"] = False
     f.paper.history = {"BTCUSD": bars_at(f.now - 400 * 60)[-200:] + bars_at(f.now)}
     f.paper.control_frames = lambda: {"BTCUSD": frame(f.now)}
     f.paper.memory_book = lambda symbol: None
@@ -116,6 +118,24 @@ def command(bridge, selection, request="pattern-comparison-0001"):
         request_id=request,
         expected_finding_sha256=bridge.describe(selection)["finding_sha256"],
     )
+
+
+def test_retained_btc_candidate_survives_newer_eth_only_shortlist_with_age_bound(fixture):
+    f, bridge, selection = fixture
+    original = bridge.candidate(f.now)
+    assert original is not None
+    day = copy.deepcopy(f.scanner.daily_snapshot(selection.daily_id))
+    day.update(id="daily-" + "e" * 24, generated_at=f.now + 86400)
+    day["picks"] = [dict(day["picks"][0], symbol="ETHUSD")]
+    with f.registry.transaction():
+        f.registry.db.execute(
+            "INSERT INTO pattern_daily_days(id,campaign,day,body) VALUES(?,?,?,?)",
+            (day["id"], day["campaign_id"], int((f.now + 86400) // 86400), json.dumps(day)),
+        )
+    candidates = bridge.candidates(f.now + 86400)
+    assert original in candidates and all(item.symbol == "BTCUSD" for item in candidates)
+    assert bridge.candidates(f.now + 7 * 86400) == []
+    assert len(candidates) <= 32
 
 
 def test_real_native_daily_preparation_and_separate_existing_lab_submission(fixture):
