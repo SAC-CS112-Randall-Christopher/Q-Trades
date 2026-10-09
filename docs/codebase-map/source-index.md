@@ -8592,7 +8592,7 @@ Declared local imports: [src/trading/research_storage.py](../../src/trading/rese
 - [test_duplicate_packet_in_verified_orphan_is_not_counted_twice](../../tests/test_research_storage_startup.py#L223) — function
 - [test_legacy_adoption_process_exit_resumes_or_resets_durable_chunks](../../tests/test_research_storage_startup.py#L243) — function
 - [test_legacy_adoption_process_exit_resumes_or_resets_durable_chunks.interrupt_after_one_chunk](../../tests/test_research_storage_startup.py#L265) — function
-- [test_process_exit_between_recovery_commits_keeps_counter_and_original_refs](../../tests/test_research_storage_startup.py#L310) — function
+- [test_process_exit_between_recovery_commits_keeps_counter_and_original_refs](../../tests/test_research_storage_startup.py#L311) — function
 Declared local imports: [src/trading/research_storage.py](../../src/trading/research_storage.py)
 
 ### tests/test_review_background.py

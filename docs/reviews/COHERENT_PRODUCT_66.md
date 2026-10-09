@@ -47,6 +47,18 @@ out-of-order timestamps, unavailable partial summaries and lock release. The new
 startup tests are included in the existing Windows native gate. Final local and
 exact-head hosted receipts are reported separately; this source is uninstalled.
 
+The first hosted source revision `6f9945869a7a22141b0326d80fa715f7d9baef70`
+failed one new crash fixture in the full portable PostgreSQL suite (2,509 passed,
+98 skipped). That fixture selected a packet timestamp as its between-segment
+boundary, although directory traversal does not guarantee which segment comes
+first. A forced descending-order reproduction exited before any segment commit;
+its exact zero count was correct. The corrected disposable child interrupts after
+one completed recovery transaction, exercises ordinary/ascending/descending
+traversal, and checks the first original reference, availability, certified count
+and index watermark before retry. Production recovery traversal remains unchanged.
+The failed complete-suite receipt remains failed; corrected local and final-head
+hosted results are separate evidence.
+
 ## Historical account-scope source follow-up — October 8, 2026
 
 Chris approved PR91's reviewed `46c9231` merge and resulting `9a8a2df` installation

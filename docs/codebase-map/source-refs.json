@@ -36827,7 +36827,7 @@
         },
         {
           "kind": "function",
-          "line": 310,
+          "line": 311,
           "name": "test_process_exit_between_recovery_commits_keeps_counter_and_original_refs"
         }
       ],
@@ -36857,7 +36857,7 @@
       ],
       "path": "tests/test_research_storage_startup.py",
       "routes": [],
-      "sha256": "fbad2e17b9ba4fb8e9db4f6d0733986b8ebea80f75afb0baea1a212e0a6d4fdb"
+      "sha256": "88457d44b140c246e449a0e2e9a934d9c3768d8172ee6d3ca726aa39012ade58"
     },
     {
       "area": "verification-verification",
@@ -40567,7 +40567,7 @@
     "docs/codebase-map/scanner-charts.md": "5cacc517dbef07d4c6764dad3661e046598136706ede70b895802a95b397c86f",
     "docs/codebase-map/secondary-research.md": "2d1e61f2f8e6c3ae2e8aa3da1255ec2834d05c1920f6c30315a85634aee0448a",
     "docs/codebase-map/strategy-experiments.md": "b70fc8faab1486f53bd5c73a41b7816a0401a26e23b6106aa4ddde3cad84fdfb",
-    "docs/codebase-map/verification.md": "49c87cfc7ee2b9d0cb2e1fdf7c9c29ed2a7885cd6ee5fee5ab8df16692d9a2f8"
+    "docs/codebase-map/verification.md": "39c01f887c29e9f76929a19f490fd4c78827a570f1fe9778bd8bb973fe9d9f3a"
   },
   "references": [
     {

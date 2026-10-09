@@ -23,6 +23,8 @@ The existing Windows native gate includes
 [storage startup](source-index.md#evidence-tests-storage-startup) and
 [capture recovery](source-index.md#evidence-tests-capture-recovery). Their SQLite
 fixtures measure actual VM work/query plans and durable interruption/retry.
+Between-segment process interruption follows an actually committed transaction;
+ordinary, ascending and descending fixture traversal check the same invariants.
 Synthetic sealed-index metadata measures SQL behavior; it does not prove that
 operating archived packets reopen or that an installed startup deadline passes.
 

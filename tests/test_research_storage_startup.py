@@ -307,11 +307,15 @@ storage.ResearchStorage(storage.StoragePlan.model_validate_json(sys.argv[1]))
         assert records_fingerprint(owner.db) == original
 
 
-def test_process_exit_between_recovery_commits_keeps_counter_and_original_refs(tmp_path):
+@pytest.mark.parametrize("traversal", ["filesystem", "ascending", "descending"])
+def test_process_exit_between_recovery_commits_keeps_counter_and_original_refs(
+    tmp_path, traversal
+):
     plan = plan_at(tmp_path)
     values = [packet(1_800_000_000 + i, sample="x" * 65_000) for i in range(2)]
     with closing(storage.ResearchStorage(plan)) as owner:
         refs = owner.append(values, 1_800_000_010, defer_retention=True)
+        assert owner.db.execute("SELECT count(*) FROM storage_segments").fetchone()[0] == 2
         available = [
             r[0] for r in owner.db.execute("SELECT available FROM storage_records ORDER BY record")
         ]
@@ -319,23 +323,41 @@ def test_process_exit_between_recovery_commits_keeps_counter_and_original_refs(t
     code = """
 import os, sys
 from trading import research_storage as storage
-original = storage.digest
-def interrupt(value):
-    if isinstance(value, dict) and value.get('at') == 1800000001:
+glob = storage.Path.glob
+def ordered_segments(path, pattern):
+    files = glob(path, pattern)
+    if pattern == 'segment-*.sqlite' and sys.argv[2] != 'filesystem':
+        return iter(sorted(files, reverse=sys.argv[2] == 'descending'))
+    return files
+storage.Path.glob = ordered_segments
+original = storage.ResearchStorage._recovery_source
+def interrupt(owner, path, number, *, indexed):
+    # This advances only after the preceding index transaction and source close.
+    # Packet identity cannot establish that boundary in filesystem traversal order.
+    if owner.recovery['segments_checked'] == 1:
         os._exit(34)
-    return original(value)
-storage.digest = interrupt
+    return original(owner, path, number, indexed=indexed)
+storage.ResearchStorage._recovery_source = interrupt
 storage.ResearchStorage(storage.StoragePlan.model_validate_json(sys.argv[1]))
 """
     result = subprocess.run(
-        [sys.executable, "-c", code, plan.model_dump_json()],
+        [sys.executable, "-c", code, plan.model_dump_json(), traversal],
         timeout=15,
         env={**os.environ, "PYTHONPATH": os.path.abspath("src")},
     )
     assert result.returncode == 34
     with sqlite3.connect(index_path(plan)) as db:
-        assert db.execute("SELECT rows FROM storage_state").fetchone()[0] == 1
+        assert tuple(
+            db.execute("SELECT rows,rows_version,rows_through FROM storage_state").fetchone()
+        ) == (1, 1, db.execute("SELECT max(rowid) FROM storage_records").fetchone()[0])
         assert db.execute("SELECT count(*) FROM storage_records").fetchone()[0] == 1
+        recovered = db.execute("SELECT sha,available FROM storage_records").fetchone()
+        expected = {
+            ref.rsplit(":", 1)[1]: stamp for ref, stamp in zip(refs, available, strict=True)
+        }
+        assert recovered[0] in expected and recovered[1] == expected[recovered[0]]
+        if traversal != "filesystem":
+            assert recovered[0] == refs[int(traversal == "descending")].rsplit(":", 1)[1]
     for _ in range(2):
         with closing(storage.ResearchStorage(plan)) as owner:
             assert [owner.reopen(ref) for ref in refs] == values
