@@ -23,6 +23,7 @@
     {"id":"runtime-desktop-launcher","path":"scripts/TradingDashboardLauncher.cs","description":"Current browser launcher source; not native packaged-product acceptance"},
     {"id":"runtime-dashboard-opener","path":"scripts/Open-TradingDashboard.ps1","description":"Existing dashboard opening and task-start route"},
     {"id":"verification-workflow","path":".github/workflows/windows-native.yml","description":"Exact native, dashboard, ownership, PG and browser job selections"},
+    {"id":"browser-completed-get","path":"tests/browser/completed_get.cjs","anchor":"function completedJsonGet(","description":"Bounded newly issued same-origin saved-record UI GET and completed-body capture, without replacement requests or response retries"},
     {"id":"map-workflow","path":".github/workflows/codebase-map.yml","description":"Standalone standard-library map job for every PR and main push"},
     {"id":"map-tool","path":"tools/codebase_map.py","symbol":"main","description":"Map navigation, selected traces and explicit snapshot maintenance"},
     {"id":"map-tool-tests","path":"tests/test_codebase_map.py","description":"Isolated map-tool positive and negative behavior coverage"},

@@ -76,7 +76,8 @@ configuration, operating data and model files are excluded from Git.
 | Compiled browser workflow | All six acceptance groups passed in `browser-11/workflow.json`; desktop/narrow screenshots inspected | Normal local polling enabled; independently driven financial/research owners; native PostgreSQL/scanner/registry, synthetic model callbacks/inputs/clock/resources. Original journal prefix preserved, balanced journal, zero model/tokenizer calls, unchanged run inputs. |
 | Existing saved-chart browser recovery | All 16 groups passed in `scanner-charts-01/receipt.json` after updating the old navigation expectation | Compiled UI and actual scanner registry with synthetic native inputs, no financial database. Exact retained-history destination, narrow geometry, original coverage and zero browser writes remain checked; owned server and browser closure confirmed. |
 | Saved-pattern navigation capture | Seven normal groups passed in `role-pattern-01/receipt.json`; all eight original-wait/qualification-link groups passed in `role-pattern-02/receipt.json` | Newly issued exact UI GETs are bound to completed bodies; cancelled page-restoration reads stay recorded. Original preparation, finding/daily/progress, profile outage/recovery, narrow layout and zero-write checks remain. Within-run source, task and financial state preserved; no financial database or inference. |
-| Static/frontend/map checks | Frontend build passed; whole-repository Ruff passed; mypy passed for 120 source/tool files; 18 map-tool tests passed with one Windows symlink-privilege skip; reviewed map refresh/check passed | Map contains 422 source files, 467 reviewed references and 61 tasks. Build retains its >500 KiB chunk warning. The broad native skip also requires Windows symlink privilege. |
+| Shared navigation capture recovery | All ten normal preparation groups, nine read-only p0/p1 observation groups, seven role-navigation groups and eight original-wait groups passed in `preparation-01`, `observation-01`, `role-pattern-03` and `role-pattern-04` receipts | The same bounded capture owns original preparation/task GETs across both scripts, including the actual queued p1 task. Original corruption/refusal, cold source, costs/controls, profile, DOM and financial/zero-dispatch assertions remain. Shared module hashes and observed failed reads are retained; all owned servers closed with their listeners absent. |
+| Static/frontend/map checks | Frontend build passed; whole-repository Ruff passed; mypy passed for 120 source/tool files; 18 map-tool tests passed with one Windows symlink-privilege skip; reviewed map refresh/check passed | Map contains 423 source files, 468 reviewed references and 61 tasks after the shared browser helper. Build retains its >500 KiB chunk warning. The broad native skip also requires Windows symlink privilege. |
 | Independent source review | No remaining material finding after repaired findings | Read-only Codex review of controls, archival/concurrency, financial qualification, exact context and Overview. Test execution is separate. |
 | Draft/exact-head hosted checks | Publication and hosted status are reported separately with the exact published revision | Neither local proof nor an earlier branch's CI substitutes for hosted checks of the published head. |
 | Installed/actual model/prospective/live acceptance | Not performed | No source candidate installation, actual inference, elapsed qualification or live operation. |
@@ -123,6 +124,16 @@ distinguish response headers from a completed body. Both original identity and
 rendered-record assertions remain. Independent review accepted the correction;
 the seven/eight-group local reruns passed with no writes or dispatch. Both earlier
 hosted failures remain retained; final-head hosted results are reported separately.
+
+Revision `76f00afabd60bdcc417a96c9429e78d218296e2f` exposed the same
+headers/body race in the other saved-record script when opening its selector-created
+p1 task. The capture is now shared by both scripts and applied to original
+preparation/task GETs across reload, bookmark navigation and reopening. Both
+receipts and fixture manifests bind the helper hash. The four affected normal,
+read-only and original-wait browser variants passed with actual disposable owners;
+their unchanged original source/financial state and zero dispatch checks remain.
+The previous failed hosted run is retained rather than replaced with the local
+passes. Final published revision and its complete hosted result remain separate.
 
 Independent review also corrected the QA driver's native-work cancellation and
 the hosted job's failure cleanup: native work drains before its owners close;

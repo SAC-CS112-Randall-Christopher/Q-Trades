@@ -40,6 +40,11 @@ Existing deterministic proposal and trial supervisor. — [src/trading/autonomou
 
 Financial trials, measured writer continuity, stale admission, retirement and publication races. — [tests/test_autonomous_lab.py:1](../../tests/test_autonomous_lab.py#L1)
 
+<a id="browser-completed-get"></a>
+### browser-completed-get
+
+Bounded newly issued same-origin saved-record UI GET and completed-body capture, without replacement requests or response retries — [tests/browser/completed_get.cjs:4](../../tests/browser/completed_get.cjs#L4)
+
 <a id="dashboard-analogue-disclosure"></a>
 ### dashboard-analogue-disclosure
 
@@ -2612,6 +2617,7 @@ Exact native, dashboard, ownership, PG and browser job selections — [.github/w
 | [tests/browser/account_redesign_server.py](../../tests/browser/account_redesign_server.py) | [verification-verification](verification.md) | 6 |
 | [tests/browser/candle_patterns.cjs](../../tests/browser/candle_patterns.cjs) | [verification-verification](verification.md) | 0 |
 | [tests/browser/candle_patterns_server.py](../../tests/browser/candle_patterns_server.py) | [verification-verification](verification.md) | 7 |
+| [tests/browser/completed_get.cjs](../../tests/browser/completed_get.cjs) | [verification-verification](verification.md) | 1 |
 | [tests/browser/financial_monitoring.cjs](../../tests/browser/financial_monitoring.cjs) | [verification-verification](verification.md) | 1 |
 | [tests/browser/financial_monitoring_server.py](../../tests/browser/financial_monitoring_server.py) | [verification-verification](verification.md) | 10 |
 | [tests/browser/pattern_comparison.cjs](../../tests/browser/pattern_comparison.cjs) | [verification-verification](verification.md) | 0 |
@@ -2946,8 +2952,8 @@ Exact native, dashboard, ownership, PG and browser job selections — [.github/w
 | POST | `/__qa/monitoring/{mode}` | [fixture](../../tests/browser/financial_monitoring_server.py#L202) |
 | GET | `/__qa/r63-1/probe` | [transition_probe](../../tests/browser/financial_monitoring_server.py#L129) |
 | POST | `/__qa/r63-1/{mode}` | [transition](../../tests/browser/financial_monitoring_server.py#L135) |
-| GET | `/__qa/probe` | [read_probe](../../tests/browser/pattern_comparison_server.py#L377) |
-| POST | `/__qa/{action}` | [qa_control](../../tests/browser/pattern_comparison_server.py#L382) |
+| GET | `/__qa/probe` | [read_probe](../../tests/browser/pattern_comparison_server.py#L378) |
+| POST | `/__qa/{action}` | [qa_control](../../tests/browser/pattern_comparison_server.py#L383) |
 | POST | `/__qa/advance` | [advance](../../tests/browser/pattern_scanner_server.py#L630) |
 | POST | `/__qa/chart_advance_saved_scope` | [advance_saved_charts](../../tests/browser/pattern_scanner_server.py#L588) |
 | POST | `/__qa/chart_alert_setup` | [prepare_alert_charts](../../tests/browser/pattern_scanner_server.py#L535) |
@@ -2961,10 +2967,10 @@ Exact native, dashboard, ownership, PG and browser job selections — [.github/w
 | GET | `/__qa/held` | [observe_held](../../tests/browser/role_archive_retry_server.py#L308) |
 | GET | `/__qa/probe` | [observation](../../tests/browser/role_archive_retry_server.py#L303) |
 | POST | `/__qa/{action}` | [control](../../tests/browser/role_archive_retry_server.py#L314) |
-| GET | `/__qa/probe` | [read_probe](../../tests/browser/role_pattern_evidence_server.py#L249) |
-| POST | `/__qa/profile/{kind}` | [fixture_profile](../../tests/browser/role_pattern_evidence_server.py#L260) |
-| POST | `/__qa/role_status/{mode}` | [fixture_role_status](../../tests/browser/role_pattern_evidence_server.py#L271) |
-| POST | `/__qa/stop` | [stop](../../tests/browser/role_pattern_evidence_server.py#L254) |
+| GET | `/__qa/probe` | [read_probe](../../tests/browser/role_pattern_evidence_server.py#L250) |
+| POST | `/__qa/profile/{kind}` | [fixture_profile](../../tests/browser/role_pattern_evidence_server.py#L261) |
+| POST | `/__qa/role_status/{mode}` | [fixture_role_status](../../tests/browser/role_pattern_evidence_server.py#L272) |
+| POST | `/__qa/stop` | [stop](../../tests/browser/role_pattern_evidence_server.py#L255) |
 
 ## Declaration index
 
@@ -6031,6 +6037,10 @@ Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/tra
 - [main.control](../../tests/browser/candle_patterns_server.py#L210) — function
 Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/trading/candle_history.py](../../src/trading/candle_history.py), [src/trading/config.py](../../src/trading/config.py), [src/trading/research_storage.py](../../src/trading/research_storage.py), [src/trading/venue.py](../../src/trading/venue.py)
 
+### tests/browser/completed_get.cjs
+
+- [completedJsonGet](../../tests/browser/completed_get.cjs#L4) — lexical declaration
+
 ### tests/browser/financial_monitoring.cjs
 
 - [transition](../../tests/browser/financial_monitoring.cjs#L29) — lexical declaration
@@ -6052,14 +6062,14 @@ Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/tra
 ### tests/browser/pattern_comparison_server.py
 
 - [main](../../tests/browser/pattern_comparison_server.py#L26) — function
-- [main.hashes](../../tests/browser/pattern_comparison_server.py#L77) — function
-- [main.preparation](../../tests/browser/pattern_comparison_server.py#L111) — function
-- [main.probe](../../tests/browser/pattern_comparison_server.py#L203) — function
-- [main.lifespan](../../tests/browser/pattern_comparison_server.py#L262) — function
-- [main.acknowledgment_fixture](../../tests/browser/pattern_comparison_server.py#L298) — function
-- [main.authorize](../../tests/browser/pattern_comparison_server.py#L372) — function
-- [main.read_probe](../../tests/browser/pattern_comparison_server.py#L377) — function
-- [main.qa_control](../../tests/browser/pattern_comparison_server.py#L382) — function
+- [main.hashes](../../tests/browser/pattern_comparison_server.py#L78) — function
+- [main.preparation](../../tests/browser/pattern_comparison_server.py#L112) — function
+- [main.probe](../../tests/browser/pattern_comparison_server.py#L204) — function
+- [main.lifespan](../../tests/browser/pattern_comparison_server.py#L263) — function
+- [main.acknowledgment_fixture](../../tests/browser/pattern_comparison_server.py#L299) — function
+- [main.authorize](../../tests/browser/pattern_comparison_server.py#L373) — function
+- [main.read_probe](../../tests/browser/pattern_comparison_server.py#L378) — function
+- [main.qa_control](../../tests/browser/pattern_comparison_server.py#L383) — function
 Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/trading/autonomous_spec.py](../../src/trading/autonomous_spec.py), [src/trading/config.py](../../src/trading/config.py), [src/trading/pattern_comparisons.py](../../src/trading/pattern_comparisons.py), [src/trading/research_storage.py](../../src/trading/research_storage.py), [src/trading/role_worker.py](../../src/trading/role_worker.py)
 
 ### tests/browser/pattern_scanner_server.py
@@ -6120,15 +6130,15 @@ Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/tra
 ### tests/browser/role_pattern_evidence_server.py
 
 - [main](../../tests/browser/role_pattern_evidence_server.py#L21) — function
-- [main.hashes](../../tests/browser/role_pattern_evidence_server.py#L76) — function
-- [main.probe](../../tests/browser/role_pattern_evidence_server.py#L161) — function
-- [main.lifespan](../../tests/browser/role_pattern_evidence_server.py#L193) — function
-- [main.read_only_fixture](../../tests/browser/role_pattern_evidence_server.py#L216) — function
-- [main.authorize](../../tests/browser/role_pattern_evidence_server.py#L244) — function
-- [main.read_probe](../../tests/browser/role_pattern_evidence_server.py#L249) — function
-- [main.stop](../../tests/browser/role_pattern_evidence_server.py#L254) — function
-- [main.fixture_profile](../../tests/browser/role_pattern_evidence_server.py#L260) — function
-- [main.fixture_role_status](../../tests/browser/role_pattern_evidence_server.py#L271) — function
+- [main.hashes](../../tests/browser/role_pattern_evidence_server.py#L77) — function
+- [main.probe](../../tests/browser/role_pattern_evidence_server.py#L162) — function
+- [main.lifespan](../../tests/browser/role_pattern_evidence_server.py#L194) — function
+- [main.read_only_fixture](../../tests/browser/role_pattern_evidence_server.py#L217) — function
+- [main.authorize](../../tests/browser/role_pattern_evidence_server.py#L245) — function
+- [main.read_probe](../../tests/browser/role_pattern_evidence_server.py#L250) — function
+- [main.stop](../../tests/browser/role_pattern_evidence_server.py#L255) — function
+- [main.fixture_profile](../../tests/browser/role_pattern_evidence_server.py#L261) — function
+- [main.fixture_role_status](../../tests/browser/role_pattern_evidence_server.py#L272) — function
 Declared local imports: [src/trading/api.py](../../src/trading/api.py), [src/trading/autonomous_spec.py](../../src/trading/autonomous_spec.py), [src/trading/config.py](../../src/trading/config.py)
 
 ### tests/conftest.py

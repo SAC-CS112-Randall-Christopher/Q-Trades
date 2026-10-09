@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { chromium } = require("playwright");
+const { completedJsonGet } = require("./completed_get.cjs");
 const origin = process.env.QTRADES_BROWSER_QA_ORIGIN || "http://127.0.0.1:58975";
 const directory = process.env.QTRADES_BROWSER_QA_OUTPUT;
 const token = process.env.QTRADES_BROWSER_QA_TOKEN;
@@ -28,6 +29,7 @@ const bounded = async (promise, milliseconds, label) => {
   const receipt = {
     scope: "Compiled UI/actual API and saved native selector task; synthetic native/current inputs",
     harness_sha256: sha(fs.readFileSync(__filename)), groups, pageErrors, requests, externalRequests,
+    navigation_capture_sha256: sha(fs.readFileSync(require.resolve("./completed_get.cjs"))),
     operating_acceptance: false, financial_database: false, model_calls: 0,
     mode: profileOnly ? "affected-current-profile" : "full-seven-group",
   };
@@ -61,31 +63,9 @@ const bounded = async (promise, milliseconds, label) => {
       const response = await page.request.get(`${origin}/__qa/probe`, { headers, timeout: remaining(6000) });
       assert.equal(response.status(), 200); return within(response.json(), 5000, "Probe body exceeded workflow bound");
     };
-    // Bind a new UI request and its completed body. A response's headers can
-    // arrive for an old document or for a read cancelled during hash restoration.
-    const completedGet = apiPath => {
-      const issued = new Set();
-      const proof = { path: apiPath, issued: 0, cancelled: [] };
-      (receipt.navigation_reads ??= []).push(proof);
-      const observe = request => {
-        const url = new URL(request.url());
-        if (url.origin === origin && url.pathname === apiPath && request.method() === "GET") {
-          issued.add(request); proof.issued++;
-        }
-      };
-      const failed = request => { if (issued.has(request)) proof.cancelled.push(request.failure()); };
-      page.on("request", observe); page.on("requestfailed", failed);
-      const read = page.waitForEvent("requestfinished", {
-        predicate: request => issued.has(request), timeout: remaining(10000),
-      }).then(async request => {
-        const response = await within(request.response(), 5000, "Original UI response exceeded workflow bound");
-        assert(response, "The completed original UI request has no response");
-        proof.completed_url = request.url(); proof.status = response.status();
-        assert.equal(response.status(), 200);
-        return within(response.json(), 5000, "Completed original UI body exceeded workflow bound");
-      }).finally(() => { page.off("request", observe); page.off("requestfailed", failed); });
-      void read.catch(() => {}); return read;
-    };
+    const completedGet = apiPath => completedJsonGet(page, origin, apiPath, {
+      timeout: remaining(10000), bodyTimeout: remaining(5000), observations: receipt.navigation_reads ??= [],
+    });
     const original = await probe(); save("initial-probe.json", original);
     assert.equal(original.current_contract, "reviewed-rule-role-v8");
     const pattern = original.task.context.pattern_comparison;

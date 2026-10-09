@@ -364,6 +364,7 @@
       "tests/browser/account_redesign_server.py",
       "tests/browser/candle_patterns.cjs",
       "tests/browser/candle_patterns_server.py",
+      "tests/browser/completed_get.cjs",
       "tests/browser/financial_monitoring.cjs",
       "tests/browser/financial_monitoring_server.py",
       "tests/browser/pattern_comparison.cjs",

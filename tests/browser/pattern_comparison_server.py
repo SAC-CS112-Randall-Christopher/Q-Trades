@@ -64,6 +64,7 @@ def main():
         "tests/test_daily_pattern_analyzer.py",
         "tests/browser/pattern_comparison_server.py",
         "tests/browser/pattern_comparison.cjs",
+        "tests/browser/completed_get.cjs",
         "apps/web/src/PatternComparisonPanel.tsx",
         "apps/web/src/RoleResearchPanel.tsx",
         "apps/web/src/DailyAnalyzer.tsx",

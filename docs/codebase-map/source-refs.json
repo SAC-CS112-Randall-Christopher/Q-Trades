@@ -365,6 +365,7 @@
         "tests/browser/account_redesign_server.py",
         "tests/browser/candle_patterns.cjs",
         "tests/browser/candle_patterns_server.py",
+        "tests/browser/completed_get.cjs",
         "tests/browser/financial_monitoring.cjs",
         "tests/browser/financial_monitoring_server.py",
         "tests/browser/pattern_comparison.cjs",
@@ -20743,6 +20744,24 @@
       "declarations": [
         {
           "kind": "lexical declaration",
+          "line": 4,
+          "name": "completedJsonGet"
+        }
+      ],
+      "guide": "verification.md",
+      "imports": [
+        "node:assert/strict"
+      ],
+      "local_imports": [],
+      "path": "tests/browser/completed_get.cjs",
+      "routes": [],
+      "sha256": "c40dd9d03ff9bdb50263da0d749e25a961a4f0b1b2d2054bd37875e88abd7f75"
+    },
+    {
+      "area": "verification-verification",
+      "declarations": [
+        {
+          "kind": "lexical declaration",
           "line": 29,
           "name": "transition"
         }
@@ -20885,6 +20904,7 @@
       "declarations": [],
       "guide": "verification.md",
       "imports": [
+        "./completed_get.cjs",
         "node:assert/strict",
         "node:crypto",
         "node:fs",
@@ -20892,10 +20912,12 @@
         "playwright",
         "playwright/package.json"
       ],
-      "local_imports": [],
+      "local_imports": [
+        "tests/browser/completed_get.cjs"
+      ],
       "path": "tests/browser/pattern_comparison.cjs",
       "routes": [],
-      "sha256": "46afe2deefceb52eef162cda1cd73a206a24aa918cbcc72b7e0196e0647b6fd9"
+      "sha256": "87c56b840917d0892c72b4912e190186f98531ddc033da94035cdb9c8816b372"
     },
     {
       "area": "verification-verification",
@@ -20907,42 +20929,42 @@
         },
         {
           "kind": "function",
-          "line": 77,
+          "line": 78,
           "name": "main.hashes"
         },
         {
           "kind": "function",
-          "line": 111,
+          "line": 112,
           "name": "main.preparation"
         },
         {
           "kind": "function",
-          "line": 203,
+          "line": 204,
           "name": "main.probe"
         },
         {
           "kind": "function",
-          "line": 262,
+          "line": 263,
           "name": "main.lifespan"
         },
         {
           "kind": "function",
-          "line": 298,
+          "line": 299,
           "name": "main.acknowledgment_fixture"
         },
         {
           "kind": "function",
-          "line": 372,
+          "line": 373,
           "name": "main.authorize"
         },
         {
           "kind": "function",
-          "line": 377,
+          "line": 378,
           "name": "main.read_probe"
         },
         {
           "kind": "function",
-          "line": 382,
+          "line": 383,
           "name": "main.qa_control"
         }
       ],
@@ -21001,18 +21023,18 @@
       "routes": [
         {
           "handler": "read_probe",
-          "line": 377,
+          "line": 378,
           "method": "GET",
           "route": "/__qa/probe"
         },
         {
           "handler": "qa_control",
-          "line": 382,
+          "line": 383,
           "method": "POST",
           "route": "/__qa/{action}"
         }
       ],
-      "sha256": "e0375e99fea02e9a258d8f5c0b24fe33c28f421e55894f18927ea1a63822bb66"
+      "sha256": "5f2f55bbb7afd1b0dff197f0d1b18af3c6be6be19212fb40f1d6e283e5e4ea14"
     },
     {
       "area": "verification-verification",
@@ -21616,6 +21638,7 @@
       "declarations": [],
       "guide": "verification.md",
       "imports": [
+        "./completed_get.cjs",
         "node:assert/strict",
         "node:crypto",
         "node:fs",
@@ -21623,10 +21646,12 @@
         "playwright",
         "playwright/package.json"
       ],
-      "local_imports": [],
+      "local_imports": [
+        "tests/browser/completed_get.cjs"
+      ],
       "path": "tests/browser/role_pattern_evidence.cjs",
       "routes": [],
-      "sha256": "b8cbabd3da39a6f5eebe5df4202b27deda9b43130051a55407fcfbe81777f5a2"
+      "sha256": "51c50818b24d41a91a2197fdfa9ca13f4dba0007c79a9bf65a4b6054f8d40bd5"
     },
     {
       "area": "verification-verification",
@@ -21638,47 +21663,47 @@
         },
         {
           "kind": "function",
-          "line": 76,
+          "line": 77,
           "name": "main.hashes"
         },
         {
           "kind": "function",
-          "line": 161,
+          "line": 162,
           "name": "main.probe"
         },
         {
           "kind": "function",
-          "line": 193,
+          "line": 194,
           "name": "main.lifespan"
         },
         {
           "kind": "function",
-          "line": 216,
+          "line": 217,
           "name": "main.read_only_fixture"
         },
         {
           "kind": "function",
-          "line": 244,
+          "line": 245,
           "name": "main.authorize"
         },
         {
           "kind": "function",
-          "line": 249,
+          "line": 250,
           "name": "main.read_probe"
         },
         {
           "kind": "function",
-          "line": 254,
+          "line": 255,
           "name": "main.stop"
         },
         {
           "kind": "function",
-          "line": 260,
+          "line": 261,
           "name": "main.fixture_profile"
         },
         {
           "kind": "function",
-          "line": 271,
+          "line": 272,
           "name": "main.fixture_role_status"
         }
       ],
@@ -21727,30 +21752,30 @@
       "routes": [
         {
           "handler": "read_probe",
-          "line": 249,
+          "line": 250,
           "method": "GET",
           "route": "/__qa/probe"
         },
         {
           "handler": "fixture_profile",
-          "line": 260,
+          "line": 261,
           "method": "POST",
           "route": "/__qa/profile/{kind}"
         },
         {
           "handler": "fixture_role_status",
-          "line": 271,
+          "line": 272,
           "method": "POST",
           "route": "/__qa/role_status/{mode}"
         },
         {
           "handler": "stop",
-          "line": 254,
+          "line": 255,
           "method": "POST",
           "route": "/__qa/stop"
         }
       ],
-      "sha256": "6131554680862cd4ee5076bb423378f0e168ce0323e2330f0f73d92e7e458ecc"
+      "sha256": "ed52293758614961f2a98ccdc3cdcb1e2562f14e4249f1dc087ca267ab7317cf"
     },
     {
       "area": "verification-verification",
@@ -40385,7 +40410,7 @@
     "docs/codebase-map/scanner-charts.md": "5cacc517dbef07d4c6764dad3661e046598136706ede70b895802a95b397c86f",
     "docs/codebase-map/secondary-research.md": "2d1e61f2f8e6c3ae2e8aa3da1255ec2834d05c1920f6c30315a85634aee0448a",
     "docs/codebase-map/strategy-experiments.md": "b70fc8faab1486f53bd5c73a41b7816a0401a26e23b6106aa4ddde3cad84fdfb",
-    "docs/codebase-map/verification.md": "86a538328d845e090f6323bad289f2fa4bb9d02bffee7cc3680fd66321007d44"
+    "docs/codebase-map/verification.md": "e707fcccacfb511ade3ae247c17c3bfd612942fbc5ea5012006d9d1d669d416c"
   },
   "references": [
     {
@@ -40426,6 +40451,13 @@
       "id": "autonomous-lab-tests",
       "line": 1,
       "path": "tests/test_autonomous_lab.py"
+    },
+    {
+      "anchor": "function completedJsonGet(",
+      "description": "Bounded newly issued same-origin saved-record UI GET and completed-body capture, without replacement requests or response retries",
+      "id": "browser-completed-get",
+      "line": 4,
+      "path": "tests/browser/completed_get.cjs"
     },
     {
       "description": "Captured causal analogue GET records conservative disclosure.",
