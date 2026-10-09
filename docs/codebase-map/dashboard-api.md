@@ -4,7 +4,45 @@ This guide maps the current checked-out dashboard/API contracts. It does not cla
 
 ## Normal navigation and selected scope
 
-[main.currentPage](source-index.md#dashboard-main-route) derives the page from the hash before query parameters. Unknown pages fall back to Dashboard. It preserves aliases such as `role-research`, `knowledge`, `forward-learning`, `experiment-lab` and `live-readiness`; teaching/result/comparison bookmarks resolve into the AI Lab training surface. [App](source-index.md#dashboard-app) selects the corresponding Lab/Risk tab on hash changes, closes navigation/search and scrolls to the page. Markets and Strategies lazily load [MarketStation](source-index.md#dashboard-market-station); Strategies sets `strategyOnly` and does not mount the main scanner/candle workspaces.
+The normal destinations are Overview, Research, Accounts & Results, Markets and
+Settings. Overview replaces the old home composition, while Research exposes
+the existing worker's investigations. Numerical tools, knowledge and Training
+Lab are contextual details. `inContext` preserves explicit account, market,
+task and trial between destinations. Explicit account selection preserves the
+current view, clears an unrelated trial, and restores account scope on Back.
+Performance, trade, positions and journal consumers do not silently use primary
+when an explicit account is missing. Exact retained accounts and trials have
+separate reads, including when the broad paper snapshot is unavailable.
+
+## Coherent product setup and observation
+
+[Bounded Overview](source-index.md#product-overview-read) composes metadata from
+existing role, scanner, comparison and notice owners. Each observation carries
+its own unavailable state. It does not select questions, disclose full task
+evidence, dispatch a model or write financial state. Its normal React consumer
+uses non-overlapping seven-second reads, then eight-second visible or
+thirty-second hidden refresh. Main's existing paper-status polling remains.
+
+[Setup](source-index.md#product-setup-panel) reviews saved allocations, costs,
+scope, pauses and current control revisions. A new recurring model scope first
+requires an existing retained trained profile, metadata review and explicit
+approval, then is saved disabled. The current owner is loaded by an explicitly
+authorized application restart; opening setup does not restart or activate it.
+[Supervised startup](source-index.md#product-supervised-start) rechecks exact
+scope/policy and control revisions under existing owners. A newer Pause clears
+the UI review and fences the old command; finite/manual grants cannot be widened.
+Browser pending commands and locks coordinate settings without mount replay.
+Component receipts distinguish refusal, saved intent and unknown acknowledgment.
+Retained reads reconcile a saved component without committing it again.
+
+The [product tests](source-index.md#product-owner-tests) prove read purity and
+scope/control refusals. The [compiled browser driver](source-index.md#product-browser-proof)
+uses real disposable PostgreSQL and worker/scanner owners with synthetic inputs,
+resource observations, time and model responses. Polling remains enabled and
+GETs never tick its background driver. This is software workflow evidence,
+not actual model, prospective economic or installed acceptance.
+
+[main.currentPage](source-index.md#dashboard-main-route) derives the page from the hash before query parameters. Unknown pages fall back to Overview. It preserves aliases such as `role-research`, `knowledge`, `forward-learning`, `experiment-lab` and `live-readiness`; teaching/result/comparison bookmarks resolve into the AI Lab training surface. [App](source-index.md#dashboard-app) selects the corresponding Lab/Risk tab on hash changes, closes navigation/search and scrolls to the page. Markets and Strategies lazily load [MarketStation](source-index.md#dashboard-market-station); Strategies sets `strategyOnly` and does not mount the main scanner/candle workspaces.
 
 Market scope consists of **symbol and account**, not symbol alone. URL scope wins over local saved preferences. An invalid explicit symbol/account remains unavailable rather than silently selecting BTC or primary. [MarketStation.chooseScope](source-index.md#dashboard-market-scope) changes the URL/local preference and cancels obsolete evidence reads. It preserves `scanner_campaign`, preserves chart keys only for the same symbol, and can carry an explicit original `candle_run`. Account-only navigation must not destroy an exact same-market historical chart. A saved candle run can deliberately reopen its original market while preserving the user's selected account.
 

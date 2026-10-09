@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { chromium } = require("playwright");
+const { completedJsonGet } = require("./completed_get.cjs");
 const origin = process.env.QTRADES_BROWSER_QA_ORIGIN || "http://127.0.0.1:58975";
 const directory = process.env.QTRADES_BROWSER_QA_OUTPUT;
 const token = process.env.QTRADES_BROWSER_QA_TOKEN;
@@ -28,6 +29,7 @@ const bounded = async (promise, milliseconds, label) => {
   const receipt = {
     scope: "Compiled UI/actual API and saved native selector task; synthetic native/current inputs",
     harness_sha256: sha(fs.readFileSync(__filename)), groups, pageErrors, requests, externalRequests,
+    navigation_capture_sha256: sha(fs.readFileSync(require.resolve("./completed_get.cjs"))),
     operating_acceptance: false, financial_database: false, model_calls: 0,
     mode: profileOnly ? "affected-current-profile" : "full-seven-group",
   };
@@ -61,6 +63,9 @@ const bounded = async (promise, milliseconds, label) => {
       const response = await page.request.get(`${origin}/__qa/probe`, { headers, timeout: remaining(6000) });
       assert.equal(response.status(), 200); return within(response.json(), 5000, "Probe body exceeded workflow bound");
     };
+    const completedGet = apiPath => completedJsonGet(page, origin, apiPath, {
+      timeout: remaining(10000), bodyTimeout: remaining(5000), observations: receipt.navigation_reads ??= [],
+    });
     const original = await probe(); save("initial-probe.json", original);
     assert.equal(original.current_contract, "reviewed-rule-role-v8");
     const pattern = original.task.context.pattern_comparison;
@@ -111,12 +116,9 @@ const bounded = async (promise, milliseconds, label) => {
     const preparationLink = evidence().getByRole("link", { name: "Reopen original preparation", exact: true });
     const preparationHref = await preparationLink.getAttribute("href");
     assert.equal(new URLSearchParams(preparationHref.split("?")[1]).get("pattern_comparison_request"), pattern.preparation_request_id);
-    const expectedGet = page.waitForResponse(response => new URL(response.url()).pathname === `/api/research/pattern-scanner/comparisons/${pattern.preparation_request_id}` && response.request().method() === "GET");
-    void expectedGet.catch(() => {});
+    const expectedGet = completedGet(`/api/research/pattern-scanner/comparisons/${pattern.preparation_request_id}`);
     await preparationLink.click();
-    const preparationResponse = await expectedGet;
-    assert.equal(preparationResponse.status(), 200);
-    const preparation = await within(preparationResponse.json(), 5000, "Original preparation body exceeded workflow bound");
+    const preparation = await expectedGet;
     assert.equal(preparation.request_id, pattern.preparation_request_id);
     assert.equal(preparation.finding_sha256, pattern.finding_sha256);
     assert.deepEqual(preparation, original.original_preparation);
@@ -139,11 +141,9 @@ const bounded = async (promise, milliseconds, label) => {
     assert.equal(bookmark.get("daily_shortlist"), pattern.selection.daily_id);
     assert.equal(bookmark.get("scanner_chart_seq"), String(pattern.selection.event_seq));
     assert.equal(bookmark.get("scanner_chart_progress_sha256"), pattern.coverage.find(row => row.timeframe === "5m").progress_sha256);
-    const dailyGet = page.waitForResponse(response => new URL(response.url()).pathname === `/api/research/pattern-scanner/daily/shortlists/${pattern.selection.daily_id}` && response.request().method() === "GET");
-    void dailyGet.catch(() => {});
+    const dailyGet = completedGet(`/api/research/pattern-scanner/daily/shortlists/${pattern.selection.daily_id}`);
     await findingLink.click();
-    const dailyResponse = await dailyGet; assert.equal(dailyResponse.status(), 200);
-    const daily = await within(dailyResponse.json(), 5000, "Original daily body exceeded workflow bound"); assert.equal(daily.id, pattern.selection.daily_id);
+    const daily = await dailyGet; assert.equal(daily.id, pattern.selection.daily_id);
     await page.locator(`[data-daily-id="${pattern.selection.daily_id}"]`).waitFor();
     save("original-daily-reopen.json", daily);
     groups.push({ name: phase, exact_saved_daily: true, original_progress_sha256: bookmark.get("scanner_chart_progress_sha256"), historical_chart_success_claimed: false });
@@ -167,14 +167,15 @@ const bounded = async (promise, milliseconds, label) => {
     await page.screenshot({ path: path.join(directory, "role-pattern-mobile.png"), timeout: 5000 });
     groups.push({ name: phase, exact_task_reload: true, mobile_geometry: geometry });
     if (original.audit_recovery) {
-      phase = "fixed-rule-result-missing-qualification-handoff";
+      phase = "fixed-rule-original-qualification-source-link";
       await page.setViewportSize({ width: 1440, height: 1100 });
       await page.goto(`${origin}/#forward-learning`, { waitUntil: "domcontentloaded", timeout: remaining(10000) });
-      const handoff = page.getByRole("article", { name: "Unavailable qualification handoff" });
+      const handoff = page.getByRole("article", { name: "Original rule result for qualification" });
       await handoff.waitFor();
-      assert((await handoff.innerText()).includes("qualification handoff not implemented for this strategy type"));
+      assert((await handoff.innerText()).includes("Its exploratory return is not qualification"));
+      assert(await handoff.getByRole("link", { name: "Review this frozen rule and prospective funding" }).isVisible());
       assert.equal(await handoff.getByRole("button").count(), 0);
-      await handoff.screenshot({ path: path.join(directory, "missing-rule-qualification.png"), timeout: 5000 });
+      await handoff.screenshot({ path: path.join(directory, "original-rule-qualification-source.png"), timeout: 5000 });
       groups.push({ name: phase, synthetic_scored_rule: true, no_qualification_authority: true });
     }
     }

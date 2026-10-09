@@ -4,6 +4,9 @@ import asyncio
 import copy
 import hashlib
 import json
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from threading import Event, RLock, current_thread
 
 import pytest
 from test_daily_pattern_analyzer import advance
@@ -16,11 +19,13 @@ from test_pattern_role_worker import (
     select,
 )
 
+from trading.evidence_runtime import EvidenceRecorder
 from trading.experiment_registry import fingerprint
 from trading.lab_role_contract import PATTERN_VERSION, packet_json, prompt, validate
 from trading.paper_economics import sample
 from trading.paper_engine import account
 from trading.peft_role_model import PATTERN_LEARNING_QUESTION_POLICY
+from trading.research_storage import save_plan
 from trading.role_evidence import pattern_feature, pattern_followup_outcome, pattern_packet
 from trading.role_worker import InputWait, RoleWorker
 
@@ -363,6 +368,171 @@ def test_archived_predecessor_restart_exact_lesson_and_duplicate_coalesce(fixtur
     assert len(rows(restarted, "role_question_selections")) == 2
 
 
+def test_selected_successor_survives_predecessor_archive_then_restart(fixture, monkeypatch):
+    f, worker, _ = fixture
+    first = mature(f, worker, outcome="rejected")
+    second = later(f, worker)
+    original_context = copy.deepcopy(second["context"])
+    original_result = copy.deepcopy(first["result"])
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    worker.history.rollover()
+    assert worker.get(first["id"])["archive_reference"]
+    restarted = RoleWorker(
+        f.registry,
+        worker.controller,
+        worker.transport,
+        f.scanner.storage_owner,
+        pattern_comparisons=worker.pattern_comparisons,
+    )
+    restarted.enabled, restarted.paper_admission = True, lambda: True
+    assert asyncio.run(restarted.step(f.now)), restarted.get(second["id"])["reason"]
+    finished = restarted.get(second["id"])
+    assert finished["id"] == second["id"] and finished["status"] == "done"
+    assert finished["context"] == original_context
+    assert restarted.get(first["id"])["result"] == original_result
+    assert len(rows(restarted, "role_question_selections")) == 2
+    assert len(rows(restarted, "lab_proposals")) == 1
+
+
+def test_verified_archive_during_successor_publication_preserves_original_source(
+    fixture, monkeypatch
+):
+    f, worker, _ = fixture
+    first = mature(f, worker)
+    original = worker._pattern_inputs
+
+    def archive_after_inputs(*args, **kwargs):
+        result = original(*args, **kwargs)
+        monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+        worker.history.rollover()
+        return result
+
+    monkeypatch.setattr(worker, "_pattern_inputs", archive_after_inputs)
+    successor = later(f, worker)
+    assert worker.get(first["id"])["archive_reference"]
+    assert successor["context"]["pattern_learning"]["source_task"] == first["id"]
+    assert asyncio.run(worker.step(f.now)), worker.get(successor["id"])["reason"]
+
+
+@pytest.mark.parametrize("damage", ["missing", "bytes", "foreign"])
+def test_selected_successor_refuses_unverified_archived_predecessor(fixture, monkeypatch, damage):
+    f, worker, _ = fixture
+    first = mature(f, worker)
+    second = later(f, worker)
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    worker.history.rollover()
+    reopen = f.storage.reopen
+    reference = worker.get(first["id"])["archive_reference"]
+    foreign = copy.deepcopy(reopen(reference))
+    foreign["record"]["id"] = "foreign-original-task"
+    if damage == "foreign":
+        # A valid retained packet with a valid fingerprint still cannot replace
+        # this task's original identity.
+        with worker.registry.transaction():
+            worker.registry.db.execute(
+                "UPDATE role_tasks SET archive_sha256=? WHERE id=?",
+                (fingerprint(foreign), first["id"]),
+            )
+
+    def damaged(ref):
+        if ref != reference:
+            return reopen(ref)
+        if damage == "missing":
+            raise OSError("Original retained segment unavailable")
+        packet = copy.deepcopy(reopen(ref))
+        if damage == "bytes":
+            packet["record"]["result"] = "{}"
+        else:
+            packet = foreign
+        return packet
+
+    monkeypatch.setattr(f.storage, "reopen", damaged)
+    before = len(worker.transport.calls)
+    assert not asyncio.run(worker.step(f.now))
+    refused = worker.get(second["id"])
+    assert refused["status"] != "done" and len(worker.transport.calls) == before
+    assert len(rows(worker, "role_question_selections")) == 2
+
+
+def test_preparation_and_original_history_archive_share_one_lock_order(fixture, monkeypatch):
+    f, worker, selection = fixture
+    worker.transport.action = "no_change"
+    first = select(f, worker)
+    assert asyncio.run(worker.step(f.now))
+    assert worker.get(first["id"])["status"] == "done"
+    entered, registry_held, evaluating = Event(), Event(), Event()
+    lock = RLock()
+
+    class BoundedLock:
+        def __enter__(self):
+            assert lock.acquire(timeout=3), "Shared recorder/registry lock order inverted"
+
+        def __exit__(self, *_):
+            lock.release()
+
+    save_plan(f.registry.path.parent, f.plan)
+    recorder = EvidenceRecorder.__new__(EvidenceRecorder)
+    recorder.path = f.registry.path.parent / "evidence.sqlite3"
+    recorder._storage_lock = BoundedLock()
+    recorder._closed, recorder._storage = False, f.storage
+
+    @contextmanager
+    def borrow(plan):
+        with recorder.research_store(plan) as store:
+            if current_thread().name.startswith("prepare") and evaluating.is_set():
+                entered.set()
+                assert registry_held.wait(2)
+            yield store
+
+    worker.history.storage_owner = recorder.research_store
+    worker.pattern_comparisons.scanner.storage_owner = borrow
+    monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
+    monkeypatch.setattr(worker.controller.inbox, "used", lambda _sha: False)
+    evaluation = worker.pattern_comparisons._evaluation
+
+    def mark_evaluation(*args, **kwargs):
+        evaluating.set()
+        try:
+            return evaluation(*args, **kwargs)
+        finally:
+            evaluating.clear()
+
+    monkeypatch.setattr(worker.pattern_comparisons, "_evaluation", mark_evaluation)
+
+    def archive():
+        assert entered.wait(2)
+        with f.registry.lock:
+            registry_held.set()
+            worker.history.rollover()
+
+    def admission():
+        with f.registry.lock:
+            assert worker._verified_pattern_learning_record(first["id"])[0]["id"] == first["id"]
+
+    # A new exact preparation exercises the real current-input archive and final
+    # registry publication, while RoleHistory uses the same recorder borrow.
+    from trading.pattern_comparisons import PatternComparisonCommand
+
+    described = worker.pattern_comparisons.describe(selection)
+    command = PatternComparisonCommand(
+        **selection.model_dump(),
+        request_id="concurrent-original-preparation",
+        expected_finding_sha256=described["finding_sha256"],
+    )
+    with (
+        ThreadPoolExecutor(max_workers=1, thread_name_prefix="prepare") as preparation_pool,
+        ThreadPoolExecutor(max_workers=1, thread_name_prefix="archive") as archive_pool,
+    ):
+        preparation = preparation_pool.submit(
+            worker.pattern_comparisons.prepare, command, f.now, admission=admission
+        )
+        archival = archive_pool.submit(archive)
+        result = preparation.result(timeout=8)
+        archival.result(timeout=8)
+    assert worker.get(first["id"])["archive_reference"]
+    assert result["request_id"] == command.request_id
+
+
 def test_third_distinct_event_carries_original_mature_source_across_restart(fixture):
     f, worker, _ = fixture
     original = mature(f, worker)
@@ -500,7 +670,7 @@ def test_learning_link_and_question_publication_roll_back_together(fixture, monk
     assert worker.get(first["id"])["result"]["followup"]["action"] == "no_change"
 
 
-@pytest.mark.parametrize("change", ["grant", "policy", "lesson", "archive", "used", "protected"])
+@pytest.mark.parametrize("change", ["grant", "policy", "lesson", "used", "protected"])
 def test_publication_rechecks_exact_original_authority_source_and_used_catalog(
     fixture, monkeypatch, change
 ):
@@ -529,9 +699,6 @@ def test_publication_rechecks_exact_original_authority_source_and_used_catalog(
                 lambda *_a, **_k: (_ for _ in ()).throw(InputWait("Original lesson unavailable")),
             )
             assert old
-        elif change == "archive":
-            monkeypatch.setattr("trading.role_history.ROLLOVER_BYTES", 0)
-            worker.history.rollover()
         elif change == "used":
             # A changing equivalent-rule observation must not publish an executable catalog.
             monkeypatch.setattr(worker.controller.inbox, "used", lambda _sha: False)

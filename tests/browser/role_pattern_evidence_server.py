@@ -64,6 +64,7 @@ def main():
         "tests/test_research_storage.py",
         "tests/browser/role_pattern_evidence_server.py",
         "tests/browser/role_pattern_evidence.cjs",
+        "tests/browser/completed_get.cjs",
         "apps/web/src/RoleResearchPanel.tsx",
         "apps/web/src/LearningPanel.tsx",
         "apps/web/src/PatternComparisonPanel.tsx",

@@ -30,6 +30,9 @@ logger = logging.getLogger(__name__)
 
 class PaperRuntime:
     def __init__(self, store: PaperStore, venue: PublicVenue):
+        from trading.paper_learning import implementation_identity
+
+        self.strategy_implementation_sha256 = implementation_identity()
         self.store = store
         self.venue = venue
         self.books: dict[str, dict[str, Any]] = {}
@@ -421,6 +424,7 @@ class PaperRuntime:
         return {
             "enabled": True,
             "mode": "paper",
+            "funding_kind": "hypothetical",
             "evidence_kind": state.get("evidence_kind", "observed_public_market"),
             "tier": 3,
             "running": self.running,
@@ -600,6 +604,44 @@ class PaperRuntime:
         self.require_healthy_control()
         result: dict[str, Any] = {}
         self._transact_state(time.time(), lambda e: result.update(matched_control(e, candidate)))
+        return result
+
+    def qualify_rule(
+        self,
+        trial_id: str,
+        rule_sha256: str,
+        expected_role_version: int,
+        incumbent_configuration_sha256: str,
+        implementation_sha256: str,
+    ) -> dict[str, Any]:
+        from trading.experiment_registry import fingerprint
+        from trading.paper_learning import admit_rule, rule_source
+        from trading.scoped_tools import reader
+
+        self.require_healthy_control()
+        # Prepare from the immutable journal on its own bounded read connection.
+        # No archive reopen, model work or optional processing enters the writer.
+        with reader(self) as view:
+            receipt = view.retained_trial(trial_id)
+        rule_source(receipt)
+        source_sha = fingerprint(receipt)
+        result: dict[str, Any] = {}
+
+        def apply(engine: PaperEngine) -> None:
+            if fingerprint(self.store.retained_trial(trial_id)) != source_sha:
+                raise ValueError("Original comparison changed before qualification funding")
+            result.update(
+                admit_rule(
+                    engine,
+                    receipt,
+                    rule_sha256,
+                    expected_role_version,
+                    incumbent_configuration_sha256,
+                    implementation_sha256,
+                )
+            )
+
+        self._transact_state(time.time(), apply)
         return result
 
     def learning_report(self, request_id: str, candidate: str, registry: Any) -> dict[str, Any]:

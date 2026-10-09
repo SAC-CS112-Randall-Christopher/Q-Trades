@@ -926,6 +926,76 @@ class PeftPaperPilotRoles(PeftDevelopmentRoles):
             result["stages"]["policy"] = {"state": "unavailable", "next_action": result["reason"]}
         return result
 
+    def reviewed_scope(self) -> dict[str, Any]:
+        """Explain the existing grant without exposing private paths or widening it."""
+        with self._policy_lock:
+            grant = self._grant()
+            profile = self.declaration()[2]
+            refusal = None
+            if grant["format"] == PAPER_PILOT_FINITE_FORMAT:
+                try:
+                    self._finite_time(grant)
+                except ValueError as exc:
+                    refusal = str(exc)
+            automatic = "question_policy" in grant
+            pattern = grant.get("role_contract") == PATTERN_VERSION
+            return {
+                "identity": digest({k: v for k, v in grant.items() if k != "enabled"}),
+                "control_revision": self.control_revision(grant),
+                "start_refusal": refusal,
+                "grant_id": grant["grant_id"],
+                "configured_enabled": grant["enabled"],
+                "automatic_questions": automatic,
+                "question_policy": grant.get("question_policy"),
+                "methods": ["Breakout retest", "Trend pullback"]
+                if grant["format"] == PAPER_PILOT_PATTERN_METHOD_FORMAT
+                else ["Breakout retest"]
+                if pattern
+                else ["Reviewed range comparison"],
+                "markets": ["BTCUSD"],
+                "reference": "Cost breakout" if pattern else "Matched reviewed breakout",
+                "model": NAME,
+                "qualified": False,
+                "concurrency": 1,
+                "finite_test": deepcopy(grant.get("finite_test")),
+                "duration": "Finite original chain"
+                if "finite_test" in grant
+                else "Existing recurring grant; hourly and selection limits still apply"
+                if automatic
+                else "Existing manual-question permission; no automatic selection authority",
+                "hourly_tokens": profile["hourly_tokens"],
+                "hourly_wall_seconds": profile["hourly_wall_seconds"],
+                "timeout_seconds": profile["timeout_seconds"],
+                "model_cost_usd": None,
+            }
+
+    def control_revision(self, grant: dict[str, Any]) -> str:
+        # Activation uses the existing file's replacement identity. A newer
+        # Pause is significant even if the file was already disabled. Nothing
+        # is stored beside the grant or reset on application/browser restart.
+        stat = self.policy_path.stat()
+        return digest(
+            {
+                "grant": grant,
+                "inode": stat.st_ino,
+                "modified": stat.st_mtime_ns,
+                "created": stat.st_ctime_ns,
+            }
+        )
+
+    def start_reviewed_scope(self, identity: str, control_revision: str) -> None:
+        with self._policy_lock:
+            scope = self.reviewed_scope()
+            if scope["identity"] != identity or not scope["automatic_questions"]:
+                raise ValueError("The reviewed automatic research scope changed")
+            if scope["configured_enabled"] and not self._cancelled.is_set():
+                return
+            if scope["control_revision"] != control_revision:
+                raise ValueError("A newer research control is saved; review it before resuming")
+            if scope["start_refusal"]:
+                raise ValueError(scope["start_refusal"])
+            self.set_enabled(True)
+
     def cancel(self) -> None:
         with self._policy_lock:
             # Latched until explicit resume: a scheduled request cannot erase shutdown/pause.
@@ -1259,3 +1329,96 @@ def local_role_transport(directory: Path) -> LocalRoles | PeftPaperPilotRoles:
     if "format" in policy:
         return PeftPaperPilotRoles(directory)
     return LocalRoles(directory)
+
+
+def prepare_paper_scope(directory: Path, development_directory: str) -> dict[str, Any]:
+    """Review an already retained profile; no weights, downloads or model calls.
+
+    New setup declares only the existing fixed v8 scope. Existing policies are
+    never overwritten or converted, including expired finite permissions.
+    """
+    directory = regular(directory.resolve())
+    private = regular(Path(development_directory))
+    private = regular(private.resolve())
+    profile = PeftDevelopmentRoles(private).declaration()[2] | {
+        "role_contract": PATTERN_VERSION,
+        "contract_sha256": contract_hash(PATTERN_VERSION),
+    }
+    grant = {
+        "format": PAPER_PILOT_PATTERN_METHOD_FORMAT,
+        "enabled": False,
+        "grant_id": "setup-" + digest(profile)[:32],
+        "development_directory": str(private),
+        "profile_sha256": digest(profile),
+        "roles": ["researcher", "reviewer"],
+        "latency_admission": "advisory",
+        "scope": "prospective-paper-only",
+        "role_contract": PATTERN_VERSION,
+        "question_policy": PATTERN_METHOD_QUESTION_POLICY,
+        "method_policy_sha256": pattern_method_policy_sha(),
+    }
+    path = directory / "role-policy.json"
+    saved_enabled = None
+    if path.exists():
+        existing = _role_policy(path)
+        if {k: v for k, v in existing.items() if k != "enabled"} != {
+            k: v for k, v in grant.items() if k != "enabled"
+        }:
+            raise ValueError(
+                "An existing model permission is saved. Reuse that scope; "
+                "this setup cannot replace or extend it"
+            )
+        saved_enabled = existing["enabled"]
+    return {
+        "grant": grant,
+        "review_identity": digest(grant),
+        "profile": profile,
+        "saved_enabled": saved_enabled,
+    }
+
+
+def configure_paper_scope(
+    directory: Path, development_directory: str, review_identity: str
+) -> dict[str, Any]:
+    prepared = prepare_paper_scope(directory, development_directory)
+    if prepared["review_identity"] != review_identity:
+        raise ValueError("The reviewed model profile changed; review it again")
+    path = regular(directory.resolve() / "role-policy.json")
+    if path.exists():
+        current = prepare_paper_scope(directory, development_directory)
+        if current["review_identity"] != review_identity:
+            raise ValueError("The saved model permission changed; review it again")
+        if current["saved_enabled"] is None:
+            raise OSError("Saved model permission acknowledgment unknown; refresh setup")
+        return {
+            "status": "already_applied",
+            "enabled": current["saved_enabled"],
+            "requires_restart": True,
+        }
+    temporary = path.with_name("role-policy-" + uuid.uuid4().hex + ".tmp")
+    try:
+        with temporary.open("x", encoding="utf-8") as stream:
+            stream.write(packet_json(prepared["grant"]))
+            stream.flush()
+            os.fsync(stream.fileno())
+        # Atomic create without replacing a policy saved by another request.
+        try:
+            os.link(temporary, path)
+        except FileExistsError:
+            current = prepare_paper_scope(directory, development_directory)
+            if current["review_identity"] != review_identity:
+                raise ValueError("A different model permission was saved") from None
+            if current["saved_enabled"] is None:
+                raise OSError(
+                    "Saved model permission acknowledgment unknown; refresh setup"
+                ) from None
+            return {
+                "status": "already_applied",
+                "enabled": current["saved_enabled"],
+                "requires_restart": True,
+            }
+        if _role_policy(path) != prepared["grant"]:
+            raise OSError("Model configuration acknowledgment unknown; reopen saved setup")
+        return {"status": "saved", "enabled": False, "requires_restart": True}
+    finally:
+        temporary.unlink(missing_ok=True)

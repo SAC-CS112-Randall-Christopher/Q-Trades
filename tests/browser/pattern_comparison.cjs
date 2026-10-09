@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { chromium } = require("playwright");
+const { completedJsonGet } = require("./completed_get.cjs");
 const origin = process.env.QTRADES_BROWSER_QA_ORIGIN || "http://127.0.0.1:58974";
 const directory = process.env.QTRADES_BROWSER_QA_OUTPUT;
 const token = process.env.QTRADES_BROWSER_QA_TOKEN;
@@ -29,6 +30,7 @@ const bounded = async (work, ms, label) => {
     read_only_affected_group: readOnly,
     research_observation_affected_groups: researchObservation,
     harness_sha256: sha(fs.readFileSync(__filename)), groups, pageErrors, apiRequests, externalRequests, cleanupFailures };
+  receipt.navigation_capture_sha256 = sha(fs.readFileSync(require.resolve("./completed_get.cjs")));
   const headers = { "x-qa-token": token };
   const save = (name, value) => fs.writeFileSync(path.join(directory, name), JSON.stringify(value, null, 2));
   let browser, context, page, phase = "startup", failure = null;
@@ -46,6 +48,9 @@ const bounded = async (work, ms, label) => {
     const waiting = page.waitForResponse(response => response.request().method() === method && predicate(new URL(response.url())));
     void waiting.catch(() => {}); return waiting;
   };
+  const originalGet = apiPath => completedJsonGet(page, origin, apiPath, {
+    timeout: 10000, bodyTimeout: 5000, observations: receipt.navigation_reads ??= [],
+  });
   const fresh = async setup => {
     await context?.close();
     context = await browser.newContext({ viewport: { width: 1440, height: 1100 }, serviceWorkers: "block" });
@@ -92,9 +97,9 @@ const bounded = async (work, ms, label) => {
   };
   const reopen = async id => {
     await history();
-    const response = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${id}`);
+    const response = originalGet(`/api/research/pattern-scanner/comparisons/${id}`);
     await panel().getByRole("button", { name: `Reopen preparation ${id}`, exact: true }).click();
-    const actual = await response; assert.equal(actual.status(), 200); const value = await (researchObservation ? bounded(actual.json(), 5000, "Readonly original body deadline") : actual.json());
+    const value = await response;
     await panel().getByText(`Original UUID ${id}`, { exact: false }).waitFor();
     return value;
   };
@@ -158,8 +163,8 @@ const bounded = async (work, ms, label) => {
       await page.waitForFunction(() => globalThis.__qaReadonlyDigest?.entered === true, null, { timeout: 5000 });
       const waitingUrl = new URL(page.url()); const waitingParams = new URLSearchParams(waitingUrl.hash.split("?")[1]);
       waitingParams.set("pattern_comparison_request", setup.waiting_request_id); waitingUrl.hash = `markets?${waitingParams}`;
-      const laterOriginal = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${setup.waiting_request_id}`);
-      await page.goto(waitingUrl.href); assert.equal((await laterOriginal).status(), 200);
+      const laterOriginal = originalGet(`/api/research/pattern-scanner/comparisons/${setup.waiting_request_id}`);
+      await page.goto(waitingUrl.href); assert.equal((await laterOriginal).request_id, setup.waiting_request_id);
       await panel().getByText("Read-only research observation waiting", { exact: true }).waitFor();
       await page.evaluate(() => globalThis.__qaReadonlyDigest.release());
       await page.waitForFunction(() => globalThis.__qaReadonlyDigest?.finished === true, null, { timeout: 5000 });
@@ -198,8 +203,8 @@ const bounded = async (work, ms, label) => {
       assert.equal(heldRefusal.status, 422); assert.equal(typeof JSON.parse(heldRefusal.body).detail, "string");
       const originalUrl = new URL(page.url()); const originalParams = new URLSearchParams(originalUrl.hash.split("?")[1]);
       originalParams.set("pattern_comparison_request", readonly.request_id); originalUrl.hash = `markets?${originalParams}`;
-      const adoptedResponse = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${readonly.request_id}`);
-      await page.goto(originalUrl.href); assert.equal((await adoptedResponse).status(), 200);
+      const adoptedResponse = originalGet(`/api/research/pattern-scanner/comparisons/${readonly.request_id}`);
+      await page.goto(originalUrl.href); assert.equal((await adoptedResponse).request_id, readonly.request_id);
       await panel().getByText("Read-only research observation", { exact: true }).waitFor();
       await page.evaluate(() => globalThis.__qaReadonlySource.release());
       await page.waitForFunction(() => globalThis.__qaReadonlySource?.released === true, null, { timeout: 5000 });
@@ -207,9 +212,8 @@ const bounded = async (work, ms, label) => {
         5000, "Late source refusal render deadline");
       assert.equal(await panel().getByRole("alert").count(), 0);
       await panel().getByText(`Original UUID ${readonly.request_id}`, { exact: false }).waitFor();
-      const recoveredResponse = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${readonly.request_id}`);
-      await page.reload(); const recovered = await recoveredResponse; assert.equal(recovered.status(), 200);
-      assert.deepEqual(await bounded(recovered.json(), 5000, "Readonly body deadline"), readonly);
+      const recoveredResponse = originalGet(`/api/research/pattern-scanner/comparisons/${readonly.request_id}`);
+      await page.reload(); assert.deepEqual(await recoveredResponse, readonly);
       await panel().getByText("Read-only research observation", { exact: true }).waitFor();
       assert.equal(new URLSearchParams(new URL(page.url()).hash.split("?")[1]).get("pattern_comparison_request"), readonly.request_id);
       assert.equal((await probe()).posts.length, 0); await mode("restore_source");
@@ -267,9 +271,8 @@ const bounded = async (work, ms, label) => {
       assert.equal(nextReadonly.intent_sha256, sha(JSON.stringify({ command: readonlySorted, method_id: "p1",
         method_policy_sha256: nextReadonly.method_policy_sha256, research_only: true })));
       await mode("source_drift");
-      const nextRecovered = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
-      await page.reload(); const originalP1 = await nextRecovered;
-      assert.equal(originalP1.status(), 200); assert.deepEqual(await bounded(originalP1.json(), 5000, "P1 original body deadline"), nextReadonly);
+      const nextRecovered = originalGet(`/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
+      await page.reload(); assert.deepEqual(await nextRecovered, nextReadonly);
       await panel().getByText(/Saved method p1: trend-pullback-v1 versus cost-breakout-v1/).waitFor();
       await panel().getByText("Read-only research observation", { exact: true }).waitFor();
       assert.equal(await panel().getByRole("alert").count(), 0);
@@ -291,18 +294,16 @@ const bounded = async (work, ms, label) => {
       const originalIds = (await probe()).retained_preparations;
       for (const action of ["corrupt_method", "corrupt_method_sha"]) {
         await mode(action);
-        const response = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
-        await page.reload(); const corrupt = await response; assert.equal(corrupt.status(), 200);
-        save(`${action}-delivery.json`, await bounded(corrupt.json(), 5000, "P1 corrupted delivery body deadline"));
+        const response = originalGet(`/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
+        await page.reload(); save(`${action}-delivery.json`, await response);
         await panel().getByRole("alert").waitFor();
         assert.equal(await panel().getByText(`Original UUID ${nextReadonly.request_id}`, { exact: false }).count(), 0);
         assert.equal(new URLSearchParams(new URL(page.url()).hash.split("?")[1]).get("pattern_comparison_request"), nextReadonly.request_id);
         assert.equal(await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).count(), 0);
       }
       await mode("normal");
-      const restoredP1 = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
-      await page.reload(); const restoredResponse = await restoredP1; assert.equal(restoredResponse.status(), 200);
-      assert.deepEqual(await bounded(restoredResponse.json(), 5000, "P1 restored original body deadline"), nextReadonly);
+      const restoredP1 = originalGet(`/api/research/pattern-scanner/comparisons/${nextReadonly.request_id}`);
+      await page.reload(); assert.deepEqual(await restoredP1, nextReadonly);
       await panel().getByText("Read-only research observation", { exact: true }).waitFor();
       assert.deepEqual((await probe()).retained_preparations, originalIds);
       groups.push({ name: phase, deliberately_corrupted_delivery_only: true, unknown_method_refused: true,
@@ -310,10 +311,9 @@ const bounded = async (work, ms, label) => {
 
       phase = "actual-queued-p1-task-controls-inputs-and-original-preparation-link";
       await page.setViewportSize({ width: 1440, height: 1100 });
-      const taskResponse = waitApi("GET", url => url.pathname === `/api/lab/roles/tasks/${setup.next_task_id}`);
+      const taskResponse = originalGet(`/api/lab/roles/tasks/${setup.next_task_id}`);
       await page.goto(`${origin}/#role-research?task=${setup.next_task_id}`);
-      const actualTaskResponse = await taskResponse; assert.equal(actualTaskResponse.status(), 200);
-      const actualTask = await bounded(actualTaskResponse.json(), 5000, "Actual p1 task body deadline"); save("p1-saved-task.json", actualTask);
+      const actualTask = await taskResponse; save("p1-saved-task.json", actualTask);
       assert.equal(actualTask.context.pattern_method.method_id, "p1");
       assert.equal(actualTask.context.question_selection.method, "p1");
       assert.deepEqual(Object.keys(actualTask.context.fixed_comparison), ["p1"]);
@@ -333,10 +333,8 @@ const bounded = async (work, ms, label) => {
         const caption = document.createElement("p"); caption.className = "station-kicker"; caption.textContent = "SOURCE QA · ACTUAL SELECTOR-CREATED P1 TASK / SYNTHETIC NATIVE INPUTS · ZERO MODEL/ATTEMPT/FUNDED TRIAL"; element.prepend(caption); });
       await page.setViewportSize({ width: 1440, height: 2400 });
       await taskEvidence.screenshot({ path: path.join(directory, "p1-task-fixed-controls.png") });
-      const originalTaskPreparation = waitApi("GET", url => url.pathname === `/api/research/pattern-scanner/comparisons/${setup.next_task_preparation_id}`);
-      await originalLink.click(); const linkedResponse = await originalTaskPreparation;
-      assert.equal(linkedResponse.status(), 200);
-      const linkedPreparation = await bounded(linkedResponse.json(), 5000, "P1 task preparation body deadline"); save("p1-task-linked-preparation.json", linkedPreparation);
+      const originalTaskPreparation = originalGet(`/api/research/pattern-scanner/comparisons/${setup.next_task_preparation_id}`);
+      await originalLink.click(); const linkedPreparation = await originalTaskPreparation; save("p1-task-linked-preparation.json", linkedPreparation);
       assert.equal(linkedPreparation.request_id, setup.next_task_preparation_id); assert.equal(linkedPreparation.method_id, "p1");
       assert.equal(linkedPreparation.finding_sha256, actualTask.context.pattern_comparison.finding_sha256);
       await panel().getByText(/Saved method p1: trend-pullback-v1 versus cost-breakout-v1/).waitFor();

@@ -19,8 +19,10 @@ import type { Account, PaperSnapshot } from "./PaperPanel";
 import { PaperCampaignPanel } from "./PaperCampaignPanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
 import { TradeHistory } from "./TradeHistory";
+import { useAccountScope } from "./productNavigation";
 import { PerformanceDiagnosticPanel } from "./PerformanceDiagnosticPanel";
 import { OriginalStrategyPanel, isOriginalAccount } from "./OriginalStrategyPanel";
+import { RetainedAccount } from "./RetainedComparison";
 
 const money = (value: string | number | null | undefined) =>
   value == null || !Number.isFinite(Number(value))
@@ -242,7 +244,7 @@ export function PerformanceChart({
   paper?: PaperSnapshot;
   unavailable: boolean;
 }) {
-  const [account, setAccount] = useState("primary");
+  const [account, setAccount] = useAccountScope("primary");
   const [range, setRange] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
   const gradient = useId().replaceAll(":", "");
@@ -328,6 +330,7 @@ export function PerformanceChart({
               setHovered(null);
             }}
           >
+            {account && !paper?.accounts[account] && <option value={account}>{account} · retained or unavailable</option>}
             {Object.entries(paper?.accounts ?? { primary: null }).map(
               ([name, a]) => (
                 <option key={name} value={name}>
@@ -980,14 +983,16 @@ export function AccountsView({
   const [filter, setFilter] = useState("all");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(() => new URLSearchParams(location.hash.split("?")[1] ?? "").get("account") ?? "");
+  useEffect(() => { const restore = () => setSelected(new URLSearchParams(location.hash.split("?")[1] ?? "").get("account") ?? ""); window.addEventListener("hashchange", restore); window.addEventListener("popstate", restore); return () => { window.removeEventListener("hashchange", restore); window.removeEventListener("popstate", restore); }; }, []);
+  const selectAccount = (name: string) => { const params = new URLSearchParams(location.hash.split("?")[1] ?? ""); if (name) params.set("account", name); else params.delete("account"); location.hash = `accounts?${params.toString()}`; setSelected(name); };
   const [campaignOpen, setCampaignOpen] = useState(false);
   const [sort, setSort] = useState<"name" | "equity">("name");
   useEffect(() => {
     setQuery(initialSearch);
     setPage(0);
   }, [initialSearch]);
-  if (!paper) return <EmptyPaper />;
+  if (!paper) return selected ? <RetainedAccount name={selected} /> : <EmptyPaper />;
   const t = totals(paper, unavailable);
   const accounts = Object.entries(paper.accounts);
   const research = accounts.filter(([, a]) => isResearchAccount(a)).length;
@@ -1021,7 +1026,7 @@ export function AccountsView({
             This view shows current managed accounts. Completed trials that retire
             after becoming flat remain in the continuous paper lab's retained history.
           </p>
-          <a className="button secondary" href="#research">
+          <a className="button secondary" href="#accounts?view=comparisons">
             Retained trial history <ArrowRight size={14} />
           </a>
         </div>
@@ -1148,7 +1153,7 @@ export function AccountsView({
                           <td>
                             <button
                               className="account-name"
-                              onClick={() => setSelected(name)}
+                              onClick={() => selectAccount(name)}
                             >
                               {a.label ?? name}
                             </button>
@@ -1201,7 +1206,7 @@ export function AccountsView({
                             <button
                               className="icon-button"
                               aria-label={`Inspect ${a.label ?? name}`}
-                              onClick={() => setSelected(name)}
+                              onClick={() => selectAccount(name)}
                             >
                               <ChevronRight size={17} />
                             </button>
@@ -1310,7 +1315,7 @@ export function AccountsView({
                 <button
                   className="attention-row"
                   key={name}
-                  onClick={() => setSelected(name)}
+                  onClick={() => selectAccount(name)}
                 >
                   <span className="status-dot attention" />
                   <span>
@@ -1345,13 +1350,14 @@ export function AccountsView({
           </section>
         </div>
       </div>
-      {selected && (
+      {selected && !paper.accounts[selected] && <RetainedAccount key={selected} name={selected} />}
+      {selected && paper.accounts[selected] && (
         <AccountInspector
           key={selected}
           name={selected}
           paper={paper}
           unavailable={unavailable}
-          close={() => setSelected("")}
+          close={() => selectAccount("")}
         />
       )}
       <PerformanceDiagnosticPanel unavailable={unavailable} />
@@ -1371,8 +1377,8 @@ export function OrdersView({
   paper?: PaperSnapshot;
   unavailable: boolean;
 }) {
-  const [account, setAccount] = useState("all");
-  const [journal, setJournal] = useState("primary");
+  const [scope, setScope] = useAccountScope();
+  const account = scope || "all", journal = scope || "primary";
   const [view, setView] = useState("trades");
   if (!paper) return <EmptyPaper />;
   const accounts = Object.entries(paper.accounts).filter(
@@ -1400,9 +1406,10 @@ export function OrdersView({
             Account{" "}
             <select
               value={account}
-              onChange={(e) => setAccount(e.target.value)}
+              onChange={(e) => setScope(e.target.value === "all" ? "" : e.target.value)}
             >
               <option value="all">All accounts</option>
+              {scope && !paper.accounts[scope] && <option value={scope}>{scope} · retained or unavailable</option>}
               {Object.entries(paper.accounts).map(([name, a]) => (
                 <option key={name} value={name}>
                   {a.label ?? name}
@@ -1457,7 +1464,7 @@ export function OrdersView({
             </tbody>
           </table>
         </div>
-        {!positions.length && !pending.length && (
+        {scope && !paper.accounts[scope] ? <p className="empty-state">Current holdings for this exact account are unavailable. Inspect its retained account history for original records.</p> : !positions.length && !pending.length && (
           <p className="empty-state">
             No open position or pending order in the selected accounts. Signals
             and risk checks determine activity.
@@ -1475,8 +1482,9 @@ export function OrdersView({
             Journal account{" "}
             <select
               value={journal}
-              onChange={(e) => setJournal(e.target.value)}
+              onChange={(e) => setScope(e.target.value)}
             >
+              {!paper.accounts[journal] && <option value={journal}>{journal} · retained or unavailable</option>}
               {Object.entries(paper.accounts).map(([name, a]) => (
                 <option key={name} value={name}>
                   {a.label ?? name}

@@ -533,4 +533,7 @@ def control(engine: "PaperEngine", action: str, target: str | None = None) -> di
     else:
         raise ValueError("Unsupported autonomous-lab control")
     engine.emit("lab_operator_control", "system", {"action": action, "target": target})
+    # This revision belongs to the existing sole-writer control state. It
+    # fences multi-component startup against a newer explicit proposal pause.
+    lab["control_revision"] = lab.get("control_revision", 0) + 1
     return {"status": "applied", "action": action}

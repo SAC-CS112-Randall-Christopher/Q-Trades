@@ -1,12 +1,16 @@
 """Protected whole-account comparisons and explicit reversible paper incumbent roles."""
 
 import copy
+import hashlib
 import math
 import statistics
 from decimal import Decimal as D
+from functools import cache
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from trading.account_purpose import RESEARCH_EXCLUSION, require_research_account, research_account
+from trading.autonomous_spec import LabProposal, RuleSpec
 from trading.experiment_registry import fingerprint
 from trading.numerical_candidates import validate_artifact
 
@@ -35,6 +39,51 @@ POLICY: dict[str, Any] = {
 }
 
 
+@cache
+def implementation_identity() -> str | None:
+    """One executing-process identity, shared by admission and frozen evidence checks."""
+    names = (
+        "paper_engine.py",
+        "paper_strategy.py",
+        "redesign_strategy.py",
+        "autonomous_spec.py",
+        "rule_components.py",
+        "execution_profiles.py",
+        "paper_economics.py",
+        "numerical_candidates.py",
+    )
+    try:
+        return fingerprint(
+            {
+                name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                for name in names
+            }
+        )
+    except OSError:
+        return None  # Explicit qualification unavailability; financial management still starts.
+
+
+def require_frozen_strategy(a: dict[str, Any]) -> None:
+    from trading.paper_strategy import VARIANTS
+    from trading.redesign_strategy import STRATEGIES
+
+    if a.get("rule_spec") and a.get("numerical_artifact"):
+        raise ValueError("A frozen account cannot declare conflicting strategy types")
+    if a.get("numerical_artifact"):
+        validate_artifact(a["numerical_artifact"])
+        expected = "numeric-" + a["numerical_artifact"]["sha256"][:24]
+    elif a.get("rule_spec"):
+        expected = (
+            "lab-rule-" + fingerprint(RuleSpec.model_validate(a["rule_spec"]).model_dump())[:24]
+        )
+    elif a["version"] in VARIANTS or a["version"] in STRATEGIES:
+        return
+    else:
+        raise ValueError("The supported frozen strategy is unavailable")
+    if a["version"] != expected:
+        raise ValueError("The frozen account version differs from its strategy")
+
+
 def config(a: dict[str, Any]) -> dict[str, Any]:
     return {
         k: a.get(k)
@@ -48,6 +97,13 @@ def config(a: dict[str, Any]) -> dict[str, Any]:
             "economics_settings_version",
             "symbols",
             "benchmark_symbols",
+            *(("strategy_implementation_sha256",) if "strategy_implementation_sha256" in a else ()),
+            *(("rule_spec", "qualification_source") if "rule_spec" in a else ()),
+            *(
+                ("frozen_incumbent_configuration_sha256",)
+                if "frozen_incumbent_configuration_sha256" in a
+                else ()
+            ),
             *(("purpose",) if "purpose" in a else ()),
         )
     }
@@ -65,6 +121,18 @@ def drift(a: dict[str, Any]) -> list[str]:
                 reasons.append("Frozen account version differs from its model")
         except (ValueError, KeyError, TypeError):
             reasons.append("Frozen numerical artifact is invalid")
+    if a.get("rule_spec"):
+        try:
+            spec = RuleSpec.model_validate(a["rule_spec"])
+            if a["version"] != "lab-rule-" + fingerprint(spec.model_dump())[:24]:
+                reasons.append("Frozen account version differs from its supported rules")
+        except (ValueError, KeyError, TypeError):
+            reasons.append("Frozen rule specification is invalid")
+    if a.get("campaign_id") in {"forward-research", "forward-control"}:
+        if a.get("strategy_implementation_sha256") is None:
+            reasons.append("Frozen execution implementation provenance is unavailable")
+        elif a["strategy_implementation_sha256"] != implementation_identity():
+            reasons.append("Execution implementation changed after the prospective freeze")
     if a.get("economics_settings_version", 0):
         reasons.append("Cost/settings changed after freeze; a new forward comparison is required")
     if a.get("fault") or a.get("failure_pending") or a.get("drawdown_pause"):
@@ -74,28 +142,228 @@ def drift(a: dict[str, Any]) -> list[str]:
     return reasons
 
 
+def rule_source(receipt: dict[str, Any]) -> dict[str, Any]:
+    """Prepare one exact journal source; no model artifact or economic authority is invented."""
+    saved = receipt["body"]
+    trial_id = saved["id"]
+    proposal = LabProposal.model_validate(saved["contract"]["proposal"])
+    decisions = [d for d in receipt["decisions"] if d["kind"] == "lab_trial_scored"]
+    if (
+        receipt.get("environment") != "paper"
+        or len(decisions) != 1
+        or saved["candidate"] != trial_id + "-candidate"
+        or saved["reference"] != trial_id + "-reference"
+        or saved["proposal_id"] != proposal.request_id
+    ):
+        raise ValueError("Original scored paper comparison is unavailable or inconsistent")
+    score = decisions[0]["body"]
+    if (
+        score.get("trial_id") != trial_id
+        or score.get("proposal_id") != proposal.request_id
+        or score.get("outcome")
+        not in {"promising", "economically_unsuccessful", "inconclusive", "low_information"}
+        or score.get("available_at", 0) <= saved["reserved_at"]
+    ):
+        raise ValueError(
+            "A mature result without a data or risk stop is required for qualification"
+        )
+    costs = saved["contract"]["costs"]
+    operating = D(costs["daily_usd"]) + D(
+        proposal.strategy.model_dump().get("entry_filter", {}).get("marginal_daily_usd", "0")
+    )
+    if not operating.is_finite() or operating < 0 or operating > 10000:
+        raise ValueError("The original operating allocation is unavailable")
+    strategy = proposal.strategy.model_dump()
+    version = "lab-rule-" + fingerprint(strategy)[:24]
+    if score.get("candidate_sample", {}).get("strategy_version") != version:
+        raise ValueError("Original mature score belongs to a different supported strategy")
+    return {
+        "trial_id": trial_id,
+        "source_account": saved["candidate"],
+        "reservation_event_id": receipt["id"],
+        "reservation_sha256": fingerprint(saved),
+        "score_sha256": fingerprint(score),
+        "rule_sha256": fingerprint(strategy),
+        "rule_spec": strategy,
+        "version": version,
+        "outcome": score["outcome"],
+        "question": proposal.question,
+        "starting_capital": costs["funding_each"],
+        "execution_profile": costs["profile"],
+        "operating_daily_usd": str(operating),
+    }
+
+
+def rule_offer(state: dict[str, Any], receipt: dict[str, Any]) -> dict[str, Any]:
+    from trading.autonomous_finance import slots
+
+    try:
+        source = rule_source(receipt)
+    except (ValueError, KeyError, TypeError):
+        return {
+            "available": False,
+            "reason": "Original mature supported rule and cost evidence required",
+        }
+    candidate = (
+        "forward-" + fingerprint({"trial": source["trial_id"], "rule": source["rule_sha256"]})[:24]
+    )
+    saved_admission = {
+        "candidate": candidate,
+        "control": state.get("forward_controls", {}).get(candidate),
+        "already_admitted": candidate in state["accounts"],
+        "admitted_source": copy.deepcopy(
+            state["accounts"].get(candidate, {}).get("qualification_source")
+        ),
+        "rule_sha256": source["rule_sha256"],
+    }
+    if implementation_identity() is None:
+        return saved_admission | {
+            "available": False,
+            "reason": "Execution implementation provenance is unavailable; "
+            "prospective qualification waits",
+        }
+    incumbent_name = state.get("learning", {}).get("incumbent", "primary")
+    incumbent = state["accounts"].get(incumbent_name)
+    if incumbent is None or not research_account(incumbent, incumbent_name):
+        return saved_admission | {
+            "available": False,
+            "reason": "The exact current paper incumbent is unavailable",
+        }
+    return saved_admission | {
+        "available": True,
+        "implementation_sha256": implementation_identity(),
+        "incumbent": incumbent_name,
+        "incumbent_configuration_sha256": fingerprint(config(incumbent)),
+        "role_version": state.get("learning", {}).get("role_version", 0),
+        "starting_capital_each": source["starting_capital"],
+        "operating_daily_usd_each": source["operating_daily_usd"],
+        "execution_profile": source["execution_profile"],
+        "slots": slots(state),
+        "minimum_daily_blocks": POLICY["minimum_daily_blocks"],
+    }
+
+
+def admit_rule(
+    engine: "PaperEngine",
+    receipt: dict[str, Any],
+    rule_sha256: str,
+    expected_role_version: int,
+    incumbent_configuration_sha256: str,
+    implementation_sha256: str,
+) -> dict[str, Any]:
+    from trading.autonomous_finance import slots
+    from trading.paper_engine import account
+
+    source = rule_source(receipt)
+    if source["rule_sha256"] != rule_sha256:
+        raise ValueError("The reviewed frozen rule differs from the original comparison")
+    name = "forward-" + fingerprint({"trial": source["trial_id"], "rule": rule_sha256})[:24]
+    source_binding = {k: v for k, v in source.items() if k not in {"rule_spec", "question"}}
+    source_binding.update(
+        role_version=expected_role_version,
+        incumbent_configuration_sha256=incumbent_configuration_sha256,
+        implementation_sha256=implementation_sha256,
+    )
+    existing = engine.state["accounts"].get(name)
+    if existing is not None:
+        if (
+            existing.get("qualification_source") != source_binding
+            or config(existing).get("rule_spec") != source["rule_spec"]
+        ):
+            raise ValueError("The saved qualification admission has a different reviewed source")
+        return {
+            "status": "already_applied",
+            "account": name,
+            "control": engine.state.get("forward_controls", {}).get(name),
+        }
+    learning = engine.state.get("learning", {})
+    if implementation_identity() is None or implementation_sha256 != implementation_identity():
+        raise ValueError(
+            "The reviewed execution implementation changed; review qualification again"
+        )
+    incumbent = engine.state["accounts"][learning.get("incumbent", "primary")]
+    require_research_account(incumbent, learning.get("incumbent", "primary"))
+    require_frozen_strategy(incumbent)
+    if (
+        learning.get("role_version", 0) != expected_role_version
+        or fingerprint(config(incumbent)) != incumbent_configuration_sha256
+    ):
+        raise ValueError("The paper incumbent changed; review the matched qualification again")
+    if engine.state["paused"] or engine.state.get("autonomous_lab", {}).get("entries_paused"):
+        raise ValueError("The operator entry pause prevents new qualification funding")
+    capacity = slots(engine.state)
+    if capacity["used"] + 2 > min(20, capacity["capacity"]):
+        raise ValueError("Two managed places are required within the active paper capacity")
+    a = account(
+        source["version"], engine.now, source["starting_capital"], source["execution_profile"]
+    )
+    a.update(
+        rule_spec=copy.deepcopy(source["rule_spec"]),
+        qualification_source=source_binding,
+        strategy_implementation_sha256=implementation_sha256,
+        campaign_id="forward-research",
+        label=source["rule_spec"]["family"].replace("_", " ") + " · prospective qualification",
+        symbols=["BTCUSD"],
+        benchmark_symbols=["BTCUSD"],
+        admitted_at=engine.now,
+        operating_daily_usd=source["operating_daily_usd"],
+        entries_paused=False,
+        control_version=0,
+    )
+    engine.state["accounts"][name] = a
+    cash = D(a["starting_capital"])
+    engine.emit(
+        "forward_rule_account_funded",
+        name,
+        {"source": copy.deepcopy(source_binding), "amount": str(cash), "hypothetical": True},
+        [engine.line("USD", "cash", cash), engine.line("USD", "fake_funding", -cash)],
+    )
+    control = matched_control(engine, name)["account"]
+    return {"status": "created", "account": name, "control": control, "environment": "paper"}
+
+
 def matched_control(engine: "PaperEngine", candidate: str) -> dict[str, Any]:
+    from trading.autonomous_finance import slots
     from trading.paper_engine import account
 
     a = engine.state["accounts"][candidate]
     require_research_account(a, candidate)
-    if not a.get("numerical_artifact"):
-        raise ValueError("Select a frozen exploratory numerical account")
+    require_frozen_strategy(a)
+    if not a.get("numerical_artifact") and not (
+        a.get("rule_spec")
+        and a.get("qualification_source")
+        and a.get("campaign_id") == "forward-research"
+    ):
+        raise ValueError("Select an explicitly frozen prospective candidate")
     controls = engine.state.setdefault("forward_controls", {})
     if candidate in controls:
         require_research_account(engine.state["accounts"][controls[candidate]], controls[candidate])
         return {"status": "already_applied", "account": controls[candidate]}
-    if len(set(engine.state["accounts"]) | {"universe-wide-v1", "universe-control-v1"}) >= 20:
-        raise ValueError("Twenty-account limit reached; cannot discard history to fund a control")
+    if (
+        implementation_identity() is None
+        or a.get("strategy_implementation_sha256") != implementation_identity()
+    ):
+        raise ValueError(
+            "Prospective execution implementation is unknown or changed; "
+            "it cannot be stamped retrospectively"
+        )
+    capacity = slots(engine.state)
+    if capacity["used"] + 1 > min(20, capacity["capacity"]):
+        raise ValueError("Active paper capacity reached; cannot discard history to fund a control")
     incumbent = engine.state["accounts"][
         engine.state.get("learning", {}).get("incumbent", "primary")
     ]
     require_research_account(
         incumbent, engine.state.get("learning", {}).get("incumbent", "primary")
     )
-    if incumbent.get("numerical_artifact"):
-        validate_artifact(incumbent["numerical_artifact"])
-    name = "control-" + a["numerical_artifact"]["sha256"][:24]
+    require_frozen_strategy(incumbent)
+    name = "control-" + (
+        a["numerical_artifact"]["sha256"][:24]
+        if a.get("numerical_artifact")
+        else candidate.removeprefix("forward-")
+    )
+    if name in engine.state["accounts"]:
+        raise ValueError("Matched control identity already belongs to another candidate")
     control = account(
         incumbent["version"], engine.now, a["starting_capital"], a["execution_profile"]
     )
@@ -108,12 +376,17 @@ def matched_control(engine: "PaperEngine", candidate: str) -> dict[str, Any]:
         admitted_at=engine.now,
         entries_paused=False,
         control_version=0,
+        risk_policy=a["risk_policy"],
+        strategy_implementation_sha256=a["strategy_implementation_sha256"],
         matched_candidate=candidate,
         frozen_incumbent_account=engine.state.get("learning", {}).get("incumbent", "primary"),
+        frozen_incumbent_configuration_sha256=fingerprint(config(incumbent)),
     )
     engine.state["accounts"][name] = control
     if incumbent.get("numerical_artifact"):
         control["numerical_artifact"] = copy.deepcopy(incumbent["numerical_artifact"])
+    if incumbent.get("rule_spec"):
+        control["rule_spec"] = copy.deepcopy(incumbent["rule_spec"])
     controls[candidate] = name
     cash = D(control["starting_capital"])
     engine.emit(
@@ -157,12 +430,27 @@ def comparison(
     if control in state["accounts"]:
         require_research_account(state["accounts"][control], control)
     reasons = drift(a)
-    if not a.get("numerical_artifact"):
-        reasons.append("Only explicitly frozen numerical candidates enter this forward policy")
+    if not a.get("numerical_artifact") and not (
+        a.get("rule_spec")
+        and a.get("qualification_source")
+        and a.get("campaign_id") == "forward-research"
+    ):
+        reasons.append("Only explicitly frozen prospective candidates enter this forward policy")
     if not control:
         reasons.append("A matched frozen incumbent control has not been funded")
     elif drift(state["accounts"][control]):
         reasons.append("Matched control has data, settings or risk drift")
+    incumbent_name = state.get("learning", {}).get("incumbent", "primary")
+    incumbent = state["accounts"].get(incumbent_name)
+    frozen_incumbent_sha = (
+        state["accounts"].get(control or "", {}).get("frozen_incumbent_configuration_sha256")
+    )
+    if control and (
+        incumbent is None
+        or state["accounts"].get(control, {}).get("frozen_incumbent_account") != incumbent_name
+        or fingerprint(config(incumbent)) != frozen_incumbent_sha
+    ):
+        reasons.append("Current incumbent differs from the reviewed frozen matched reference")
     if state.get("evidence_kind") != "observed_public_feed":
         reasons.append("Synthetic or unclassified input cannot qualify prospective market evidence")
     after = max(
@@ -259,9 +547,16 @@ def comparison(
         "compared_incumbent": state["accounts"]
         .get(control or "", {})
         .get("frozen_incumbent_account"),
+        "incumbent_configuration_sha256": frozen_incumbent_sha,
         "candidate_configuration": config(a),
         "configuration_sha256": fingerprint(config(a)),
+        "control_configuration_sha256": fingerprint(config(state["accounts"][control]))
+        if control in state["accounts"]
+        else None,
         "artifact_sha256": a.get("numerical_artifact", {}).get("sha256"),
+        "rule_sha256": fingerprint(a["rule_spec"]) if a.get("rule_spec") else None,
+        "qualification_source": copy.deepcopy(a.get("qualification_source")),
+        "implementation_sha256": a.get("strategy_implementation_sha256"),
         "created_at": now,
         "evidence_kind": state.get("evidence_kind", "unclassified"),
         "protected_through_before_report": protected_through,
@@ -381,12 +676,23 @@ def designate(
         raise ValueError("This immutable report does not permit paper designation")
     if report.get("compared_incumbent") != learning["incumbent"]:
         raise ValueError("Report compared a different incumbent role")
+    if fingerprint(config(engine.state["accounts"][learning["incumbent"]])) != report.get(
+        "incumbent_configuration_sha256"
+    ):
+        raise ValueError("Current incumbent configuration changed after the matched freeze")
     if engine.now - report["created_at"] > 86400:
         raise ValueError("Report expired; a subsequent protected comparison is required")
     a = engine.state["accounts"][report["candidate"]]
     require_research_account(a, report["candidate"])
     if report.get("control") in engine.state["accounts"]:
-        require_research_account(engine.state["accounts"][report["control"]], report["control"])
+        control = engine.state["accounts"][report["control"]]
+        require_research_account(control, report["control"])
+        if fingerprint(config(control)) != report.get("control_configuration_sha256") or drift(
+            control
+        ):
+            raise ValueError("The frozen matched incumbent changed after the report")
+    else:
+        raise ValueError("The original matched incumbent is unavailable")
     if fingerprint(config(a)) != report["configuration_sha256"] or drift(a):
         raise ValueError("Frozen configuration, data or risk changed after the report")
     if len(learning["promotions"]) >= 8:
@@ -461,18 +767,21 @@ def snapshot(state: dict[str, Any]) -> dict[str, Any]:
             }
             for n, a in state["accounts"].items()
             if research_account(a, n)
-            and a.get("numerical_artifact")
+            and (
+                a.get("numerical_artifact")
+                or (a.get("rule_spec") and a.get("qualification_source"))
+            )
             and a.get("campaign_id") == "forward-research"
         ],
-        "unavailable_handoffs": [
+        "qualification_sources": [
             {
                 "account": n,
                 "label": a.get("label", n),
                 "trial_id": a.get("lab_trial"),
                 "rule_sha256": fingerprint(a["rule_spec"]),
-                "state": "qualification_handoff_not_implemented",
-                "reason": "Exploratory result retained; qualification handoff not implemented "
-                "for this strategy type. More elapsed time cannot complete this handoff.",
+                "state": "review_original_result",
+                "reason": "Review this exact mature comparison before funding a separate "
+                "prospective pair. Its exploratory return is not qualification.",
             }
             for n, a in state["accounts"].items()
             if research_account(a, n)

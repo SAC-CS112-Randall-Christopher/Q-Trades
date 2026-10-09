@@ -131,7 +131,7 @@ def test_twenty_total_accounts_reserve_originals_and_reject_overflow():
     assert len(receipt["campaign"]["accounts"]) == 14
     assert len(engine.state["accounts"]) == 20
     assert {n: engine.state["accounts"][n] for n in original} == original
-    with pytest.raises(ValueError, match="Twenty-account"):
+    with pytest.raises(ValueError, match="Active paper capacity"):
         admit(engine, "extra-numerical", fixture_artifact(), "100", "0")
     engine.assert_invariants()
 

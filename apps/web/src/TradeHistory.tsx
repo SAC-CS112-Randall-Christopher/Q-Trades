@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import type { PaperSnapshot } from "./PaperPanel";
+import { useAccountScope } from "./productNavigation";
 
 type Trade = {
   id: string; event_id: number | null; account: string; label: string; archived: boolean;
@@ -31,7 +32,7 @@ const rowWhen = (value: number | null) => value == null ? "—" : new Date(value
     hour: "numeric", minute: "2-digit" });
 
 export function TradeHistory({ paper, unavailable }: { paper: PaperSnapshot; unavailable: boolean }) {
-  const [account, setAccount] = useState("");
+  const [account, setAccount] = useAccountScope();
   const [status, setStatus] = useState("all");
   const [cursors, setCursors] = useState<number[]>([0]);
   const [page, setPage] = useState<Page | null>(null);
@@ -42,6 +43,8 @@ export function TradeHistory({ paper, unavailable }: { paper: PaperSnapshot; una
   const [clock, setClock] = useState(Date.now() / 1000);
   const sequence = useRef(0);
   const before = cursors[cursors.length - 1];
+
+  useEffect(() => { setPage(null); setError(null); setCursors([0]); setExpanded(""); }, [account]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now() / 1000), 1000);

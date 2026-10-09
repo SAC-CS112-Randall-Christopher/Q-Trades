@@ -24,6 +24,15 @@ in the inventory, with declaration lookup for exact test functions. For a workfl
 its guide lists relevant covering tests. Inspect fixture setup, actual dependencies,
 assertions and skips before deciding the check applies to a change.
 
+Saved-record navigation in the comparison and role-evidence browser scripts uses
+the [completed UI GET capture](source-index.md#browser-completed-get). It binds
+new same-origin exact-path requests to their completed bodies rather than headers
+from an old document or cancelled restoration read. Failed reads stay in the
+receipt; the first completed HTTP refusal, missing response, unreadable body or
+bounded timeout fails the capture. It issues no request or retry. Original
+identity/hash, rendered-record and zero-write assertions remain in each consumer.
+Both receipts and fixture manifests identify the shared helper's source hash.
+
 ## Existing check commands
 
 The [package configuration](source-index.md#platform-package) declares pytest,
@@ -58,8 +67,10 @@ The map deliberately keeps these separate:
 8. Actual model capacity/coexistence/usefulness and prospective trading economics.
 
 The existing source stack's earlier passing checks belong to their exact source
-inputs. This map's baseline starts at PR87; adding documentation does not relabel
-old executions as a fresh installed result. A runtime installation marker is not
+inputs. The coherent-product increment starts at refreshed main `d8bf234`,
+including PR89; its [current ledger](../reviews/COHERENT_PRODUCT_66.md) separates
+new checks from the earlier PR87 map and audit evidence. Adding documentation
+does not relabel old executions as a fresh installed result. A runtime installation marker is not
 proof that all files and preserved data match; a green test is not a profitable
 strategy, continuous observation window or qualified model.
 

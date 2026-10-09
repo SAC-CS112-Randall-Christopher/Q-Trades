@@ -5,11 +5,11 @@ choose meaningful verification. Start with a symptom or workflow, then inspect
 the linked current functions and their consumers before editing.
 
 The reviewed application starting baseline is
-`9ac64e09d04b2fd4e055b8a8d26066172e6fc5f4` (the audited PR88 source stack). The
+`d8bf23472f14c8f0ce90286744d0226a2202df68` (refreshed main, including PR89). The
 [generated index](source-index.md) records current normalized file hashes and
-exact reference locations. That source includes proposed research behavior beyond
-the separately accepted installed `c653b136f4f0d4fac3f9855bbbb4c40b21a3c8a9`.
-This map does not claim the stack is installed or research is currently enabled.
+exact reference locations. The coherent-product increment is a source candidate
+beyond that baseline. The installed application was read-only observed at
+`d8bf234` on October 8; this increment is not installed or enabled by this map.
 Refresh GitHub, the checked-out branch and installed receipts when investigating
 operating behavior; a source map cannot identify a running process by itself.
 
@@ -27,12 +27,13 @@ enabled by this map or by a passing source test.
 | Proposal/rejection → next investigation | Worker review/dependency stages → method selector | Original task/verdict stays accessible; immutable selection owns its method | Scientific rejection or quiescent dependency can yield to the other offered method. Due work, unsafe/failed results and finite scope remain protected. See [scheduling](research-worker.md#selection-policies-and-fixed-methods). |
 | Optional research → financial owner | AutonomousLab preparation → PaperStore/PaperEngine | Inbox and permanent reserve/fund/score receipts reconcile missing acknowledgments | Optional work releases the writer lock; fresh financial admission remains inside it. [Concurrency evidence](../reviews/CLOSED_LOOP_AUDIT.md) is disposable software proof. |
 | Mature result → lesson → next question | Scored event → ResearchLessons → exact later role packet | Original task, lesson and next-task provenance | Source and fixture paths exist; actual authorized model interpretation and normal operating continuation remain unproved by this source checkpoint. |
-| Fixed-rule result → stronger qualification | Lab frozen RuleSpec → paper_learning | Forward learning shows an explicit unavailable handoff for retained scored candidates | Missing implementation. Numerical qualification cannot accept a substituted artifact. Exact RuleSpec admission, matched incumbent controls and prospective approval need a separate bounded extension. |
+| Fixed-rule result → stronger qualification | Exact original Lab reservation/score → existing paper_learning/financial writer | Original comparison opens a reviewed separate prospective candidate/control pair; exact account and source survive Back/reload | Implemented source. Frozen rules, implementation, costs, incumbent/control identity and capacity are enforced; 28 subsequent daily blocks and explicit designation remain required. No numeric artifact substitution. |
 | Two methods → continuing refinement | p0/p1 catalog → supported strategy bank | Current selection states the two-method ceiling and retained exhausted work | Not implemented. Actual grounded p0/p1 acceptance precedes one justified versioned refinement; a different trial alone is not evidence of learning. |
 | Reviewed examples → Training Lab preparation | Retained examples → existing preparation owner | Saved preparation preserves `trained=false` and `evaluated=false` | Intentional preparation boundary. Training/evaluation needs its own applicable authorization. |
 
-The [audit repair ledger](../reviews/CLOSED_LOOP_AUDIT.md) records executed checks
-and their limits. Code present, source tests, installed operation, actual model
+The [coherent product ledger](../reviews/COHERENT_PRODUCT_66.md) records the current
+workflow and proof stages. The [audit repair ledger](../reviews/CLOSED_LOOP_AUDIT.md)
+records earlier checks and their limits. Code present, source tests, installed operation, actual model
 usefulness and prospective economics are five different claims.
 
 ## Find the right workflow

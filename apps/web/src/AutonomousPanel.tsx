@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { RetainedComparison } from "./RetainedComparison";
 import "./market-chart.css";
 import { ResearchStoragePanel } from "./ResearchStoragePanel";
 
@@ -15,6 +16,8 @@ async function get(path: string) { const r = await fetch(path, { cache: "no-stor
 async function post(path: string, body: unknown) { const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json", "X-Local-Operator": "1" }, body: JSON.stringify(body) }); const b = await r.json(); if (!r.ok) throw new Error(b.detail ?? "Control unavailable"); return b; }
 
 export function AutonomousPanel() {
+  const [selectedTrial, setSelectedTrial] = useState(() => new URLSearchParams(location.hash.split("?")[1] ?? "").get("trial"));
+  useEffect(() => { const restore = () => setSelectedTrial(new URLSearchParams(location.hash.split("?")[1] ?? "").get("trial")); window.addEventListener("hashchange", restore); window.addEventListener("popstate", restore); return () => { window.removeEventListener("hashchange", restore); window.removeEventListener("popstate", restore); }; }, []);
   const [data, setData] = useState<Snapshot | null>(null);
   const [history, setHistory] = useState<History | null>(null);
   const [cursor, setCursor] = useState(0);
@@ -25,7 +28,7 @@ export function AutonomousPanel() {
   const [limits, setLimits] = useState({ slots: 20, family_slots: 6, independent_slots: 4, daily_trials: 8, hourly_steps: 120, hourly_compute_seconds: 30, registry_mib: 512, minimum_disk_gib: 5 });
   const [capital, setCapital] = useState("100");
   const [hours, setHours] = useState(4);
-  const [cost, setCost] = useState("0");
+  const [cost, setCost] = useState("");
   const [horizons, setHorizons] = useState(["short", "medium", "long"]);
   const [identity] = useState(() => "policy-" + crypto.randomUUID());
   const [exportAfter, setExportAfter] = useState(0);
@@ -39,6 +42,8 @@ export function AutonomousPanel() {
   const lab = data?.lab;
   const exportPage = () => act(async () => { const page = await get("/api/autonomous/export?after=" + exportAfter); const blob = new Blob([JSON.stringify(page, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `paper-lab-journal-after-${exportAfter}.json`; link.click(); URL.revokeObjectURL(url); if (page.next_after != null) setExportAfter(page.next_after); });
   return <section className="panel autonomous-panel" aria-label="Continuous paper research">
+    {selectedTrial && <RetainedComparison key={selectedTrial} identity={selectedTrial} />}
+    <details className="workspace-details" open={!selectedTrial}><summary>Current paper comparisons and retained history</summary>
     <div className="section-heading"><div><p className="eyebrow">CONTINUOUS PAPER RESEARCH</p><h2>Preserve useful parents. Test the next question.</h2></div><span className="badge">Exploration only</span></div>
     <p>One declared policy runs in the application worker. Frozen paired trials use equal funding, costs, risk and subsequent observations. Outcomes can be promising, unsuccessful, low information, inconclusive, data blocked or risk stopped. Qualification and human promotion keep their existing requirements.</p>
     {error && <p role="alert" className="warning">{error}</p>}
@@ -88,5 +93,6 @@ export function AutonomousPanel() {
     </details>
     {inspection != null && <details open className="lab-inspection"><summary>Selected evidence</summary><button onClick={() => setInspection(null)}>Close evidence</button><pre>{JSON.stringify(inspection, null, 2)}</pre></details>}
     <ResearchStoragePanel />
+    </details>
   </section>;
 }
