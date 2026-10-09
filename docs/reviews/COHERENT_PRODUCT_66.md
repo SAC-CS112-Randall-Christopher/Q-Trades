@@ -4,7 +4,54 @@ Q-Trades is intended to become a supervised crypto spot trading product. Paper i
 the current validation environment. This source increment connects the everyday
 paper workflow and its existing owners; the broader Goal remains open.
 
-## Source, operating state and scope
+## Installed account-scope follow-up — October 8, 2026
+
+Chris approved PR91's reviewed `46c9231` merge and resulting `9a8a2df` installation
+and restart. The unchanged updater succeeded after one owned supervisor recovery.
+All 264 updater-owned source/assets matched the merged target; selected financial
+history, six original accounts/policies, archives, configuration and consumed
+research attempts passed the retained before/after preservation checks. Scanner
+and model research remained paused. These are installed software observations,
+not actual-model usefulness, prospective economics or whole-Goal acceptance.
+
+Normal installed navigation exposed a remaining defect: after selecting
+`responsive-v1`, the performance chart and URL retained that account while the
+whole-account economics panel showed `primary`, including its cost controls.
+Reload reproduced the mismatch. The source successor
+`codex/account-economics-context-66`, based on merged `9a8a2df`, reuses the existing
+URL account owner for economics too. Both selectors preserve the current view,
+Back/reload and explicit unavailable identity; a missing account exposes no
+other account's cost controls. Async settings feedback belongs to its original
+request account. The existing compiled native-owner browser check now observes
+both selectors and the unavailable-account control boundary.
+
+This successor remains a source candidate until separately reviewed and approved
+for operating installation. The installed observations retain the discovered
+defect. There was no model dispatch, new research allowance, scanner activation,
+funding-policy change or live action. Private operating receipts remain outside
+Git; the installed screenshot depicts actual paper operation with research paused.
+
+Independent review found and repaired inherited-property lookups: arbitrary URL
+names such as `constructor` must not become account or window-score records.
+Both performance consumers now check own properties. Review accepted the final
+source; the final compiled native-owner browser run passed all six groups,
+including both selector directions, Back/reload, `missing-original`, `constructor`,
+`__proto__` and `toString`, and no selected economics values or cost controls for
+those missing identities. The same own-record boundary protects account
+inspection, holdings and the journal selector. Each negative case traverses
+Accounts, Performance, Positions and Journal, retains its exact identity, and
+opens the ordinary history reader's original refusal. Polling, native financial/research ownership and the
+existing qualification/recovery paths remain enabled in this disposable check.
+Original journal prefixes and accounting remained balanced, no model/tokenizer
+calls or external requests occurred, and the exact owned browser/server/PG
+processes drained and stopped with original schemas/failure history preserved.
+Build and JS syntax checks passed; map freshness passed, with 18 map-tool tests
+passing and one Windows symlink-privilege skip. The earlier source run is retained
+separately; neither run proves actual model usefulness or operating acceptance.
+Delayed cost-settings feedback was reviewed in source; the UI check does not
+submit an editable cost change or measure that race in operation.
+
+## Original PR91 source scope and baseline
 
 The lane is `codex/coherent-product-66`, based on refreshed main
 `d8bf23472f14c8f0ce90286744d0226a2202df68`, including PR89. The installed application

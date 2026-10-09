@@ -5,11 +5,14 @@ choose meaningful verification. Start with a symptom or workflow, then inspect
 the linked current functions and their consumers before editing.
 
 The reviewed application starting baseline is
-`d8bf23472f14c8f0ce90286744d0226a2202df68` (refreshed main, including PR89). The
+`9a8a2dfca533a3046ddbc9a651244bdc6d87bfbf` (merged PR91). The
 [generated index](source-index.md) records current normalized file hashes and
-exact reference locations. The coherent-product increment is a source candidate
-beyond that baseline. The installed application was read-only observed at
-`d8bf234` on October 8; this increment is not installed or enabled by this map.
+exact reference locations. PR91's separately approved installation passed source
+and selected-history preservation checks on October 8, with research paused.
+Installed navigation exposed the chart/economics account mismatch recorded in
+the [product ledger](../reviews/COHERENT_PRODUCT_66.md). Its reviewed account-scope
+source successor is beyond that baseline and remains uninstalled. This map does
+not activate research, establish model usefulness or authorize live operation.
 Refresh GitHub, the checked-out branch and installed receipts when investigating
 operating behavior; a source map cannot identify a running process by itself.
 

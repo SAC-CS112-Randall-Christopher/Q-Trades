@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useAccountScope } from "./productNavigation";
 
 type Mark = {
   campaign_id?: string | null; label?: string;
@@ -39,21 +40,20 @@ const when = (v: number) => new Date(v * 1000).toLocaleString("en-US", {
 export function PaperEconomicsPanel({ data, profiles = [], unavailable }: {
   data?: EconomicsSnapshot; profiles?: ExecutionProfile[]; unavailable: boolean;
 }) {
-  const [account, setAccount] = useState("primary");
+  const [account, setAccount] = useAccountScope("primary");
   const [selectedWindow, setSelectedWindow] = useState("current");
   const [profile, setProfile] = useState("");
   const [daily, setDaily] = useState("");
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const mark = data?.accounts[account];
+  const [feedback, setFeedback] = useState<{ account: string; message?: string; error?: string } | null>(null);
+  const mark = data && Object.hasOwn(data.accounts, account) ? data.accounts[account] : undefined;
   useEffect(() => {
     setProfile(mark?.execution_profile ?? "");
     setDaily(mark?.operating_daily_usd ?? "");
   }, [account, mark?.execution_profile, mark?.settings_version, mark?.operating_daily_usd]);
   const window = selectedWindow === "current" ? data?.current :
     data?.completed.find(w => String(w.start) === selectedWindow);
-  const score = window?.scores[account];
+  const score = window && Object.hasOwn(window.scores, account) ? window.scores[account] : undefined;
   const assumption = profiles.find(p => p.id === profile);
   const blockedProfile = !!mark && !mark.flat && profile !== mark.execution_profile;
   async function save(event: FormEvent) {
@@ -62,7 +62,7 @@ export function PaperEconomicsPanel({ data, profiles = [], unavailable }: {
     if (profile !== mark.execution_profile && !globalThis.confirm(
       "Apply this paper execution scenario to future orders only? Original fees and history stay unchanged."
     )) return;
-    setPending(true); setError(null); setMessage(null);
+    setPending(true); setFeedback(null);
     try {
       const response = await fetch(`/api/paper/accounts/${encodeURIComponent(account)}/economics-settings`, {
         method: "POST", headers: { "Content-Type": "application/json", "X-Local-Operator": "1" },
@@ -73,18 +73,20 @@ export function PaperEconomicsPanel({ data, profiles = [], unavailable }: {
         const detail = await response.json().catch(() => null) as { detail?: unknown } | null;
         throw new Error(typeof detail?.detail === "string" ? detail.detail : "Settings were not confirmed. Refresh and retry.");
       }
-      setMessage("Saved for future observations. Current window is marked changed; historical results and cash are untouched.");
+      setFeedback({ account, message: "Saved for future observations. Current window is marked changed; historical results and cash are untouched." });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Settings were not confirmed. Retry when connected.");
+      setFeedback({ account, error: e instanceof Error ? e.message : "Settings were not confirmed. Retry when connected." });
     } finally { setPending(false); }
   }
   return <section className="economics-panel" id="account-economics" aria-label="Whole-account economics">
     <div className="economics-heading"><div><p className="eyebrow">ACCOUNT RESULTS, NOT WINNING-TRADE AVERAGES</p>
       <h3>Whole-account economics</h3></div>
-      <label>Account<select value={account} onChange={e => { setAccount(e.target.value); setError(null); setMessage(null); }}>
-        {Object.keys(data?.accounts ?? { primary: null }).map(name => <option key={name} value={name}>{data?.accounts[name]?.label ?? name}</option>)}
+      <label>Account<select value={account} onChange={e => { setAccount(e.target.value); setFeedback(null); }}>
+        {!mark && <option value={account}>{account || "Unspecified account"} · retained or unavailable</option>}
+        {Object.keys(data?.accounts ?? {}).map(name => <option key={name} value={name}>{data?.accounts[name]?.label ?? name}</option>)}
       </select></label></div>
     {!data && <p>Account economics are not available yet. Waiting for the paper worker.</p>}
+    {data && !mark && <p role="status">Economics for {account} are unavailable in this snapshot. Retained account evidence remains available through Accounts &amp; Results.</p>}
     {unavailable && <p className="error-banner" role="alert">Paper worker disconnected or stale. Current values are not confirmed; completed windows remain historical.</p>}
     {mark && <><h4>Current balances and holdings</h4><dl className="economics-values">
       <div><dt>Liquidation equity</dt><dd>{mark.fresh && !unavailable ? dollars(mark.equity) : "Mark unavailable"}</dd></div>
@@ -112,7 +114,7 @@ export function PaperEconomicsPanel({ data, profiles = [], unavailable }: {
       <p className="fine-print">{data?.cost_basis} Gross reference is an attribution, not a frictionless strategy backtest. Fees actually paid in this window: {dollars(score.fees_paid)}.</p>
       <p>Trade diagnostics: {score.trades} closed / {score.wins} winners · window drawdown {percent(score.max_drawdown)} · funding change {dollars(score.funding_change)}.</p>
       <p className="fine-print">{data?.benchmark}. Each window control starts from the account’s window-opening equity, pays its own costs and holds until that window ends; it is not a continuously held portfolio. Cash benchmark: 0% before operating allocation; {percent(score.cash_total_return)} after the same allocation. Exposure before allocation: {percent(score.exposure_return)}.</p>
-      <p className="fine-print">Benchmark legs: {Object.entries(score.benchmark_status).map(([s, v]) => `${s}: ${v}`).join(" · ") || "Waiting for starting marks"}</p></> : <p>This account joined after this window began. Its first full comparison starts in the next common window.</p>}
+      <p className="fine-print">Benchmark legs: {Object.entries(score.benchmark_status).map(([s, v]) => `${s}: ${v}`).join(" · ") || "Waiting for starting marks"}</p></> : <p>No score for this account is available in this window. A complete prospective comparison requires observations from the common window start.</p>}
       <div className="table-scroll"><table className="market-table economics-table"><thead><tr>
         <th>Account</th><th>Trading return</th><th>After operating allocation</th><th>Exposure after allocation</th><th>Matched rank</th>
       </tr></thead><tbody>{Object.entries(window.scores).map(([name, row]) => <tr key={name}>
@@ -136,8 +138,8 @@ export function PaperEconomicsPanel({ data, profiles = [], unavailable }: {
         {blockedProfile && <p>Changing the execution profile requires this account to be flat with no pending orders. Position exits remain enabled.</p>}
         {!mark.campaign_id && <button type="submit" className="button secondary small" disabled={pending || unavailable || blockedProfile}>
           {pending ? "Saving…" : "Save future cost assumptions"}</button>}
-        {error && <p className="error-banner" role="alert">{error}</p>}
-        {message && <p role="status">{message}</p>}
+        {feedback?.account === account && feedback.error && <p className="error-banner" role="alert">{feedback.error}</p>}
+        {feedback?.account === account && feedback.message && <p role="status">{feedback.message}</p>}
       </form></details>}
     <p className="fine-print">{data?.retention}. Two four-hour comparisons support bounded paper selection, not statistical proof; dependence-aware qualification remains separate research work.</p>
   </section>;
