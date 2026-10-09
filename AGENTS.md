@@ -1,9 +1,10 @@
-# Current coherent product lane — October 8, 2026, issue #66
+# Current coherent product lane — October 9, 2026 UTC, issue #66
 
 Chris's corrected goal is one supervised crypto spot trading product: complete
 the coherent paper validation workflow now, then separately validate selected
 venue integration and bounded real-money operation. This lane is
-`codex/coherent-product-66`, based on refreshed main `d8bf234`. Existing PR76 is
+`codex/storage-startup-summary-66`, based on merged main
+`0b47251a355113b285fd90d24917d2346cb18a59` (PR92). Existing PR76 is
 the separate finite-setup owner; native packaging retains its separate owner.
 Use `docs/reviews/COHERENT_PRODUCT_66.md` for current outcome/evidence deltas.
 Source/UI changes, disposable QA, independent review and draft publication are
@@ -12,6 +13,14 @@ financial-policy changes and live access retain their explicit boundaries.
 Paper is the present execution environment, not the final product ceiling.
 Do not claim paper software proof establishes actual learning, qualification,
 economic advantage, installed acceptance or live authorization.
+
+The current source successor bounds retained-index startup summaries through the
+existing ResearchStorage owner. Preserve append-only index identity, original
+availability, deduplication and per-segment recovery commits. Legacy counter
+adoption must make durable bounded progress, never certify a partial count, and
+retain exact all-kind timestamps. Publish only source/disposable evidence;
+private operating receipts remain local. A new merge/install/restart requires
+its separately reviewable exact-target authorization.
 
 # Historical audit repair — October 8, 2026, PR88 closed research loop
 
