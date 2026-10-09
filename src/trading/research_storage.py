@@ -10,7 +10,7 @@ import shutil
 import sqlite3
 import stat
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import ExitStack, closing, contextmanager
 from pathlib import Path
 from threading import RLock
@@ -279,6 +279,15 @@ class ResearchStorage:
             with self.db:
                 self.db.execute("ALTER TABLE storage_segments ADD COLUMN reclaimed_at REAL")
         with self.db:
+            state_columns = {r[1] for r in self.db.execute("PRAGMA table_info(storage_state)")}
+            for name, definition in (
+                ("rows_version", "INTEGER NOT NULL DEFAULT 0"),
+                ("rows_through", "INTEGER NOT NULL DEFAULT 0"),
+                ("rows_scan_through", "INTEGER"),
+                ("rows_scan_count", "INTEGER NOT NULL DEFAULT 0"),
+            ):
+                if name not in state_columns:
+                    self.db.execute(f"ALTER TABLE storage_state ADD COLUMN {name} {definition}")
             columns = {r[1] for r in self.db.execute("PRAGMA table_info(storage_records)")}
             for name, kind in (("available", "REAL"), ("bytes", "INTEGER")):
                 if name not in columns:
@@ -293,6 +302,7 @@ class ResearchStorage:
                 "INSERT OR IGNORE INTO storage_state(id,next_due,started) VALUES(1,?,?)",
                 (time.time() + 7200, time.time()),
             )
+        self._adopt_rows_counter()
         # A segment commit may precede a lost index acknowledgment. Reconcile only
         # active/orphan segments, never reinterpret their original availability.
         for row in self.db.execute("SELECT id FROM storage_segments WHERE state='active'"):
@@ -321,7 +331,10 @@ class ResearchStorage:
                         ),
                         (number, time.time(), time.time() + plan.temporary_retention_seconds),
                     )
-                    count = size = 0
+                    count = size = inserted = 0
+                    through = self.db.execute(
+                        "SELECT rows_through FROM storage_state WHERE id=1"
+                    ).fetchone()[0]
                     first = last = None
                     for record, sha, body in source.execute(
                         "SELECT id,sha,body FROM records ORDER BY id"
@@ -337,7 +350,7 @@ class ResearchStorage:
                             or not isinstance(value.get("kind"), str)
                         ):
                             raise ValueError("Capture recovery corrupt: record metadata differs")
-                        self.db.execute(
+                        indexed = self.db.execute(
                             "INSERT OR IGNORE INTO storage_records"
                             "(sha,segment,record,at,kind,available,bytes) VALUES(?,?,?,?,?,?,?)",
                             (
@@ -360,6 +373,9 @@ class ResearchStorage:
                                 len(body.encode()),
                             ),
                         )
+                        if indexed.rowcount:
+                            inserted += 1
+                            through = max(through, indexed.lastrowid)
                         self._pin_packet(
                             value, f"capture-v2:{number}:{record}:{sha}", number, time.time()
                         )
@@ -374,13 +390,125 @@ class ResearchStorage:
                         ),
                         (count, size, first, last, number),
                     )
+                    # The count and its index high-water mark commit with this
+                    # segment, including when startup stops before the next one.
+                    self.db.execute(
+                        "UPDATE storage_state SET rows=rows+?,rows_through=? WHERE id=1",
+                        (inserted, through),
+                    )
                 self.recovery["segments_checked"] += 1
+        latest = self._latest_indexed_capture()
         with self.db:
-            self.db.execute(
-                "UPDATE storage_state SET rows=(SELECT count(*) FROM storage_"
-                "records),last_capture=(SELECT max(at) FROM storage_records) "
-                "WHERE id=1"
-            )
+            self.db.execute("UPDATE storage_state SET last_capture=? WHERE id=1", (latest,))
+
+    @contextmanager
+    def _startup_summary_budget(self) -> Iterator[Callable[[], None]]:
+        """Refuse incomplete summaries; bound SQL work and check elapsed time."""
+        deadline = time.monotonic() + 5
+        steps = 0
+
+        def expired() -> bool:
+            return steps >= 5_000_000 or time.monotonic() >= deadline
+
+        def check() -> None:
+            if expired():
+                raise OSError("Capture recovery pending: startup summary budget exhausted")
+
+        def progress() -> int:
+            nonlocal steps
+            steps += 1000
+            return int(expired())
+
+        self.db.set_progress_handler(progress, 1000)
+        try:
+            yield check
+            check()
+        except sqlite3.OperationalError as exc:
+            if exc.sqlite_errorcode == sqlite3.SQLITE_INTERRUPT and expired():
+                raise OSError(
+                    "Capture recovery pending: startup summary budget exhausted"
+                ) from exc
+            raise
+        finally:
+            self.db.set_progress_handler(None, 0)
+
+    def _adopt_rows_counter(self) -> None:
+        # Older recovery committed each segment before its final recount. Do not
+        # certify that potentially stale counter or infer rows from segment sums.
+        # A high-water mismatch also detects index advancement by an older owner.
+        with self._startup_summary_budget() as check:
+            with self.db:
+                self.db.execute("BEGIN IMMEDIATE")
+                last = self.db.execute(
+                    "SELECT rowid FROM storage_records ORDER BY rowid DESC LIMIT 1"
+                ).fetchone()
+                through = last[0] if last else 0
+                state = self.db.execute(
+                    "SELECT rows_version,rows_through,rows,rows_scan_through,rows_scan_count "
+                    "FROM storage_state WHERE id=1"
+                ).fetchone()
+                if (
+                    state[0] not in (0, 1) or state[2] < 0 or state[4] < 0
+                    or (state[3] is None and state[4] != 0)
+                ):
+                    raise ValueError("Capture recovery corrupt: unsupported rows counter")
+                if state[0] == 1 and state[1] == through:
+                    return
+                if state[0] == 1 or state[1] != through:
+                    self.db.execute(
+                        "UPDATE storage_state SET rows_version=0,rows_scan_through=NULL,"
+                        "rows_scan_count=0,rows_through=? WHERE id=1", (through,),
+                    )
+            # Durable keyset chunks keep a legacy census bounded without making
+            # a large index permanently unable to adopt the maintained counter.
+            # Public rows stay unchanged and unaccepted until the final empty seek.
+            while True:
+                check()
+                with self.db:
+                    self.db.execute("BEGIN IMMEDIATE")
+                    cursor, counted = self.db.execute(
+                        "SELECT rows_scan_through,rows_scan_count FROM storage_state WHERE id=1"
+                    ).fetchone()
+                    rows = self.db.execute(
+                        "SELECT rowid FROM storage_records ORDER BY rowid LIMIT 4096"
+                        if cursor is None else
+                        "SELECT rowid FROM storage_records WHERE rowid>? ORDER BY rowid LIMIT 4096",
+                        () if cursor is None else (cursor,),
+                    ).fetchall()
+                    check()
+                    if not rows:
+                        self.db.execute(
+                            "UPDATE storage_state SET rows=?,rows_through=?,rows_version=1,"
+                            "rows_scan_through=NULL,rows_scan_count=0 WHERE id=1",
+                            (counted, through),
+                        )
+                        return
+                    self.db.execute(
+                        "UPDATE storage_state SET rows_scan_through=?,rows_scan_count=? WHERE id=1",
+                        (rows[-1][0], counted + len(rows)),
+                    )
+
+    def _latest_indexed_capture(self) -> float | None:
+        # Seek over every actual kind, including kinds absent from today's
+        # catalog. The existing (kind, at, segment, record) covering index gives
+        # the latest timestamp within each kind without scanning all its rows.
+        latest: float | None = None
+        with self._startup_summary_budget() as check:
+            kind = self.db.execute(
+                "SELECT kind FROM storage_records ORDER BY kind LIMIT 1"
+            ).fetchone()
+            while kind is not None:
+                check()
+                at = self.db.execute(
+                    "SELECT at FROM storage_records WHERE kind=? ORDER BY at DESC LIMIT 1",
+                    (kind[0],),
+                ).fetchone()[0]
+                latest = at if latest is None else max(latest, at)
+                kind = self.db.execute(
+                    "SELECT kind FROM storage_records WHERE kind>? ORDER BY kind LIMIT 1",
+                    (kind[0],),
+                ).fetchone()
+        return latest
 
     def _segment_marker(self, number: int) -> Path:
         return self._path(number).with_suffix(".owner.json")
@@ -648,12 +776,8 @@ class ResearchStorage:
                         "first_at=coalesce(first_at,?),last_at=? WHERE id=?",
                         (size, packet["at"], packet["at"], number),
                     )
-                self.db.execute(
-                    "UPDATE storage_state SET rows=rows+1,last_capture=? WHERE id=1",
-                    (packet["at"],),
-                )
                 refs.append(f"capture-v2:{number}:{record[0]}:{digest(packet)}")
-                self.db.execute(
+                indexed = self.db.execute(
                     "INSERT INTO storage_records(sha,segment,record,at,kind,available,bytes) "
                     "VALUES(?,?,?,?,?,?,?)",
                     (
@@ -665,6 +789,11 @@ class ResearchStorage:
                         available,
                         size,
                     ),
+                )
+                self.db.execute(
+                    "UPDATE storage_state SET rows=rows+1,last_capture=?,"
+                    "rows_through=max(rows_through,?) WHERE id=1",
+                    (packet["at"], indexed.lastrowid),
                 )
                 self._pin_packet(packet, refs[-1], number, now)
                 if packet.get("kind") == "summary":

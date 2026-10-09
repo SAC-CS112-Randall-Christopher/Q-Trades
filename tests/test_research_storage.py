@@ -522,6 +522,7 @@ def test_interrupted_segment_ack_recovery_and_consistent_rollups(tmp_path):
     value = packet(now, "summary", markets={"BTCUSD": {"mid": 100}}, gaps={})
     refs = store.append([value], now)
     store.db.execute("DELETE FROM storage_records")  # Simulate index acknowledgment loss.
+    store.db.execute("UPDATE storage_state SET rows=0,rows_through=0,last_capture=NULL")
     store.db.execute("UPDATE storage_segments SET rows=0,bytes=0")
     store.db.commit()
     store.close()

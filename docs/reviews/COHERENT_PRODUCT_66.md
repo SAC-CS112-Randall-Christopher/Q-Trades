@@ -4,7 +4,50 @@ Q-Trades is intended to become a supervised crypto spot trading product. Paper i
 the current validation environment. This source increment connects the everyday
 paper workflow and its existing owners; the broader Goal remains open.
 
-## Installed account-scope follow-up — October 8, 2026
+## Bounded storage startup source — October 9, 2026 UTC
+
+PR92 merged at `0b47251a355113b285fd90d24917d2346cb18a59`; its complete tree
+matches approved head `1aad19a20570826b750ad87955d8532f68822485`. All nine
+exact-head checks and the automatic merged-head code-map check passed. Private
+operating rollout/acceptance receipts remain local, outside this source report.
+The new successor is `codex/storage-startup-summary-66` on that merged baseline.
+
+The prior ResearchStorage initializer scanned every retained index record for its
+row count and latest timestamp at every startup. Recovery also committed each
+segment before updating the global count, so interruption could leave that cached
+count behind its index. The source correction uses the existing writer and index:
+
+- A version and actual rowid watermark certify the maintained count. Rowid is not
+  treated as a count. A predecessor's index advancement forces re-adoption.
+- Legacy adoption walks 4,096-row keyset chunks, committing a separate cursor/count
+  under the existing root lock. Each attempt checks a five-second monotonic budget
+  and a five-million SQLite VM-instruction budget. Completed chunks survive refusal
+  or process exit; the public count remains uncertified until the final empty seek
+  atomically publishes count/version/watermark and clears staging. A changed index
+  watermark resets partial census progress.
+- New global inserts update count/watermark in their own index transaction.
+  Reconciliation counts only actual `INSERT OR IGNORE` insertions and publishes
+  each segment's delta before moving on. Physical duplicates do not become extra
+  global records, and a lost index transaction also loses its counter update.
+- Latest capture time uses keyset seeks over every actual kind in the existing
+  `(kind, at, segment, record)` covering index, including unknown and empty kinds.
+  Each kind's latest record can precede later-appended older records. No new index
+  build, catalog filtering, segment-row sum or guessed timestamp is introduced.
+
+The index remains append-only. A watermark does not detect arbitrary deletion or
+replacement of an older record; no production deletion path exists. SQL progress
+and between-query checks bound completed work and refuse incomplete summaries;
+they cannot interrupt an operating-system I/O call. The source does not increase
+supervisor health deadlines or change capture/storage/financial policy.
+
+Objective disposable tests cover cold cached reopening with many records/few kinds,
+query plans and VM work, interrupted legacy census and retry/reset convergence,
+actual process exit between segment commits, hot rollback recovery, SHA duplicates,
+out-of-order timestamps, unavailable partial summaries and lock release. The new
+startup tests are included in the existing Windows native gate. Final local and
+exact-head hosted receipts are reported separately; this source is uninstalled.
+
+## Historical account-scope source follow-up — October 8, 2026
 
 Chris approved PR91's reviewed `46c9231` merge and resulting `9a8a2df` installation
 and restart. The unchanged updater succeeded after one owned supervisor recovery.
@@ -25,9 +68,10 @@ other account's cost controls. Async settings feedback belongs to its original
 request account. The existing compiled native-owner browser check now observes
 both selectors and the unavailable-account control boundary.
 
-This successor remains a source candidate until separately reviewed and approved
-for operating installation. The installed observations retain the discovered
-defect. There was no model dispatch, new research allowance, scanner activation,
+At that source checkpoint, the successor awaited separate review and operating
+installation approval. The earlier installed observations retained the discovered
+defect; current operating receipts stay local. There was no model dispatch, new
+research allowance, scanner activation,
 funding-policy change or live action. Private operating receipts remain outside
 Git; the installed screenshot depicts actual paper operation with research paused.
 

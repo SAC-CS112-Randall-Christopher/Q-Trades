@@ -498,6 +498,7 @@
         "tests/test_research_storage.py",
         "tests/test_research_storage_expansion.py",
         "tests/test_research_storage_file_accounting.py",
+        "tests/test_research_storage_startup.py",
         "tests/test_review_background.py",
         "tests/test_review_repairs.py",
         "tests/test_role_archive_storage_owner.py",
@@ -592,7 +593,7 @@
       ]
     }
   ],
-  "baseline_commit": "9a8a2dfca533a3046ddbc9a651244bdc6d87bfbf",
+  "baseline_commit": "0b47251a355113b285fd90d24917d2346cb18a59",
   "files": [
     {
       "area": "verification-verification",
@@ -612,7 +613,7 @@
       "local_imports": [],
       "path": ".github/workflows/windows-native.yml",
       "routes": [],
-      "sha256": "8c34d33d93f782bb79aaa3646d379f93fbf187726d0f74641c0e73c1ed99090c"
+      "sha256": "f4720a4120a91b338b86e7cfe84179612cdf03cffd2b828c9d0be981a98aaa4e"
     },
     {
       "area": "configuration-and-build-architecture",
@@ -642,7 +643,7 @@
       "local_imports": [],
       "path": "AGENTS.md",
       "routes": [],
-      "sha256": "b26c807de5358f620aa9ede5a3593b7b325d2d929278c433344b56184270442b"
+      "sha256": "21ec5280054ee13e9cfa0c9568a592aba7b470cce0ac0c14d2c843d607a0b35e"
     },
     {
       "area": "map-maintenance-maintenance",
@@ -17715,133 +17716,164 @@
         },
         {
           "kind": "function",
-          "line": 385,
+          "line": 405,
+          "name": "ResearchStorage._startup_summary_budget"
+        },
+        {
+          "kind": "function",
+          "line": 410,
+          "name": "ResearchStorage._startup_summary_budget.expired"
+        },
+        {
+          "kind": "function",
+          "line": 413,
+          "name": "ResearchStorage._startup_summary_budget.check"
+        },
+        {
+          "kind": "function",
+          "line": 417,
+          "name": "ResearchStorage._startup_summary_budget.progress"
+        },
+        {
+          "kind": "function",
+          "line": 435,
+          "name": "ResearchStorage._adopt_rows_counter"
+        },
+        {
+          "kind": "function",
+          "line": 491,
+          "name": "ResearchStorage._latest_indexed_capture"
+        },
+        {
+          "kind": "function",
+          "line": 513,
           "name": "ResearchStorage._segment_marker"
         },
         {
           "kind": "function",
-          "line": 388,
+          "line": 516,
           "name": "ResearchStorage._segment_identity"
         },
         {
           "kind": "function",
-          "line": 399,
+          "line": 527,
           "name": "ResearchStorage._declare_segment"
         },
         {
           "kind": "function",
-          "line": 414,
+          "line": 542,
           "name": "ResearchStorage._recovery_source"
         },
         {
           "kind": "function",
-          "line": 462,
+          "line": 590,
           "name": "ResearchStorage._check_volume"
         },
         {
           "kind": "function",
-          "line": 474,
+          "line": 602,
           "name": "ResearchStorage.admission"
         },
         {
           "kind": "function",
-          "line": 492,
+          "line": 620,
           "name": "ResearchStorage._path"
         },
         {
           "kind": "function",
-          "line": 495,
+          "line": 623,
           "name": "ResearchStorage._pin_packet"
         },
         {
           "kind": "function",
-          "line": 508,
+          "line": 636,
           "name": "ResearchStorage.continue_legacy"
         },
         {
           "kind": "function",
-          "line": 512,
+          "line": 640,
           "name": "ResearchStorage._continue_legacy"
         },
         {
           "kind": "function",
-          "line": 525,
+          "line": 653,
           "name": "ResearchStorage.continue_compact"
         },
         {
           "kind": "function",
-          "line": 529,
+          "line": 657,
           "name": "ResearchStorage._continue_compact"
         },
         {
           "kind": "function",
-          "line": 549,
+          "line": 677,
           "name": "ResearchStorage.append"
         },
         {
           "kind": "function",
-          "line": 555,
+          "line": 683,
           "name": "ResearchStorage._append"
         },
         {
           "kind": "function",
-          "line": 709,
+          "line": 838,
           "name": "ResearchStorage.protect"
         },
         {
           "kind": "function",
-          "line": 713,
+          "line": 842,
           "name": "ResearchStorage._protect"
         },
         {
           "kind": "function",
-          "line": 730,
+          "line": 859,
           "name": "ResearchStorage.parse_reference"
         },
         {
           "kind": "function",
-          "line": 742,
+          "line": 871,
           "name": "ResearchStorage.reopen"
         },
         {
           "kind": "function",
-          "line": 774,
+          "line": 903,
           "name": "ResearchStorage.file_sha"
         },
         {
           "kind": "function",
-          "line": 778,
+          "line": 907,
           "name": "ResearchStorage.housekeeping"
         },
         {
           "kind": "function",
-          "line": 782,
+          "line": 911,
           "name": "ResearchStorage._housekeeping"
         },
         {
           "kind": "function",
-          "line": 942,
+          "line": 1071,
           "name": "ResearchStorage.snapshot"
         },
         {
           "kind": "function",
-          "line": 989,
+          "line": 1118,
           "name": "ResearchStorage.close"
         },
         {
           "kind": "function",
-          "line": 993,
+          "line": 1122,
           "name": "storage_snapshot"
         },
         {
           "kind": "function",
-          "line": 1032,
+          "line": 1161,
           "name": "reopen_evidence"
         }
       ],
       "guide": "evidence-storage-training.md",
       "imports": [
         "collections.abc",
+        "collections.abc.Callable",
         "collections.abc.Iterator",
         "contextlib",
         "contextlib.ExitStack",
@@ -17883,7 +17915,7 @@
       ],
       "path": "src/trading/research_storage.py",
       "routes": [],
-      "sha256": "996d6808ec40fcdca507d4dd0d21c799ad2f3b9f70667abea08935a70859a0c9"
+      "sha256": "b5ad8bf84d2758f6c667318049f686be480ffbab01a2c8c573692bf1f6d61b51"
     },
     {
       "area": "research-evidence-storage-training",
@@ -23320,47 +23352,47 @@
         },
         {
           "kind": "function",
-          "line": 80,
+          "line": 82,
           "name": "test_hot_owned_orphan_and_process_interruption_during_reconciliation"
         },
         {
           "kind": "function",
-          "line": 110,
+          "line": 113,
           "name": "test_competing_owner_and_sqlite_writer_preserve_files_and_allow_retry"
         },
         {
           "kind": "function",
-          "line": 126,
+          "line": 129,
           "name": "test_unverified_or_broken_recovery_is_explicit_and_never_creates_segment"
         },
         {
           "kind": "function",
-          "line": 154,
+          "line": 157,
           "name": "test_pre_intent_indexed_segment_can_recover_but_owner_reader_remains_restricted"
         },
         {
           "kind": "function",
-          "line": 163,
+          "line": 166,
           "name": "test_many_owned_orphans_make_bounded_durable_progress"
         },
         {
           "kind": "function",
-          "line": 179,
+          "line": 185,
           "name": "test_normal_recorder_retries_busy_startup_recovers_and_records_without_manual_repair"
         },
         {
           "kind": "function",
-          "line": 188,
+          "line": 194,
           "name": "test_normal_recorder_retries_busy_startup_recovers_and_records_without_manual_repair.observe"
         },
         {
           "kind": "function",
-          "line": 220,
+          "line": 226,
           "name": "test_noncanonical_numeric_segment_name_is_foreign"
         },
         {
           "kind": "function",
-          "line": 230,
+          "line": 236,
           "name": "test_lost_index_reconciliation_restores_original_pending_outcome_protection"
         }
       ],
@@ -23393,7 +23425,7 @@
       ],
       "path": "tests/test_capture_recovery.py",
       "routes": [],
-      "sha256": "b72dfebfe3825c2610f134bcdbd65b393e0055ab894d547a1302074688cd8180"
+      "sha256": "694e09e12d4ebad146ad3d8b73e0f638cc28fe1349e4b8dbdf037d588f43c07d"
     },
     {
       "area": "verification-verification",
@@ -36390,17 +36422,17 @@
         },
         {
           "kind": "function",
-          "line": 535,
+          "line": 536,
           "name": "test_coherent_longer_horizons_causal_features"
         },
         {
           "kind": "function",
-          "line": 571,
+          "line": 572,
           "name": "test_long_trial_matures_only_after_its_declared_week"
         },
         {
           "kind": "function",
-          "line": 607,
+          "line": 608,
           "name": "test_long_only_policy_does_not_propose_an_undeclared_short_seed"
         }
       ],
@@ -36472,7 +36504,7 @@
       ],
       "path": "tests/test_research_storage.py",
       "routes": [],
-      "sha256": "bb7e9e287dfd1678e64d9e4339c894ace0cf125dd9c9dd5d3f803ef94c62dcc1"
+      "sha256": "89b03b1ad573deca5a37f1717032ee289383eb8bf23869b285ce0e6d3a3b8de2"
     },
     {
       "area": "verification-verification",
@@ -36704,6 +36736,128 @@
       "path": "tests/test_research_storage_file_accounting.py",
       "routes": [],
       "sha256": "b8a84f7800029dd0a6a7e54d7929774ddb6c77166fa0263f57c2c1205bcef7a3"
+    },
+    {
+      "area": "verification-verification",
+      "declarations": [
+        {
+          "kind": "function",
+          "line": 19,
+          "name": "populated_index"
+        },
+        {
+          "kind": "function",
+          "line": 46,
+          "name": "index_path"
+        },
+        {
+          "kind": "function",
+          "line": 50,
+          "name": "records_fingerprint"
+        },
+        {
+          "kind": "class",
+          "line": 57,
+          "name": "MeteredConnection"
+        },
+        {
+          "kind": "function",
+          "line": 60,
+          "name": "MeteredConnection.__init__"
+        },
+        {
+          "kind": "function",
+          "line": 65,
+          "name": "MeteredConnection.set_progress_handler"
+        },
+        {
+          "kind": "function",
+          "line": 68,
+          "name": "MeteredConnection.set_progress_handler.meter_only"
+        },
+        {
+          "kind": "function",
+          "line": 76,
+          "name": "MeteredConnection.set_progress_handler.meter"
+        },
+        {
+          "kind": "function",
+          "line": 89,
+          "name": "test_certified_cold_start_has_bounded_sql_and_exact_all_kind_summary"
+        },
+        {
+          "kind": "function",
+          "line": 113,
+          "name": "test_legacy_stale_count_or_old_owner_advancement_is_readopted"
+        },
+        {
+          "kind": "function",
+          "line": 142,
+          "name": "test_seek_plans_and_legacy_census_are_interruptible"
+        },
+        {
+          "kind": "function",
+          "line": 154,
+          "name": "test_seek_plans_and_legacy_census_are_interruptible.meter"
+        },
+        {
+          "kind": "function",
+          "line": 175,
+          "name": "test_summary_deadline_refuses_without_certifying_partial_work_and_retries"
+        },
+        {
+          "kind": "function",
+          "line": 194,
+          "name": "test_summary_deadline_refuses_without_certifying_partial_work_and_retries.late"
+        },
+        {
+          "kind": "function",
+          "line": 223,
+          "name": "test_duplicate_packet_in_verified_orphan_is_not_counted_twice"
+        },
+        {
+          "kind": "function",
+          "line": 243,
+          "name": "test_legacy_adoption_process_exit_resumes_or_resets_durable_chunks"
+        },
+        {
+          "kind": "function",
+          "line": 265,
+          "name": "test_legacy_adoption_process_exit_resumes_or_resets_durable_chunks.interrupt_after_one_chunk"
+        },
+        {
+          "kind": "function",
+          "line": 310,
+          "name": "test_process_exit_between_recovery_commits_keeps_counter_and_original_refs"
+        }
+      ],
+      "guide": "verification.md",
+      "imports": [
+        "contextlib",
+        "contextlib.closing",
+        "hashlib",
+        "os",
+        "pathlib",
+        "pathlib.Path",
+        "pytest",
+        "shutil",
+        "sqlite3",
+        "subprocess",
+        "sys",
+        "test_capture_recovery",
+        "test_capture_recovery.forget_index",
+        "test_research_storage",
+        "test_research_storage.packet",
+        "test_research_storage.plan_at",
+        "trading",
+        "trading.research_storage"
+      ],
+      "local_imports": [
+        "src/trading/research_storage.py"
+      ],
+      "path": "tests/test_research_storage_startup.py",
+      "routes": [],
+      "sha256": "fbad2e17b9ba4fb8e9db4f6d0733986b8ebea80f75afb0baea1a212e0a6d4fdb"
     },
     {
       "area": "verification-verification",
@@ -40399,10 +40553,10 @@
     }
   ],
   "guides": {
-    "docs/codebase-map/README.md": "e76ecada416a622fbe61b318ee26c7c4675f24f29552c335885e0974fbc93b76",
-    "docs/codebase-map/architecture.md": "5515e049cbe21c4072bb9c58498963a0d4be7856afb1c3ba353738bad8592ead",
+    "docs/codebase-map/README.md": "134ca900c63d77810be3d32bd090e0e4d4b3469290e74f1da16515f5d6f83de1",
+    "docs/codebase-map/architecture.md": "b2de4245a4c87368efb93e204801cdf36a971ed980c4fd1f86e7a6cbb9194415",
     "docs/codebase-map/dashboard-api.md": "f4fc8d4f882d70bfb2488b7a13c0895442b16e2d88f8803739259dab044fc787",
-    "docs/codebase-map/evidence-storage-training.md": "e901b9edbc492c1d2f495604ecf5fe2edf1e0f1216655c4ec585eaa4258bd124",
+    "docs/codebase-map/evidence-storage-training.md": "9147ba37d044ca248faa87611613ca09473e0b42d592ecfaf5bd483147de935b",
     "docs/codebase-map/maintenance.md": "546da53010b6844818f1a957bfae60d7bf607c0e2eb2ab52b8b2004b9525efac",
     "docs/codebase-map/market-data.md": "57cd85fda9db76012274bcffd21ee45c7e737a8ff2ff406d7775554208a35069",
     "docs/codebase-map/model-admission.md": "2a448479693509c564f96d0ac8f05e13d10c5459a012fb6ed9c1a379cd02de2a",
@@ -40413,7 +40567,7 @@
     "docs/codebase-map/scanner-charts.md": "5cacc517dbef07d4c6764dad3661e046598136706ede70b895802a95b397c86f",
     "docs/codebase-map/secondary-research.md": "2d1e61f2f8e6c3ae2e8aa3da1255ec2834d05c1920f6c30315a85634aee0448a",
     "docs/codebase-map/strategy-experiments.md": "b70fc8faab1486f53bd5c73a41b7816a0401a26e23b6106aa4ddde3cad84fdfb",
-    "docs/codebase-map/verification.md": "e707fcccacfb511ade3ae247c17c3bfd612942fbc5ea5012006d9d1d669d416c"
+    "docs/codebase-map/verification.md": "49c87cfc7ee2b9d0cb2e1fdf7c9c29ed2a7885cd6ee5fee5ab8df16692d9a2f8"
   },
   "references": [
     {
@@ -40925,7 +41079,7 @@
     {
       "description": "Pure existing archive verification without new writer",
       "id": "evidence-pure-reopen",
-      "line": 1032,
+      "line": 1161,
       "path": "src/trading/research_storage.py",
       "symbol": "reopen_evidence"
     },
@@ -40959,23 +41113,44 @@
     {
       "description": "Tier scratch and free reserve write admission",
       "id": "evidence-storage-admission",
-      "line": 474,
+      "line": 602,
       "path": "src/trading/research_storage.py",
       "symbol": "ResearchStorage.admission"
     },
     {
       "description": "Append protected immutable packets",
       "id": "evidence-storage-append",
-      "line": 549,
+      "line": 677,
       "path": "src/trading/research_storage.py",
       "symbol": "ResearchStorage.append"
     },
     {
+      "description": "Durable legacy census chunks and exact count certificate",
+      "id": "evidence-storage-count-adoption",
+      "line": 435,
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage._adopt_rows_counter"
+    },
+    {
       "description": "Protected segment maturity and bounded reclamation",
       "id": "evidence-storage-housekeeping",
-      "line": 778,
+      "line": 907,
       "path": "src/trading/research_storage.py",
       "symbol": "ResearchStorage.housekeeping"
+    },
+    {
+      "description": "Exclusive per-segment recovery and bounded startup summary",
+      "id": "evidence-storage-initialize",
+      "line": 206,
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage._initialize"
+    },
+    {
+      "description": "Bounded latest timestamp seeks across every actual indexed kind",
+      "id": "evidence-storage-latest-capture",
+      "line": 491,
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage._latest_indexed_capture"
     },
     {
       "description": "Normal storage status plan and evidence consumer",
@@ -40993,7 +41168,7 @@
     {
       "description": "Verify full original packet and reference",
       "id": "evidence-storage-reopen",
-      "line": 742,
+      "line": 871,
       "path": "src/trading/research_storage.py",
       "symbol": "ResearchStorage.reopen"
     },
@@ -41002,6 +41177,12 @@
       "id": "evidence-tests-accounting",
       "line": 1,
       "path": "tests/test_research_storage_file_accounting.py"
+    },
+    {
+      "description": "Actual hot rollback, orphan recovery and normal recorder retry",
+      "id": "evidence-tests-capture-recovery",
+      "line": 1,
+      "path": "tests/test_capture_recovery.py"
     },
     {
       "description": "Condition flow provenance and comparison cases",
@@ -41044,6 +41225,12 @@
       "id": "evidence-tests-storage",
       "line": 1,
       "path": "tests/test_research_storage.py"
+    },
+    {
+      "description": "Cold-start SQL work and durable census/segment crash recovery",
+      "id": "evidence-tests-storage-startup",
+      "line": 1,
+      "path": "tests/test_research_storage_startup.py"
     },
     {
       "description": "Source review handoff claim retry and recovery cases",
@@ -43755,6 +43942,25 @@
         "old revision unavailable"
       ],
       "title": "Trace current knowledge permission and original disclosure"
+    },
+    {
+      "guide": "evidence-storage-training.md",
+      "id": "evidence-startup-summary",
+      "references": [
+        "evidence-storage-initialize",
+        "evidence-storage-count-adoption",
+        "evidence-storage-latest-capture",
+        "evidence-storage-append",
+        "evidence-tests-storage-startup",
+        "evidence-tests-capture-recovery"
+      ],
+      "section": "startup-summary-and-legacy-adoption",
+      "symptoms": [
+        "application startup waits in retained-index summary",
+        "startup summary budget exhausted",
+        "legacy count behind recovered index"
+      ],
+      "title": "Diagnose bounded startup summaries and legacy counter adoption"
     },
     {
       "guide": "evidence-storage-training.md",

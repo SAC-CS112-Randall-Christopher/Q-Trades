@@ -182,6 +182,34 @@
       "description": "Exclusive volume-bound segmented research storage"
     },
     {
+      "id": "evidence-storage-initialize",
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage._initialize",
+      "description": "Exclusive per-segment recovery and bounded startup summary"
+    },
+    {
+      "id": "evidence-storage-count-adoption",
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage._adopt_rows_counter",
+      "description": "Durable legacy census chunks and exact count certificate"
+    },
+    {
+      "id": "evidence-storage-latest-capture",
+      "path": "src/trading/research_storage.py",
+      "symbol": "ResearchStorage._latest_indexed_capture",
+      "description": "Bounded latest timestamp seeks across every actual indexed kind"
+    },
+    {
+      "id": "evidence-tests-storage-startup",
+      "path": "tests/test_research_storage_startup.py",
+      "description": "Cold-start SQL work and durable census/segment crash recovery"
+    },
+    {
+      "id": "evidence-tests-capture-recovery",
+      "path": "tests/test_capture_recovery.py",
+      "description": "Actual hot rollback, orphan recovery and normal recorder retry"
+    },
+    {
       "id": "evidence-storage-admission",
       "path": "src/trading/research_storage.py",
       "symbol": "ResearchStorage.admission",
@@ -1049,6 +1077,25 @@
         "absent selection authority",
         "finite dispatch refused",
         "profile fingerprint changed"
+      ]
+    },
+    {
+      "id": "evidence-startup-summary",
+      "title": "Diagnose bounded startup summaries and legacy counter adoption",
+      "guide": "evidence-storage-training.md",
+      "section": "startup-summary-and-legacy-adoption",
+      "references": [
+        "evidence-storage-initialize",
+        "evidence-storage-count-adoption",
+        "evidence-storage-latest-capture",
+        "evidence-storage-append",
+        "evidence-tests-storage-startup",
+        "evidence-tests-capture-recovery"
+      ],
+      "symptoms": [
+        "application startup waits in retained-index summary",
+        "startup summary budget exhausted",
+        "legacy count behind recovered index"
       ]
     },
     {

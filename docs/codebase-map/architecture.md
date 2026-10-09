@@ -41,6 +41,10 @@ described in [market data](market-data.md).
 Optional tool-journal, Lab, scanner, knowledge/reviewer or replay storage failures
 are recorded on their respective status owners. Several permit paper management
 to continue; a failed optional constructor is not a successful empty result.
+The knowledge branch constructs ResearchStorage during lifespan startup, before
+the application yields. Its [startup summary](evidence-storage-training.md#startup-summary-and-legacy-adoption)
+must use bounded exact work and durable legacy-adoption progress; a global scan
+can delay the entire service despite belonging to an optional research branch.
 The role transport is selected from existing local configuration. The roles'
 activation callable reads its `enabled` policy; creating a RoleWorker task does
 not grant inference or financial authority.
