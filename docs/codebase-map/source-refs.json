@@ -3393,7 +3393,7 @@
       ],
       "path": "apps/web/src/WorkspaceViews.tsx",
       "routes": [],
-      "sha256": "0ac131a16e938a9858f5da84b087a54236e8a8099ff28fe85b56aa3ed9759cab"
+      "sha256": "9b0293874bc64661feee51719502311b8c23451947961688aa3f74167e5541f9"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -21297,7 +21297,7 @@
       "local_imports": [],
       "path": "tests/browser/research_product.cjs",
       "routes": [],
-      "sha256": "a8a1b6402c9b57417f798423fed70c165885f2a397701a0f82cefee05aee9dd8"
+      "sha256": "725011536f9b361938ed3d2ec73b429bdf74e67704155f252f7557dbb27ea991"
     },
     {
       "area": "verification-verification",
@@ -40401,7 +40401,7 @@
   "guides": {
     "docs/codebase-map/README.md": "e76ecada416a622fbe61b318ee26c7c4675f24f29552c335885e0974fbc93b76",
     "docs/codebase-map/architecture.md": "5515e049cbe21c4072bb9c58498963a0d4be7856afb1c3ba353738bad8592ead",
-    "docs/codebase-map/dashboard-api.md": "9a7e25373f25b6e19e478c6f108090e8777515aee20d911b276756b3f6fc9575",
+    "docs/codebase-map/dashboard-api.md": "f4fc8d4f882d70bfb2488b7a13c0895442b16e2d88f8803739259dab044fc787",
     "docs/codebase-map/evidence-storage-training.md": "e901b9edbc492c1d2f495604ecf5fe2edf1e0f1216655c4ec585eaa4258bd124",
     "docs/codebase-map/maintenance.md": "546da53010b6844818f1a957bfae60d7bf607c0e2eb2ab52b8b2004b9525efac",
     "docs/codebase-map/market-data.md": "57cd85fda9db76012274bcffd21ee45c7e737a8ff2ff406d7775554208a35069",

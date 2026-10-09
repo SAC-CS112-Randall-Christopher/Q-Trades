@@ -151,12 +151,22 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
     await page.goto(`${origin}/#accounts?account=missing-original`);
     await page.getByText(/This original account is unavailable/).waitFor();
     for (const missing of ["missing-original", "constructor", "__proto__", "toString"]) {
-      await page.goto(`${origin}/#accounts?view=performance&account=${missing}`);
+      await page.goto(`${origin}/#accounts?account=${missing}`);
+      await page.getByText(/This original account is unavailable/).waitFor();
+      await page.getByRole("link", { name: "Performance & costs", exact: true }).click();
       await page.getByText(`Economics for ${missing} are unavailable`, { exact: false }).waitFor();
       assert.equal(await economicsAccount.inputValue(), missing);
       assert.equal(await page.getByLabel("Performance account", { exact: true }).inputValue(), missing);
       assert.equal(await economics.getByRole("button", { name: "Save future cost assumptions", exact: true }).count(), 0);
       assert.equal(await economics.locator("dl.economics-values").count(), 0);
+      await page.getByRole("link", { name: "Positions & orders", exact: true }).click();
+      await page.getByRole("button", { name: "Positions & pending", exact: true }).click();
+      assert.equal(await page.getByRole("combobox", { name: "Account", exact: true }).inputValue(), missing);
+      await page.getByText(/Current holdings for this exact account are unavailable/).waitFor();
+      await page.getByRole("button", { name: "Journal", exact: true }).click();
+      assert.equal(await page.getByRole("combobox", { name: "Journal account", exact: true }).inputValue(), missing);
+      await page.getByText("Account history and balances changed", { exact: true }).click();
+      await page.getByText("Account history could not load. Retry when connected.", { exact: true }).waitFor();
     }
     groups.push("selected active/retired accounts, shared chart/economics scope in both directions, performance/trade/positions/journal account context, view-preserving select, foreign trial cleared, reload/Back and explicit unknown exact identities without another account's settings");
     phase = "read outage, narrow layout and recovery";

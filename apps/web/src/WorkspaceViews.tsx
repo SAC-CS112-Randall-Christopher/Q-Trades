@@ -1350,8 +1350,8 @@ export function AccountsView({
           </section>
         </div>
       </div>
-      {selected && !paper.accounts[selected] && <RetainedAccount key={selected} name={selected} />}
-      {selected && paper.accounts[selected] && (
+      {selected && !Object.hasOwn(paper.accounts, selected) && <RetainedAccount key={selected} name={selected} />}
+      {selected && Object.hasOwn(paper.accounts, selected) && (
         <AccountInspector
           key={selected}
           name={selected}
@@ -1409,7 +1409,7 @@ export function OrdersView({
               onChange={(e) => setScope(e.target.value === "all" ? "" : e.target.value)}
             >
               <option value="all">All accounts</option>
-              {scope && !paper.accounts[scope] && <option value={scope}>{scope} · retained or unavailable</option>}
+              {scope && !Object.hasOwn(paper.accounts, scope) && <option value={scope}>{scope} · retained or unavailable</option>}
               {Object.entries(paper.accounts).map(([name, a]) => (
                 <option key={name} value={name}>
                   {a.label ?? name}
@@ -1464,7 +1464,7 @@ export function OrdersView({
             </tbody>
           </table>
         </div>
-        {scope && !paper.accounts[scope] ? <p className="empty-state">Current holdings for this exact account are unavailable. Inspect its retained account history for original records.</p> : !positions.length && !pending.length && (
+        {scope && !Object.hasOwn(paper.accounts, scope) ? <p className="empty-state">Current holdings for this exact account are unavailable. Inspect its retained account history for original records.</p> : !positions.length && !pending.length && (
           <p className="empty-state">
             No open position or pending order in the selected accounts. Signals
             and risk checks determine activity.
@@ -1484,7 +1484,7 @@ export function OrdersView({
               value={journal}
               onChange={(e) => setScope(e.target.value)}
             >
-              {!paper.accounts[journal] && <option value={journal}>{journal} · retained or unavailable</option>}
+              {!Object.hasOwn(paper.accounts, journal) && <option value={journal}>{journal} · retained or unavailable</option>}
               {Object.entries(paper.accounts).map(([name, a]) => (
                 <option key={name} value={name}>
                   {a.label ?? name}

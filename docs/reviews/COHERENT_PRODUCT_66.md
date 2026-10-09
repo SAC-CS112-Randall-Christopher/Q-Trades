@@ -37,7 +37,10 @@ Both performance consumers now check own properties. Review accepted the final
 source; the final compiled native-owner browser run passed all six groups,
 including both selector directions, Back/reload, `missing-original`, `constructor`,
 `__proto__` and `toString`, and no selected economics values or cost controls for
-those missing identities. Polling, native financial/research ownership and the
+those missing identities. The same own-record boundary protects account
+inspection, holdings and the journal selector. Each negative case traverses
+Accounts, Performance, Positions and Journal, retains its exact identity, and
+opens the ordinary history reader's original refusal. Polling, native financial/research ownership and the
 existing qualification/recovery paths remain enabled in this disposable check.
 Original journal prefixes and accounting remained balanced, no model/tokenizer
 calls or external requests occurred, and the exact owned browser/server/PG

@@ -15,6 +15,8 @@ share `useAccountScope`, so either
 selector changes the same URL account and Back/reload restores both. Economics
 keeps a missing explicit identity visible, with no other account's cost controls.
 Async settings feedback belongs to the account whose request produced it.
+Account inspection and holdings/journal selectors also require own account
+records; inherited JavaScript object names reach the original unavailable read.
 Performance, economics, trade, positions and journal consumers do not silently use primary
 when an explicit account is missing. Exact retained accounts and trials have
 separate reads, including when the broad paper snapshot is unavailable.
