@@ -21626,7 +21626,7 @@
       "local_imports": [],
       "path": "tests/browser/role_pattern_evidence.cjs",
       "routes": [],
-      "sha256": "27ae8f5d62abdbc5fb65eb1bfb0b8d2bb2599ca31b78206ff8fa50b46490175d"
+      "sha256": "b8cbabd3da39a6f5eebe5df4202b27deda9b43130051a55407fcfbe81777f5a2"
     },
     {
       "area": "verification-verification",

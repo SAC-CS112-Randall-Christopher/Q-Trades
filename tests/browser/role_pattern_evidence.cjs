@@ -61,6 +61,31 @@ const bounded = async (promise, milliseconds, label) => {
       const response = await page.request.get(`${origin}/__qa/probe`, { headers, timeout: remaining(6000) });
       assert.equal(response.status(), 200); return within(response.json(), 5000, "Probe body exceeded workflow bound");
     };
+    // Bind a new UI request and its completed body. A response's headers can
+    // arrive for an old document or for a read cancelled during hash restoration.
+    const completedGet = apiPath => {
+      const issued = new Set();
+      const proof = { path: apiPath, issued: 0, cancelled: [] };
+      (receipt.navigation_reads ??= []).push(proof);
+      const observe = request => {
+        const url = new URL(request.url());
+        if (url.origin === origin && url.pathname === apiPath && request.method() === "GET") {
+          issued.add(request); proof.issued++;
+        }
+      };
+      const failed = request => { if (issued.has(request)) proof.cancelled.push(request.failure()); };
+      page.on("request", observe); page.on("requestfailed", failed);
+      const read = page.waitForEvent("requestfinished", {
+        predicate: request => issued.has(request), timeout: remaining(10000),
+      }).then(async request => {
+        const response = await within(request.response(), 5000, "Original UI response exceeded workflow bound");
+        assert(response, "The completed original UI request has no response");
+        proof.completed_url = request.url(); proof.status = response.status();
+        assert.equal(response.status(), 200);
+        return within(response.json(), 5000, "Completed original UI body exceeded workflow bound");
+      }).finally(() => { page.off("request", observe); page.off("requestfailed", failed); });
+      void read.catch(() => {}); return read;
+    };
     const original = await probe(); save("initial-probe.json", original);
     assert.equal(original.current_contract, "reviewed-rule-role-v8");
     const pattern = original.task.context.pattern_comparison;
@@ -111,12 +136,9 @@ const bounded = async (promise, milliseconds, label) => {
     const preparationLink = evidence().getByRole("link", { name: "Reopen original preparation", exact: true });
     const preparationHref = await preparationLink.getAttribute("href");
     assert.equal(new URLSearchParams(preparationHref.split("?")[1]).get("pattern_comparison_request"), pattern.preparation_request_id);
-    const expectedGet = page.waitForResponse(response => new URL(response.url()).pathname === `/api/research/pattern-scanner/comparisons/${pattern.preparation_request_id}` && response.request().method() === "GET");
-    void expectedGet.catch(() => {});
+    const expectedGet = completedGet(`/api/research/pattern-scanner/comparisons/${pattern.preparation_request_id}`);
     await preparationLink.click();
-    const preparationResponse = await expectedGet;
-    assert.equal(preparationResponse.status(), 200);
-    const preparation = await within(preparationResponse.json(), 5000, "Original preparation body exceeded workflow bound");
+    const preparation = await expectedGet;
     assert.equal(preparation.request_id, pattern.preparation_request_id);
     assert.equal(preparation.finding_sha256, pattern.finding_sha256);
     assert.deepEqual(preparation, original.original_preparation);
@@ -139,11 +161,9 @@ const bounded = async (promise, milliseconds, label) => {
     assert.equal(bookmark.get("daily_shortlist"), pattern.selection.daily_id);
     assert.equal(bookmark.get("scanner_chart_seq"), String(pattern.selection.event_seq));
     assert.equal(bookmark.get("scanner_chart_progress_sha256"), pattern.coverage.find(row => row.timeframe === "5m").progress_sha256);
-    const dailyGet = page.waitForResponse(response => new URL(response.url()).pathname === `/api/research/pattern-scanner/daily/shortlists/${pattern.selection.daily_id}` && response.request().method() === "GET");
-    void dailyGet.catch(() => {});
+    const dailyGet = completedGet(`/api/research/pattern-scanner/daily/shortlists/${pattern.selection.daily_id}`);
     await findingLink.click();
-    const dailyResponse = await dailyGet; assert.equal(dailyResponse.status(), 200);
-    const daily = await within(dailyResponse.json(), 5000, "Original daily body exceeded workflow bound"); assert.equal(daily.id, pattern.selection.daily_id);
+    const daily = await dailyGet; assert.equal(daily.id, pattern.selection.daily_id);
     await page.locator(`[data-daily-id="${pattern.selection.daily_id}"]`).waitFor();
     save("original-daily-reopen.json", daily);
     groups.push({ name: phase, exact_saved_daily: true, original_progress_sha256: bookmark.get("scanner_chart_progress_sha256"), historical_chart_success_claimed: false });
