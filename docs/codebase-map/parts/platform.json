@@ -34,6 +34,7 @@
     {"id":"product-browser-proof","path":"tests/browser/research_product.cjs","description":"Compiled normal product, unsuppressed polling and native disposable-owner workflow"},
     {"id":"product-browser-server","path":"tests/browser/research_product_server.py","description":"Finite isolated PG/scanner/role driver with synthetic inputs, clock and software model callbacks","symbol":"main"},
     {"id":"product-navigation","path":"apps/web/src/productNavigation.ts","description":"Exact account/task/trial navigation and account selection with Back and current-view preservation"},
+    {"id":"product-account-economics","path":"apps/web/src/PaperEconomicsPanel.tsx","literal":"export function PaperEconomicsPanel","description":"URL-scoped economics and cost controls; unavailable exact accounts and account-bound settings feedback"},
     {"id":"product-model-scope","path":"src/trading/peft_role_model.py","description":"Existing verified profile to disabled recurring scope, create-only policy and exact acknowledgment","symbol":"configure_paper_scope"},
     {"id":"paper-rule-source","path":"src/trading/paper_learning.py","description":"Original immutable reservation, unique mature score, exact frozen rule and economic provenance","symbol":"rule_source"},
     {"id":"paper-rule-admission","path":"src/trading/paper_learning.py","description":"Separate prospective rule/control funding through existing writer and unchanged capacity/risk gates","symbol":"admit_rule"},

@@ -10,7 +10,12 @@ the existing worker's investigations. Numerical tools, knowledge and Training
 Lab are contextual details. `inContext` preserves explicit account, market,
 task and trial between destinations. Explicit account selection preserves the
 current view, clears an unrelated trial, and restores account scope on Back.
-Performance, trade, positions and journal consumers do not silently use primary
+Performance chart and [whole-account economics](source-index.md#product-account-economics)
+share `useAccountScope`, so either
+selector changes the same URL account and Back/reload restores both. Economics
+keeps a missing explicit identity visible, with no other account's cost controls.
+Async settings feedback belongs to the account whose request produced it.
+Performance, economics, trade, positions and journal consumers do not silently use primary
 when an explicit account is missing. Exact retained accounts and trials have
 separate reads, including when the broad paper snapshot is unavailable.
 

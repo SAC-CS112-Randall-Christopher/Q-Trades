@@ -248,7 +248,7 @@ export function PerformanceChart({
   const [range, setRange] = useState(0);
   const [hovered, setHovered] = useState<number | null>(null);
   const gradient = useId().replaceAll(":", "");
-  const selected = paper?.accounts[account];
+  const selected = paper && Object.hasOwn(paper.accounts, account) ? paper.accounts[account] : undefined;
   const points = useMemo(() => {
     const windows = [...(paper?.economics?.completed ?? [])];
     if (!unavailable && paper?.economics?.current)
@@ -262,7 +262,7 @@ export function PerformanceChart({
     }[] = [];
     let lastEnd = -1;
     for (const w of windows) {
-      const s = w.scores[account];
+      const s = Object.hasOwn(w.scores, account) ? w.scores[account] : undefined;
       if (
         !s ||
         s.end_equity == null ||
@@ -330,8 +330,8 @@ export function PerformanceChart({
               setHovered(null);
             }}
           >
-            {account && !paper?.accounts[account] && <option value={account}>{account} · retained or unavailable</option>}
-            {Object.entries(paper?.accounts ?? { primary: null }).map(
+            {!selected && <option value={account}>{account || "Unspecified account"} · retained or unavailable</option>}
+            {Object.entries(paper?.accounts ?? {}).map(
               ([name, a]) => (
                 <option key={name} value={name}>
                   {a?.label ?? name}

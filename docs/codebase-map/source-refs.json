@@ -592,7 +592,7 @@
       ]
     }
   ],
-  "baseline_commit": "d8bf23472f14c8f0ce90286744d0226a2202df68",
+  "baseline_commit": "9a8a2dfca533a3046ddbc9a651244bdc6d87bfbf",
   "files": [
     {
       "area": "verification-verification",
@@ -1936,32 +1936,32 @@
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 3,
+          "line": 4,
           "name": "Mark"
         },
         {
           "kind": "lexical declaration",
-          "line": 10,
+          "line": 11,
           "name": "Score"
         },
         {
           "kind": "lexical declaration",
-          "line": 20,
+          "line": 21,
           "name": "AccountWindow"
         },
         {
           "kind": "lexical declaration",
-          "line": 21,
+          "line": 22,
           "name": "EconomicsSnapshot"
         },
         {
           "kind": "lexical declaration",
-          "line": 26,
+          "line": 27,
           "name": "ExecutionProfile"
         },
         {
           "kind": "lexical declaration",
-          "line": 39,
+          "line": 40,
           "name": "PaperEconomicsPanel"
         },
         {
@@ -1972,12 +1972,15 @@
       ],
       "guide": "strategy-experiments.md",
       "imports": [
+        "./productNavigation",
         "react"
       ],
-      "local_imports": [],
+      "local_imports": [
+        "apps/web/src/productNavigation.ts"
+      ],
       "path": "apps/web/src/PaperEconomicsPanel.tsx",
       "routes": [],
-      "sha256": "987fa100ff88afe21df545524c0fd925193e284633be4dce5e2d355de8267a7b"
+      "sha256": "eafef80bee31bc1b0e8fc762e14647ca3ae7037029e64316b8954d063ca8a7b1"
     },
     {
       "area": "dashboard-paper-accounting",
@@ -3390,7 +3393,7 @@
       ],
       "path": "apps/web/src/WorkspaceViews.tsx",
       "routes": [],
-      "sha256": "6c7ca0d51aae8bd32fe428356b2e758eab1b13d4ff5a696238b1bac2dfeb2ca2"
+      "sha256": "0ac131a16e938a9858f5da84b087a54236e8a8099ff28fe85b56aa3ed9759cab"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -21294,7 +21297,7 @@
       "local_imports": [],
       "path": "tests/browser/research_product.cjs",
       "routes": [],
-      "sha256": "56a6a3cef56e7263c39fea7b33a4f11adcdf4161ab8a6b844413d79c38410f37"
+      "sha256": "a8a1b6402c9b57417f798423fed70c165885f2a397701a0f82cefee05aee9dd8"
     },
     {
       "area": "verification-verification",
@@ -40396,9 +40399,9 @@
     }
   ],
   "guides": {
-    "docs/codebase-map/README.md": "c1cca686d2bb2d693ca2ce17bded9dbdb6113a8779f3bc917ea853157591276a",
+    "docs/codebase-map/README.md": "e76ecada416a622fbe61b318ee26c7c4675f24f29552c335885e0974fbc93b76",
     "docs/codebase-map/architecture.md": "5515e049cbe21c4072bb9c58498963a0d4be7856afb1c3ba353738bad8592ead",
-    "docs/codebase-map/dashboard-api.md": "1bdf82018538180e2b50d1ae8ea39e24c1a70201a5c0218edfdcf6222764e319",
+    "docs/codebase-map/dashboard-api.md": "9a7e25373f25b6e19e478c6f108090e8777515aee20d911b276756b3f6fc9575",
     "docs/codebase-map/evidence-storage-training.md": "e901b9edbc492c1d2f495604ecf5fe2edf1e0f1216655c4ec585eaa4258bd124",
     "docs/codebase-map/maintenance.md": "546da53010b6844818f1a957bfae60d7bf607c0e2eb2ab52b8b2004b9525efac",
     "docs/codebase-map/market-data.md": "57cd85fda9db76012274bcffd21ee45c7e737a8ff2ff406d7775554208a35069",
@@ -42661,6 +42664,13 @@
       "id": "preserved-v4-discovery-tests",
       "line": 1,
       "path": "tests/test_preserved_v4_discovery.py"
+    },
+    {
+      "description": "URL-scoped economics and cost controls; unavailable exact accounts and account-bound settings feedback",
+      "id": "product-account-economics",
+      "line": 1,
+      "literal": "export function PaperEconomicsPanel",
+      "path": "apps/web/src/PaperEconomicsPanel.tsx"
     },
     {
       "description": "Compiled normal product, unsuppressed polling and native disposable-owner workflow",
