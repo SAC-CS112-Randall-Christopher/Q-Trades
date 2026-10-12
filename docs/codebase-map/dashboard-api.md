@@ -99,6 +99,11 @@ Status polling releases an aborted controller at cleanup and lets only its own
 completion clear the active controller. Daily cards keep their current eligibility
 and recorded preparation summary visible; original market inputs, observation
 times and five-frame capture coverage have explicit disclosures.
+The original trial panel and its journal monitoring live under History → Original
+Trial History. The monitoring browser still verifies native audit failure, expiry,
+recovery and imbalance through that panel. Returning from an account inspector to
+All accounts exposes another account selection; history refresh tests preserve
+their singular disclosure, paging and account-reset assertions through this flow.
 
 Market scope consists of **symbol and account**, not symbol alone. URL scope wins over local saved preferences. An invalid explicit symbol/account remains unavailable rather than silently selecting BTC or primary. [MarketStation.chooseScope](source-index.md#dashboard-market-scope) changes the URL/local preference and cancels obsolete evidence reads. It writes the resolved focused market view, preserves `scanner_view` and `scanner_campaign`, preserves chart keys only for the same symbol, and can carry an explicit original `candle_run`. Initial mounting fills only absent symbol/account fields. Scanner chart bookmarks bind the chart owner's actual symbol even when navigation started from a parameter-light link. Account-only navigation must not destroy an exact same-market historical chart. A saved candle run can deliberately reopen its original market while preserving the user's selected account.
 
@@ -200,6 +205,12 @@ stateDiagram-v2
 The standalone candle controller and comparison preparation panel have their own durable pending owner and exact GET recovery. Comparison mode/method intent is canonical and digest-bound; a changed intent 409 must not discard the original. A saved read-only/p1 result cannot acknowledge or reinterpret an ordinary p0 pending request. The legacy generic tools have saved-run recovery but should not be described as sharing every newer durable-command guarantee.
 
 ## Old or wrong content after navigation
+
+The saved-role archive/evidence browser harnesses open the actual investigation
+Evidence tab and native saved-question/manual-control disclosures. Original
+finding links select Saved Charts; comparison/daily assertions then explicitly
+open Findings while retaining the original source pins. Manual-form absence
+checks include hidden DOM so a collapsed form cannot masquerade as absent.
 
 Check hash, selected symbol/account, original campaign/day/UUID, successful response scope and request generation. A saved record can legitimately display historical reasons while current inputs have changed; its labels/timestamps must preserve that distinction. An explicit “Inspect current campaign/charts” changes the route, whereas failed exact restore must not quietly do so. Compare source/build identity separately from the installed `/api/health` marker; reading newer TS source does not update already served compiled assets.
 

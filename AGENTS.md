@@ -9,8 +9,12 @@ and accessible navigation. Every existing feature needs a discoverable home.
 Reference-image amounts, schedules, progress, identities and live readiness are
 illustrative, never application facts. Preserve existing operating and financial
 owners. Source changes, disposable QA, independent review and draft publication
-are authorized; a successor merge/install/restart or operating activation needs
-its own applicable approval. Keep private runtime data outside Git.
+are authorized. On October 12 Chris explicitly approved PR94 merge, installation
+and relaunch when ready. Complete the exact-head hosted checks, use the existing
+updater at the verified merged revision, and verify installed preservation and
+normal UI behavior. This approval does not activate research, authorize new
+model/acquisition work or change financial policy. Keep private runtime data
+outside Git.
 
 # Historical coherent product lane — October 9, 2026 UTC, issue #66
 

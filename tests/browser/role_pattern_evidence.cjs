@@ -72,10 +72,17 @@ const bounded = async (promise, milliseconds, label) => {
     const taskUrl = `${origin}/#role-research?task=${original.task_id}`;
     const task = () => page.getByRole("article", { name: "Saved research task" });
     const evidence = () => page.getByRole("region", { name: "Saved pattern research evidence" });
+    const disclose = async name => {
+      const summary = page.getByText(name, { exact: true });
+      if (await summary.locator("..").getAttribute("open") === null) await summary.click();
+    };
     const openTask = async () => {
       page.setDefaultTimeout(remaining(10000));
       await page.goto(taskUrl, { waitUntil: "domcontentloaded", timeout: remaining(10000) });
       await task().getByRole("heading", { name: original.question, exact: true }).waitFor();
+      await task().getByRole("navigation", { name: "Investigation detail views", exact: true })
+        .getByRole("link", { name: "Evidence", exact: true }).click();
+      await disclose("Research permission, resources and controls");
       await evidence().getByRole("heading", { name: "Original native finding and fixed comparison", exact: true }).waitFor();
     };
 
@@ -83,7 +90,7 @@ const bounded = async (promise, milliseconds, label) => {
     phase = "actual-selector-task-original-and-current-evidence";
     await openTask();
     await page.getByRole("region", { name: "Pattern research questions", exact: true }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Save research question", exact: true }).count(), 0);
+    assert.equal(await page.getByRole("button", { name: "Save research question", exact: true, includeHidden: true }).count(), 0);
     const text = await evidence().innerText();
     assert(text.includes(pattern.original_event.reason));
     assert(text.includes("not current admission or an economic outcome"));
@@ -144,6 +151,8 @@ const bounded = async (promise, milliseconds, label) => {
     const dailyGet = completedGet(`/api/research/pattern-scanner/daily/shortlists/${pattern.selection.daily_id}`);
     await findingLink.click();
     const daily = await dailyGet; assert.equal(daily.id, pattern.selection.daily_id);
+    assert.equal(await page.getByRole("button", { name: "Saved Charts", exact: true }).getAttribute("aria-pressed"), "true");
+    await page.getByRole("navigation", { name: "Scanner workspace views", exact: true }).getByRole("button", { name: "Findings", exact: true }).click();
     await page.locator(`[data-daily-id="${pattern.selection.daily_id}"]`).waitFor();
     save("original-daily-reopen.json", daily);
     groups.push({ name: phase, exact_saved_daily: true, original_progress_sha256: bookmark.get("scanner_chart_progress_sha256"), historical_chart_success_claimed: false });
@@ -185,26 +194,29 @@ const bounded = async (promise, milliseconds, label) => {
     assert.equal(statusResponse.status(), 200);
     await page.goto(taskUrl, { waitUntil: "domcontentloaded", timeout: remaining(10000) });
     await page.reload({ waitUntil: "domcontentloaded", timeout: remaining(10000) });
-    const manualSave = page.getByRole("button", { name: "Save research question", exact: true });
+    const manualSave = page.getByRole("button", { name: "Save research question", exact: true, includeHidden: true });
     await page.getByRole("alert").filter({ hasText: "Role status disconnected" }).waitFor();
+    await disclose("Manual research question and saved request recovery");
     await manualSave.waitFor(); assert.equal(await manualSave.isEnabled(), false);
     statusResponse = await page.request.post(`${origin}/__qa/role_status/restore`, { headers, timeout: remaining(6000) });
     assert.equal(statusResponse.status(), 200);
     await page.getByRole("button", { name: "Retry status", exact: true }).click();
     await openTask();
     await page.getByRole("region", { name: "Pattern research questions", exact: true }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "Save research question", exact: true }).count(), 0);
+    assert.equal(await manualSave.count(), 0);
     let profileResponse = await page.request.post(`${origin}/__qa/profile/legacy`, { headers, timeout: remaining(6000) });
     assert.equal(profileResponse.status(), 200);
     let profile = await within(profileResponse.json(), 5000, "Legacy fixture profile body unavailable");
     assert.equal(profile.current_contract, "reviewed-rule-role-v7");
     await page.reload({ waitUntil: "domcontentloaded", timeout: remaining(10000) });
     await openTask();
+    await disclose("Manual research question and saved request recovery");
     await manualSave.waitFor(); assert.equal(await manualSave.isEnabled(), true);
     assert.equal(await evidence().count(), 1);
     assert.equal(await page.getByRole("region", { name: "Pattern research questions", exact: true }).count(), 0);
     statusResponse = await page.request.post(`${origin}/__qa/role_status/unavailable`, { headers, timeout: remaining(6000) });
     assert.equal(statusResponse.status(), 200);
+    await disclose("Saved investigations and interrupted work");
     await page.getByRole("button", { name: original.question, exact: true }).last().click();
     await page.getByRole("alert").filter({ hasText: "Role status disconnected" }).waitFor();
     assert.equal(await manualSave.isEnabled(), false);
@@ -225,6 +237,7 @@ const bounded = async (promise, milliseconds, label) => {
     assert.equal(await manualSave.count(), 0);
     statusResponse = await page.request.post(`${origin}/__qa/role_status/unavailable`, { headers, timeout: remaining(6000) });
     assert.equal(statusResponse.status(), 200);
+    await disclose("Saved investigations and interrupted work");
     await page.getByRole("button", { name: original.question, exact: true }).last().click();
     await page.getByRole("heading", { name: "Last observed question mode: saved patterns", exact: true }).waitFor();
     assert.equal(await manualSave.count(), 0);

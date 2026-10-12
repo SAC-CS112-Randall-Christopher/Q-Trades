@@ -73,6 +73,9 @@ const catalog = {
         statusCount += 1;
         const accounts = Object.fromEntries(["primary", "responsive-v1"].map(name => {
           const value = account(name);
+          value.cash = (100 + statusCount / 100).toFixed(2);
+          value.equity = value.cash;
+          value.net_pnl = (statusCount / 100).toFixed(2);
           value.last_decision.BTCUSD = { symbol: "BTCUSD", at: now + statusCount,
             reason: `${name}: synthetic status ${statusCount}`, version: value.version };
           return [name, value];
@@ -136,6 +139,7 @@ const catalog = {
         assert.equal(counts.chooser, 1, "Rendered status updates must retain exactly one strategy chooser");
       }
       await single();
+      await inspector.getByText("Account journal & activity", { exact: true }).click();
       await history().locator("summary").first().click();
       await inspector.getByText("primary retained event 1").waitFor();
       await chooser().locator("summary").first().click();
@@ -144,7 +148,8 @@ const catalog = {
       for (let i = 0; i < 3; i++) {
         phase = `rendered-status-${i + 1}`;
         const next = statusCount + 1;
-        await page.getByText(`primary: synthetic status ${next}`, { exact: true }).waitFor();
+        await inspector.locator("dl.summary-values > div").filter({ has: page.getByText("Equity", { exact: true }) })
+          .getByText(`$${(100 + next / 100).toFixed(2)}`, { exact: true }).waitFor();
         await single();
         assert(await history().getByText("primary retained event 1").isVisible());
       }
@@ -158,11 +163,13 @@ const catalog = {
       await history().getByText("primary retained event 1").waitFor();
       assert.equal(await history().getByText("primary retained event 3").count(), 0);
       phase = "switch-account-reset";
+      await page.getByRole("button", { name: "← All accounts", exact: true }).click();
       await page.getByRole("button", { name: "Inspect responsive-v1", exact: true }).click();
       await inspector.getByRole("heading", { name: "responsive-v1", exact: true }).waitFor();
       await single();
       assert.equal(await history().getAttribute("open"), null, "New account must reset Journal disclosure");
       assert.equal(await history().getByRole("table").count(), 0, "No prior account history may carry over");
+      await inspector.getByText("Account journal & activity", { exact: true }).click();
       await history().locator("summary").first().click();
       await history().getByText("responsive-v1 retained event 1").waitFor();
       assert.equal(await history().getByText("primary retained event 1").count(), 0);

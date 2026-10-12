@@ -6069,8 +6069,8 @@ Declared local imports: [src/trading/market.py](../../src/trading/market.py), [s
 
 ### tests/browser/account_history_refresh.cjs
 
-- [flow](../../tests/browser/account_history_refresh.cjs#L125) — lexical declaration
-- [single](../../tests/browser/account_history_refresh.cjs#L132) — lexical declaration
+- [flow](../../tests/browser/account_history_refresh.cjs#L128) — lexical declaration
+- [single](../../tests/browser/account_history_refresh.cjs#L135) — lexical declaration
 
 ### tests/browser/account_redesign_server.py
 

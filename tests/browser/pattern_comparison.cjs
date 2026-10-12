@@ -230,6 +230,8 @@ const bounded = async (work, ms, label) => {
       assert.equal(await panel().getByRole("button", { name: "Review a separate current observation", exact: true }).count(), 0);
       assert.equal(await panel().getByRole("button", { name: "Prepare fixed comparison", exact: true }).count(), 0);
       await panel().getByRole("button", { name: "Return to original daily finding", exact: true }).click();
+      assert.equal(await page.getByRole("button", { name: "Saved Charts", exact: true }).getAttribute("aria-pressed"), "true");
+      await page.getByRole("navigation", { name: "Scanner workspace views", exact: true }).getByRole("button", { name: "Findings", exact: true }).click();
       await daily().locator(`[data-daily-id="${initial.selection.daily_id}"]`).waitFor();
       assert.equal(new URLSearchParams(new URL(page.url()).hash.split("?")[1]).get("daily_shortlist"), initial.selection.daily_id);
       await reopen(readonly.request_id); await page.setViewportSize({ width: 390, height: 844 });
@@ -314,6 +316,7 @@ const bounded = async (work, ms, label) => {
       const taskResponse = originalGet(`/api/lab/roles/tasks/${setup.next_task_id}`);
       await page.goto(`${origin}/#role-research?task=${setup.next_task_id}`);
       const actualTask = await taskResponse; save("p1-saved-task.json", actualTask);
+      await page.getByRole("navigation", { name: "Investigation detail views", exact: true }).getByRole("link", { name: "Evidence", exact: true }).click();
       assert.equal(actualTask.context.pattern_method.method_id, "p1");
       assert.equal(actualTask.context.question_selection.method, "p1");
       assert.deepEqual(Object.keys(actualTask.context.fixed_comparison), ["p1"]);
@@ -404,6 +407,8 @@ const bounded = async (work, ms, label) => {
 
       phase = "original-daily-navigation-and-mobile";
       await reopen(held.delayed.request_id); await panel().getByRole("button", { name: "Return to original daily finding", exact: true }).click();
+      assert.equal(await page.getByRole("button", { name: "Saved Charts", exact: true }).getAttribute("aria-pressed"), "true");
+      await page.getByRole("navigation", { name: "Scanner workspace views", exact: true }).getByRole("button", { name: "Findings", exact: true }).click();
       await daily().locator(`[data-daily-id="${initial.selection.daily_id}"]`).waitFor();
       const restored = new URLSearchParams(new URL(page.url()).hash.split("?")[1]);
       assert.equal(restored.get("daily_shortlist"), initial.selection.daily_id); assert.equal(restored.get("scanner_chart_seq"), String(initial.selection.event_seq));

@@ -28,10 +28,14 @@ main. Other PR owners and checkouts remain separate.
 
 ## Current result
 
-The source implementation and affected verification are complete. Independent
-Codex source review has no remaining material findings. The operating
-installation remains the already approved PR93 revision; successor merge and
-installation are separate approval stages. No operating model call, research
+The source implementation and affected local verification are complete.
+Independent Codex source review has no remaining material findings. PR94's first
+hosted browser-monitoring run failed on an older UI selector; the native and
+synthetic harnesses now follow the focused homes while preserving their original
+record and accounting assertions. A fresh exact-head hosted gate remains required.
+Chris explicitly approved PR94 merge, installation and relaunch when ready on
+October 12. The operating installation is still the healthy PR93 revision at this
+source checkpoint. No operating model call, research
 activation, qualification, training, funding or live operation follows from
 this UI change.
 
@@ -72,6 +76,10 @@ full-year/all-market capacity, 28-day qualification or installed acceptance.
 | Scanner control/progress workflow | `scanner-02`: all 14 groups passed at its recorded source manifest, before the final local-pane/disclosure refinements. Covers native cooperative processing, paging, exact archived campaign, lost acknowledgment, outages, Pause over delayed Start, cold reopening and narrow navigation. |
 | Separate candle study | `candle-04`: all 18 groups passed at its recorded source manifest, before later scanner-only refinements. Covers five native intervals, plots/gaps, exact receipt recovery, cross-market/account context, narrow layout and a legacy mixed candle/scanner bookmark. |
 | Actual Vite development / React StrictMode | `dev-strict-03`: all 3 groups passed on final UI. An actually canceled initial campaign GET is replaced, all five native charts and current status render, same-lifecycle pane Back avoids campaign replacement, unavailable originals permit retry and cold reload succeeds. |
+| Account history/status regression | `account-history-04`: passed with fully intercepted synthetic API data. Three rendered Equity refreshes preserve singular history/strategy disclosures, original cursor paging and account-switch reset. No operating or financial proof is inferred. |
+| Existing native archive retry | `legacy-archive-01`: all 5 groups passed with disposable original registry/archive owners. Evidence-tab retry, lost acknowledgment, late publication and mismatched acknowledgment assertions remain intact; zero model calls or financial database. |
+| Existing native comparison recovery | `legacy-comparison-01`: all 10 groups passed; `legacy-observation-01`: all 9 groups passed. Original Charts return, explicit Findings navigation, exact retained preparation identity and immutable ordinary/read-only recovery use synthetic native/current inputs. |
+| Existing saved-task evidence | `legacy-role-01`: all 7 groups passed. Evidence/detail reload, original source/progress bookmarks, narrow rendering and current-profile/manual-form outage rules; hidden-DOM absence assertions and zero API writes retained. |
 | Code-to-product map | Explicitly refreshed from baseline `f0c104d77ce40c15e48cab33abed546135189894`: 426 files, 475 references, 62 tasks. Final `--check` passed. |
 | Independent Codex source review | No remaining material findings after repairing legacy bookmark precedence, campaign lifecycle cancellation, polling controller ownership and scanner layout/disclosures. This is source review, separate from execution evidence. |
 
@@ -105,12 +113,23 @@ scheduled task or installation was changed.
 - `dev-strict-01` reproduced stranded scanner status polling after cancellation.
   Controller cleanup and completion now check ownership; attempts 02 and 03
   passed. These are development checks, distinct from production browser proof.
+- PR94 head `abd492b15a6723a27327835263e0b72c4548b8ee` retains its failed
+  hosted browser-monitoring result: it expected the removed original-trial-history
+  disclosure. The harness now opens History / Original Trial History, where the
+  same journal-monitoring owner lives. Account-history attempts 01 through 03
+  retain their failed selector/synthetic-display receipts; attempt 04 passes.
+  The remaining old research harnesses now open native Evidence/disclosures and
+  Findings explicitly. Independent review accepted the test-only refinements;
+  no application behavior was changed by these harness repairs.
 
 ## Publication and operating boundary
 
-Publish this branch as a draft based on main. Keep its worktree while review is
-active; main remains clean at the refreshed baseline. Existing separate setup,
+PR94 is published from this branch. Keep its worktree while review and installed
+verification are active; main remains clean at the refreshed baseline. Existing separate setup,
 MCP oversight, model-resource, compression, RAM and coexistence owners remain
-untouched. A merge, installation and normal installed workflow acceptance have
-not been performed for this UI successor. The broader coherent trading-product
+untouched. The authorized merge, installation and normal installed workflow
+acceptance have not yet been performed at this source checkpoint. Reuse the
+existing updater with exact merged identity, retain before/after private
+preservation receipts, and retire the physical lane once verification and durable
+preservation permit it. The broader coherent trading-product
 Goal still requires its remaining model, operating and prospective evidence.

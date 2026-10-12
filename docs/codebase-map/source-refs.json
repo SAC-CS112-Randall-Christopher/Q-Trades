@@ -645,7 +645,7 @@
       "local_imports": [],
       "path": "AGENTS.md",
       "routes": [],
-      "sha256": "adb349be3cf50e3974df3d5b54372421d115bdfb60ccaaf7d42210a4be10b426"
+      "sha256": "512000b42b3a0538db7ba99da3f98f136b90ecbd0ff4ff3240bbcf7426c39b74"
     },
     {
       "area": "map-maintenance-maintenance",
@@ -20613,12 +20613,12 @@
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 125,
+          "line": 128,
           "name": "flow"
         },
         {
           "kind": "lexical declaration",
-          "line": 132,
+          "line": 135,
           "name": "single"
         }
       ],
@@ -20634,7 +20634,7 @@
       "local_imports": [],
       "path": "tests/browser/account_history_refresh.cjs",
       "routes": [],
-      "sha256": "82177e1e869d2d4283182f2dc6fa90b91176af1d801631be9042319ef4302d21"
+      "sha256": "7d3ccdaed853c50837f9cbe6e5ec5f85fd6fc9e9b4eb1394db895d71ed94d179"
     },
     {
       "area": "verification-verification",
@@ -20883,7 +20883,7 @@
       "local_imports": [],
       "path": "tests/browser/financial_monitoring.cjs",
       "routes": [],
-      "sha256": "ff3be4db61b8af9914db8db1616b1b16a4f627a6105ac9ccd6d2a454778ef368"
+      "sha256": "1755cb7bdb93b08e081cb0974e7d4b5341eb4d6abe37fc7dcb4b7fd6492ade26"
     },
     {
       "area": "verification-verification",
@@ -21023,7 +21023,7 @@
       ],
       "path": "tests/browser/pattern_comparison.cjs",
       "routes": [],
-      "sha256": "87c56b840917d0892c72b4912e190186f98531ddc033da94035cdb9c8816b372"
+      "sha256": "03308d78e5ab07a053af8812011ac4836ae5d684e61ee7c3ce9a5366068ebc8d"
     },
     {
       "area": "verification-verification",
@@ -21594,7 +21594,7 @@
       "local_imports": [],
       "path": "tests/browser/role_archive_retry.cjs",
       "routes": [],
-      "sha256": "48933fcb629060bb6e7510f73bab9fb2e2d94219ca879507010c6ec6150f507e"
+      "sha256": "d82e6b4cb2d1a2e740a370acdbaa916e2af9f017a320d078ce26a38c60c1bd41"
     },
     {
       "area": "verification-verification",
@@ -21757,7 +21757,7 @@
       ],
       "path": "tests/browser/role_pattern_evidence.cjs",
       "routes": [],
-      "sha256": "51c50818b24d41a91a2197fdfa9ca13f4dba0007c79a9bf65a4b6054f8d40bd5"
+      "sha256": "758e80c460fb014e7332bdddbd315b1b1aed6c544bde8128ff1dd57ce8d5d59b"
     },
     {
       "area": "verification-verification",
@@ -40626,7 +40626,7 @@
   "guides": {
     "docs/codebase-map/README.md": "134ca900c63d77810be3d32bd090e0e4d4b3469290e74f1da16515f5d6f83de1",
     "docs/codebase-map/architecture.md": "b2de4245a4c87368efb93e204801cdf36a971ed980c4fd1f86e7a6cbb9194415",
-    "docs/codebase-map/dashboard-api.md": "c10b668358006921755581e29494be52f8231fbbfb1eb1fe7a009c557ca0e96d",
+    "docs/codebase-map/dashboard-api.md": "41aba18cb1b4cd78c3099ce78c10b9dbe11317c9c419b4527e2e84bc826d77ff",
     "docs/codebase-map/evidence-storage-training.md": "9147ba37d044ca248faa87611613ca09473e0b42d592ecfaf5bd483147de935b",
     "docs/codebase-map/maintenance.md": "546da53010b6844818f1a957bfae60d7bf607c0e2eb2ab52b8b2004b9525efac",
     "docs/codebase-map/market-data.md": "57cd85fda9db76012274bcffd21ee45c7e737a8ff2ff406d7775554208a35069",
