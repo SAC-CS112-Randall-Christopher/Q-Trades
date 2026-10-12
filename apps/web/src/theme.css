@@ -2061,7 +2061,7 @@ progress::-webkit-progress-value {
     grid-template-columns: 1fr 1fr;
   }
   .accounts-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .accounts-aside {
     display: grid;

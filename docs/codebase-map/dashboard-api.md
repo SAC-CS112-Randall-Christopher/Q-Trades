@@ -11,6 +11,11 @@ producer's original parameters. [Workspace styles](source-index.md#product-works
 keep a compact summary grid and focused workspaces at desktop and narrow widths.
 Only the active area's secondary navigation is expanded in the sidebar.
 
+At narrow widths the account-list grid has a zero minimum track, so the full
+table scrolls inside its existing panel without widening the document. The
+account-history browser regression checks both the viewport fit and reachable
+account inspection after scrolling, then verifies exact selected-account history.
+
 Overview shows independent observed paper, market and model states, bounded
 attention and investigation summaries, and one explicitly selected account.
 Unavailable and unconfigured owners do not become paused or healthy; a paper

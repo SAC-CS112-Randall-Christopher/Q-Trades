@@ -127,12 +127,36 @@ scheduled task or installation was changed.
 
 ## Publication and operating boundary
 
-PR94 is published from this branch. Keep its worktree while review and installed
-verification are active; main remains clean at the refreshed baseline. Existing separate setup,
-MCP oversight, model-resource, compression, RAM and coexistence owners remain
-untouched. The authorized merge, installation and normal installed workflow
-acceptance have not yet been performed at this source checkpoint. Reuse the
-existing updater with exact merged identity, retain before/after private
-preservation receipts, and retire the physical lane once verification and durable
-preservation permit it. The broader coherent trading-product
-Goal still requires its remaining model, operating and prospective evidence.
+PR94 merged as `bfb99dd16ca2c00246ccf532e4c3836b9e65df61` after all nine
+checks passed at reviewed head `76c8ed02b6cd859479a540f16085030d29773c37`.
+The merged tree matches that head. The existing updater installed the exact
+merged revision and the task, health, source/assets and launcher checks passed.
+Private before/after preservation checks passed for the existing financial,
+configuration, evidence and research owners, with no new attempt or allowance.
+
+Installed browser acceptance passed desktop navigation, original account context,
+scanner panes and retained investigation/history views. It then found account-list
+overflow at 390px: the narrow grid's automatic minimum expanded to the account
+table's minimum width. The failed installed receipt remains unchanged locally.
+
+The bounded follow-up reuses this checkout on `codex/installed-ui-fit-66`, based
+on merged PR94. It changes the existing narrow grid track to `minmax(0, 1fr)`;
+the table retains its own horizontal scrolling and all columns. Account-history
+attempt 05 reproduces the original overflow with the extended synthetic browser
+regression. The regression also requires inner table scrolling, a reachable
+inspection control, exact selected-account history and the original rendered
+status refresh/paging checks. The corrected production build and attempt 06 pass:
+the document is 390px wide while the 765px table scrolls inside its 356px panel.
+The actual inspection control opens `responsive-v1` and the original status,
+paging and account-history reset assertions pass without API writes or JavaScript
+errors. Independent Codex source review found no remaining material findings.
+These are compiled synthetic source checks; corrected installed acceptance is
+still pending at this source checkpoint.
+
+Keep the worktree while review and installed verification are active. Existing
+separate setup, MCP oversight, model-resource, compression, RAM and coexistence
+owners remain untouched. Reuse the existing updater with the verified merged
+follow-up revision, retain fresh before/after private preservation receipts, and
+retire the physical lane once verification and durable preservation permit it.
+The broader coherent trading-product Goal still requires its remaining model,
+operating and prospective evidence.
