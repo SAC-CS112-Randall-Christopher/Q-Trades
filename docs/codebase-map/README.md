@@ -4,14 +4,14 @@ Use this map to build features, diagnose failures, find the responsible owner an
 choose meaningful verification. Start with a symptom or workflow, then inspect
 the linked current functions and their consumers before editing.
 
-The reviewed application starting baseline is
-`0b47251a355113b285fd90d24917d2346cb18a59` (merged PR92). The
+The reviewed application starting baseline for this source increment is
+`bfb99dd16ca2c00246ccf532e4c3836b9e65df61` (merged PR94). The
 [generated index](source-index.md) records current normalized file hashes and
-exact reference locations. PR92's account-scope source has merged; its source
-and disposable checks are recorded in the
-[product ledger](../reviews/COHERENT_PRODUCT_66.md). The current storage-startup
-source successor is beyond that baseline and remains uninstalled. Operating
-receipts stay local and must be inspected separately. This map does
+exact reference locations. The [UI ledger](../reviews/CLEAN_WORKSPACE_UI_66.md)
+records reviewed source checkpoints and separately observed installation results;
+the [product ledger](../reviews/COHERENT_PRODUCT_66.md) records the broader
+coherent workflow. Operating receipts stay local and must be inspected separately.
+This map does
 not activate research, establish model usefulness or authorize live operation.
 Refresh GitHub, the checked-out branch and installed receipts when investigating
 operating behavior; a source map cannot identify a running process by itself.
