@@ -19,6 +19,15 @@ passing one job does not substitute for another job or installed acceptance.
 | Storage/archive/knowledge | Owner/quota/cold-read/cancellation/failure tests | Real disposable stores and changed Library/Reviews workflow |
 | Task/process/updater | Ownership, exact-target and shutdown tests | Separately authorized installed preservation/restart/workflow receipt |
 
+The existing Windows native gate includes
+[storage startup](source-index.md#evidence-tests-storage-startup) and
+[capture recovery](source-index.md#evidence-tests-capture-recovery). Their SQLite
+fixtures measure actual VM work/query plans and durable interruption/retry.
+Between-segment process interruption follows an actually committed transaction;
+ordinary, ascending and descending fixture traversal check the same invariants.
+Synthetic sealed-index metadata measures SQL behavior; it does not prove that
+operating archived packets reopen or that an installed startup deadline passes.
+
 All [test and fixture files](source-index.md#complete-tracked-inventory) are included
 in the inventory, with declaration lookup for exact test functions. For a workflow,
 its guide lists relevant covering tests. Inspect fixture setup, actual dependencies,

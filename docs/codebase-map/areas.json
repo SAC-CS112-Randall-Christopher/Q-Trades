@@ -497,6 +497,7 @@
       "tests/test_research_storage.py",
       "tests/test_research_storage_expansion.py",
       "tests/test_research_storage_file_accounting.py",
+      "tests/test_research_storage_startup.py",
       "tests/test_review_background.py",
       "tests/test_review_repairs.py",
       "tests/test_role_archive_storage_owner.py",

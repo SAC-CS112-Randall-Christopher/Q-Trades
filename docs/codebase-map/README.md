@@ -5,13 +5,13 @@ choose meaningful verification. Start with a symptom or workflow, then inspect
 the linked current functions and their consumers before editing.
 
 The reviewed application starting baseline is
-`9a8a2dfca533a3046ddbc9a651244bdc6d87bfbf` (merged PR91). The
+`0b47251a355113b285fd90d24917d2346cb18a59` (merged PR92). The
 [generated index](source-index.md) records current normalized file hashes and
-exact reference locations. PR91's separately approved installation passed source
-and selected-history preservation checks on October 8, with research paused.
-Installed navigation exposed the chart/economics account mismatch recorded in
-the [product ledger](../reviews/COHERENT_PRODUCT_66.md). Its reviewed account-scope
-source successor is beyond that baseline and remains uninstalled. This map does
+exact reference locations. PR92's account-scope source has merged; its source
+and disposable checks are recorded in the
+[product ledger](../reviews/COHERENT_PRODUCT_66.md). The current storage-startup
+source successor is beyond that baseline and remains uninstalled. Operating
+receipts stay local and must be inspected separately. This map does
 not activate research, establish model usefulness or authorize live operation.
 Refresh GitHub, the checked-out branch and installed receipts when investigating
 operating behavior; a source map cannot identify a running process by itself.

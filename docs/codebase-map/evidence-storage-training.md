@@ -42,6 +42,37 @@ The final node is a preparation receipt. It must report `trained=false` and `eva
 
 Keep lock lifetime visible: archive/file work can occur under the borrowed recorder owner, but publication of the compact task occurs after that borrow is released. Cancellation must drain owned work before close. Holding the registry lock while waiting for a recorder that will publish to the registry can invert the order.
 
+## Startup summary and legacy adoption
+
+[Initialization](source-index.md#evidence-storage-initialize) owns recovery and
+startup summaries under the existing exclusive root lock. The
+[count adoption](source-index.md#evidence-storage-count-adoption) certifies an
+exact global record count with a version and actual index rowid watermark;
+rowid is never interpreted as a count. Legacy or advanced indexes use durable
+4,096-row keyset chunks. Partial scan cursor/count state has the observed target
+watermark and remains separate from the uncertified public count. Only the final
+empty seek publishes the complete count/version/mark and clears staging. A changed
+target restarts the census. SQL and between-chunk guards refuse after five seconds
+or five million VM instructions, preserving completed progress for retry. They
+cannot preempt an operating-system I/O call.
+
+Ordinary appends and recovery update count/watermark inside each index transaction.
+Only newly indexed global SHA records count; physical segment duplicates do not.
+The eight-segment recovery limit can refuse after completed transactions without
+losing their counter changes. A lost index acknowledgment loses both its records
+and counter update. The watermark contract assumes the production append-only
+index; it does not certify arbitrary manual deletion or replacement of older rows.
+
+[Latest capture](source-index.md#evidence-storage-latest-capture) seeks every actual
+kind through the existing `(kind, at, segment, record)` covering index and takes
+the latest timestamp in each kind. Unknown/empty kinds and out-of-order append
+timestamps remain included. It does not scan every record, build another index,
+trust a segment's last append time, or silently use a partial maximum.
+The [startup tests](source-index.md#evidence-tests-storage-startup) check actual
+query plans/VM work, legacy migration, durable crash/refusal/retry, original
+availability and deduplication. [Capture recovery](source-index.md#evidence-tests-capture-recovery)
+also exercises real rollback journals and the normal recorder's owned retry.
+
 ## Time, exposure, and knowledge permission
 
 [Representation timing](source-index.md#evidence-timing) separates market cutoff from the time a recorded representation became available. A poll time, a later label, and an original decision time are not interchangeable. [Acquisition](source-index.md#evidence-acquisition) reopens bounded immutable/segmented archives with explicit unavailable outcomes rather than inventing inputs.

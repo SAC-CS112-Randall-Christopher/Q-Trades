@@ -75,6 +75,8 @@ def forget_index(plan):
     with sqlite3.connect(os.path.join(plan.root, "research", "storage-index.sqlite")) as db:
         db.execute("DELETE FROM storage_records")
         db.execute("DELETE FROM storage_segments")
+        # A lost index transaction also loses its counter/high-water update.
+        db.execute("UPDATE storage_state SET rows=0,rows_through=0,last_capture=NULL")
 
 
 def test_hot_owned_orphan_and_process_interruption_during_reconciliation(tmp_path):
@@ -105,6 +107,7 @@ storage.ResearchStorage(storage.StoragePlan.model_validate_json(sys.argv[1]))
         assert [owner.reopen(ref) for ref in refs] == values
     with closing(ResearchStorage(plan)) as owner:
         assert owner.db.execute("SELECT count(*) FROM storage_records").fetchone()[0] == 2
+        assert owner.db.execute("SELECT rows FROM storage_state").fetchone()[0] == 2
 
 
 def test_competing_owner_and_sqlite_writer_preserve_files_and_allow_retry(tmp_path):
@@ -170,9 +173,12 @@ def test_many_owned_orphans_make_bounded_durable_progress(tmp_path):
     forget_index(plan)
     with pytest.raises(OSError, match="eight segments reconciled"):
         ResearchStorage(plan)
+    with sqlite3.connect(os.path.join(plan.root, "research", "storage-index.sqlite")) as db:
+        assert db.execute("SELECT rows FROM storage_state").fetchone()[0] == 8
     with closing(ResearchStorage(plan)) as owner:
         assert owner.recovery["segments_checked"] == 1
         assert owner.db.execute("SELECT count(*) FROM storage_records").fetchone()[0] == 9
+        assert owner.db.execute("SELECT rows FROM storage_state").fetchone()[0] == 9
         assert all(owner.reopen(ref)["sample"] == "x" * 65000 for ref in refs)
 
 
