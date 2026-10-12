@@ -38,6 +38,12 @@ Relevant coverage: [Windows supervision tests](source-index.md#runtime-supervisi
 and [update shutdown tests](source-index.md#runtime-shutdown-tests). Those source
 tests do not prove the workstation's current task/process identities.
 
+The existing [dashboard opener](source-index.md#runtime-dashboard-opener) validates
+the installed task and health, then opens `http://127.0.0.1:8780/#overview`. Its
+`-CheckOnly` mode reports that same destination without starting a task or opening
+a browser. Older saved `#experiment` URLs retain their account-summary alias;
+the current desktop launch starts at the compact product Overview.
+
 ## Updater target and preservation
 
 [Update-QTrades](source-index.md#runtime-updater) validates the existing installed

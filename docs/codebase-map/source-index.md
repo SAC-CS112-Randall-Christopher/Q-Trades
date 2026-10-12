@@ -1993,7 +1993,7 @@ Versioned RuleSpec feature owner and input hashes/cutoffs. — [src/trading/auto
 <a id="runtime-dashboard-opener"></a>
 ### runtime-dashboard-opener
 
-Existing dashboard opening and task-start route — [scripts/Open-TradingDashboard.ps1:1](../../scripts/Open-TradingDashboard.ps1#L1)
+Existing task-validated dashboard opening at Overview and task-start route — [scripts/Open-TradingDashboard.ps1:1](../../scripts/Open-TradingDashboard.ps1#L1)
 
 <a id="runtime-desktop-launcher"></a>
 ### runtime-desktop-launcher

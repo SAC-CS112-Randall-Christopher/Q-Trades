@@ -57,6 +57,8 @@ performance. Investigation records have Summary, Evidence, Checks & Review,
 Comparison and Outcome & Next Decision views. Scanner Findings, Saved Charts,
 Preparation & Coverage and All Saved Evidence have separate URL-backed views.
 Long source/coverage/raw-record details remain accessible through disclosures.
+The existing desktop launcher opens Overview; legacy experiment/account bookmarks
+continue resolving to their original account home through the route aliases.
 
 ## Verification record
 
@@ -70,6 +72,7 @@ full-year/all-market capacity, 28-day qualification or installed acceptance.
 | Check | Observed result and scope |
 | --- | --- |
 | TypeScript and Vite production build | Passed on the final UI; the existing greater-than-500-kB chunk warning remains nonfatal. |
+| Existing desktop opener | Its single URL now opens Overview; PowerShell parsing passed. Task validation, health checks and worker-start behavior are unchanged. Installed `-CheckOnly` verification remains a later stage. |
 | Product/station/map owner tests | `owner-map-tests-03`: 45 passed, 1 skipped, 1 deprecation warning. The skip requires real symlink privilege. No Python application behavior changed afterward. |
 | Compiled product workflow | `browser-09`: all 8 groups passed. Covers seven areas; horizontal scanner tabs and disclosed original coverage; saved configuration/refusal/lost acknowledgment; native worker/comparison/outcome cold reopening; original mixed preparation/chart bookmark; selected/retired/unknown accounts and exact strategy; narrow controls; outage/recovery and ordinary polling. |
 | Saved scanner charts | `scanner-charts-06`: all 18 groups passed on final UI. Actual five-frame plots and causal selections; exact progress/cursor pins; older manual evidence retained through pane Back; newer chart window survives leaving and returning; refused/unknown sources, recovery, bounded concurrency and zero automatic POST/acquisition. |

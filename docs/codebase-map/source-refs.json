@@ -3817,7 +3817,7 @@
       "local_imports": [],
       "path": "scripts/Open-TradingDashboard.ps1",
       "routes": [],
-      "sha256": "713372929bc3832de656a7553f29056436d0837e585bd38b9271e9c27379a228"
+      "sha256": "ccf5cf42bb12d32af5758dbe06e7fa2469ea0a242940d2e947dcb342952edf53"
     },
     {
       "area": "windows-runtime-runtime-updates",
@@ -40626,7 +40626,7 @@
   "guides": {
     "docs/codebase-map/README.md": "134ca900c63d77810be3d32bd090e0e4d4b3469290e74f1da16515f5d6f83de1",
     "docs/codebase-map/architecture.md": "b2de4245a4c87368efb93e204801cdf36a971ed980c4fd1f86e7a6cbb9194415",
-    "docs/codebase-map/dashboard-api.md": "41aba18cb1b4cd78c3099ce78c10b9dbe11317c9c419b4527e2e84bc826d77ff",
+    "docs/codebase-map/dashboard-api.md": "38e99cf0233b06b3a1f30332da14572645c14e110b0ccdc5d57fea355824a713",
     "docs/codebase-map/evidence-storage-training.md": "9147ba37d044ca248faa87611613ca09473e0b42d592ecfaf5bd483147de935b",
     "docs/codebase-map/maintenance.md": "546da53010b6844818f1a957bfae60d7bf607c0e2eb2ab52b8b2004b9525efac",
     "docs/codebase-map/market-data.md": "57cd85fda9db76012274bcffd21ee45c7e737a8ff2ff406d7775554208a35069",
@@ -40634,7 +40634,7 @@
     "docs/codebase-map/oversight-tools.md": "1482c52ee88b8090a33752f0734d6af4438ecd883199dfd03adcf458c339da2b",
     "docs/codebase-map/paper-accounting.md": "b6c250540be90b46bab2b04c5ee72143fc7018e6d10ac82436f0c5d079759a89",
     "docs/codebase-map/research-worker.md": "5f01eb453a9d7d99157a81080ea6e4d6937c312c3b7f35ffeb64a57513656df4",
-    "docs/codebase-map/runtime-updates.md": "934878e0476e582e257832ea188fe49cfdad13a0150f940e8a5e192358a4a7f2",
+    "docs/codebase-map/runtime-updates.md": "8ed9a4318160cac115130b8825879448ce1a6a9ae1376f07db5e4719a6edd93b",
     "docs/codebase-map/scanner-charts.md": "5cacc517dbef07d4c6764dad3661e046598136706ede70b895802a95b397c86f",
     "docs/codebase-map/secondary-research.md": "2d1e61f2f8e6c3ae2e8aa3da1255ec2834d05c1920f6c30315a85634aee0448a",
     "docs/codebase-map/strategy-experiments.md": "b70fc8faab1486f53bd5c73a41b7816a0401a26e23b6106aa4ddde3cad84fdfb",
@@ -43290,7 +43290,7 @@
       "symbol": "rule_feature"
     },
     {
-      "description": "Existing dashboard opening and task-start route",
+      "description": "Existing task-validated dashboard opening at Overview and task-start route",
       "id": "runtime-dashboard-opener",
       "line": 1,
       "path": "scripts/Open-TradingDashboard.ps1"

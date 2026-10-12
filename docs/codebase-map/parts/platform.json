@@ -117,7 +117,7 @@
     {
       "id": "runtime-dashboard-opener",
       "path": "scripts/Open-TradingDashboard.ps1",
-      "description": "Existing dashboard opening and task-start route"
+      "description": "Existing task-validated dashboard opening at Overview and task-start route"
     },
     {
       "id": "verification-workflow",

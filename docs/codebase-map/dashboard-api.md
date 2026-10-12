@@ -206,6 +206,11 @@ The standalone candle controller and comparison preparation panel have their own
 
 ## Old or wrong content after navigation
 
+The existing `Open-TradingDashboard.ps1` shortcut opens `#overview`. It still
+validates and reuses the installed scheduled task; launch navigation adds no
+worker or research activation. Legacy `#experiment` bookmarks continue to open
+the account summary through the centralized aliases.
+
 The saved-role archive/evidence browser harnesses open the actual investigation
 Evidence tab and native saved-question/manual-control disclosures. Original
 finding links select Saved Charts; comparison/daily assertions then explicitly
