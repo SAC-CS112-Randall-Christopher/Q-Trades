@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-// Keep explicit paper/account/research context across the five destinations.
+// Keep explicit paper/account/research context across workspace destinations.
 // Saved scanner/source URLs retain their full producer-issued parameters.
 export function inContext(destination: string, overrides: Record<string, string | null> = {}) {
   const [base, query = ""] = destination.split("?");

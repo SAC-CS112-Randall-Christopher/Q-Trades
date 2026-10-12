@@ -16,9 +16,10 @@ export type RiskStatus = {
 
 type RiskAccount = { risk?: RiskStatus; drawdown_pause: boolean };
 
-export function PaperRiskPanel({ accounts, unavailable }: {
+export function PaperRiskPanel({ accounts, unavailable, focusedAccount }: {
   accounts: Record<string, RiskAccount>;
   unavailable: boolean;
+  focusedAccount?: string;
 }) {
   const [pending, setPending] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -78,9 +79,11 @@ export function PaperRiskPanel({ accounts, unavailable }: {
     <h3>Risk &amp; recovery</h3>
     {error && <p className="error-banner" role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
-    {accounts.primary && row("primary", accounts.primary)}
+    {focusedAccount ? Object.hasOwn(accounts, focusedAccount) ? row(focusedAccount, accounts[focusedAccount]) : <p>This exact account's risk controls are unavailable.</p> : <>
+    {Object.hasOwn(accounts, "primary") && row("primary", accounts.primary)}
     <details><summary>Risk status for comparison accounts</summary>
       {Object.entries(accounts).filter(([name]) => name !== "primary").map(([name, a]) => row(name, a))}
     </details>
+    </>}
   </section>;
 }

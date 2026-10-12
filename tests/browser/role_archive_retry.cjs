@@ -63,6 +63,8 @@ const bounded = async (promise, milliseconds, label) => {
     const select = async key => {
       await page.goto(`${origin}/#role-research?task=${original.identities[key]}`, { waitUntil: "domcontentloaded" });
       await task().getByRole("heading", { name: original.labels[key], exact: true }).waitFor();
+      await task().getByRole("navigation", { name: "Investigation detail views", exact: true })
+        .getByRole("link", { name: "Evidence", exact: true }).click();
     };
     const retryResponse = key => {
       const response = page.waitForResponse(r => r.url() === `${origin}/api/lab/roles/tasks/${original.identities[key]}/retry` && r.request().method() === "POST", { timeout: 10000 });
@@ -117,6 +119,7 @@ const bounded = async (promise, milliseconds, label) => {
     const heldResponse = await page.request.get(`${origin}/__qa/held`, { headers, timeout: 3000 });
     const held = await heldResponse.json(); save("held-response.json", held);
     assert.equal(held.task, original.identities.delayed); assert.equal(held.committed, true);
+    await page.getByText("Saved investigations and interrupted work", { exact: true }).click();
     await page.getByRole("button", { name: original.labels.other, exact: true }).click();
     await task().getByRole("heading", { name: original.labels.other, exact: true }).waitFor();
     await page.evaluate(() => {

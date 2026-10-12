@@ -29,6 +29,8 @@
       "apps/web/src/style.css",
       "apps/web/src/theme.css",
       "apps/web/src/vite-env.d.ts",
+      "apps/web/src/workspace.css",
+      "apps/web/src/workspaceNavigation.ts",
       "apps/web/tsconfig.json",
       "apps/web/vite.config.ts"
     ]

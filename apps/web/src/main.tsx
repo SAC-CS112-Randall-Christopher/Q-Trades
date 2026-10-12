@@ -8,13 +8,11 @@ import {
   ChevronRight,
   CircleHelp,
   Command,
-  LayoutDashboard,
   LockKeyhole,
   Menu,
   Pause,
   Play,
   Search,
-  Settings2,
   ShieldCheck,
   Wallet,
   X,
@@ -29,7 +27,7 @@ import { OptionsPanel, type OptionsSnapshot } from "./OptionsPanel";
 import { ModelTrialsPanel } from "./ModelTrialsPanel";
 import { ExperimentLab } from "./ExperimentLab";
 import { RoleResearchPanel } from "./RoleResearchPanel";
-import { inContext } from "./productNavigation";
+import { inContext, useAccountScope } from "./productNavigation";
 import { ResearchActivity } from "./ResearchActivity";
 import { ResearchAttention } from "./ResearchAttention";
 import { AutonomousPanel } from "./AutonomousPanel";
@@ -37,6 +35,9 @@ import { EvidencePanel } from "./EvidencePanel";
 import { ReadinessPanel } from "./ReadinessPanel";
 import { ResearchOverview } from "./ResearchOverview";
 import { ResearchSetup } from "./ResearchSetup";
+import { ResearchStoragePanel } from "./ResearchStoragePanel";
+import { FeedPanel } from "./FeedPanel";
+import { workspaceAreas, workspaceHref, workspaceRoute } from "./workspaceNavigation";
 import {
   AccountsView,
   GlobalEntryControl,
@@ -45,6 +46,7 @@ import {
   RiskOverview,
 } from "./WorkspaceViews";
 import "./theme.css";
+import "./workspace.css";
 
 const MarketStation = lazy(() =>
   import("./MarketStation").then((module) => ({
@@ -72,82 +74,6 @@ type Snapshot = {
   events: { id: number; observed_at: string; message: string }[];
   events_total: number;
 };
-const navigation = [
-  {
-    id: "dashboard",
-    label: "Overview",
-    href: "#overview",
-    icon: LayoutDashboard,
-    description: "Account performance and current activity",
-  },
-  {
-    id: "ai-lab",
-    label: "Research",
-    href: "#research",
-    icon: BrainCircuit,
-    description: "Investigations, evidence, results and next decisions",
-  },
-  {
-    id: "accounts",
-    label: "Accounts & Results",
-    href: "#accounts",
-    icon: Wallet,
-    description: "Paper accounts, matched comparisons, positions, orders and costs",
-  },
-  {
-    id: "markets",
-    label: "Markets",
-    href: "#markets",
-    icon: Activity,
-    description: "Observed markets, saved charts, findings and research eligibility",
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    href: "#settings?view=setup",
-    icon: Settings2,
-    description: "Local collector, exports and deferred practice",
-  },
-] as const;
-type Page = (typeof navigation)[number]["id"] | "strategies" | "orders" | "analytics" | "risk";
-const aliases: Record<string, Page> = {
-  overview: "dashboard",
-  experiment: "accounts",
-  "paper-campaigns": "accounts",
-  "account-economics": "analytics",
-  "experiment-lab": "ai-lab",
-  "forward-learning": "ai-lab",
-  "model-lab": "ai-lab",
-  "role-research": "ai-lab",
-  knowledge: "ai-lab",
-  "research-reviews": "ai-lab",
-  "reviewer-connection": "ai-lab",
-  "strategy-lab": "strategies",
-  "live-quotes": "markets",
-  "live-readiness": "risk",
-  operations: "settings",
-  research: "ai-lab",
-  roadmap: "settings",
-  options: "settings",
-};
-function currentPage(): Page {
-  const hash = location.hash.slice(1).split("?")[0];
-  const view = new URLSearchParams(location.hash.split("?")[1] ?? "").get("view");
-  if (hash === "accounts") {
-    if (view === "orders") return "orders";
-    if (view === "performance") return "analytics";
-    if (view === "safeguards" || view === "readiness") return "risk";
-    if (view === "comparisons" || view === "qualification") return "ai-lab";
-  }
-  if (hash === "settings" && ["models", "knowledge", "training"].includes(view ?? "")) return "ai-lab";
-  if (hash === "training-data" || hash.startsWith("teaching:") || hash.startsWith("lab-result:") || hash.startsWith("lab-comparison:")) return "ai-lab";
-  return (
-    aliases[hash] ??
-    (navigation.some((n) => n.id === hash) || ["strategies", "orders", "analytics", "risk"].includes(hash)
-      ? (hash as Page)
-      : "dashboard")
-  );
-}
 const timeLabel = (value?: string) =>
   value
     ? new Date(value).toLocaleString("en-US", {
@@ -159,10 +85,24 @@ const timeLabel = (value?: string) =>
       }) + " MT"
     : "Waiting for an observation";
 
+function AccountSafeguards({ paper, unavailable }: { paper?: PaperSnapshot; unavailable: boolean }) {
+  const [scope, setScope] = useAccountScope();
+  const known = !!paper && (!scope || Object.hasOwn(paper.accounts, scope));
+  const scoped = paper && known && scope ? { ...paper, accounts: { [scope]: paper.accounts[scope] } } : paper;
+  return <>
+    <section className="workspace-card"><div className="card-heading"><h2>Safeguard scope</h2><label>Risk account <select value={scope} onChange={event => setScope(event.target.value)}>
+      <option value="">All managed accounts</option>
+      {scope && !known && <option value={scope}>{scope} · unavailable</option>}
+      {Object.entries(paper?.accounts ?? {}).map(([name, account]) => <option key={name} value={name}>{account.label ?? name}</option>)}
+    </select></label></div><p className="fine-print">Entry pauses and loss controls belong to each account. Global entry control remains separate.</p></section>
+    {scope && !known ? <p role="status" className="workspace-card">Safeguards for {scope} are unavailable. No other account's controls are shown.</p> :
+      <><RiskOverview paper={scoped} unavailable={unavailable} accountName={scope || "primary"} /><PaperRiskPanel key={scope} accounts={scoped?.accounts ?? {}} unavailable={unavailable} focusedAccount={scope || undefined} /></>}
+  </>;
+}
+
 function App() {
-  const [page, setPage] = useState<Page>(currentPage);
-  const [labTab, setLabTab] = useState("roles");
-  const [riskTab, setRiskTab] = useState("limits");
+  const [route, setRoute] = useState(() => workspaceRoute(location.hash));
+  const { page, lab: labTab } = route;
   const [data, setData] = useState<Snapshot | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [commandError, setCommandError] = useState<string | null>(null);
@@ -171,32 +111,12 @@ function App() {
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [accountSearch, setAccountSearch] = useState("");
-  const [advancedResearch, setAdvancedResearch] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const update = () => {
-      const hash = location.hash.split("?")[0];
-      const view = new URLSearchParams(location.hash.split("?")[1] ?? "").get("view");
-      setPage(currentPage());
+      setRoute(workspaceRoute(location.hash));
       setMenuOpen(false);
       setSearchOpen(false);
-      if (hash === "#model-lab") setLabTab("models");
-      else if (hash === "#role-research") setLabTab("roles");
-      else if (["#knowledge", "#research-reviews", "#reviewer-connection"].includes(hash)) setLabTab("knowledge");
-      else if (hash === "#forward-learning") setLabTab("learning");
-      else if (hash === "#experiment-lab") setLabTab("experiments");
-      else if (hash === "#research") setLabTab(["autonomous", "experiments", "history"].includes(view ?? "") ? view! : "roles");
-      else if (hash === "#ai-lab") setLabTab("autonomous");
-      else if (hash === "#accounts" && view === "comparisons") setLabTab("autonomous");
-      else if (hash === "#accounts" && view === "qualification") setLabTab("learning");
-      else if (hash === "#settings" && ["models", "knowledge", "training"].includes(view ?? "")) setLabTab(view!);
-      else if (
-        hash === "#training-data" ||
-        location.hash.startsWith("#teaching:") || location.hash.startsWith("#lab-result:") || location.hash.startsWith("#lab-comparison:")
-      )
-        setLabTab("training");
-      if (hash === "#live-readiness" || view === "readiness") setRiskTab("readiness");
-      else if (hash === "#risk" || view === "safeguards") setRiskTab("limits");
       window.scrollTo({ top: 0, behavior: "instant" });
     };
     update();
@@ -271,23 +191,8 @@ function App() {
               ? "Stale"
               : "Paper worker running";
   const accountCount = Object.keys(paper?.accounts ?? {}).length;
-  const section = ["orders", "analytics", "risk"].includes(page) || page === "ai-lab" && ["autonomous", "learning"].includes(labTab) ? "accounts" : page === "strategies" ? "markets" : page === "ai-lab" && ["models", "knowledge", "training"].includes(labTab) ? "settings" : page;
-  const title = navigation.find((n) => n.id === section)?.label ?? "Overview";
-  const subtitle: Record<Page, string> = {
-    dashboard: "Current operation, recent decisions, next actions and attention.",
-    accounts:
-      "Compare isolated accounts. Keep each balance, strategy and loss limit separate.",
-    "ai-lab": "Follow saved investigations, their evidence and their next decision.",
-    strategies: "Understand the rules, the signals and why a strategy acted.",
-    orders:
-      "Recent trades across accounts, plus positions and the full journal.",
-    analytics: "Whole-account results, measured after modeled execution costs.",
-    risk: "Review account limits, retained losses and the path to a live decision.",
-    settings:
-      "Your local workspace, background collection and retained records.",
-    markets:
-      "Public market observations and the evidence behind paper decisions.",
-  };
+  const area = workspaceAreas.find(item => item.id === route.area)!;
+  const title = area.views.find(item => item[0] === route.view)![1];
   async function collectorControl() {
     if (!data) return;
     setPending(true);
@@ -316,7 +221,10 @@ function App() {
     }
   }
   const matches = query.trim().toLowerCase();
-  const matchingPages = navigation.filter((n) =>
+  const searchPages = workspaceAreas.flatMap(item => item.views.map(([view, label]) => ({
+    id: `${item.id}-${view}`, label, description: item.label, icon: item.icon, href: workspaceHref(item.id, view),
+  })));
+  const matchingPages = searchPages.filter((n) =>
     `${n.label} ${n.description}`.toLowerCase().includes(matches),
   );
   const matchingAccounts = Object.entries(paper?.accounts ?? {}).filter(
@@ -381,39 +289,33 @@ function App() {
         </a>
         <p className="workspace-label">LOCAL RESEARCH WORKSPACE</p>
         <nav aria-label="Main navigation">
-          {navigation.map((n) => (
-            <a
-              key={n.id}
-              href={inContext(n.href)}
-              className={section === n.id ? "nav-primary" : ""}
-              aria-current={section === n.id ? "page" : undefined}
-              onClick={() => {
-                setMenuOpen(false);
-                if (n.id === "accounts") setAccountSearch("");
-              }}
-            >
-              <n.icon size={19} />
-              <span>{n.label}</span>
-              {n.id === "accounts" && (
-                <span className="nav-count">{accountCount || "—"}</span>
-              )}
+          {workspaceAreas.map(n => <div className="nav-area" key={n.id}>
+            <a href={inContext(workspaceHref(n.id))} className={route.area === n.id ? "nav-primary" : ""}
+              aria-current={route.area === n.id ? "true" : undefined}
+              onClick={() => { setMenuOpen(false); if (n.id === "accounts") setAccountSearch(""); }}>
+              <n.icon size={19} /><span>{n.label}</span>
+              {route.area === n.id && <ChevronRight className="nav-chevron" size={14} />}
             </a>
-          ))}
+            {route.area === n.id && <div className="nav-subpages" aria-label={`${n.label} pages`}>
+              {n.views.map(([id, label]) => <a key={id} href={inContext(workspaceHref(n.id, id))}
+                aria-current={route.view === id ? "page" : undefined}>{label}</a>)}
+            </div>}
+          </div>)}
         </nav>
         <div className="sidebar-note">
           <ShieldCheck size={24} />
           <strong>
-            Paper today.
+            Research today.
             <br />
             Evidence for tomorrow.
           </strong>
-          <p>Separate accounts. Frozen research. Human approval.</p>
-          <a href="#risk" onClick={() => setMenuOpen(false)}>
+          <p>Systematic research. Separate accounts. Measured decisions.</p>
+          <a href={inContext("#accounts?view=safeguards")} onClick={() => setMenuOpen(false)}>
             View safeguards <ArrowRight size={14} />
           </a>
         </div>
         <div className="sidebar-footer">
-          <span className="status-dot good" />
+          <span className={`status-dot ${!unavailable ? "good" : ""}`} />
           <span>
             Local workspace<small>Paper only · Cash only</small>
           </span>
@@ -441,7 +343,7 @@ function App() {
             <input
               ref={searchInput}
               type="search"
-              placeholder="Search accounts, strategies or pages…"
+              placeholder="Search pages and paper accounts…"
               aria-label="Search workspace"
               value={query}
               onChange={(e) => {
@@ -472,7 +374,7 @@ function App() {
                     <X size={15} />
                   </button>
                 </div>
-                {matchingPages.map((n) => (
+                {matchingPages.slice(0, matches ? 12 : 7).map((n) => (
                   <a
                     key={n.id}
                     href={inContext(n.href)}
@@ -511,6 +413,11 @@ function App() {
               </div>
             )}
           </div>
+          <nav className="workspace-modes" aria-label="Research and execution environment">
+            <a href={inContext("#research")}><BrainCircuit size={15} /> Research</a>
+            <span aria-current="true"><ShieldCheck size={15} /> Paper</span>
+            <a href={inContext("#results?view=readiness")} title="Review live requirements"><LockKeyhole size={14} /> Live locked</a>
+          </nav>
           <div className="topbar-right">
             <div className="worker-state">
               <span className={`status-dot ${!unavailable ? "good" : ""}`} />
@@ -519,20 +426,19 @@ function App() {
                 <small>{timeLabel(data?.generated_at)}</small>
               </span>
             </div>
-            <span className="pill paper">PAPER ONLY</span>
             <span className="operator-avatar" title="Local operator">
-              CR
+              <Wallet size={17} />
             </span>
           </div>
         </header>
-        <div className="page" data-page={page}>
+        <div className="page" data-page={page} data-area={route.area} data-view={route.view}>
           <div className="page-heading">
             <div>
               <p className="eyebrow">
-                WORKSPACE <ChevronRight size={11} /> {title.toUpperCase()}
+                {area.label} <ChevronRight size={11} /> {title}
               </p>
-              <h1>{title}</h1>
-              <p className="subtitle">{subtitle[page]}</p>
+              <h1>{page === "dashboard" ? "Overview" : title}</h1>
+              <p className="subtitle">{area.description}</p>
             </div>
             <div className="heading-actions">
               {page === "dashboard" && (
@@ -568,119 +474,70 @@ function App() {
               historical evidence stays available.
             </div>
           )}
-          {section === "accounts" && <nav className="workspace-tabs" aria-label="Accounts and results views">{[["#accounts", "Accounts"], ["#accounts?view=comparisons", "Matched comparisons"], ["#accounts?view=orders", "Positions & orders"], ["#accounts?view=performance", "Performance & costs"], ["#accounts?view=qualification", "Paper qualification"], ["#accounts?view=safeguards", "Safeguards"]].map(([href, label]) => <a key={href} href={inContext(href)}>{label}</a>)}</nav>}
-          {section === "settings" && <nav className="workspace-tabs" aria-label="Settings views">{[["#settings?view=setup", "Setup & resume"], ["#settings?view=models", "Local model connection"], ["#settings?view=knowledge", "Knowledge & optional review"], ["#settings?view=training", "Training Lab preparation"]].map(([href, label]) => <a key={href} href={inContext(href)}>{label}</a>)}</nav>}
+          <nav className="workspace-subnav" aria-label={`${area.label} views`}>
+            {area.views.map(([id, label]) => <a key={id} href={inContext(workspaceHref(area.id, id))}
+              aria-current={route.view === id ? "page" : undefined}>{label}</a>)}
+          </nav>
           {page === "dashboard" && <ResearchOverview paper={paper} unavailable={unavailable} />}
-          {page === "accounts" && (
-            <>
-              <AccountsView
-                paper={paper}
-                unavailable={unavailable}
-                initialSearch={accountSearch}
-              />
-              <details className="workspace-details">
-                <summary>Original Tier 3 trial and review history</summary>
-                <PaperPanel
-                  data={paper}
-                  disconnected={!!networkError}
-                  integrated={false}
-                />
-              </details>
-            </>
-          )}
-          {page === "ai-lab" && (
-            <>
-              {section === "ai-lab" && <details className="workspace-details" onToggle={event => setAdvancedResearch(event.currentTarget.open)}><summary>Advanced research tools and diagnostics</summary>{advancedResearch && <><div className="workspace-tabs" aria-label="Advanced research views">
-                {[
-                  ["roles", "Investigations"],
-                  ["experiments", "Numerical research"],
-                  ["history", "Historical matches"],
-                ].map(([id, label]) => (
-                  <button
-                    key={id}
-                    className={labTab === id ? "selected" : ""}
-                    aria-pressed={labTab === id}
-                    onClick={() => {
-                      location.hash = id === "roles" ? "research" : `research?view=${id}`;
-                    }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div><ResearchActivity /><ResearchAttention /></>}</details>}
-              {labTab === "autonomous" && <AutonomousPanel />}
-              {labTab === "roles" && <RoleResearchPanel integrated={location.hash.split("?")[0] === "#research"} />}
-              {labTab === "knowledge" && <Suspense fallback={<p>Opening persistent knowledge…</p>}><KnowledgeWorkspace /></Suspense>}
-              {labTab === "training" && <Suspense fallback={<p>Loading training review…</p>}><TrainingDataPanel /></Suspense>}
-              {labTab === "experiments" && <ExperimentLab paper={paper} />}
-              {labTab === "learning" && (
-                <LearningPanel
-                  data={paper?.learning}
-                  unavailable={unavailable}
-                />
-              )}
-              {labTab === "models" && <ModelTrialsPanel />}
-              {labTab === "history" && (
-                <>
-                  <EvidencePanel status={paper?.research_evidence} />
-                  <ProspectivePanel />
-                </>
-              )}
-            </>
-          )}
-          {(page === "markets" || page === "strategies") && (
-            <Suspense fallback={<p>Loading market chart…</p>}>
-              <MarketStation strategyOnly={page === "strategies"} />
-            </Suspense>
-          )}
-          {page === "orders" && (
-            <OrdersView paper={paper} unavailable={unavailable} />
-          )}
-          {page === "analytics" && (
-            <>
-              <PerformanceChart paper={paper} unavailable={unavailable} />
-              <PaperEconomicsPanel
-                data={paper?.economics}
-                profiles={paper?.execution_profiles}
-                unavailable={unavailable}
-              />
-            </>
-          )}
-          {page === "risk" && (
-            <>
-              <div className="workspace-tabs" aria-label="Risk views">
-                <button
-                  className={riskTab === "limits" ? "selected" : ""}
-                  aria-pressed={riskTab === "limits"}
-                  onClick={() => setRiskTab("limits")}
-                >
-                  Account safeguards
-                </button>
-                <button
-                  className={riskTab === "readiness" ? "selected" : ""}
-                  aria-pressed={riskTab === "readiness"}
-                  onClick={() => setRiskTab("readiness")}
-                >
-                  Live readiness
-                </button>
-              </div>
-              {riskTab === "limits" ? (
-                <>
-                  <RiskOverview paper={paper} unavailable={unavailable} />
-                  <PaperRiskPanel
-                    accounts={paper?.accounts ?? {}}
-                    unavailable={unavailable}
-                  />
-                </>
-              ) : (
-                <ReadinessPanel />
-              )}
-            </>
-          )}
-          {page === "settings" && (
-            <>
-              <ResearchSetup />
-              <div className="settings-grid">
+          {page === "attention" && <ResearchAttention />}
+          {page === "accounts" && <AccountsView paper={paper} unavailable={unavailable} initialSearch={accountSearch} />}
+          {page === "ai-lab" && <>
+            {labTab === "autonomous" && <AutonomousPanel />}
+            {labTab === "roles" && <RoleResearchPanel integrated />}
+            {labTab === "controls" && <><RoleResearchPanel integrated controlsOnly /><details className="workspace-details"><summary>Research supervision and original receipts</summary><ResearchActivity /><ResearchAttention /></details></>}
+            {labTab === "knowledge" && <Suspense fallback={<p>Opening persistent knowledge…</p>}><KnowledgeWorkspace /></Suspense>}
+            {labTab === "training" && <Suspense fallback={<p>Loading training review…</p>}><TrainingDataPanel /></Suspense>}
+            {labTab === "experiments" && <ExperimentLab paper={paper} />}
+            {labTab === "learning" && <LearningPanel data={paper?.learning} unavailable={unavailable} />}
+            {labTab === "models" && <ModelTrialsPanel />}
+            {labTab === "history" && <><EvidencePanel status={paper?.research_evidence} /><ProspectivePanel /></>}
+          </>}
+          {(page === "markets" || page === "strategies") && <Suspense fallback={<p>Loading market workspace…</p>}>
+            <MarketStation strategyOnly={page === "strategies"} view={route.view} />
+          </Suspense>}
+          {page === "coverage" && <><FeedPanel data={paper ?? {}} /><ResearchStoragePanel /></>}
+          {page === "orders" && <OrdersView paper={paper} unavailable={unavailable}
+            initialView={route.view === "positions" ? "positions" : route.view === "journal" ? "journal" : "trades"}
+            focused={route.view !== "orders"} />}
+          {page === "analytics" && (route.view === "costs" ?
+            <PaperEconomicsPanel data={paper?.economics} profiles={paper?.execution_profiles} unavailable={unavailable} /> :
+            <><PerformanceChart paper={paper} unavailable={unavailable} /><a className="text-link" href={inContext("#results?view=costs")}>Review costs and economics <ArrowRight size={14} /></a></>)}
+          {page === "risk" && (route.view === "readiness" ? <ReadinessPanel /> :
+            <AccountSafeguards paper={paper} unavailable={unavailable} />)}
+          {page === "history" && (route.view === "trials" ?
+            <PaperPanel data={paper} disconnected={!!networkError} integrated={false} /> : <>
+              <section className="workspace-card"><div className="card-heading"><h2>Recent paper activity</h2><a className="text-link" href={inContext("#history?view=journal")}>Account journal <ArrowRight size={14} /></a></div>
+                {unavailable && <p role="status">Last reported activity. Current worker state is unconfirmed.</p>}
+                <ol className="event-list">{paper?.events.slice(0, 12).map(event => <li key={event.id}><span className="event-dot" /><p>{event.kind.replaceAll("_", " ")}<small>{JSON.stringify(event.body)}</small></p><time>{timeLabel(new Date(event.at * 1000).toISOString())}</time></li>)}</ol>
+                {!paper?.events.length && <p className="empty-state">No activity in the current bounded window. Original records remain in the account journal.</p>}
+              </section>
+              <section className="workspace-card">
+                <div className="card-heading">
+                  <h2>Collector activity</h2>
+                  <span className="subtle-note">
+                    Latest {data?.events.length ?? 0} of{" "}
+                    {data?.events_total ?? 0}
+                  </span>
+                </div>
+                <ol className="event-list">
+                  {data?.events.map((e) => (
+                    <li key={e.id}>
+                      <span className="event-dot" />
+                      <p>{e.message}</p>
+                      <time>{timeLabel(e.observed_at)}</time>
+                    </li>
+                  ))}
+                </ol>
+                {!data?.events.length && (
+                  <p className="empty-state">
+                    No collector activity has been recorded.
+                  </p>
+                )}
+              </section>
+            </>)}
+          {page === "settings" && <>
+            {route.view === "setup" && <ResearchSetup />}
+            {route.view === "storage" && <><ResearchStoragePanel />
                 <section className="workspace-card">
                   <div className="card-heading">
                     <h2>Background collection</h2>
@@ -736,82 +593,10 @@ function App() {
                     the local worker running.
                   </p>
                 </section>
-                <section className="workspace-card">
-                  <div className="card-heading">
-                    <h2>Workspace boundaries</h2>
-                    <LockKeyhole size={19} />
-                  </div>
-                  <div className="guardrail-list">
-                    <p>
-                      <ShieldCheck size={19} />
-                      <span>
-                        <strong>Paper only</strong>Simulated orders and separate
-                        hypothetical balances.
-                      </span>
-                    </p>
-                    <p>
-                      <Wallet size={19} />
-                      <span>
-                        <strong>Cash only</strong>No new margin, borrowing or
-                        automatic top-ups.
-                      </span>
-                    </p>
-                    <p>
-                      <BrainCircuit size={19} />
-                      <span>
-                        <strong>Research needs evidence</strong>Frozen results
-                        and explicit paper-role approval.
-                      </span>
-                    </p>
-                    <p>
-                      <LockKeyhole size={19} />
-                      <span>
-                        <strong>Local operation</strong>Public market feeds.
-                        Private records stay on this computer.
-                      </span>
-                    </p>
-                  </div>
-                  <a href="#live-readiness" className="text-link">
-                    Review live blockers <ArrowRight size={14} />
-                  </a>
-                </section>
-              </div>
-              <section className="workspace-card">
-                <div className="card-heading">
-                  <h2>Collector activity</h2>
-                  <span className="subtle-note">
-                    Latest {data?.events.length ?? 0} of{" "}
-                    {data?.events_total ?? 0}
-                  </span>
-                </div>
-                <ol className="event-list">
-                  {data?.events.map((e) => (
-                    <li key={e.id}>
-                      <span className="event-dot" />
-                      <p>{e.message}</p>
-                      <time>{timeLabel(e.observed_at)}</time>
-                    </li>
-                  ))}
-                </ol>
-                {!data?.events.length && (
-                  <p className="empty-state">
-                    No collector activity has been recorded.
-                  </p>
-                )}
-              </section>
-              <details className="workspace-details">
-                <summary>Historical options practice</summary>
-                <p className="fine-print">
-                  Retained practice evidence is separate from the current
-                  cash-only spot research.
-                </p>
-                <OptionsPanel
-                  data={data?.options}
-                  disconnected={!!networkError}
-                />
-              </details>
-            </>
-          )}
+              </>}
+            {route.view === "system" && <><ResearchActivity /><FeedPanel data={paper ?? {}} /></>}
+            {route.view === "practice" && <><p className="fine-print">Retained practice evidence is separate from current cash-only spot research.</p><OptionsPanel data={data?.options} disconnected={!!networkError} /></>}
+          </>}
           <footer className="page-footer">
             <span>
               <LockKeyhole size={12} /> LOCAL WORKSPACE <span>·</span> PAPER

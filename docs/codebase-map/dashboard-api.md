@@ -4,22 +4,41 @@ This guide maps the current checked-out dashboard/API contracts. It does not cla
 
 ## Normal navigation and selected scope
 
-The normal destinations are Overview, Research, Accounts & Results, Markets and
-Settings. Overview replaces the old home composition, while Research exposes
-the existing worker's investigations. Numerical tools, knowledge and Training
-Lab are contextual details. `inContext` preserves explicit account, market,
-task and trial between destinations. Explicit account selection preserves the
-current view, clears an unrelated trial, and restores account scope on Back.
-Performance chart and [whole-account economics](source-index.md#product-account-economics)
-share `useAccountScope`, so either
-selector changes the same URL account and Back/reload restores both. Economics
-keeps a missing explicit identity visible, with no other account's cost controls.
-Async settings feedback belongs to the account whose request produced it.
-Account inspection and holdings/journal selectors also require own account
-records; inherited JavaScript object names reach the original unavailable read.
-Performance, economics, trade, positions and journal consumers do not silently use primary
-when an explicit account is missing. Exact retained accounts and trials have
-separate reads, including when the broad paper snapshot is unavailable.
+The seven normal destinations are **Overview, Markets, Research, Accounts,
+Results, History and Settings**. The [central route table](source-index.md#dashboard-main-route)
+defines active-area subpages and resolves earlier URLs without rewriting the
+producer's original parameters. [Workspace styles](source-index.md#product-workspace-style)
+keep a compact summary grid and focused workspaces at desktop and narrow widths.
+Only the active area's secondary navigation is expanded in the sidebar.
+
+Overview shows independent observed paper, market and model states, bounded
+attention and investigation summaries, and one explicitly selected account.
+Unavailable and unconfigured owners do not become paused or healthy; a paper
+heartbeat does not qualify a strategy. Pipeline stages are links with independent
+facts, not an overall completion score. One bounded station quote read supplies
+the market watch; quote validity expires using elapsed time. Decorative mountains
+are not market data. Hypothetical account balances are never a portfolio total
+on Overview. Results owns performance, costs, matched comparisons, qualification
+and live requirements. History owns journals, trades, retained research/matches
+and the original Tier 3 trial surface. Settings separates setup, model connections,
+storage, system health and retained practice. Research owns investigations,
+numerical tools, strategies, knowledge, training preparation and role controls.
+
+`inContext` preserves explicit account, symbol, task and trial between areas.
+Explicit account selection preserves the current view, clears an unrelated trial,
+and restores account scope on Back. Performance and
+[whole-account economics](source-index.md#product-account-economics) share
+`useAccountScope` across their focused pages. Missing explicit identities stay
+visible with no fallback cost controls or another account's data. Selected-account
+summaries, positions, strategy and safeguards use own-property validation.
+Safeguards explicitly select one account or all managed accounts and keep global
+entry control separate. Exact strategy evidence uses `detail.strategy`; the old
+variant catalogue is disclosed separately and does not describe the selected
+account's rules or returns. Risk POST owners, stop IDs and payloads are unchanged.
+Original task details offer Summary, Evidence, Checks & Review, Comparison and
+Outcome & Next Decision. Those tabs preserve the task and support reload/Back.
+Opening a task from Controls returns to Investigations. Original absent/corrupt
+records remain unavailable, including when the broad paper snapshot is unavailable.
 
 ## Coherent product setup and observation
 
@@ -49,9 +68,44 @@ resource observations, time and model responses. Polling remains enabled and
 GETs never tick its background driver. This is software workflow evidence,
 not actual model, prospective economic or installed acceptance.
 
-[main.currentPage](source-index.md#dashboard-main-route) derives the page from the hash before query parameters. Unknown pages fall back to Overview. It preserves aliases such as `role-research`, `knowledge`, `forward-learning`, `experiment-lab` and `live-readiness`; teaching/result/comparison bookmarks resolve into the AI Lab training surface. [App](source-index.md#dashboard-app) selects the corresponding Lab/Risk tab on hash changes, closes navigation/search and scrolls to the page. Markets and Strategies lazily load [MarketStation](source-index.md#dashboard-market-station); Strategies sets `strategyOnly` and does not mount the main scanner/candle workspaces.
+[workspaceRoute](source-index.md#dashboard-main-route) clamps unknown pages/views
+and preserves legacy `role-research`, `knowledge`, `forward-learning`,
+`experiment-lab`, `live-readiness` and teaching/result/comparison training URLs.
+Without an explicit market view, `candle_run` selects Charts even when older
+scanner parameters remain; scanner chart/campaign/daily/comparison identifiers
+select Scanner & Findings. [App](source-index.md#dashboard-app) derives content
+and selected navigation from this single route on hash changes, closes menus and
+search, and scrolls to the page. Markets and Strategies lazily load
+[MarketStation](source-index.md#dashboard-market-station). Focused market views
+mount only their watch, saved scanner or separate candle workspace; original
+evidence links preserve exact record identities. Navigation itself does not start
+a study, acquisition, model request or financial action.
 
-Market scope consists of **symbol and account**, not symbol alone. URL scope wins over local saved preferences. An invalid explicit symbol/account remains unavailable rather than silently selecting BTC or primary. [MarketStation.chooseScope](source-index.md#dashboard-market-scope) changes the URL/local preference and cancels obsolete evidence reads. It preserves `scanner_campaign`, preserves chart keys only for the same symbol, and can carry an explicit original `candle_run`. Account-only navigation must not destroy an exact same-market historical chart. A saved candle run can deliberately reopen its original market while preserving the user's selected account.
+Scanner & Findings has four local views: Findings, Saved Charts, Preparation &
+Coverage, and All Saved Evidence. `scanner_view` restores that selection on
+reload and Back. Without it, an explicit `pattern_comparison_request` opens
+Findings even when older chart parameters remain; otherwise an original
+`scanner_chart_*` bookmark opens Saved Charts. The default Findings view does
+not mount the five-chart reader. Daily
+findings and manual evidence can open their exact saved chart; comparison review
+returns to Findings. Status refresh, original pending acknowledgments and errors
+remain visible across views. The retained daily and comparison readers keep
+their existing disclosure semantics; navigation does not activate their workers.
+Pane-only Back does not reopen an unchanged campaign or discard a manually read
+evidence page. Leaving Charts clears consumed manual focus so a later remount
+uses the saved URL window. A new effect lifecycle resets the campaign restore
+guard so canceled development reads can be replaced.
+Status polling releases an aborted controller at cleanup and lets only its own
+completion clear the active controller. Daily cards keep their current eligibility
+and recorded preparation summary visible; original market inputs, observation
+times and five-frame capture coverage have explicit disclosures.
+The original trial panel and its journal monitoring live under History → Original
+Trial History. The monitoring browser still verifies native audit failure, expiry,
+recovery and imbalance through that panel. Returning from an account inspector to
+All accounts exposes another account selection; history refresh tests preserve
+their singular disclosure, paging and account-reset assertions through this flow.
+
+Market scope consists of **symbol and account**, not symbol alone. URL scope wins over local saved preferences. An invalid explicit symbol/account remains unavailable rather than silently selecting BTC or primary. [MarketStation.chooseScope](source-index.md#dashboard-market-scope) changes the URL/local preference and cancels obsolete evidence reads. It writes the resolved focused market view, preserves `scanner_view` and `scanner_campaign`, preserves chart keys only for the same symbol, and can carry an explicit original `candle_run`. Initial mounting fills only absent symbol/account fields. Scanner chart bookmarks bind the chart owner's actual symbol even when navigation started from a parameter-light link. Account-only navigation must not destroy an exact same-market historical chart. A saved candle run can deliberately reopen its original market while preserving the user's selected account.
 
 | Bookmark | Owner and behavior |
 | --- | --- |
@@ -151,6 +205,17 @@ stateDiagram-v2
 The standalone candle controller and comparison preparation panel have their own durable pending owner and exact GET recovery. Comparison mode/method intent is canonical and digest-bound; a changed intent 409 must not discard the original. A saved read-only/p1 result cannot acknowledge or reinterpret an ordinary p0 pending request. The legacy generic tools have saved-run recovery but should not be described as sharing every newer durable-command guarantee.
 
 ## Old or wrong content after navigation
+
+The existing `Open-TradingDashboard.ps1` shortcut opens `#overview`. It still
+validates and reuses the installed scheduled task; launch navigation adds no
+worker or research activation. Legacy `#experiment` bookmarks continue to open
+the account summary through the centralized aliases.
+
+The saved-role archive/evidence browser harnesses open the actual investigation
+Evidence tab and native saved-question/manual-control disclosures. Original
+finding links select Saved Charts; comparison/daily assertions then explicitly
+open Findings while retaining the original source pins. Manual-form absence
+checks include hidden DOM so a collapsed form cannot masquerade as absent.
 
 Check hash, selected symbol/account, original campaign/day/UUID, successful response scope and request generation. A saved record can legitimately display historical reasons while current inputs have changed; its labels/timestamps must preserve that distinction. An explicit “Inspect current campaign/charts” changes the route, whereas failed exact restore must not quietly do so. Compare source/build identity separately from the installed `/api/health` marker; reading newer TS source does not update already served compiled assets.
 

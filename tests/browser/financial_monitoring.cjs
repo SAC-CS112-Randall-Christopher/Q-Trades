@@ -1,4 +1,4 @@
-// Actual compiled Accounts interface + actual disposable API; no response interception.
+// Actual compiled original-trial history + actual disposable API; no response interception.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -32,10 +32,8 @@ const token = process.env.QTRADES_BROWSER_QA_TOKEN;
       const owner = await response.json();
       const statusResponse = page.waitForResponse(response =>
         response.url() === `${origin}/api/status` && response.status() === 200);
-      await page.goto(`${origin}/#accounts`);
+      await page.goto(`${origin}/#history?view=trials`);
       await statusResponse;
-      const summary = page.getByText("Original Tier 3 trial and review history", { exact: true });
-      if (await summary.locator("..").getAttribute("open") === null) await summary.click();
       const label = page.getByTestId("journal-monitoring");
       await label.waitFor();
       const text = await label.innerText();
@@ -173,9 +171,7 @@ const token = process.env.QTRADES_BROWSER_QA_TOKEN;
       });
       assert.equal(response.status(), 200);
       const journal = await response.json();
-      await page.goto(`${origin}/#accounts`);
-      const summary = page.getByText("Original Tier 3 trial and review history", { exact: true });
-      if (await summary.locator("..").getAttribute("open") === null) await summary.click();
+      await page.goto(`${origin}/#history?view=trials`);
       const label = page.getByTestId("journal-monitoring");
       await label.filter({ hasText: phrase }).waitFor();
       const text = await label.innerText();

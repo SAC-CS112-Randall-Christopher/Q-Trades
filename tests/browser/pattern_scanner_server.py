@@ -55,16 +55,16 @@ def main():
         "src/trading/evidence_runtime.py",
         "src/trading/venue.py",
         "apps/web/src/ScannerWorkspace.tsx",
+        "apps/web/src/DailyAnalyzer.tsx",
         "apps/web/src/scanner-workspace.css",
         "apps/web/src/MarketStation.tsx",
+        "apps/web/src/workspaceNavigation.ts",
+        "apps/web/src/workspace.css",
         "apps/web/src/CandleWorkspace.tsx",
         "apps/web/src/WorkspaceViews.tsx",
         "apps/web/src/candle-workspace.css",
         "tests/browser/pattern_scanner_server.py",
     ]
-    if args.daily_check:
-        names.append("apps/web/src/DailyAnalyzer.tsx")
-
     def current_hashes():
         source = {name: hashlib.sha256((repo / name).read_bytes()).hexdigest() for name in names}
         source.update(

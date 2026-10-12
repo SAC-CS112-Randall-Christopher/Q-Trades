@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'PaperStartupIdentity.ps1')
 $projectRoot = (Resolve-Path -LiteralPath (Split-Path -Parent $PSScriptRoot)).Path
 $taskName = 'TradingResearch-Paper-20260927'
-$dashboardUrl = 'http://127.0.0.1:8780/#experiment'
+$dashboardUrl = 'http://127.0.0.1:8780/#overview'
 $healthUrl = 'http://127.0.0.1:8780/api/health'
 $runnerPath = Join-Path $PSScriptRoot 'Run-PaperExperiment.ps1'
 $logPath = Join-Path $projectRoot 'data\desktop-launcher.log'

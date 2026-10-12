@@ -19,7 +19,7 @@ import type { Account, PaperSnapshot } from "./PaperPanel";
 import { PaperCampaignPanel } from "./PaperCampaignPanel";
 import { PaperCampaignJournal } from "./PaperCampaignJournal";
 import { TradeHistory } from "./TradeHistory";
-import { useAccountScope } from "./productNavigation";
+import { inContext, useAccountScope } from "./productNavigation";
 import { PerformanceDiagnosticPanel } from "./PerformanceDiagnosticPanel";
 import { OriginalStrategyPanel, isOriginalAccount } from "./OriginalStrategyPanel";
 import { RetainedAccount } from "./RetainedComparison";
@@ -858,6 +858,7 @@ function AccountInspector({
   }
   const state = accountState(a, paper, unavailable);
   return (
+    <div className="account-detail-workspace"><button className="text-link" onClick={close}>← All accounts</button>
     <section
       ref={panel}
       tabIndex={-1}
@@ -957,9 +958,19 @@ function AccountInspector({
         Clearing an entry pause does not clear a global pause, hard stop or
         valuation block. Funding and all earlier losses are preserved.
       </p>
-      <PaperCampaignJournal key={`journal-${name}`} account={name} />
+      <details className="workspace-details"><summary>Account journal & activity</summary><PaperCampaignJournal key={`journal-${name}`} account={name} /></details>
       {isOriginalAccount(name) && <OriginalStrategyPanel key={`strategy-${name}`} name={name} account={a} unavailable={unavailable} />}
     </section>
+    <div className="account-workbench">
+      <section className="workspace-card account-position-preview" aria-label="Selected account positions"><div className="card-heading"><h2>Positions <span className="subtle-note">({Object.keys(a.positions).length})</span></h2><a className="text-link" href={inContext("#accounts?view=positions", { account: name })}>View positions <ArrowRight size={13} /></a></div>
+        <div className="table-scroll"><table className="market-table"><thead><tr><th>Market</th><th>Quantity</th><th>Entry price</th><th>Stop trigger</th></tr></thead><tbody>{Object.entries(a.positions).slice(0, 5).map(([symbol, position]) => <tr key={symbol}><td>{symbol}</td><td>{position.quantity}</td><td>{money(position.entry)}</td><td>{money(position.stop)}</td></tr>)}</tbody></table></div>
+        {!Object.keys(a.positions).length && <p className="empty-state">No open position in this exact account's last reported holdings.</p>}
+        {unavailable && <p role="status" className="fine-print">Current holdings are unconfirmed. Reconnect before acting.</p>}
+      </section>
+      <section className="workspace-card" aria-label="Selected account strategy"><div className="card-heading"><h2>Strategy & research</h2><a className="text-link" href={inContext("#research?view=strategies", { account: name })}>View strategy <ArrowRight size={13} /></a></div><p><strong>{a.version}</strong></p><p className="fine-print">{a.purpose ?? "Paper strategy account"} · {a.campaign_id ?? "Original account"}</p><dl className="summary-values"><div><dt>Pending orders</dt><dd>{Object.keys(a.pending).length}</dd></div><div><dt>Closed trades</dt><dd>{a.closed}</dd></div></dl><a className="text-link" href={inContext("#accounts?view=orders", { account: name })}>Orders & trades <ArrowRight size={13} /></a></section>
+      <div className="account-performance-preview"><PerformanceChart paper={paper} unavailable={unavailable} /></div>
+      <section className="workspace-card" aria-label="Cash and capital"><div className="card-heading"><h2>Cash & capital</h2><a className="text-link" href={inContext("#results?view=costs", { account: name })}>Review costs <ArrowRight size={13} /></a></div><dl className="summary-values"><div><dt>Cash available</dt><dd>{!unavailable && a.valuation_fresh ? money(a.cash) : "Unconfirmed"}</dd></div><div><dt>Hypothetical funding</dt><dd>{money(a.funding)}</dd></div><div><dt>Recorded execution fees</dt><dd>{money(a.fees)}</dd></div></dl><p className="fine-print">Separate hypothetical account. A paper balance is not committed live capital.</p><a className="text-link" href={inContext("#accounts?view=safeguards", { account: name })}><ShieldCheck size={14} /> Risk & safeguards</a></section>
+    </div></div>
   );
 }
 
@@ -1020,6 +1031,8 @@ export function AccountsView({
     start = shownPage * pageSize;
   return (
     <>
+      {selected && !Object.hasOwn(paper.accounts, selected) && <button className="text-link" onClick={() => selectAccount("")}>← All accounts</button>}
+      {!selected && <>
       <section className="workspace-card">
         <div className="card-heading">
           <p>
@@ -1350,6 +1363,7 @@ export function AccountsView({
           </section>
         </div>
       </div>
+      </>}
       {selected && !Object.hasOwn(paper.accounts, selected) && <RetainedAccount key={selected} name={selected} />}
       {selected && Object.hasOwn(paper.accounts, selected) && (
         <AccountInspector
@@ -1360,7 +1374,7 @@ export function AccountsView({
           close={() => selectAccount("")}
         />
       )}
-      <PerformanceDiagnosticPanel unavailable={unavailable} />
+      {!selected && <details className="workspace-details"><summary>Random performance diagnostic controls</summary><PerformanceDiagnosticPanel unavailable={unavailable} /></details>}
       {campaignOpen && (
         <div className="campaign-workspace">
           <PaperCampaignPanel data={paper} unavailable={unavailable} />
@@ -1373,13 +1387,18 @@ export function AccountsView({
 export function OrdersView({
   paper,
   unavailable,
+  initialView = "trades",
+  focused = false,
 }: {
   paper?: PaperSnapshot;
   unavailable: boolean;
+  initialView?: "trades" | "positions" | "journal";
+  focused?: boolean;
 }) {
   const [scope, setScope] = useAccountScope();
   const account = scope || "all", journal = scope || "primary";
-  const [view, setView] = useState("trades");
+  const [view, setView] = useState(initialView);
+  useEffect(() => setView(initialView), [initialView]);
   if (!paper) return <EmptyPaper />;
   const accounts = Object.entries(paper.accounts).filter(
     ([name]) => account === "all" || account === name,
@@ -1392,12 +1411,12 @@ export function OrdersView({
   );
   return (
     <>
-      <nav className="workspace-tabs orders-tabs" aria-label="Orders views">
+      {!focused && <nav className="workspace-tabs orders-tabs" aria-label="Orders views">
         {[["trades", "Trade history"], ["positions", "Positions & pending"], ["journal", "Journal"]].map(([id, label]) => (
           <button key={id} className={view === id ? "selected" : ""} aria-pressed={view === id}
-            onClick={() => setView(id)}>{label}</button>
+            onClick={() => setView(id as typeof initialView)}>{label}</button>
         ))}
-      </nav>
+      </nav>}
       {view === "trades" && <TradeHistory paper={paper} unavailable={unavailable} />}
       {view === "positions" && <div className="workspace-card">
         <div className="card-heading">
@@ -1503,12 +1522,14 @@ export function RiskOverview({
   paper,
   unavailable,
   compact = false,
+  accountName = "primary",
 }: {
   paper?: PaperSnapshot;
   unavailable: boolean;
   compact?: boolean;
+  accountName?: string;
 }) {
-  const primary = paper?.accounts.primary,
+  const primary = paper && Object.hasOwn(paper.accounts, accountName) ? paper.accounts[accountName] : undefined,
     t = totals(paper, unavailable);
   const exposure =
     primary && !unavailable && primary.valuation_fresh
@@ -1523,7 +1544,7 @@ export function RiskOverview({
     <>
       <div className="risk-gauges">
         <div>
-          <span>Primary liquidation exposure</span>
+          <span>{primary?.label ?? accountName} liquidation exposure</span>
           <strong>{money(exposure)}</strong>
           <div className="meter-track">
             <i style={{ width: `${Math.min(100, (ratio ?? 0) * 100)}%` }} />
@@ -1531,11 +1552,11 @@ export function RiskOverview({
           <small>
             {ratio === null
               ? "Current mark unconfirmed"
-              : `${percent(ratio)} of primary equity`}
+              : `${percent(ratio)} of this account's equity`}
           </small>
         </div>
         <div>
-          <span>Primary max drawdown</span>
+          <span>{primary?.label ?? accountName} max drawdown</span>
           <strong>{percent(drawdown)}</strong>
           <div className="meter-track amber">
             <i style={{ width: `${Math.min(100, (drawdown ?? 0) * 100)}%` }} />

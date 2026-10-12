@@ -119,7 +119,7 @@ const ToolResult = memo(function ToolResult({ run }: { run: Run }) {
   return <div className="tool-result" role="status"><div className="tool-result-heading"><strong>{run.symbol.replace(/USD$/, " / USD")} · {run.account ?? "primary"}</strong><span className={run.status === "completed" ? "station-positive" : "station-muted"}>{run.status}</span></div><p>{summary}</p>{run.result?.envelope && <p>Captured {new Date(run.result.envelope.observation_cutoff * 1000).toLocaleString()}. {run.result.envelope.overview_scope}</p>}<button type="button" disabled={loading || run.status !== "completed"} onClick={() => void detail()}>{loading ? "Loading…" : "Open captured detail"}</button>{error && <p role="alert">{error}</p>}{page && <details open><summary>Captured evidence {page.total != null ? `· ${page.total} saved rows` : ""}</summary><pre>{JSON.stringify(page.facts ?? page.events, null, 2)}</pre>{page.next_cursor && <button type="button" disabled={loading} onClick={() => void detail(page.next_cursor)}>Next evidence page</button>}</details>}<details><summary>Receipt / diagnostics</summary><pre>{JSON.stringify(run, null, 2)}</pre></details></div>;
 });
 
-export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean }) {
+export function MarketStation({ strategyOnly = false, view = "watch" }: { strategyOnly?: boolean; view?: string }) {
   const section = useRef<HTMLElement>(null);
   const [visible, setVisible] = useState(true);
   const [symbol, setSymbol] = useState(() => savedScope().symbol);
@@ -164,8 +164,11 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
     localStorage.setItem("qtrades-tool-symbol", market); localStorage.setItem("qtrades-tool-account", owner);
     const params = new URLSearchParams({ symbol: market, account: owner });
     const originalParams = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    if (!strategyOnly) params.set("view", view);
+    else if (originalParams.has("view")) params.set("view", originalParams.get("view")!);
     const savedCampaign = originalParams.get("scanner_campaign");
     if (savedCampaign != null) params.set("scanner_campaign", savedCampaign);
+    if (originalParams.has("scanner_view")) params.set("scanner_view", originalParams.get("scanner_view")!);
     if (market === symbol) for (const [key, value] of originalParams) {
       if (key.startsWith("scanner_chart_")) params.set(key, value);
     }
@@ -175,7 +178,13 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
     setSymbol(market); setAccount(owner);
   };
   useEffect(() => {
-    if (!location.hash.includes("?")) history.replaceState(null, "", `#${strategyOnly ? "strategies" : "markets"}?${new URLSearchParams(savedScope())}`);
+    const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    const scope = savedScope();
+    if (!params.has("symbol") || !params.has("account")) {
+      if (!params.has("symbol")) params.set("symbol", scope.symbol);
+      if (!params.has("account")) params.set("account", scope.account);
+      history.replaceState(null, "", `${location.hash.split("?")[0]}?${params}`);
+    }
     const restore = () => { const scope = savedScope(); setSymbol(scope.symbol); setAccount(scope.account); };
     window.addEventListener("hashchange", restore);
     return () => window.removeEventListener("hashchange", restore);
@@ -218,6 +227,7 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
         const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
         params.delete("receipt"); params.set("candle_run", String(id)); params.set("symbol", result.symbol);
         if (localStorage.getItem("qtrades-tool-receipt") === String(id)) localStorage.removeItem("qtrades-tool-receipt");
+        params.set("view", "charts");
         location.hash = `markets?${params}`;
         setLatest(null); setToolError(null);
         return;
@@ -241,21 +251,18 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
   }, []);
 
   return <section ref={section} id="live-quotes" className="market-station" aria-labelledby="station-title">
-    <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">{strategyOnly ? "Strategy evidence" : "Market command station"}</h2></div>
+    <header className="station-heading"><div><p>CRYPTO SPOT · PAPER RESEARCH</p><h2 id="station-title">{strategyOnly ? "Strategy evidence" : view === "scanner" ? "Scanner & findings" : view === "charts" ? "Saved candle charts" : "Market watch"}</h2></div>
       <label>Market <select aria-label="Market" value={symbol} onChange={e => chooseScope(e.target.value, account)}>{[...new Set([symbol, "BTCUSD", "ETHUSD", ...(scanner?.rows.map(row => row.symbol) ?? [])])].map(s => <option key={s}>{s}</option>)}</select></label>
     </header>
-    {!strategyOnly && <>
-      <nav className="station-workspace-navigation" aria-label="Market workspace views">
-        <button type="button" onClick={() => document.getElementById("pattern-scanner-title")?.scrollIntoView({ block: "start" })}>Analysis &amp; alert charts</button>
-        <button type="button" onClick={() => document.getElementById("candle-workspace-title")?.scrollIntoView({ block: "start" })}>Separate candle study</button>
-        <button type="button" onClick={() => document.getElementById("live-market-feed")?.scrollIntoView({ block: "start" })}>Live market feed</button>
-      </nav>
+    {!strategyOnly && view === "scanner" && <>
       <ScannerWorkspace symbol={symbol} onChooseMarket={market => chooseScope(market, account)} onInspect={market => {
         chooseScope(market, account);
-        document.getElementById("candle-workspace-title")?.scrollIntoView({ block: "start" });
+        const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+        params.set("view", "charts");
+        location.hash = `markets?${params}`;
       }} />
     </>}
-    {!strategyOnly && <>
+    {!strategyOnly && view === "watch" && <>
     <div id="live-market-feed" className="station-workspace">
       <aside className="station-watchlist" aria-label="Market scanner">
         <div className="station-pane-title"><h3>Markets</h3><span>{scanner?.total ?? "—"} screened</span></div>
@@ -287,9 +294,16 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
       <section className="station-events" aria-label="Recent paper activity"><div className="station-pane-title"><h3>Paper activity</h3><span>Primary account</span></div>{detail?.paper_events.slice(0, 5).map(event => <div className="station-event" key={event.id}><div><strong>{event.kind.replaceAll("_", " ")}</strong><time>{time(event.at * 1000)}</time></div><p>{event.body.reason ?? [event.body.side, event.body.quantity, event.body.price].filter(Boolean).join(" · ")}</p></div>)}{!detail?.paper_events.length && <p className="station-empty">No matching activity in the recent account window.</p>}<button className="station-text-button" type="button" disabled={busy || !detail} onClick={() => void runTool("outcome_review")}>Review outcomes <ChevronRight size={14} /></button></section>
     </div>
     </>}
-    {!strategyOnly && <CandleWorkspace symbol={symbol} savedRuns={toolsPoll.data?.runs ?? []} onChooseMarket={(market, id) => chooseScope(market, account, id)} />}
-    {strategyOnly && (detail?.experiments ? <StrategyLab data={detail.experiments} symbol={symbol} unavailable={!!detailPoll.error || live?.running !== true || !!live?.error} /> : <p className="station-empty">{detailPoll.error ?? "Waiting for recorded strategy evidence…"}</p>)}
-    <section className="station-tools" aria-label="Research tools">
+    {!strategyOnly && view === "charts" && <CandleWorkspace symbol={symbol} savedRuns={toolsPoll.data?.runs ?? []} onChooseMarket={(market, id) => chooseScope(market, account, id)} />}
+    {strategyOnly && <>
+      <section className="workspace-card" aria-label="Selected strategy evidence"><div className="card-heading"><h2>Selected account strategy</h2><span className="pill neutral">{account}</span></div>
+        {detail && !detailPoll.error ? <><h3>{detail.strategy.version}</h3><p>{detail.strategy.last_decision?.reason ?? "No recorded decision for this market in the exact selected account."}</p><p className="fine-print">{symbol} · {detail.strategy.last_decision ? time(detail.strategy.last_decision.at * 1000) : "Decision time unavailable"}. Recorded evidence does not authorize a new entry.</p></> : <p>{detailPoll.error ?? "Waiting for this exact account's recorded strategy evidence…"}</p>}
+      </section>
+      <details className="workspace-details"><summary>Original strategy catalogue and variant comparisons</summary><p className="fine-print">This catalogue describes the original breakout variants and their own comparison accounts. It does not substitute their rules or returns for the selected account.</p>
+        {detail?.experiments ? <StrategyLab data={detail.experiments} symbol={symbol} unavailable={!!detailPoll.error || live?.running !== true || !!live?.error} /> : <p className="station-empty">{detailPoll.error ?? "Original catalogue unavailable."}</p>}
+      </details>
+    </>}
+    {view !== "scanner" && <details className="workspace-details" open={new URLSearchParams(location.hash.split("?")[1] ?? "").has("receipt")}><summary>Research tools and saved receipts</summary><section className="station-tools" aria-label="Research tools">
       <div className="station-pane-title"><h3><Wrench size={15} /> Research tools</h3><span>Read-only · saved results</span></div>
       <label>Evidence account <select aria-label="Evidence account" value={account} onChange={e => chooseScope(symbol, e.target.value)}>
         {!accountsPoll.data?.accounts.some(a => a.account === account) && <option value={account}>{account} · identity awaiting lookup</option>}
@@ -310,6 +324,7 @@ export function MarketStation({ strategyOnly = false }: { strategyOnly?: boolean
         {historyCursor && <button type="button" onClick={() => setHistoryCursor(null)}>Newest saved runs</button>}
       </details>
     </section>
+    </details>}
     <details className="station-diagnostics"><summary>Evidence / diagnostics</summary><p>Prices refresh about once a second; charts and decisions refresh every ten seconds. Screened markets do not all have active streams. Charts contain closed candles, including bootstrap history; exchange prints are an incomplete recent window.</p><pre>{JSON.stringify({ quote, scan_observed_at: scanner?.observed_at, details_observed_at: detail?.generated_at, trade_gaps: live?.trade_gaps, live_error: livePoll.error, detail_error: detailPoll.error }, null, 2)}</pre></details>
   </section>;
 }

@@ -207,7 +207,7 @@ function PatternTaskEvidence({ pattern, fixed }: { pattern: PatternComparison; f
   </section>;
 }
 
-export function RoleResearchPanel({ integrated = false }: { integrated?: boolean }) {
+export function RoleResearchPanel({ integrated = false, controlsOnly = false }: { integrated?: boolean; controlsOnly?: boolean }) {
   const [state, setState] = useState<RoleState | null>(null);
   const [task, setTask] = useState<Task | null>(null);
   const [selected, setSelected] = useState(() => linkedTask() ?? localStorage.getItem("qtrades-role-task") ?? "");
@@ -227,6 +227,17 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
   const [controlError, setControlError] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [advancedTools, setAdvancedTools] = useState(false);
+  const readDetailView = () => {
+    const view = new URLSearchParams(location.hash.split("?")[1] ?? "").get("task_view") ?? "summary";
+    return ["summary", "evidence", "review", "comparison", "outcome"].includes(view) ? view : "summary";
+  };
+  const [detailView, setDetailView] = useState(readDetailView);
+  useEffect(() => {
+    const restore = () => setDetailView(readDetailView());
+    window.addEventListener("hashchange", restore); window.addEventListener("popstate", restore);
+    return () => { window.removeEventListener("hashchange", restore); window.removeEventListener("popstate", restore); };
+  }, []);
+
   const [question, setQuestion] = useState("Does the reviewed range mechanism differ from its matched breakout reference after costs?");
   const [horizon, setHorizon] = useState("short");
   const [parent, setParent] = useState("");
@@ -286,6 +297,8 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
     setRefresh(r => r + 1);
     const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
     params.set("task", id);
+    params.set("view", "investigations");
+    params.delete("task_view");
     params.delete("lesson");
     location.hash = `${integrated ? "research" : "role-research"}?${params}`;
   };
@@ -387,7 +400,7 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
     <h2 id="role-title">{integrated ? "Investigations" : "Local model research"}</h2>
     {integrated && <p>Follow one question from its original evidence through checks, review, comparison and next decision. The existing application worker advances approved stages; manual questions are optional. <a href="#settings?view=setup">Review saved research setup</a>.</p>}
     {integrated && <p role="status">{statusError ? "Current activity is unavailable." : state?.activity?.reason ?? "Reading current research activity…"} {state?.current_task && <button type="button" onClick={() => open(state.current_task!.id)}>Follow the current investigation</button>}</p>}
-    <details className="workspace-details" open={!integrated}><summary>Research permission, resources and controls</summary>
+    <details className="workspace-details" open={controlsOnly || !integrated}><summary>Research permission, resources and controls</summary>
     <p>Investigate a permitted question, compare reviewed rules, and follow the recorded paper outcome. Numerical calculation and paper admission retain their existing authority.</p>
     {pilot && <section aria-label="Experimental paper research pilot">
       <h3>Experimental paper research pilot</h3>
@@ -418,7 +431,7 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
     {state?.readiness.model && <p>{statusError ? "Last observed model" : "Model"} {state.readiness.model}</p>}
     {state?.readiness.reason && <p>{statusError ? "Last observed reason: " : ""}{state.readiness.reason}</p>}
     {state?.readiness.stages && <div aria-label="Research readiness and recovery"><h3>{statusError ? "Last observed readiness and next actions" : "Readiness and next actions"}</h3><ul>{Object.entries(state.readiness.stages).map(([name, stage]) => <li key={name}><strong>{statusError ? "Last observed " : ""}{name}: {stage.state}</strong> · {stage.next_action}</li>)}</ul></div>}
-    {state?.readiness.operating_admission && <p>{statusError ? "Last observed operating admission" : "Operating admission"}: <strong>{state.readiness.operating_admission.state}</strong> · checked {stamp(state.readiness.operating_admission.checked_at)}.<br />{state.readiness.operating_admission.next_action}<br />{state.readiness.operating_admission.meaning}</p>}
+    {state?.readiness.operating_admission && <p>{statusError ? "Last observed operating admission" : "Operating admission"}: <strong>{state.readiness.operating_admission.state}</strong> · checked {stamp(state.readiness.operating_admission.checked_at)}.<br />{state.enabled ? state.readiness.operating_admission.next_action : "Research is paused by saved permission. Resume rechecks the current prerequisites; paused status does not establish a resource failure."}<br />{state.readiness.operating_admission.meaning}</p>}
     {state?.readiness.roles && <ul>{Object.entries(state.readiness.roles).map(([role, value]) => <li key={role}>{statusError ? "Last observed " : ""}{role}: {value.qualified ? "Qualified for the declared profile" : value.reason}</li>)}</ul>}
     {state?.readiness.profile != null && <details><summary>{statusError ? "Last observed model profile and digest" : "Exact current model profile and digest"}</summary><pre>{JSON.stringify(state.readiness.profile, null, 2)}</pre></details>}
     <p>{statusError ? "Last observed policy: " : ""}{state?.reason}</p>
@@ -427,6 +440,7 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
     {statusError && <p role="alert">{statusError} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
     {taskError && <p role="alert">{taskError} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry task detail</button></p>}
     {error && <p role="alert">{error.message} <button type="button" onClick={() => setRefresh(r => r + 1)}>Retry status</button></p>}
+    {!controlsOnly && <>
     {patternQuestions && <section aria-label="Pattern research questions">
       <h3>{statusError ? "Last observed question mode: saved patterns" : "Questions selected from saved patterns"}</h3>
       {statusError && <p>The current research mode is unverified. New manual questions remain unavailable until status reconnects.</p>}
@@ -458,12 +472,13 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
       <button type="submit">Search history</button>
       {search && <button type="button" onClick={() => { setSearch(""); setSearchDraft(""); setBefore(0); setBeforeId(""); }}>Show all questions</button>}
     </form>
-    <div className="table-scroll"><table><thead><tr><th>Saved question</th><th>Stage</th><th>Status</th><th>Actual last progress</th></tr></thead><tbody>{state?.tasks.map(t => <tr key={t.id}><td><button type="button" onClick={() => open(t.id)}>{t.question ?? t.id}</button></td><td>{stageLabel(t.stage)}</td><td>{t.status}{(t.status === "done" ? t.decision_summary : t.reason) ? ` · ${t.status === "done" ? t.decision_summary : t.reason}` : ""}</td><td>{stamp(t.updated)}</td></tr>)}</tbody></table></div>
+    <div className="table-scroll"><table><thead><tr><th>Saved question</th><th>Stage</th><th>Status</th><th>Actual last progress</th></tr></thead><tbody>{state?.tasks.map(t => <tr key={t.id}><td><button type="button" title={t.question ?? t.id} onClick={() => open(t.id)}>{t.question ?? t.id}</button></td><td>{stageLabel(t.stage)}</td><td>{t.status}{(t.status === "done" ? t.decision_summary : t.reason) ? ` · ${t.status === "done" ? t.decision_summary : t.reason}` : ""}</td><td>{stamp(t.updated)}</td></tr>)}</tbody></table></div>
     {before !== 0 && <button type="button" onClick={() => { setBefore(0); setBeforeId(""); }}>Latest questions</button>}
     {state?.next_before && <button type="button" onClick={() => { setBefore(state.next_before!); setBeforeId(state.next_before_id ?? ""); }}>Older questions</button>}
     </details>
     {task && <article aria-label="Saved research task">
-      <h3>{task.context.question.question}</h3><p>{task.context.question.horizon} horizon · {stageLabel(task.stage)} · {task.status} · progress {stamp(task.updated)}</p>
+      <h3>{task.context.question.question}</h3>
+      <nav className="workspace-subnav" aria-label="Investigation detail views">{[["summary", "Summary"], ["evidence", "Evidence"], ["review", "Checks & Review"], ["comparison", "Comparison"], ["outcome", "Outcome & Next Decision"]].map(([id, label]) => <a key={id} aria-current={detailView === id ? "page" : undefined} href={inContext(location.hash, { task_view: id })}>{label}</a>)}</nav><p>{task.context.question.horizon} horizon · {stageLabel(task.stage)} · {task.status} · progress {stamp(task.updated)}</p>
       <p>Began {researchTime(task.created)}. {task.retry_at ? `Next scheduled check ${researchTime(task.retry_at)}; this is not a completion estimate.` : "No next check time is recorded."}</p>
       <ol className="investigation-stages" aria-label="Investigation stages">{[
         ["Finding", "Original inputs captured"],
@@ -479,6 +494,8 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
       <p>{statusError || taskError ? "Last observed ownership" : "Current ownership"}: {task.execution?.kind ?? "Unknown"}{task.execution?.actor ? ` · ${task.execution.actor}` : ""}{task.execution?.lease_until ? ` · lease ends ${stamp(task.execution.lease_until)}` : ""}. Executed actor and proposal identity appear in the retained attempts below.</p>
       {task.status !== "done" && task.reason && <p>{task.reason}</p>}
       {task.contract_applicability && task.contract_applicability.state !== "matching" && <p role="status" aria-label="Saved question format applicability">{statusError || taskError ? "Last observed research format" : "Current research format"}: <strong>{task.contract_applicability.state === "different" ? "Saved question inactive for the selected format" : "Current format unknown"}</strong>. {task.contract_applicability.reason}</p>}
+      {detailView === "summary" && <section className="investigation-section" aria-label="Investigation summary"><h4>Question & objective</h4><p>{task.context.question_selection?.reason ?? task.context.question.question}</p>{task.context.question_selection?.falsification && <p><strong>What would disprove the idea:</strong> {task.context.question_selection.falsification}</p>}<a className="text-link" href={inContext(location.hash, { task_view: "evidence" })}>Inspect the captured evidence</a></section>}
+      <div hidden={detailView !== "evidence"} className="investigation-section">
       {task.context.question_selection && <section aria-label="Why this research question was selected">
         <h4>Evidence-driven question · experimental paper research</h4>
         <p>This saved investigation is unqualified research. Its selection does not establish strategy value or authorize promotion.</p>
@@ -516,14 +533,26 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
       <ul>{Object.entries(task.context.tool_evidence.features).map(([key, feature]) => <li key={key}>{key}: {feature.eligible ? "Entry qualified at capture" : "No eligible entry at capture"}. {feature.reason} {feature.close ? `Close $${feature.close}.` : ""}</li>)}</ul>
       <details><summary>{task.context.pattern_comparison ? "Execution evidence summary and permitted capabilities" : "Exact evidence, executed input tool and permitted capabilities"}</summary>{task.context.pattern_comparison && <p>The complete inputs remain retained with this task. This display preserves the captured count and digest without exposing archive file paths.</p>}<pre>{JSON.stringify({ inputs: task.context.pattern_comparison ? { security: task.context.tool_evidence.security, source_basis: task.context.tool_evidence.source_basis, closed_bar_count: task.context.tool_evidence.closed_bar_count, closed_bar_sha256: task.context.tool_evidence.closed_bar_sha256, observed_at: task.context.tool_evidence.observed_at, features: task.context.tool_evidence.features, matched_inputs: capturedFixedMethod(task)?.current_inputs } : task.context.tool_evidence, issued: task.context.issued, capabilities: task.context.catalog }, null, 2)}</pre></details>
       {task.evaluation && <><h4>{task.context.pattern_comparison ? "Numerical evaluation for this task" : "Computed method check"}</h4><p>{task.evaluation.input_count} causal input bars checked at {stamp(task.evaluation.evaluated_at)}. {task.evaluation.feature.reason} {task.evaluation.replay}</p>{task.context.pattern_comparison && <p>This task-stage calculation is separate from the original preparation-time check. Its recorded time does not establish current readiness or a measured trading result.</p>}<details><summary>Exact calculated result and saved input reference</summary><pre>{JSON.stringify(task.evaluation, null, 2)}</pre></details></>}
+      </div>
+      <div hidden={!["summary", "review"].includes(detailView)} className="investigation-section">
+      <h4>Checks & review</h4>{!task.evaluation && <p>No deterministic check is retained for this task.</p>}
+      {task.evaluation && <p>{task.evaluation.input_count} causal inputs checked at {stamp(task.evaluation.evaluated_at)}. {task.evaluation.feature.reason}</p>}
       {task.result?.review && <p>{task.context.execution_mode === "paper_research_pilot" ? "Experimental model review" : "Independent review"}: {task.result.review.action} · {task.result.review.rationale}</p>}
+      {!task.result?.review && <p>No model review has been retained.</p>}
+      </div>
+      <div hidden={!["summary", "comparison"].includes(detailView)} className="investigation-section"><h4>Matched comparison</h4>
+      {!task.proposal && <p>No validated comparison proposal is retained for this task.</p>}
       {task.proposal && <><p>{task.proposal.strategy.version === "reviewed-lab-rules-v4" ? `Proposed ${task.proposal.kind}: fixed ${task.proposal.strategy.family}, compared with fixed ${task.proposal.reference.family}.` : `Proposed ${task.proposal.kind}: ${task.proposal.strategy.family} with ${task.proposal.strategy.lookback} bars, compared with ${task.proposal.reference.family} using ${task.proposal.reference.lookback} bars.`}</p><details><summary>Validated ordinary paper proposal</summary><pre>{JSON.stringify(task.proposal, null, 2)}</pre></details></>}
       {task.result?.proposal_id && <p>Paper proposal retained · {task.result.trial_id ? <a href={inContext("#accounts?view=comparisons", { trial: task.result.trial_id, task: task.id })}>Open this matched comparison and account evidence</a> : "awaiting capacity, funding or outcome maturity"}</p>}
       {task.proposal?.strategy.entry_filter && <p>Entry component: frozen historical memory · {task.proposal.strategy.entry_filter.horizon_seconds / 60} minutes · artifact {task.proposal.strategy.entry_filter.artifact.sha256} · marginal ${task.proposal.strategy.entry_filter.marginal_daily_usd}/day · fallback {task.proposal.strategy.entry_filter.fallback}. Baseline exits and financial risk remain authoritative.</p>}
       {task.result?.outcome && <section><h4>Recorded comparison: {task.result.outcome.body.outcome}</h4><p>{task.result.outcome.body.reason}</p><p>Window {stamp(task.result.outcome.body.window_start)} to {stamp(task.result.outcome.body.window_end)} · outcome available {stamp(task.result.outcome.body.available_at)}.</p><p>Whole-account result after declared operating costs: candidate ${task.result.outcome.body.net_after_operating_usd?.candidate ?? "unknown"}; reference ${task.result.outcome.body.net_after_operating_usd?.reference ?? "unknown"}; difference ${task.result.outcome.body.delta_usd ?? "unknown"}. Execution fees remain counted once.</p><p>{task.result.outcome.body.qualification}</p><details><summary>Recorded comparison outcome</summary><pre>{JSON.stringify(task.result.outcome, null, 2)}</pre></details></section>}
+      </div>
+      <div hidden={!["summary", "outcome"].includes(detailView)} className="investigation-section"><h4>Outcome & next decision</h4>
+      {!task.result?.followup && <p>A supported follow-up decision has not been retained.</p>}
       {task.result?.followup && <p>Supported follow-up: {task.result.followup.action} · {task.result.followup.rationale} {task.result.followup.dependency}</p>}
       {!!task.continuations?.length && <section aria-label="Linked next investigations"><h4>Next investigations</h4><ul>{task.continuations.map(next => <li key={next.id}><a href={investigationLink(next.id)}>{next.question}</a> · {researchStage[next.stage] ?? next.stage} · {next.status}</li>)}</ul><p>A linked task establishes a continuation. Its own evidence and model decision are needed to show whether the prior result was used.</p></section>}
       {task.more_continuations && <p>More linked investigations remain in saved history.</p>}
+      </div>
       <details><summary>Model attempts, final answers and resource receipts</summary>{task.attempts.map((a, i) => <div key={i}>
         <h4>{a.stage} · {a.status}</h4>
         <p>{stamp(a.started)} {a.finished ? `to ${stamp(a.finished)}` : "completion pending or unknown"} {a.reason}</p>
@@ -533,6 +562,7 @@ export function RoleResearchPanel({ integrated = false }: { integrated?: boolean
       </div>)}</details>
     </article>}
     <details open={!integrated}><summary>Retained supported lessons</summary><LessonPanel openTask={open} /></details>
+    </>}
     <details open={advancedTools} onToggle={event => setAdvancedTools(event.currentTarget.open)}><summary>Advanced source, role access and quality tools</summary>{advancedTools && <><StockResearchPanel /><ResearchActorPanel selectedTask={selected || null} /><ResearchQualityPanel experimentalPilot={pilot} /></>}</details>
   </section>;
 }

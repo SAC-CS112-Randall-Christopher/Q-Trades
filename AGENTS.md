@@ -1,4 +1,22 @@
-# Current coherent product lane — October 9, 2026 UTC, issue #66
+# Current UI overhaul — October 12, 2026, issue #66
+
+Chris requests a cleaner product UI based on the supplied dashboard reference.
+Reuse this isolated coherent-product checkout on `codex/clean-workspace-ui-66`,
+starting at merged PR93 `f0c104d77ce40c15e48cab33abed546135189894`.
+Deliver seven clear destinations and focused subpages, a compact Overview using
+actual observations, preserved original links/account context, responsive layouts
+and accessible navigation. Every existing feature needs a discoverable home.
+Reference-image amounts, schedules, progress, identities and live readiness are
+illustrative, never application facts. Preserve existing operating and financial
+owners. Source changes, disposable QA, independent review and draft publication
+are authorized. On October 12 Chris explicitly approved PR94 merge, installation
+and relaunch when ready. Complete the exact-head hosted checks, use the existing
+updater at the verified merged revision, and verify installed preservation and
+normal UI behavior. This approval does not activate research, authorize new
+model/acquisition work or change financial policy. Keep private runtime data
+outside Git.
+
+# Historical coherent product lane — October 9, 2026 UTC, issue #66
 
 Chris's corrected goal is one supervised crypto spot trading product: complete
 the coherent paper validation workflow now, then separately validate selected

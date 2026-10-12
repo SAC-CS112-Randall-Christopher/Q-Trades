@@ -116,17 +116,22 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     let densePreservation = before;
     assert.equal(before.posts.length, 0); assert.equal(before.financial_database, false);
     assert.equal(before.synthetic_lab_account_projection, true); assert.equal(before.state.enabled, false);
-    await page.goto(`${origin}/#markets`); await workspace().waitFor(); await grid().waitFor(); await waitPlots();
+    await page.goto(`${origin}/#markets?view=scanner&scanner_view=charts`); await workspace().waitFor(); await grid().waitFor(); await waitPlots();
     groups.push({ name: phase, actual_scanner_setup_controls: before.setup_controls.length, scopes: 10, full_year_complete: false, browser_api_posts: 0 });
 
     phase = "prominent-discovery-and-five-native-cards";
     await page.evaluate(() => scrollTo(0, 0));
-    const discovery = await page.getByRole("button", { name: "Analysis & alert charts", exact: true }).boundingBox();
+    const discovery = await page.getByRole("navigation", { name: "Markets views", exact: true }).getByRole("link", { name: "Scanner & Findings", exact: true }).boundingBox();
     assert(discovery && discovery.y >= 0 && discovery.y < 950, JSON.stringify(discovery));
-    await page.getByRole("button", { name: "Analysis & alert charts", exact: true }).click();
+    await page.getByRole("navigation", { name: "Markets views", exact: true }).getByRole("link", { name: "Scanner & Findings", exact: true }).click();
     const heading = workspace().getByRole("heading", { name: "Year pattern scanner", exact: true });
     assert(await heading.isVisible());
-    await page.waitForFunction(() => { const node = document.getElementById("pattern-scanner-title"); return node && node.getBoundingClientRect().top >= 0 && node.getBoundingClientRect().top < 250; });
+    assert.equal(await page.getByRole("navigation", { name: "Markets views", exact: true }).getByRole("link", { name: "Scanner & Findings", exact: true }).getAttribute("aria-current"), "page");
+    assert.equal(await page.locator("#live-market-feed").count(), 0, "Scanner discovery must open its focused home");
+    await heading.scrollIntoViewIfNeeded();
+    assert(await heading.isVisible());
+    await workspace().getByRole("navigation", { name: "Scanner workspace views", exact: true }).getByRole("button", { name: "Saved Charts", exact: true }).click();
+    await grid().waitFor(); await waitPlots();
     const order = await grid().getByRole("article").evaluateAll(elements => elements.map(e => e.getAttribute("aria-label")));
     assert.deepEqual(order, frames.map(frame => `${frame} scanner chart`));
     const charts = {}, plots = {};
@@ -154,7 +159,7 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     }
     save("latest-native-charts.json", charts); save("five-rendered-plots.json", plots);
     const geometry = await workspace().evaluate(async element => {
-      const button = [...element.querySelectorAll("button")].find(item => item.textContent === "Inspect saved evidence");
+      const button = [...element.querySelectorAll("button")].find(item => item.textContent === "Inspect 5m details");
       const samples = [];
       for (let sample = 0; sample < 8; sample++) {
         await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 100)));
@@ -166,7 +171,7 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     save("real-chart-geometry-stability.json", geometry);
     assert.equal(geometry[0].chartHeights.length, 5);
     assert(Math.max(...geometry.map(row => row.inspectDocumentTop)) - Math.min(...geometry.map(row => row.inspectDocumentTop)) <= 1,
-      "Normal Inspect click requires stable geometry below the actual rendered chart grid");
+      "Normal chart inspection requires stable geometry beside the actual rendered plots");
     for (let index = 0; index < 5; index++)
       assert(Math.max(...geometry.map(row => row.chartHeights[index])) - Math.min(...geometry.map(row => row.chartHeights[index])) <= 1);
     groups.push({ name: "real-five-chart-host-and-inspect-geometry-stability", samples: geometry.length,
@@ -185,6 +190,7 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     groups.push({ name: phase, frames, candle_counts: Object.fromEntries(frames.map(frame => [frame, charts[frame].candles.length])), rendered_canvas_frames: 5 });
 
     phase = "original-saved-pattern-and-causal-overlay";
+    await workspace().getByRole("navigation", { name: "Scanner workspace views", exact: true }).getByRole("button", { name: "All Saved Evidence", exact: true }).click();
     const frame = "5m";
     await workspace().getByLabel("Scanner evidence interval", { exact: true }).selectOption(frame);
     await workspace().getByLabel("Scanner evidence type", { exact: true }).selectOption("patterns");
@@ -224,6 +230,7 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
 
     phase = "historical-bookmark-reload-retains-original-campaign-and-inputs";
     const bookmark = await page.evaluate(() => location.hash);
+    save("historical-bookmark.json", { bookmark });
     const bookmarkFields = new URLSearchParams(bookmark.split("?")[1]);
     assert.equal(bookmarkFields.get("scanner_campaign"), setup.campaign_id);
     assert.equal(bookmarkFields.get("scanner_chart_frame"), frame);
@@ -244,6 +251,31 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     save("historical-bookmark-reopen.json", restored);
     groups.push({ name: phase, campaign: setup.campaign_id, frame, original_open_ms: original.bar_open_ms, saved_rows_sha256: restored.source.rows_sha256, extra_posts: 0, extra_native_requests: 0 });
 
+    phase = "saved-campaign-evidence-page-survives-pane-back";
+    const localNav = workspace().getByRole("navigation", { name: "Scanner workspace views", exact: true });
+    await localNav.getByRole("button", { name: "All Saved Evidence", exact: true }).click();
+    await workspace().getByLabel("Scanner evidence interval", { exact: true }).selectOption(frame);
+    await workspace().getByLabel("Scanner evidence type", { exact: true }).selectOption("patterns");
+    const retainedFirst = observeResponse(r => new URL(r.url()).pathname === "/api/research/pattern-scanner/patterns");
+    await workspace().getByRole("button", { name: "Inspect saved evidence", exact: true }).click();
+    const firstPage = await jsonResponse(await retainedFirst); assert(firstPage.next_before !== null);
+    const retainedOlder = observeResponse(r => new URL(r.url()).pathname === "/api/research/pattern-scanner/patterns" && new URL(r.url()).searchParams.has("before"));
+    await workspace().getByRole("button", { name: "Next evidence page", exact: true }).click();
+    const olderPage = await jsonResponse(await retainedOlder);
+    const olderReason = (olderPage.rows[0].body ?? olderPage.rows[0]).reason;
+    await workspace().locator(".scanner-evidence-list article").first().getByText(olderReason, { exact: true }).waitFor();
+    const evidenceReads = apiRequests.filter(r => r.path === "/api/research/pattern-scanner/patterns").length;
+    await localNav.getByRole("button", { name: "Saved Charts", exact: true }).click();
+    await page.goBack();
+    await workspace().locator(".scanner-evidence-list article").first().getByText(olderReason, { exact: true }).waitFor();
+    assert.equal(apiRequests.filter(r => r.path === "/api/research/pattern-scanner/patterns").length, evidenceReads);
+    const resumeOriginalChart = waitChart("BTCUSD", frame, "at_ms");
+    await localNav.getByRole("button", { name: "Saved Charts", exact: true }).click();
+    const resumedOriginal = await jsonResponse(await resumeOriginalChart);
+    assert.equal(resumedOriginal.selection.record.id, original.id);
+    await card(frame).getByRole("button", { name: "Older levels", exact: true }).waitFor();
+    groups.push({ name: phase, older_page_seq: olderPage.rows[0].seq, extra_evidence_reads: 0, original_campaign: setup.campaign_id });
+
     phase = "every-overlay-page-retains-exact-progress-identity";
     assert(historical.levels.next_before !== null && historical.levels.total > historical.levels.rows.length);
     const nextLevels = waitChart("BTCUSD", frame, "levels_before");
@@ -259,6 +291,7 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     groups.push({ name: phase, total_saved_levels: historical.levels.total, pages: [historical.levels.rows.length, nextLevelsBody.levels.rows.length], progress_sha256: historical.source.progress_sha256 });
 
     phase = "event-to-level-focus-clears-obsolete-original-event";
+    await workspace().getByRole("navigation", { name: "Scanner workspace views", exact: true }).getByRole("button", { name: "All Saved Evidence", exact: true }).click();
     await workspace().getByLabel("Scanner evidence type", { exact: true }).selectOption("levels");
     const levelPageRead = observeResponse(r => new URL(r.url()).pathname === "/api/research/pattern-scanner/levels");
     await workspace().getByRole("button", { name: "Inspect saved evidence", exact: true }).click();
@@ -286,6 +319,17 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     save("older-retained-window.json", olderBody);
     groups.push({ name: phase, requested_before_ms: Number(new URL(olderResponse.url()).searchParams.get("before_ms")), candles: olderBody.candles.length, actual_archived_chunks: olderBody.source.references.length });
 
+    phase = "newer-chart-window-survives-leaving-and-returning";
+    const newerBookmark = await page.evaluate(() => location.hash);
+    await localNav.getByRole("button", { name: "Findings", exact: true }).click();
+    const reopenNewerWindow = waitChart("BTCUSD", frame, "before_ms");
+    await localNav.getByRole("button", { name: "Saved Charts", exact: true }).click();
+    const newerWindow = await jsonResponse(await reopenNewerWindow);
+    assert.equal(newerWindow.source.rows_sha256, olderBody.source.rows_sha256);
+    assert.equal(new URLSearchParams(page.url().split("?")[1]).get("scanner_chart_before_ms"), new URLSearchParams(newerBookmark.split("?")[1]).get("scanner_chart_before_ms"));
+    assert.equal(new URLSearchParams(page.url().split("?")[1]).get("scanner_chart_kind"), null);
+    groups.push({ name: phase, retained_window_rows_sha256: newerWindow.source.rows_sha256, stale_manual_focus_replayed: false });
+
     phase = "failed-new-window-cannot-page-old-overlays-with-new-query";
     const latestAgain = waitChart("BTCUSD", frame);
     await card(frame).getByRole("button", { name: "Latest saved candles", exact: true }).click(); await latestAgain;
@@ -309,9 +353,9 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     const btcPending = page.waitForRequest(r => new URL(r.url()).pathname === "/api/research/pattern-scanner/chart" && new URL(r.url()).searchParams.get("symbol") === "BTCUSD");
     await card("15m").getByRole("button", { name: "Latest saved candles", exact: true }).click(); await btcPending;
     const ethRead = waitChart("ETHUSD", "4h");
-    await workspace().getByLabel("Scanner evidence market", { exact: true }).selectOption("ETHUSD"); await ethRead; await waitPlots();
+    await workspace().getByLabel("Analysis chart market", { exact: true }).selectOption("ETHUSD"); await ethRead; await waitPlots();
     await page.waitForTimeout(1200); // Outlives the fixture's exact one-second old response.
-    assert.equal(await workspace().getByLabel("Scanner evidence market", { exact: true }).inputValue(), "ETHUSD");
+    assert.equal(await workspace().getByLabel("Analysis chart market", { exact: true }).inputValue(), "ETHUSD");
     assert(await grid().innerText().then(text => text.includes("ETH / USD pattern charts") && !text.includes("BTCUSD")));
     await qa("normal");
     groups.push({ name: phase, old_response_delay_ms: 1000, selected_market: "ETHUSD", old_market_hidden: true });
@@ -364,7 +408,7 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     const fourHour = alertSetup.four_hour_history.find(row => row.timeframe === "4h");
     assert.equal(fourHour.observed_bars, 2190); assert.equal(fourHour.missing_bars, 0);
     assert(alertSetup.four_hour_history.filter(row => row.timeframe !== "4h").every(row => row.observed_bars === 0 && row.missing_bars === row.expected_bars));
-    await page.goto(`${origin}/#markets?symbol=BTCUSD`); await grid().waitFor();
+    await page.goto(`${origin}/#markets?view=scanner&scanner_view=charts&symbol=BTCUSD`); await grid().waitFor();
     await card("4h").locator("canvas").first().waitFor();
     const alertChart = await getChart(alertSetup.alert_campaign_id, "BTCUSD", "4h");
     assert(alertChart.alerts.rows.length > 0); const alert = alertChart.alerts.rows[0];
@@ -403,7 +447,7 @@ const frames = ["5m", "15m", "30m", "1h", "4h"];
     groups.push({ name: phase, synthetic_autonomous_lab_projection_count: 2, archived_financial_payload_acceptance: false, existing_navigation: "#accounts?view=comparisons" });
 
     phase = "bounded-mobile-and-zero-browser-writes";
-    await page.setViewportSize({ width: 390, height: 844 }); await page.goto(`${origin}/#markets`); await grid().waitFor();
+    await page.setViewportSize({ width: 390, height: 844 }); await page.goto(`${origin}/#markets?view=scanner&scanner_view=charts`); await grid().waitFor();
     await page.screenshot({ path: path.join(directory, "saved-charts-mobile.png"), fullPage: true });
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
     const final = await probe(); save("final-probe.json", final);
