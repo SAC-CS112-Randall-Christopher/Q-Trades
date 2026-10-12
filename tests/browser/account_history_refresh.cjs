@@ -164,7 +164,31 @@ const catalog = {
       assert.equal(await history().getByText("primary retained event 3").count(), 0);
       phase = "switch-account-reset";
       await page.getByRole("button", { name: "← All accounts", exact: true }).click();
-      await page.getByRole("button", { name: "Inspect responsive-v1", exact: true }).click();
+      phase = "narrow-account-list";
+      await page.setViewportSize({ width: 390, height: 844 });
+      const tableScroll = page.locator(".account-table-card .table-scroll");
+      await tableScroll.getByRole("table", { name: "Current paper accounts", exact: true }).waitFor();
+      const geometry = await tableScroll.evaluate(element => ({
+        documentWidth: document.documentElement.scrollWidth, viewportWidth: innerWidth,
+        containerWidth: element.clientWidth, tableWidth: element.scrollWidth,
+      }));
+      stages.push({ phase, ...geometry });
+      assert(geometry.documentWidth <= geometry.viewportWidth + 1,
+        "The narrow account list must fit the viewport");
+      assert(geometry.tableWidth > geometry.containerWidth,
+        "The full account table must retain its own horizontal scrolling");
+      const scrollLeft = await tableScroll.evaluate(element => {
+        element.scrollLeft = element.scrollWidth - element.clientWidth;
+        return element.scrollLeft;
+      });
+      assert(scrollLeft > 0, "The table must scroll without widening the page");
+      const inspect = page.getByRole("button", { name: "Inspect responsive-v1", exact: true });
+      const bounds = await inspect.boundingBox();
+      assert(bounds && bounds.x >= 0 && bounds.x + bounds.width <= geometry.viewportWidth + 1,
+        "The account inspection control must be reachable inside the viewport");
+      await page.screenshot({ path: path.join(directory, "narrow-account-list.png") });
+      phase = "switch-account-reset";
+      await inspect.click();
       await inspector.getByRole("heading", { name: "responsive-v1", exact: true }).waitFor();
       await single();
       assert.equal(await history().getAttribute("open"), null, "New account must reset Journal disclosure");

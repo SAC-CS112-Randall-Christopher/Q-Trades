@@ -595,7 +595,7 @@
       ]
     }
   ],
-  "baseline_commit": "f0c104d77ce40c15e48cab33abed546135189894",
+  "baseline_commit": "bfb99dd16ca2c00246ccf532e4c3836b9e65df61",
   "files": [
     {
       "area": "verification-verification",
@@ -645,7 +645,7 @@
       "local_imports": [],
       "path": "AGENTS.md",
       "routes": [],
-      "sha256": "512000b42b3a0538db7ba99da3f98f136b90ecbd0ff4ff3240bbcf7426c39b74"
+      "sha256": "ed35b0a6066e3b07aa27600e050b8043afd7f92a4161b6fb9e7a7dc69b9f4960"
     },
     {
       "area": "map-maintenance-maintenance",
@@ -3612,7 +3612,7 @@
       "local_imports": [],
       "path": "apps/web/src/theme.css",
       "routes": [],
-      "sha256": "2d5142894e27b935c9735dd755f11adf8f1cf26b69ef188a557407189a1d1ec7"
+      "sha256": "52f6e4e3536c827b72ecd773e0bcc5155a67486dcb63dc5a2eaf90407f925757"
     },
     {
       "area": "dashboard-evidence-storage-training",
@@ -20634,7 +20634,7 @@
       "local_imports": [],
       "path": "tests/browser/account_history_refresh.cjs",
       "routes": [],
-      "sha256": "7d3ccdaed853c50837f9cbe6e5ec5f85fd6fc9e9b4eb1394db895d71ed94d179"
+      "sha256": "0098b2e229e8bd9e3da5a28ebbf36116a75f147f1d70652a9593ce7ab0ebdd55"
     },
     {
       "area": "verification-verification",
@@ -40624,9 +40624,9 @@
     }
   ],
   "guides": {
-    "docs/codebase-map/README.md": "134ca900c63d77810be3d32bd090e0e4d4b3469290e74f1da16515f5d6f83de1",
+    "docs/codebase-map/README.md": "c5fc11e921f631ecfd44b16ea7c6a08ec03877e34ba6be133b97890d690d9bca",
     "docs/codebase-map/architecture.md": "b2de4245a4c87368efb93e204801cdf36a971ed980c4fd1f86e7a6cbb9194415",
-    "docs/codebase-map/dashboard-api.md": "38e99cf0233b06b3a1f30332da14572645c14e110b0ccdc5d57fea355824a713",
+    "docs/codebase-map/dashboard-api.md": "ee7805106a5b675ae99fc0f9617e57f8119bba270a5d8b61f5c943e171d3e400",
     "docs/codebase-map/evidence-storage-training.md": "9147ba37d044ca248faa87611613ca09473e0b42d592ecfaf5bd483147de935b",
     "docs/codebase-map/maintenance.md": "546da53010b6844818f1a957bfae60d7bf607c0e2eb2ab52b8b2004b9525efac",
     "docs/codebase-map/market-data.md": "57cd85fda9db76012274bcffd21ee45c7e737a8ff2ff406d7775554208a35069",
