@@ -30,6 +30,8 @@
         "apps/web/src/style.css",
         "apps/web/src/theme.css",
         "apps/web/src/vite-env.d.ts",
+        "apps/web/src/workspace.css",
+        "apps/web/src/workspaceNavigation.ts",
         "apps/web/tsconfig.json",
         "apps/web/vite.config.ts"
       ]
@@ -593,7 +595,7 @@
       ]
     }
   ],
-  "baseline_commit": "0b47251a355113b285fd90d24917d2346cb18a59",
+  "baseline_commit": "f0c104d77ce40c15e48cab33abed546135189894",
   "files": [
     {
       "area": "verification-verification",
@@ -643,7 +645,7 @@
       "local_imports": [],
       "path": "AGENTS.md",
       "routes": [],
-      "sha256": "21ec5280054ee13e9cfa0c9568a592aba7b470cce0ac0c14d2c843d607a0b35e"
+      "sha256": "adb349be3cf50e3974df3d5b54372421d115bdfb60ccaaf7d42210a4be10b426"
     },
     {
       "area": "map-maintenance-maintenance",
@@ -925,32 +927,32 @@
         },
         {
           "kind": "lexical declaration",
-          "line": 678,
+          "line": 679,
           "name": "choose"
         },
         {
           "kind": "lexical declaration",
-          "line": 704,
+          "line": 705,
           "name": "CandleWorkspace"
         },
         {
           "kind": "lexical declaration",
-          "line": 746,
+          "line": 747,
           "name": "accept"
         },
         {
           "kind": "lexical declaration",
-          "line": 775,
+          "line": 776,
           "name": "open"
         },
         {
           "kind": "lexical declaration",
-          "line": 795,
+          "line": 796,
           "name": "load"
         },
         {
           "kind": "lexical declaration",
-          "line": 851,
+          "line": 852,
           "name": "recover"
         }
       ],
@@ -969,7 +971,7 @@
       ],
       "path": "apps/web/src/CandleWorkspace.tsx",
       "routes": [],
-      "sha256": "fb4eb5cac4f974a7319e57146c33e285d17b55b63e4d3ca6d42cf07070cb4461"
+      "sha256": "b8a0d435d7a2996442a8beec8b244beb939932a328d5e94cb7ba53b5f14e695b"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -1057,7 +1059,7 @@
       ],
       "path": "apps/web/src/DailyAnalyzer.tsx",
       "routes": [],
-      "sha256": "1bb23e0e1f524104e8d74e4afd6c044ebb8fc329fe85a3e35cb7f08fea53f676"
+      "sha256": "f2aad59db81fd64a2d17b7416500e2a5ebba8bcfb9bba323d3a7b48eb2a2a9fe"
     },
     {
       "area": "dashboard-evidence-storage-training",
@@ -1615,7 +1617,7 @@
       ],
       "path": "apps/web/src/MarketStation.tsx",
       "routes": [],
-      "sha256": "259550642d756f7d10701dd0a633598bf8ca0cc135f8b3fca4391e74aaa6f961"
+      "sha256": "0b421ff61442fbde0950303f9f5ddef0e6ed095bd3895dfc51b507bf859b62e5"
     },
     {
       "area": "dashboard-evidence-storage-training",
@@ -2077,12 +2079,12 @@
         },
         {
           "kind": "lexical declaration",
-          "line": 27,
+          "line": 28,
           "name": "command"
         },
         {
           "kind": "lexical declaration",
-          "line": 54,
+          "line": 55,
           "name": "row"
         }
       ],
@@ -2093,7 +2095,7 @@
       "local_imports": [],
       "path": "apps/web/src/PaperRiskPanel.tsx",
       "routes": [],
-      "sha256": "c3c0fd563c2e336b3bba0331a2941335809d77dbcdfc8bc831924897361a1d9c"
+      "sha256": "3a5b16b31a3aef94ca6d29cc304f6a517f62bf4a7aad622985c78feba0a2f065"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -2553,81 +2555,89 @@
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 7,
+          "line": 6,
           "name": "Observation"
         },
         {
           "kind": "lexical declaration",
-          "line": 8,
+          "line": 7,
           "name": "ResearchTask"
         },
         {
           "kind": "lexical declaration",
-          "line": 9,
+          "line": 8,
           "name": "ResearchState"
         },
         {
           "kind": "lexical declaration",
-          "line": 17,
+          "line": 16,
           "name": "ResearchScope"
         },
         {
           "kind": "lexical declaration",
-          "line": 18,
+          "line": 17,
           "name": "ComparisonState"
         },
         {
           "kind": "lexical declaration",
-          "line": 19,
+          "line": 18,
           "name": "Markets"
         },
         {
           "kind": "lexical declaration",
-          "line": 20,
+          "line": 19,
           "name": "Notice"
         },
         {
           "kind": "lexical declaration",
-          "line": 21,
+          "line": 20,
           "name": "Attention"
         },
         {
           "kind": "lexical declaration",
-          "line": 22,
+          "line": 21,
           "name": "ProductOverview"
         },
         {
           "kind": "lexical declaration",
-          "line": 28,
+          "line": 27,
           "name": "useProductOverview"
         },
         {
           "kind": "lexical declaration",
-          "line": 50,
-          "name": "Operation"
+          "line": 49,
+          "name": "QuoteSnapshot"
         },
         {
           "kind": "lexical declaration",
-          "line": 57,
+          "line": 50,
+          "name": "useMarketWatch"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 74,
+          "name": "Card"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 79,
           "name": "ResearchOverview"
         }
       ],
       "guide": "dashboard-api.md",
       "imports": [
         "./PaperPanel",
-        "./ResearchAttention",
-        "./WorkspaceViews",
+        "./productNavigation",
         "lucide-react",
         "react"
       ],
       "local_imports": [
         "apps/web/src/PaperPanel.tsx",
-        "apps/web/src/ResearchAttention.tsx",
-        "apps/web/src/WorkspaceViews.tsx"
+        "apps/web/src/productNavigation.ts"
       ],
       "path": "apps/web/src/ResearchOverview.tsx",
       "routes": [],
-      "sha256": "c086e879b73dca7ff77f4c63031d0c7770c65915f39f267b578e769307e9edcf"
+      "sha256": "2a778f848f4567fbc779c22430b5eea79b1f927459de397c7a5fc8d442ba3178"
     },
     {
       "area": "dashboard-evidence-storage-training",
@@ -2693,7 +2703,7 @@
       ],
       "path": "apps/web/src/ResearchSetup.tsx",
       "routes": [],
-      "sha256": "1c3b8da14628c5a433f2743ec91b157399c683a3e3bf7985ded633c3de532210"
+      "sha256": "796c26493a835f7457878cb6a394daeb01a5f0d63d8536c751fe685256b036df"
     },
     {
       "area": "dashboard-evidence-storage-training",
@@ -2952,7 +2962,7 @@
       ],
       "path": "apps/web/src/RoleResearchPanel.tsx",
       "routes": [],
-      "sha256": "8022c0925c715d462c95b74803dee55f1093d009b70c8bd3f0feba11f4d2b401"
+      "sha256": "bf731e1d49c86817600ebc3254dc1cdb3e655cad0ffb6eeef7ff28ca3f26d77f"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -3034,57 +3044,67 @@
         },
         {
           "kind": "lexical declaration",
-          "line": 82,
+          "line": 83,
+          "name": "ScannerPane"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 84,
+          "name": "requestedScannerPane"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 92,
           "name": "ScannerWorkspace"
         },
         {
           "kind": "lexical declaration",
-          "line": 155,
+          "line": 182,
           "name": "acceptReceipt"
         },
         {
           "kind": "lexical declaration",
-          "line": 181,
+          "line": 208,
           "name": "control"
         },
         {
           "kind": "lexical declaration",
-          "line": 227,
+          "line": 254,
           "name": "recover"
         },
         {
           "kind": "lexical declaration",
-          "line": 239,
+          "line": 266,
           "name": "inspect"
         },
         {
           "kind": "lexical declaration",
-          "line": 257,
+          "line": 284,
           "name": "inspectProgress"
         },
         {
           "kind": "lexical declaration",
-          "line": 272,
+          "line": 299,
           "name": "readCampaigns"
         },
         {
           "kind": "lexical declaration",
-          "line": 285,
+          "line": 312,
           "name": "reopenCampaign"
         },
         {
           "kind": "lexical declaration",
-          "line": 320,
+          "line": 354,
           "name": "openDaily"
         },
         {
           "kind": "lexical declaration",
-          "line": 339,
+          "line": 374,
           "name": "reviewComparison"
         },
         {
           "kind": "lexical declaration",
-          "line": 347,
+          "line": 383,
           "name": "openComparisonFinding"
         }
       ],
@@ -3106,7 +3126,7 @@
       ],
       "path": "apps/web/src/ScannerWorkspace.tsx",
       "routes": [],
-      "sha256": "e4b30990e92228fa3f3ef9f819484c201224c01a6aac9c1567606b7d997edda0"
+      "sha256": "832ed1e8e2279379e7d62f9d3aa6000698ba715cff56a887abf4be27d3b5163e"
     },
     {
       "area": "dashboard-secondary-research",
@@ -3345,27 +3365,27 @@
         },
         {
           "kind": "lexical declaration",
-          "line": 966,
+          "line": 977,
           "name": "isResearchAccount"
         },
         {
           "kind": "lexical declaration",
-          "line": 973,
+          "line": 984,
           "name": "AccountsView"
         },
         {
           "kind": "lexical declaration",
-          "line": 1373,
+          "line": 1387,
           "name": "OrdersView"
         },
         {
           "kind": "lexical declaration",
-          "line": 1502,
+          "line": 1521,
           "name": "RiskOverview"
         },
         {
           "kind": "lexical declaration",
-          "line": 1597,
+          "line": 1618,
           "name": "LockIcon"
         }
       ],
@@ -3394,7 +3414,7 @@
       ],
       "path": "apps/web/src/WorkspaceViews.tsx",
       "routes": [],
-      "sha256": "9b0293874bc64661feee51719502311b8c23451947961688aa3f74167e5541f9"
+      "sha256": "7db0fc8e510657088fac7ae98609dcf442039813b3dd36d37fe24473a393b932"
     },
     {
       "area": "dashboard-scanner-charts",
@@ -3421,32 +3441,27 @@
       "declarations": [
         {
           "kind": "lexical declaration",
-          "line": 57,
+          "line": 59,
           "name": "Snapshot"
         },
         {
           "kind": "lexical declaration",
-          "line": 112,
-          "name": "Page"
+          "line": 88,
+          "name": "AccountSafeguards"
         },
         {
           "kind": "lexical declaration",
-          "line": 133,
-          "name": "currentPage"
-        },
-        {
-          "kind": "lexical declaration",
-          "line": 162,
+          "line": 103,
           "name": "App"
         },
         {
           "kind": "lexical declaration",
-          "line": 291,
+          "line": 196,
           "name": "collectorControl"
         },
         {
           "kind": "lexical declaration",
-          "line": 326,
+          "line": 234,
           "name": "searchAccounts"
         }
       ],
@@ -3455,6 +3470,7 @@
         "./AutonomousPanel",
         "./EvidencePanel",
         "./ExperimentLab",
+        "./FeedPanel",
         "./KnowledgeWorkspace",
         "./LearningPanel",
         "./MarketStation",
@@ -3469,12 +3485,15 @@
         "./ResearchAttention",
         "./ResearchOverview",
         "./ResearchSetup",
+        "./ResearchStoragePanel",
         "./RoleResearchPanel",
         "./TrainingDataPanel",
         "./WorkspaceViews",
         "./productNavigation",
         "./style.css",
         "./theme.css",
+        "./workspace.css",
+        "./workspaceNavigation",
         "lucide-react",
         "react",
         "react-dom/client"
@@ -3483,6 +3502,7 @@
         "apps/web/src/AutonomousPanel.tsx",
         "apps/web/src/EvidencePanel.tsx",
         "apps/web/src/ExperimentLab.tsx",
+        "apps/web/src/FeedPanel.tsx",
         "apps/web/src/KnowledgeWorkspace.tsx",
         "apps/web/src/LearningPanel.tsx",
         "apps/web/src/MarketStation.tsx",
@@ -3497,16 +3517,19 @@
         "apps/web/src/ResearchAttention.tsx",
         "apps/web/src/ResearchOverview.tsx",
         "apps/web/src/ResearchSetup.tsx",
+        "apps/web/src/ResearchStoragePanel.tsx",
         "apps/web/src/RoleResearchPanel.tsx",
         "apps/web/src/TrainingDataPanel.tsx",
         "apps/web/src/WorkspaceViews.tsx",
         "apps/web/src/productNavigation.ts",
         "apps/web/src/style.css",
-        "apps/web/src/theme.css"
+        "apps/web/src/theme.css",
+        "apps/web/src/workspace.css",
+        "apps/web/src/workspaceNavigation.ts"
       ],
       "path": "apps/web/src/main.tsx",
       "routes": [],
-      "sha256": "c9b804c34ad0ebbd09c848d10595d7c7ee90ad923bc141d6702839d14f284508"
+      "sha256": "750d6d66fb0a24e0b8c7f99fbe90d8057aa07bb5e491794f4e3c0bfb41c43acf"
     },
     {
       "area": "dashboard-market-data",
@@ -3539,7 +3562,7 @@
       "local_imports": [],
       "path": "apps/web/src/productNavigation.ts",
       "routes": [],
-      "sha256": "a794e3bc28f3918f64c7fa69c550a7d2b10d98ed2a80bb36175f1bf1b6deb8bd"
+      "sha256": "83c2d66c60ad4b1b79a6d59bad0804530bb9c8f9dc706fc8bae0921648255c24"
     },
     {
       "area": "dashboard-dashboard-api",
@@ -3618,6 +3641,54 @@
       "path": "apps/web/src/vite-env.d.ts",
       "routes": [],
       "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    },
+    {
+      "area": "dashboard-dashboard-api",
+      "declarations": [],
+      "guide": "dashboard-api.md",
+      "imports": [],
+      "local_imports": [],
+      "path": "apps/web/src/workspace.css",
+      "routes": [],
+      "sha256": "61f074086850da0dfeaeb0a5ec33f460a57c28f8dc65ed15dad0074056eeb55a"
+    },
+    {
+      "area": "dashboard-dashboard-api",
+      "declarations": [
+        {
+          "kind": "lexical declaration",
+          "line": 12,
+          "name": "WorkspaceArea"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 13,
+          "name": "WorkspacePage"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 14,
+          "name": "WorkspaceRoute"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 15,
+          "name": "workspaceHref"
+        },
+        {
+          "kind": "lexical declaration",
+          "line": 21,
+          "name": "workspaceRoute"
+        }
+      ],
+      "guide": "dashboard-api.md",
+      "imports": [
+        "lucide-react"
+      ],
+      "local_imports": [],
+      "path": "apps/web/src/workspaceNavigation.ts",
+      "routes": [],
+      "sha256": "265c485f2e2b575c7e1875723284a1103068ca160852f6758fcab15863fbaba0"
     },
     {
       "area": "dashboard-dashboard-api",
@@ -20669,7 +20740,7 @@
       "local_imports": [],
       "path": "tests/browser/candle_patterns.cjs",
       "routes": [],
-      "sha256": "52b66ed31f4829437684ea9c547fb03a35b3dce4e17629bf356a280d13dec8c0"
+      "sha256": "a9c6b271084798cdb61a49e461ddcfb7307633b18522b2b62c7709f60ddbc736"
     },
     {
       "area": "verification-verification",
@@ -20681,32 +20752,32 @@
         },
         {
           "kind": "function",
-          "line": 73,
+          "line": 75,
           "name": "main.native_response"
         },
         {
           "kind": "function",
-          "line": 131,
+          "line": 133,
           "name": "main.lifespan"
         },
         {
           "kind": "function",
-          "line": 156,
+          "line": 158,
           "name": "main.fixture"
         },
         {
           "kind": "function",
-          "line": 191,
+          "line": 193,
           "name": "main.authorize"
         },
         {
           "kind": "function",
-          "line": 196,
+          "line": 198,
           "name": "main.probe"
         },
         {
           "kind": "function",
-          "line": 210,
+          "line": 212,
           "name": "main.control"
         }
       ],
@@ -20761,18 +20832,18 @@
       "routes": [
         {
           "handler": "probe",
-          "line": 196,
+          "line": 198,
           "method": "GET",
           "route": "/__qa/probe"
         },
         {
           "handler": "control",
-          "line": 210,
+          "line": 212,
           "method": "POST",
           "route": "/__qa/{action}"
         }
       ],
-      "sha256": "c683e2c4eb38dbdd5ab4895ab09931a2b9280ffb1bf9bfd682f645d02ac26e61"
+      "sha256": "5c5d3e0f704c96c466ce9aac2a13f9a0de0228ae659f96286cb8a189068d15a3"
     },
     {
       "area": "verification-verification",
@@ -21086,7 +21157,7 @@
       "local_imports": [],
       "path": "tests/browser/pattern_scanner.cjs",
       "routes": [],
-      "sha256": "f1e0b14a5f85a8889733f42d8cb2debae88ba75d1b24f57b1bb8f6ca58eec3a1"
+      "sha256": "f6ed9d6974a8762508c36aff80a7f50ebbaaf5df05422dff86a1260ca2ab9824"
     },
     {
       "area": "verification-verification",
@@ -21103,7 +21174,7 @@
       "local_imports": [],
       "path": "tests/browser/pattern_scanner_charts.cjs",
       "routes": [],
-      "sha256": "9b0f74b10a2274a026ce4b35802df3990f2642426b2f4724adec8140262f548e"
+      "sha256": "3525cee4174593ef5566ebbfd1bee6b6ac48229035d0afc8af8daa8d6c8755aa"
     },
     {
       "area": "verification-verification",
@@ -21314,7 +21385,7 @@
           "route": "/__qa/{action}"
         }
       ],
-      "sha256": "7dc302834f3354d1a42b609859f199f21cc69c5e76dd53564925e9c9f3f20ff3"
+      "sha256": "9616aab4e8928eecd5c2e74f22b543beba3ee3e1b54d4b49c08e6f2ad241598f"
     },
     {
       "area": "verification-verification",
@@ -21329,7 +21400,7 @@
       "local_imports": [],
       "path": "tests/browser/research_product.cjs",
       "routes": [],
-      "sha256": "725011536f9b361938ed3d2ec73b429bdf74e67704155f252f7557dbb27ea991"
+      "sha256": "98f7007a6202e39f171a613bf86170396566bcfc2a7ba092c2309840f979b158"
     },
     {
       "area": "verification-verification",
@@ -21341,62 +21412,62 @@
         },
         {
           "kind": "function",
-          "line": 148,
+          "line": 155,
           "name": "main.hashes"
         },
         {
           "kind": "function",
-          "line": 164,
+          "line": 171,
           "name": "main.attach_model"
         },
         {
           "kind": "function",
-          "line": 174,
+          "line": 181,
           "name": "main.financial_tick"
         },
         {
           "kind": "function",
-          "line": 195,
+          "line": 202,
           "name": "main.drive"
         },
         {
           "kind": "function",
-          "line": 230,
+          "line": 237,
           "name": "main.probe"
         },
         {
           "kind": "function",
-          "line": 261,
+          "line": 268,
           "name": "main.lifespan"
         },
         {
           "kind": "function",
-          "line": 281,
+          "line": 292,
           "name": "main.lifespan.setup"
         },
         {
           "kind": "function",
-          "line": 319,
+          "line": 330,
           "name": "main.qa_receipts"
         },
         {
           "kind": "function",
-          "line": 350,
+          "line": 361,
           "name": "main.authorize"
         },
         {
           "kind": "function",
-          "line": 354,
+          "line": 365,
           "name": "main.pause_driver"
         },
         {
           "kind": "function",
-          "line": 363,
+          "line": 374,
           "name": "main.read_probe"
         },
         {
           "kind": "function",
-          "line": 368,
+          "line": 379,
           "name": "main.control"
         }
       ],
@@ -21495,18 +21566,18 @@
       "routes": [
         {
           "handler": "read_probe",
-          "line": 363,
+          "line": 374,
           "method": "GET",
           "route": "/__qa/probe"
         },
         {
           "handler": "control",
-          "line": 368,
+          "line": 379,
           "method": "POST",
           "route": "/__qa/{action}"
         }
       ],
-      "sha256": "068b7edde2b6d55022e31a1913c0bdd64b6338091e78fdb6a047c63b0f0c7b62"
+      "sha256": "63d2604d86c4e157ad5e0a9f0b13054dd8841be67ec88820a1d568c31c52ec88"
     },
     {
       "area": "verification-verification",
@@ -40555,7 +40626,7 @@
   "guides": {
     "docs/codebase-map/README.md": "134ca900c63d77810be3d32bd090e0e4d4b3469290e74f1da16515f5d6f83de1",
     "docs/codebase-map/architecture.md": "b2de4245a4c87368efb93e204801cdf36a971ed980c4fd1f86e7a6cbb9194415",
-    "docs/codebase-map/dashboard-api.md": "f4fc8d4f882d70bfb2488b7a13c0895442b16e2d88f8803739259dab044fc787",
+    "docs/codebase-map/dashboard-api.md": "c10b668358006921755581e29494be52f8231fbbfb1eb1fe7a009c557ca0e96d",
     "docs/codebase-map/evidence-storage-training.md": "9147ba37d044ca248faa87611613ca09473e0b42d592ecfaf5bd483147de935b",
     "docs/codebase-map/maintenance.md": "546da53010b6844818f1a957bfae60d7bf607c0e2eb2ab52b8b2004b9525efac",
     "docs/codebase-map/market-data.md": "57cd85fda9db76012274bcffd21ee45c7e737a8ff2ff406d7775554208a35069",
@@ -40644,9 +40715,9 @@
     },
     {
       "anchor": "function App()",
-      "description": "Status polling, Lab/Risk tab routing and page mounts.",
+      "description": "Status polling, focused area mounts, scoped safeguards and context-preserving product navigation.",
       "id": "dashboard-app",
-      "line": 162,
+      "line": 103,
       "path": "apps/web/src/main.tsx"
     },
     {
@@ -40761,11 +40832,11 @@
       "symbol": "create_app.lab_operator"
     },
     {
-      "anchor": "function currentPage(): Page",
-      "description": "Hash aliases and normal page resolution.",
+      "anchor": "export function workspaceRoute(",
+      "description": "Seven focused areas, legacy aliases and exact saved scanner/candle bookmark resolution.",
       "id": "dashboard-main-route",
-      "line": 133,
-      "path": "apps/web/src/main.tsx"
+      "line": 21,
+      "path": "apps/web/src/workspaceNavigation.ts"
     },
     {
       "anchor": "const chooseScope = (market: string, owner: string, candleId?: number) => {",
@@ -40776,7 +40847,7 @@
     },
     {
       "anchor": "export function MarketStation(",
-      "description": "Normal market/account/live/detail/tool UI and primary scanner mount.",
+      "description": "Separate watch/scanner/chart homes, exact selected-account strategy evidence and original variant catalogue.",
       "id": "dashboard-market-station",
       "line": 122,
       "path": "apps/web/src/MarketStation.tsx"
@@ -42925,6 +42996,12 @@
       "symbol": "start"
     },
     {
+      "description": "Compact navy/teal shell, active-area navigation, Overview grid and responsive focused workspaces.",
+      "id": "product-workspace-style",
+      "line": 1,
+      "path": "apps/web/src/workspace.css"
+    },
+    {
       "description": "Fixed replacement bank and causal five-minute aggregation.",
       "id": "redesign-strategy",
       "line": 1,
@@ -43323,7 +43400,7 @@
       "anchor": "export function CandleWorkspace(",
       "description": "Standalone explicit study and exact durable receipt controller.",
       "id": "scanner-candle-workspace",
-      "line": 704,
+      "line": 705,
       "path": "apps/web/src/CandleWorkspace.tsx"
     },
     {
@@ -43395,7 +43472,7 @@
     },
     {
       "anchor": "export function DailyAnalyzer(",
-      "description": "Immutable daily cards/history with separate current eligibility.",
+      "description": "Focused immutable daily cards/history, separate current eligibility and disclosed original market/coverage detail.",
       "id": "scanner-daily-panel",
       "line": 66,
       "path": "apps/web/src/DailyAnalyzer.tsx"
@@ -43548,7 +43625,7 @@
       "anchor": "export function ScannerWorkspace(",
       "description": "Campaign/daily controls, exact recovery, URL scope and evidence navigation.",
       "id": "scanner-workspace",
-      "line": 82,
+      "line": 92,
       "path": "apps/web/src/ScannerWorkspace.tsx"
     },
     {

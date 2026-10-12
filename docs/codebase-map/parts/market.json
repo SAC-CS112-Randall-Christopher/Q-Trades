@@ -448,7 +448,7 @@
       "id": "scanner-daily-panel",
       "path": "apps/web/src/DailyAnalyzer.tsx",
       "anchor": "export function DailyAnalyzer(",
-      "description": "Immutable daily cards/history with separate current eligibility."
+      "description": "Focused immutable daily cards/history, separate current eligibility and disclosed original market/coverage detail."
     },
     {
       "id": "scanner-comparison-panel",
@@ -683,21 +683,21 @@
     },
     {
       "id": "dashboard-main-route",
-      "path": "apps/web/src/main.tsx",
-      "anchor": "function currentPage(): Page",
-      "description": "Hash aliases and normal page resolution."
+      "path": "apps/web/src/workspaceNavigation.ts",
+      "anchor": "export function workspaceRoute(",
+      "description": "Seven focused areas, legacy aliases and exact saved scanner/candle bookmark resolution."
     },
     {
       "id": "dashboard-app",
       "path": "apps/web/src/main.tsx",
       "anchor": "function App()",
-      "description": "Status polling, Lab/Risk tab routing and page mounts."
+      "description": "Status polling, focused area mounts, scoped safeguards and context-preserving product navigation."
     },
     {
       "id": "dashboard-market-station",
       "path": "apps/web/src/MarketStation.tsx",
       "anchor": "export function MarketStation(",
-      "description": "Normal market/account/live/detail/tool UI and primary scanner mount."
+      "description": "Separate watch/scanner/chart homes, exact selected-account strategy evidence and original variant catalogue."
     },
     {
       "id": "dashboard-market-scope",

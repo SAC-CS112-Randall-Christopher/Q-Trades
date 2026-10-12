@@ -668,6 +668,7 @@ export function ScannerChartGrid({ campaignId, symbol, focus }: {
   }, [scope]);
   function bookmark(frame: Frame, query: ChartQuery) {
     const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    params.set("symbol", symbol);
     for (const key of [...params.keys()]) if (key.startsWith("scanner_chart_")) params.delete(key);
     if (Object.keys(query).length && campaignId) {
       params.set("scanner_campaign", campaignId); params.set("scanner_chart_frame", frame);
@@ -691,7 +692,7 @@ export function ScannerChartGrid({ campaignId, symbol, focus }: {
     <p className="candle-help">Latest saved windows refresh every 30 seconds while this view is visible, with at most two reads at a time. Historical and paged windows stay pinned until you choose a different window.</p>
     {bookmarkError && <p className="candle-error" role="alert">{bookmarkError}</p>}
     <button type="button" disabled={!campaignId} onClick={() => { if (bookmarkError) bookmark("5m", {}); for (const frame of Object.keys(frames) as Frame[]) if (!latestCards.current[frame].loading && Object.keys(latestCards.current[frame].query).length === 0) read(frame); }}>Refresh latest saved charts</button>
-    {!campaignId && <p role="status">No scanner campaign is prepared. All five frames remain visible; saved candles will appear after their scope has actually been processed.</p>}
+    {!campaignId && <p role="status">Saved charts need a confirmed scanner campaign. Choose a prepared campaign in Preparation &amp; Coverage or retry the requested original above.</p>}
     <div className="candle-chart-grid">{(Object.keys(frames) as Frame[]).map(frame => <ScannerCardView key={`${scope}:${frame}`} frame={frame}
       card={readyScope ? cards[frame] : blank()[frame]} selection={selected[frame] ?? null}
       expanded={expanded === frame} onExpand={() => setExpanded(old => old === frame ? null : frame)} onRead={query => { bookmark(frame, query); if (!Object.hasOwn(query, "selected_seq")) setSelected(old => ({ ...old, [frame]: null })); read(frame, query); }}

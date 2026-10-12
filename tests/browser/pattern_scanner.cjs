@@ -48,8 +48,10 @@ const bounded = async (work, milliseconds, label) => {
     const workspace = () => page.getByRole("region", { name: "Year pattern scanner" });
     const probe = async () => (await page.request.get(`${origin}/__qa/probe`, { headers })).json();
     const mode = async action => assert.equal((await page.request.post(`${origin}/__qa/${action}`, { headers })).status(), 200);
+    const openPane = async label => workspace().getByRole("navigation", { name: "Scanner workspace views", exact: true }).getByRole("button", { name: label, exact: true }).click();
     const refresh = async () => workspace().getByRole("button", { name: "Refresh status", exact: true }).click();
     const control = async (button, expectedAction, expectedStatus = 200) => {
+      await openPane("Preparation & Coverage");
       const response = page.waitForResponse(r => r.url() === `${origin}/api/research/pattern-scanner/control` && r.request().method() === "POST");
       void response.catch(() => {}); // Await below still throws; keep cleanup reachable if the click stalls.
       await workspace().getByRole("button", { name: button, exact: true }).click();
@@ -66,7 +68,7 @@ const bounded = async (work, milliseconds, label) => {
     };
 
     phase = "eligible-roster-and-no-automatic-control";
-    await page.goto(`${origin}/#markets`); await workspace().waitFor();
+    await page.goto(`${origin}/#markets?view=scanner&scanner_view=preparation`); await workspace().waitFor();
     await workspace().getByText(/26 eligible \/ 27 observed/).waitFor();
     assert.equal((await probe()).posts.length, 0);
     await workspace().getByRole("button", { name: "Select all eligible markets", exact: true }).click();
@@ -108,6 +110,7 @@ const bounded = async (work, milliseconds, label) => {
     save("processed-probe.json", processed); groups.push({ name: phase, ...advance, scope, full_year_complete: false, downloaded_page_may_still_be_processing: true });
 
     phase = "every-level-paged-reload-and-original-evidence";
+    await openPane("All Saved Evidence");
     await workspace().getByLabel("Scanner evidence market").selectOption(scope.symbol);
     await workspace().getByLabel("Scanner evidence interval").selectOption(scope.timeframe);
     read = waitPage("levels"); await workspace().getByRole("button", { name: "Inspect saved evidence", exact: true }).click();
@@ -118,7 +121,7 @@ const bounded = async (work, milliseconds, label) => {
     assert.equal(new Set([...firstLevels.rows, ...nextLevels.rows].map(row => row.seq)).size, firstLevels.rows.length + nextLevels.rows.length);
     assert(firstLevels.rows.every(row => row.source_sha256 && row.first_usable_ms > row.confirmed_at_ms && row.financial_authority === false));
     save("levels-first.json", firstLevels); save("levels-next.json", nextLevels);
-    await page.reload(); await workspace().getByRole("button", { name: "Pause scanner", exact: true }).waitFor();
+    await page.reload(); await workspace().waitFor();
     await workspace().getByText(new RegExp(`^Current campaign ${prepared.campaign_id} · revision`)).waitFor();
     await workspace().getByLabel("Scanner evidence market").selectOption(scope.symbol);
     await workspace().getByLabel("Scanner evidence interval").selectOption(scope.timeframe);
@@ -127,6 +130,7 @@ const bounded = async (work, milliseconds, label) => {
     groups.push({ name: phase, retained_total: firstLevels.total, displayed_pages: [100, nextLevels.rows.length], original_reopened: true });
 
     phase = "historical-patterns-not-current-profitability";
+    await workspace().getByText("What the scanner observes", { exact: true }).click();
     await workspace().getByLabel("Scanner evidence type").selectOption("patterns");
     read = waitPage("patterns"); await workspace().getByRole("button", { name: "Inspect saved evidence", exact: true }).click();
     const patterns = await (await read).json(); assert(patterns.total > 0);
@@ -149,7 +153,7 @@ const bounded = async (work, milliseconds, label) => {
     await workspace().getByRole("button", { name: "Find saved start result", exact: true }).waitFor();
     const lost = await probe(); const original = lost.posts.at(-1); assert(original.saved_receipt.applied);
     await page.reload(); await workspace().getByRole("button", { name: "Find saved start result", exact: true }).waitFor();
-    const second = await context.newPage(); await second.goto(`${origin}/#markets`);
+    const second = await context.newPage(); await second.goto(`${origin}/#markets?view=scanner&scanner_view=preparation`);
     const secondPanel = second.getByRole("region", { name: "Year pattern scanner" });
     await secondPanel.getByRole("button", { name: "Find saved start result", exact: true }).waitFor();
     assert.equal(await secondPanel.getByRole("button", { name: "Start / resume scanner", exact: true }).isDisabled(), true);
@@ -172,7 +176,7 @@ const bounded = async (work, milliseconds, label) => {
     await mode("normal"); await refresh(); groups.push({ name: phase, paused_with_last_known_identity: true });
 
     phase = "delayed-start-cannot-overtake-acknowledged-pause";
-    other = await context.newPage(); await other.goto(`${origin}/#markets`);
+    other = await context.newPage(); await other.goto(`${origin}/#markets?view=scanner&scanner_view=preparation`);
     const otherPanel = other.getByRole("region", { name: "Year pattern scanner" });
     await otherPanel.getByText(new RegExp(`^Current campaign ${prepared.campaign_id} \\u00b7 revision`)).waitFor();
     await otherPanel.getByRole("button", { name: "Pause scanner", exact: true }).waitFor();
@@ -343,7 +347,7 @@ const bounded = async (work, milliseconds, label) => {
     assert.equal(advanced.status(), 200, await advanced.text());
     const prospectiveComplete = await probe();
     assert.equal(prospectiveComplete.synthetic_now_seconds - historicalComplete.synthetic_now_seconds, 14400);
-    await page.goto(`${origin}/#markets`); await workspace().waitFor();
+    await page.goto(`${origin}/#markets?view=scanner&scanner_view=evidence`); await workspace().waitFor();
     await refresh();
     await workspace().getByLabel("Scanner evidence market").selectOption("BTCUSD");
     await workspace().getByLabel("Scanner evidence interval").selectOption("4h");
@@ -358,10 +362,12 @@ const bounded = async (work, milliseconds, label) => {
     await control("Pause scanner", "pause");
 
     phase = "earlier-campaign-reopen-after-new-preparation";
+    await openPane("Preparation & Coverage");
     await workspace().getByRole("button", { name: "Read saved campaigns", exact: true }).click();
     await workspace().getByLabel("Saved scanner campaign").selectOption(prepared.campaign_id);
     await workspace().getByRole("button", { name: "Reopen saved campaign", exact: true }).click();
     await workspace().getByText(`Inspecting saved campaign ${prepared.campaign_id}.`, { exact: false }).waitFor();
+    await openPane("All Saved Evidence");
     await workspace().getByLabel("Scanner evidence market").selectOption(scope.symbol);
     await workspace().getByLabel("Scanner evidence interval").selectOption(scope.timeframe);
     await workspace().getByLabel("Scanner evidence type").selectOption("levels");
@@ -373,7 +379,9 @@ const bounded = async (work, milliseconds, label) => {
     phase = "mobile-screenshot-and-bounded-chart-link";
     const beforeChart = await probe();
     await workspace().getByRole("button", { name: "Open bounded candle chart", exact: true }).click();
+    await page.getByRole("region", { name: "Candle & volume workspace", exact: true }).waitFor();
     assert.equal((await probe()).native_requests.length, beforeChart.native_requests.length, "Opening the chart must not auto-fetch a heavy study");
+    await page.goBack(); await workspace().waitFor();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForFunction(() => { const element = document.querySelector(".scanner-workspace"); return element.scrollWidth <= element.clientWidth; }, null, { timeout: 5000 });
     await page.evaluate(() => {

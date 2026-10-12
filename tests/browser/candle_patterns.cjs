@@ -143,7 +143,7 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
         contiguous_candles: [120, 119], segments: gapBounds, selected_time: selectedTime, selected_viewport: selectedViewport });
     };
 
-    await page.goto(`${origin}/#markets`);
+    await page.goto(`${origin}/#markets?view=charts`);
     await workspace().waitFor();
     assert.equal((await probe()).posts.length, 0, "Opening the workspace must not dispatch a study");
     if (plotsOnly) {
@@ -187,6 +187,16 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     assert(await workspace().innerText().then(t => t.includes(`Saved study #${year.id}`)));
     assert.equal(await workspace().getByLabel("Candle history window").inputValue(), "year");
     groups.push({ name: phase, run: year.id, reopened_candles: 5000 });
+    phase = "legacy-mixed-scanner-and-candle-bookmark";
+    const mixed = new URL(page.url());
+    const originalParams = new URLSearchParams(mixed.hash.split("?")[1]);
+    originalParams.delete("view"); originalParams.set("scanner_campaign", "retained-original-scope");
+    assert.equal(originalParams.get("candle_run"), String(year.id));
+    await page.goto(`${origin}/#markets?${originalParams}`); await waitStudy();
+    assert(await workspace().innerText().then(t => t.includes(`Saved study #${year.id}`)));
+    assert.equal(await page.locator("#pattern-scanner-title").count(), 0);
+    assert.equal(new URLSearchParams(page.url().split("?")[1]).get("scanner_campaign"), "retained-original-scope");
+    groups.push({ name: phase, run: year.id, exact_saved_run_reopened: true });
 
     phase = "gap-and-warmup-unknown";
     await mode("gap"); const gap = await load("15m");
@@ -211,7 +221,7 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     const before = await probe(); const pending = before.posts.at(-1);
     assert.equal(pending.saved_status, "completed");
     const second = await context.newPage();
-    await second.goto(`${origin}/#markets`);
+    await second.goto(`${origin}/#markets?view=charts`);
     const secondWorkspace = second.getByRole("region", { name: "Candle & volume workspace" });
     await secondWorkspace.getByRole("button", { name: "Find original saved result" }).waitFor();
     assert.equal(await secondWorkspace.getByRole("button", { name: /Load .* study/ }).isDisabled(), true);
@@ -281,17 +291,18 @@ const sha = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
     }
 
     phase = "restored-other-market-preserves-current-account";
+    await page.getByText("Research tools and saved receipts", { exact: true }).click();
     await page.getByLabel("Evidence account", { exact: true }).selectOption("responsive-v1");
-    await page.locator(".watchlist-rows button").filter({ hasText: "ETH" }).click();
+    await page.getByLabel("Market", { exact: true }).selectOption("ETHUSD");
     const eth = await load("5m");
-    await page.locator(".watchlist-rows button").filter({ hasText: "BTC" }).click();
+    await page.getByLabel("Market", { exact: true }).selectOption("BTCUSD");
     const beforeSameId = apiRequests.filter(request => request.path === `/api/research/tools/runs/${eth.id}`).length;
     await page.evaluate(id => { location.hash = `markets?symbol=BTCUSD&account=responsive-v1&candle_run=${id}`; }, eth.id);
     await waitStudy();
     assert.equal(await page.getByLabel("Evidence account", { exact: true }).inputValue(), "responsive-v1");
     assert(apiRequests.filter(request => request.path === `/api/research/tools/runs/${eth.id}`).length > beforeSameId,
       "Returning to the same saved ID after changing its scope must actually reopen it");
-    await page.locator(".watchlist-rows button").filter({ hasText: "BTC" }).click();
+    await page.getByLabel("Market", { exact: true }).selectOption("BTCUSD");
     await page.reload(); await workspace().waitFor();
     assert.equal(await page.getByLabel("Evidence account", { exact: true }).inputValue(), "responsive-v1");
     assert.equal(await workspace().locator(".candle-study-result").count(), 0, "Explicit different market must win over remembered study");

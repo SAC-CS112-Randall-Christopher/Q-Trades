@@ -43,6 +43,8 @@ def main():
         "src/trading/station.py",
         "apps/web/src/CandleWorkspace.tsx",
         "apps/web/src/MarketStation.tsx",
+        "apps/web/src/workspaceNavigation.ts",
+        "apps/web/src/workspace.css",
         "apps/web/src/candle-workspace.css",
         "tests/browser/candle_patterns_server.py",
     ]

@@ -79,7 +79,32 @@ function validateState(value: ScannerState) {
   }
 }
 
+const scannerViews = [["findings", "Findings"], ["charts", "Saved Charts"], ["preparation", "Preparation & Coverage"], ["evidence", "All Saved Evidence"]] as const;
+type ScannerPane = (typeof scannerViews)[number][0];
+function requestedScannerPane(): ScannerPane {
+  const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+  const requested = params.get("scanner_view");
+  if (scannerViews.some(([id]) => id === requested)) return requested as ScannerPane;
+  if (params.has("pattern_comparison_request")) return "findings";
+  return [...params.keys()].some(key => key.startsWith("scanner_chart_")) ? "charts" : "findings";
+}
+
 export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol: string; onInspect: (symbol: string) => void; onChooseMarket: (symbol: string) => void }) {
+  const [pane, setPane] = useState(requestedScannerPane);
+  const choosePane = (next: ScannerPane, clearChartBookmark = false) => {
+    const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
+    if (clearChartBookmark) for (const key of [...params.keys()]) if (key.startsWith("scanner_chart_")) params.delete(key);
+    params.set("view", "scanner"); params.set("scanner_view", next);
+    const target = `#markets?${params}`;
+    if (location.hash !== target) history.pushState(null, "", target);
+    if (next !== "charts") setChartFocus(null);
+    setPane(next);
+  };
+  useEffect(() => {
+    const restore = () => { const next = requestedScannerPane(); if (next !== "charts") setChartFocus(null); setPane(next); };
+    addEventListener("hashchange", restore); addEventListener("popstate", restore);
+    return () => { removeEventListener("hashchange", restore); removeEventListener("popstate", restore); };
+  }, []);
   const [state, setState] = useState<ScannerState | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [checked, setChecked] = useState<number | null>(null);
@@ -106,6 +131,8 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
   const [savedCampaign, setSavedCampaign] = useState("");
   const [historicalState, setHistoricalState] = useState<ScannerState | null>(null);
   const [requestedCampaign, setRequestedCampaign] = useState<string | null>(null);
+  const requestedCampaignRef = useRef(requestedCampaign);
+  requestedCampaignRef.current = requestedCampaign;
   const [campaignError, setCampaignError] = useState<string | null>(null);
   const [campaignBusy, setCampaignBusy] = useState(false);
   const statusAbort = useRef<AbortController | null>(null);
@@ -143,11 +170,11 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
         const value = await response.json() as ScannerState; validateState(value);
         if (active) { setState(value); setStatusError(null); setChecked(Date.now()); }
       } catch (cause) { if (active) setStatusError(cause instanceof Error ? cause.message : "Scanner status unavailable."); }
-      finally { statusAbort.current = null; if (active) timer = setTimeout(() => void refresh(), 5000); }
+      finally { if (statusAbort.current === controller) statusAbort.current = null; if (active) timer = setTimeout(() => void refresh(), 5000); }
     };
     refreshAgain.current = () => { if (timer) clearTimeout(timer); void refresh(); };
     void refresh();
-    return () => { active = false; if (timer) clearTimeout(timer); statusAbort.current?.abort(); };
+    return () => { active = false; if (timer) clearTimeout(timer); statusAbort.current?.abort(); statusAbort.current = null; };
   }, []);
   useEffect(() => { details.cancel(); setPage(null); setPageError(null); setPageBusy(false); }, [pageScope, details.cancel]);
   useEffect(() => { progressRead.cancel(); setProgressPage(null); setProgressError(null); setProgressBusy(false); }, [campaign?.id, progressRead.cancel]);
@@ -284,6 +311,7 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
 
   async function reopenCampaign(id = savedCampaign, remember = true) {
     if (!id) return;
+    requestedCampaignRef.current = id;
     setRequestedCampaign(id); setHistoricalState(null);
     if (remember) {
       const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
@@ -307,6 +335,8 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
   useEffect(() => {
     const restore = () => {
       const id = new URLSearchParams(location.hash.split("?")[1] ?? "").get("scanner_campaign");
+      if (id === requestedCampaignRef.current) return;
+      requestedCampaignRef.current = id;
       if (id == null) {
         campaignRead.cancel(); setRequestedCampaign(null); setHistoricalState(null); setCampaignBusy(false); setCampaignError(null);
       } else if (!/^patterns-[a-f0-9]{24}$/.test(id)) {
@@ -314,7 +344,11 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
       } else void reopenCampaign(id, false);
     };
     restore(); addEventListener("hashchange", restore); addEventListener("popstate", restore);
-    return () => { removeEventListener("hashchange", restore); removeEventListener("popstate", restore); };
+    return () => {
+      removeEventListener("hashchange", restore); removeEventListener("popstate", restore);
+      // A new effect lifecycle must replace any read canceled by its cleanup.
+      requestedCampaignRef.current = null;
+    };
   }, [campaignRead.cancel]);
 
   function openDaily(campaignId: string, nextSymbol: string, snapshotId: string,
@@ -323,6 +357,7 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
     const params = new URLSearchParams(location.hash.split("?")[1] ?? "");
     for (const key of [...params.keys()]) if (key.startsWith("scanner_chart_")) params.delete(key);
     params.set("symbol", nextSymbol); params.set("scanner_campaign", campaignId); params.set("daily_shortlist", snapshotId);
+    params.set("scanner_view", "charts"); setPane("charts");
     history.replaceState(null, "", `#markets?${params}`);
     setMarket(nextSymbol);
     void reopenCampaign(campaignId, false);
@@ -338,6 +373,7 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
 
   function reviewComparison(selection: PatternComparisonSelection) {
     const params = new URLSearchParams(location.hash.split("?")[1] ?? ""); params.delete("pattern_comparison_request");
+    params.set("scanner_view", "findings"); setPane("findings");
     history.replaceState(null, "", `#markets?${params}`);
     setComparison({ daily_id: selection.daily_id, symbol: selection.symbol, timeframe: selection.timeframe,
       event_kind: selection.event_kind, event_seq: selection.event_seq });
@@ -363,43 +399,54 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
   const visibleProgress = progressPage?.rows ?? displayState?.progress ?? [];
   return <section className="scanner-workspace" aria-labelledby="pattern-scanner-title">
     <header><div><p className="station-kicker">SHARED HISTORY · DESCRIPTIVE ALERTS</p><h3 id="pattern-scanner-title">Year pattern scanner</h3></div><span>5m · 15m · 30m · 1h · 4h</span></header>
-    <p>Prepare native closed candles for a fixed 365-day window, then inspect recorded levels and pattern candidates across eligible USD markets. Historical patterns describe price behavior; they do not establish validated profitability or place orders.</p>
-    <p>Automatic pattern research currently supports only saved BTCUSD 5m resistance breakouts or retests with recorded volume confirmation. It checks a bounded set of recent daily captures, original archives, distinct-event spacing and current executable inputs. Other markets, timeframes and chart patterns remain observations; the research panel reports the current selection or wait reason.</p>
+    <p>Review saved market findings, inspect their charts and prepare the history they need. Recognized patterns remain research observations.</p>
+    <nav className="scanner-view-nav" aria-label="Scanner workspace views">{scannerViews.map(([id, label]) => <button type="button" key={id} aria-pressed={pane === id} onClick={() => choosePane(id)}>{label}</button>)}</nav>
+    <details className="scanner-explanation"><summary>What the scanner observes</summary>
+      <p>Prepare native closed candles for a fixed 365-day window, then inspect recorded levels and pattern candidates across eligible USD markets. Historical patterns describe price behavior; they do not establish validated profitability or place orders.</p>
+      <p>Automatic pattern research currently supports only saved BTCUSD 5m resistance breakouts or retests with recorded volume confirmation. It checks a bounded set of recent daily captures, original archives, distinct-event spacing and current executable inputs. Other markets, timeframes and chart patterns remain observations; the research panel reports the current selection or wait reason.</p>
+    </details>
     <div className="scanner-status" role="status"><strong>{statusError ? "Status unavailable" : state ? words(state.status) : "Reading scanner status…"}</strong>
       <span>{statusError ? `Last observed ${checked == null ? "unknown" : date(checked)}` : `Observed ${checked == null ? "unknown" : date(checked)}`}</span>
       <p>{state?.reason ?? (campaign ? "Saved progress is retained; actual source gaps and current criteria remain below." : state ? "No campaign has been prepared. Choose eligible markets below." : "Coverage and activity remain unknown until status is available.")}</p>
       {state?.campaign && <p>Current campaign {state.campaign.id} · revision {state?.revision} · {state?.enabled ? "Worker enabled" : "Worker paused"}. Restarted preparation requires an explicit Start; saved history remains retained.</p>}
     </div>
+    <button type="button" className="station-text-button" onClick={() => refreshAgain.current()}>Refresh status</button>
+    {requestedCampaign && !historicalState && <p role="status">Requested saved campaign {requestedCampaign} is {campaignBusy ? "being read" : "unavailable"}. Its chart scope has not been replaced with the current campaign.</p>}
+    {historicalState && <p role="status">Inspecting saved campaign {historicalState.campaign?.id}. This snapshot was reopened on request; its original coverage does not imply current readiness.</p>}
+    {campaignError && <p role="alert">{campaignError}</p>}
+    {requestedCampaign && !historicalState && <button type="button" disabled={campaignBusy || !/^patterns-[a-f0-9]{24}$/.test(requestedCampaign)} onClick={() => void reopenCampaign(requestedCampaign, false)}>Retry this original campaign</button>}
     {statusError && <p role="alert">{statusError}</p>}
+    <div hidden={pane !== "findings"}>
     <DailyAnalyzer selection={daily} statusError={statusError} checked={checked}
       enableDisabled={setupBusy || !!statusError || !!state?.enabled && !dailyCampaign}
       pauseDisabled={busy || !!storageError || !navigator.locks || pending.some(command => isPause(command.action))}
       onEnable={() => void control("daily_enable")} onPause={() => void control("daily_pause")} onOpen={openDaily}
       onReviewComparison={reviewComparison} onSnapshotChange={id => setComparison(old => old?.daily_id === id ? old : null)} />
     <PatternComparisonPanel selection={comparison} onOpenFinding={openComparisonFinding} onReviewFinding={reviewComparison} />
+    </div>
+    <div hidden={pane !== "charts"}>
     <div className="scanner-filters"><label>Analysis market <select aria-label="Analysis chart market" value={market} onChange={event => onChooseMarket(event.target.value)}>{[...new Set([market, ...(campaign?.symbols ?? []), ...roster.map(row => row.symbol)])].map(name => <option key={name}>{name}</option>)}</select></label></div>
-    <ScannerChartGrid campaignId={campaign?.id ?? null} symbol={market} focus={chartFocus} />
-    <div className="scanner-controls"><button type="button" disabled={setupBusy || !prepareAllowed} onClick={() => void control("prepare")}>Prepare selected markets</button>
+    {pane === "charts" && <ScannerChartGrid campaignId={campaign?.id ?? null} symbol={market} focus={chartFocus} />}
+    </div>
+    <div hidden={pane !== "preparation"} className="scanner-controls"><button type="button" disabled={setupBusy || !prepareAllowed} onClick={() => void control("prepare")}>Prepare selected markets</button>
       <button type="button" disabled={setupBusy || !!statusError || !state?.campaign || state?.enabled === true || dailyCampaign} onClick={() => void control("start")}>Start / resume scanner</button>
-      <button type="button" disabled={busy || !!storageError || !state?.campaign || dailyCampaign || !navigator.locks || pending.some(command => isPause(command.action))} onClick={() => void control("pause")}>Pause scanner</button>
-      <button type="button" onClick={() => refreshAgain.current()}>Refresh status</button></div>
+      <button type="button" disabled={busy || !!storageError || !state?.campaign || dailyCampaign || !navigator.locks || pending.some(command => isPause(command.action))} onClick={() => void control("pause")}>Pause scanner</button></div>
     {pending.map(command => <div className="scanner-pending" role="status" key={command.request_id}><p>Original {words(command.action)} control is awaiting acknowledgment. Its saved identity is retained.</p><button type="button" disabled={busy} onClick={() => void recover(command)}>Find saved {words(command.action)} result</button></div>)}
     {(controlError || storageError) && <p role="alert">{storageError ?? controlError}</p>}{notice && <p role="status">{notice}</p>}
     {!navigator.locks && <p role="alert">Control recovery coordination is unavailable in this window. Saved evidence can still be inspected.</p>}
-    <section aria-label="Retained scanner campaigns"><h4>Saved campaigns</h4><p>Controls apply to the current campaign above. Earlier maps keep their original scope and evidence and can be inspected here.</p>
+    <section hidden={pane !== "preparation"} aria-label="Retained scanner campaigns"><h4>Saved campaigns</h4><p>Controls apply to the current campaign above. Earlier maps keep their original scope and evidence and can be inspected here.</p>
       <div className="scanner-controls"><button type="button" disabled={campaignBusy} onClick={() => void readCampaigns()}>Read saved campaigns</button>
         <label>Campaign <select aria-label="Saved scanner campaign" value={savedCampaign} onChange={event => setSavedCampaign(event.target.value)}><option value="">Choose a saved campaign</option>{campaigns.map(row => <option key={row.id} value={row.id}>{date(row.created * 1000)} · {row.market_count} markets · {row.id}</option>)}</select></label>
         <button type="button" disabled={campaignBusy || !savedCampaign} onClick={() => void reopenCampaign()}>Reopen saved campaign</button>
         <button type="button" disabled={!requestedCampaign} onClick={() => {
+          requestedCampaignRef.current = null;
           campaignRead.cancel(); setHistoricalState(null); setRequestedCampaign(null); setCampaignBusy(false); setCampaignError(null);
           const params = new URLSearchParams(location.hash.split("?")[1] ?? ""); params.delete("scanner_campaign");
           for (const key of [...params.keys()]) if (key.startsWith("scanner_chart_")) params.delete(key);
           location.hash = `markets?${params}`;
         }}>Inspect current campaign</button></div>
-      {requestedCampaign && !historicalState && <p role="status">Requested saved campaign {requestedCampaign} is {campaignBusy ? "being read" : "unavailable"}. Its chart scope has not been replaced with the current campaign.</p>}
-      {historicalState && <p role="status">Inspecting saved campaign {historicalState.campaign?.id}. This snapshot was reopened on request; its original coverage does not imply current readiness.</p>}
-      {campaignError && <p role="alert">{campaignError}</p>}</section>
-    <details className="scanner-roster" open><summary>{state?.campaign ? "Frozen market roster" : "Eligible market roster"} · {state ? number(state.roster.eligible) : "unknown"} eligible / {state ? number(state.roster.total) : "unknown"} observed</summary>
+    </section>
+    <details hidden={pane !== "preparation"} className="scanner-roster" open><summary>{state?.campaign ? "Frozen market roster" : "Eligible market roster"} · {state ? number(state.roster.eligible) : "unknown"} eligible / {state ? number(state.roster.total) : "unknown"} observed</summary>
       <p>Market screen observed {state?.roster.observed_at == null ? "unknown" : date(state.roster.observed_at * 1000)}.{state?.campaign && " This is the campaign's original screen, not a fresh eligibility claim."} Every new preparation rechecks current market eligibility.</p>
       <p>{chosen.length} markets selected from this observed eligible roster for the next preparation. Preparation reads one bounded native page at a time across all five intervals. {state ? number(roster.filter(row => row.queued).length) : "Unknown"} observed markets remain queued or unprepared; they are not claimed to have full history.</p>
       <div className="scanner-controls"><button type="button" disabled={setupBusy || !!statusError || !roster.some(row => row.eligible)} onClick={() => setSelected(roster.filter(row => row.eligible).map(row => row.symbol))}>Select all eligible markets</button><button type="button" disabled={setupBusy || !selected.length} onClick={() => setSelected([])}>Clear selection</button></div>
@@ -408,13 +455,13 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
         <span>{row.eligible ? row.selected ? "Selected in campaign" : row.queued ? "Queued / unprepared" : "Eligible" : "Ineligible"}</span><small>{row.reason}</small></label>)}</div>
       <div className="scanner-pagination"><button type="button" disabled={rosterPage === 0} onClick={() => setRosterPage(rosterPage - 1)}>Previous markets</button><span>Page {rosterPage + 1} of {Math.max(1, Math.ceil(roster.length / 24))}</span><button type="button" disabled={(rosterPage + 1) * 24 >= roster.length} onClick={() => setRosterPage(rosterPage + 1)}>More markets</button></div>
     </details>
-    <section aria-label="Full-year preparation progress"><h4>Full-year preparation</h4><p>Each interval keeps its original cutoff and actual source coverage. Queued, missing and failed scopes remain visible; a progress count is not proof that every requested candle exists.</p>
+    <section hidden={pane !== "preparation"} aria-label="Full-year preparation progress"><h4>Full-year preparation</h4><p>Each interval keeps its original cutoff and actual source coverage. Queued, missing and failed scopes remain visible; a progress count is not proof that every requested candle exists.</p>
       <p>{visibleProgress.length} displayed / {number(progressPage?.total ?? displayState?.progress_total)} saved market/interval scopes.{progressPage && " This is a saved page captured when inspected; Refresh progress reads its latest state."}</p>
       <div className="scanner-table-scroll"><table><thead><tr><th>Market / interval</th><th>State</th><th>Actual / expected</th><th>Missing / gaps / pages</th><th>Frozen history / current cursor</th></tr></thead><tbody>{visibleProgress.map(row => <tr key={`${row.symbol}:${row.timeframe}`}><td>{row.symbol}<br />{row.timeframe}</td><td>{words(row.status)}{row.error && <p>{row.error}</p>}</td><td>{number(row.observed_bars)} / {number(row.expected_bars)}</td><td>{number(row.missing_bars)} / {number(row.gap_count)} / {number(row.pages)}</td><td>{date(row.requested_start_ms)} to {date(row.cutoff_ms)}<br />Read through {date(row.cursor_ms)}</td></tr>)}</tbody></table></div>
       {!visibleProgress.length && <p>No prepared scope is available in the observed status.</p>}
       {progressError && <p role="alert">{progressError}</p>}<div className="scanner-pagination"><button type="button" disabled={!campaign || progressBusy} onClick={() => { setProgressPage(null); void inspectProgress(); }}>First / refresh progress</button><button type="button" disabled={!campaign || progressBusy || !progressPage || progressPage.next_before == null} onClick={() => void inspectProgress(progressPage?.next_before)}>Next progress page</button></div>
     </section>
-    <section aria-label="Saved scanner levels and alerts"><h4>Every saved level and candidate</h4><p>Pages retain the complete detected set; they are not a highest-scoring shortlist. Alert evaluation is descriptive and preserves missing current inputs and reasons.</p>
+    <section hidden={pane !== "evidence"} aria-label="Saved scanner levels and alerts"><h4>Every saved level and candidate</h4><p>Pages retain the complete detected set; they are not a highest-scoring shortlist. Alert evaluation is descriptive and preserves missing current inputs and reasons.</p>
       <div className="scanner-filters"><label>Evidence <select aria-label="Scanner evidence type" value={kind} onChange={event => setKind(event.target.value as Kind)}><option value="levels">Historical levels</option><option value="patterns">Historical pattern candidates</option><option value="alerts">Current alerts and evaluation</option></select></label>
         <label>Market <select aria-label="Scanner evidence market" value={market} onChange={event => onChooseMarket(event.target.value)}>{[...new Set([market, ...(campaign?.symbols ?? []), ...roster.map(row => row.symbol)])].map(name => <option key={name}>{name}</option>)}</select></label>
         <label>Interval <select aria-label="Scanner evidence interval" value={frame} onChange={event => setFrame(event.target.value as Frame)}>{frames.map(name => <option key={name}>{name}</option>)}</select></label>
@@ -428,6 +475,7 @@ export function ScannerWorkspace({ symbol, onInspect, onChooseMarket }: { symbol
           <p>Level {typeof facts.price === "string" ? facts.price : typeof facts.level_price === "string" ? facts.level_price : "Unknown"} · candle {date(facts.bar_open_ms ?? facts.pivot_open_ms)}{kind === "levels" && ` · confirmed ${date(facts.confirmed_at_ms)} · first usable ${date(facts.first_usable_ms)}`}</p>
           {typeof facts.reason === "string" && <p>{facts.reason}</p>}
           {typeof (facts.bar_open_ms ?? facts.pivot_open_ms) === "number" && <button type="button" onClick={() => {
+            choosePane("charts", true);
             setChartFocus(previous => ({ timeframe: page.timeframe, atMs: Number(facts.bar_open_ms ?? facts.pivot_open_ms), levelId: typeof facts.level_id === "string" ? facts.level_id : row.id, kind, seq: row.seq, nonce: (previous?.nonce ?? 0) + 1 }));
             document.getElementById("scanner-chart-grid")?.scrollIntoView({ block: "start" });
           }}>Show this {kind === "levels" ? "level" : "pattern"} on chart</button>}

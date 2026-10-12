@@ -1,56 +1,393 @@
 {
   "references": [
-    {"id":"platform-cli","path":"src/trading/__main__.py","symbol":"main","description":"CLI command selection, loopback service and reporting/replay paths"},
-    {"id":"platform-app","path":"src/trading/api.py","symbol":"create_app","description":"Application construction and current data/owner wiring"},
-    {"id":"platform-lifespan","path":"src/trading/api.py","symbol":"create_app.lifespan","description":"Background owner construction, optional failures and cancellation order"},
-    {"id":"platform-monitor-store","path":"src/trading/storage.py","symbol":"MonitorStore","description":"Separate public-monitor SQLite retention and event owner"},
-    {"id":"platform-collector-lock","path":"src/trading/ownership.py","symbol":"CollectorLock","description":"Monitor collector ownership lock"},
-    {"id":"platform-package","path":"pyproject.toml","description":"Package/CLI, dependencies and verification configuration"},
-    {"id":"platform-settings","path":"src/trading/config.py","symbol":"Settings","description":"Validated public-monitor settings, distinct from financial/research policies"},
-    {"id":"platform-compose","path":"compose.yaml","description":"Dedicated paper database container declaration"},
-    {"id":"runtime-service-host","path":"scripts/service_host.py","symbol":"main","description":"Windowless host for known Windows supervisors"},
-    {"id":"runtime-paper-supervisor","path":"scripts/Run-PaperExperiment.ps1","description":"Existing paper supervisor, adoption, health and owned restart"},
-    {"id":"runtime-process-ownership","path":"scripts/PaperProcessOwnership.ps1","description":"Verified launcher/child identities and existing-server adoption"},
-    {"id":"runtime-startup-identity","path":"scripts/PaperStartupIdentity.ps1","description":"Existing scheduled-task action identity"},
-    {"id":"runtime-update-shutdown","path":"scripts/PaperUpdateShutdown.ps1","description":"Controlled update shutdown with task/process identity"},
-    {"id":"runtime-supervision-tests","path":"tests/test_windows_supervision.py","description":"Windows startup/supervision source coverage"},
-    {"id":"runtime-model-ownership-tests","path":"tests/test_model_runtime_task_ownership.py","description":"Model task/child ownership and recovery coverage"},
-    {"id":"runtime-shutdown-tests","path":"tests/test_paper_update_shutdown.py","description":"Update shutdown source/failure coverage"},
-    {"id":"runtime-updater","path":"scripts/Update-QTrades.ps1","anchor":"if ($ExpectedCommit -and $commit -ne $ExpectedCommit)","description":"Fetched approved-target match before build/backup/shutdown"},
-    {"id":"runtime-updater-tests","path":"tests/test_simple_update.py","description":"Supported updater and disposable preservation/refusal coverage"},
-    {"id":"runtime-health-tests","path":"tests/test_simple_health.py","description":"Exact installed-health predicate coverage"},
-    {"id":"runtime-health-predicate","path":"scripts/qtrades_health.py","symbol":"healthy","description":"Service/mode/freshness/balance/error/commit readiness conditions"},
-    {"id":"runtime-desktop-launcher","path":"scripts/TradingDashboardLauncher.cs","description":"Current browser launcher source; not native packaged-product acceptance"},
-    {"id":"runtime-dashboard-opener","path":"scripts/Open-TradingDashboard.ps1","description":"Existing dashboard opening and task-start route"},
-    {"id":"verification-workflow","path":".github/workflows/windows-native.yml","description":"Exact native, dashboard, ownership, PG and browser job selections"},
-    {"id":"browser-completed-get","path":"tests/browser/completed_get.cjs","anchor":"function completedJsonGet(","description":"Bounded newly issued same-origin saved-record UI GET and completed-body capture, without replacement requests or response retries"},
-    {"id":"map-workflow","path":".github/workflows/codebase-map.yml","description":"Standalone standard-library map job for every PR and main push"},
-    {"id":"map-tool","path":"tools/codebase_map.py","symbol":"main","description":"Map navigation, selected traces and explicit snapshot maintenance"},
-    {"id":"map-tool-tests","path":"tests/test_codebase_map.py","description":"Isolated map-tool positive and negative behavior coverage"},
-    {"id":"product-overview-read","path":"src/trading/research_overview.py","description":"Bounded independent owner observations without dispatch, detail disclosure or financial writes","symbol":"snapshot"},
-    {"id":"product-supervised-start","path":"src/trading/research_overview.py","description":"Reviewed component startup with exact current scope/policy and Pause revisions","symbol":"start"},
-    {"id":"product-setup-panel","path":"apps/web/src/ResearchSetup.tsx","description":"Normal saved-scope setup, revised review and nonreplaying acknowledgment recovery"},
-    {"id":"product-owner-tests","path":"tests/test_research_product.py","description":"Read purity, waiting identity, configuration/expiry/revision and idempotent owner tests"},
-    {"id":"product-browser-proof","path":"tests/browser/research_product.cjs","description":"Compiled normal product, unsuppressed polling and native disposable-owner workflow"},
-    {"id":"product-browser-server","path":"tests/browser/research_product_server.py","description":"Finite isolated PG/scanner/role driver with synthetic inputs, clock and software model callbacks","symbol":"main"},
-    {"id":"product-navigation","path":"apps/web/src/productNavigation.ts","description":"Exact account/task/trial navigation and account selection with Back and current-view preservation"},
-    {"id":"product-account-economics","path":"apps/web/src/PaperEconomicsPanel.tsx","literal":"export function PaperEconomicsPanel","description":"URL-scoped economics and cost controls; unavailable exact accounts and account-bound settings feedback"},
-    {"id":"product-model-scope","path":"src/trading/peft_role_model.py","description":"Existing verified profile to disabled recurring scope, create-only policy and exact acknowledgment","symbol":"configure_paper_scope"},
-    {"id":"paper-rule-source","path":"src/trading/paper_learning.py","description":"Original immutable reservation, unique mature score, exact frozen rule and economic provenance","symbol":"rule_source"},
-    {"id":"paper-rule-admission","path":"src/trading/paper_learning.py","description":"Separate prospective rule/control funding through existing writer and unchanged capacity/risk gates","symbol":"admit_rule"},
-    {"id":"paper-rule-runtime","path":"src/trading/paper_runtime.py","description":"Read-only original review outside writer, indexed immutable-receipt recheck inside financial transaction","symbol":"PaperRuntime.qualify_rule"},
-    {"id":"research-verified-original","path":"src/trading/role_worker.py","description":"Verified hot/cold canonical predecessor recovery preserving original task and mature outcome","symbol":"RoleWorker._verified_pattern_learning_record"},
-    {"id":"product-live-readiness","path":"src/trading/live_readiness.py","description":"Existing dated readiness owner; no authenticated order connector or live permission","symbol":"packet"},
-    {"id":"product-live-readiness-panel","path":"apps/web/src/ReadinessPanel.tsx","description":"Existing readiness decision packet under Accounts and Results safeguards"}
+    {
+      "id": "platform-cli",
+      "path": "src/trading/__main__.py",
+      "symbol": "main",
+      "description": "CLI command selection, loopback service and reporting/replay paths"
+    },
+    {
+      "id": "platform-app",
+      "path": "src/trading/api.py",
+      "symbol": "create_app",
+      "description": "Application construction and current data/owner wiring"
+    },
+    {
+      "id": "platform-lifespan",
+      "path": "src/trading/api.py",
+      "symbol": "create_app.lifespan",
+      "description": "Background owner construction, optional failures and cancellation order"
+    },
+    {
+      "id": "platform-monitor-store",
+      "path": "src/trading/storage.py",
+      "symbol": "MonitorStore",
+      "description": "Separate public-monitor SQLite retention and event owner"
+    },
+    {
+      "id": "platform-collector-lock",
+      "path": "src/trading/ownership.py",
+      "symbol": "CollectorLock",
+      "description": "Monitor collector ownership lock"
+    },
+    {
+      "id": "platform-package",
+      "path": "pyproject.toml",
+      "description": "Package/CLI, dependencies and verification configuration"
+    },
+    {
+      "id": "platform-settings",
+      "path": "src/trading/config.py",
+      "symbol": "Settings",
+      "description": "Validated public-monitor settings, distinct from financial/research policies"
+    },
+    {
+      "id": "platform-compose",
+      "path": "compose.yaml",
+      "description": "Dedicated paper database container declaration"
+    },
+    {
+      "id": "runtime-service-host",
+      "path": "scripts/service_host.py",
+      "symbol": "main",
+      "description": "Windowless host for known Windows supervisors"
+    },
+    {
+      "id": "runtime-paper-supervisor",
+      "path": "scripts/Run-PaperExperiment.ps1",
+      "description": "Existing paper supervisor, adoption, health and owned restart"
+    },
+    {
+      "id": "runtime-process-ownership",
+      "path": "scripts/PaperProcessOwnership.ps1",
+      "description": "Verified launcher/child identities and existing-server adoption"
+    },
+    {
+      "id": "runtime-startup-identity",
+      "path": "scripts/PaperStartupIdentity.ps1",
+      "description": "Existing scheduled-task action identity"
+    },
+    {
+      "id": "runtime-update-shutdown",
+      "path": "scripts/PaperUpdateShutdown.ps1",
+      "description": "Controlled update shutdown with task/process identity"
+    },
+    {
+      "id": "runtime-supervision-tests",
+      "path": "tests/test_windows_supervision.py",
+      "description": "Windows startup/supervision source coverage"
+    },
+    {
+      "id": "runtime-model-ownership-tests",
+      "path": "tests/test_model_runtime_task_ownership.py",
+      "description": "Model task/child ownership and recovery coverage"
+    },
+    {
+      "id": "runtime-shutdown-tests",
+      "path": "tests/test_paper_update_shutdown.py",
+      "description": "Update shutdown source/failure coverage"
+    },
+    {
+      "id": "runtime-updater",
+      "path": "scripts/Update-QTrades.ps1",
+      "anchor": "if ($ExpectedCommit -and $commit -ne $ExpectedCommit)",
+      "description": "Fetched approved-target match before build/backup/shutdown"
+    },
+    {
+      "id": "runtime-updater-tests",
+      "path": "tests/test_simple_update.py",
+      "description": "Supported updater and disposable preservation/refusal coverage"
+    },
+    {
+      "id": "runtime-health-tests",
+      "path": "tests/test_simple_health.py",
+      "description": "Exact installed-health predicate coverage"
+    },
+    {
+      "id": "runtime-health-predicate",
+      "path": "scripts/qtrades_health.py",
+      "symbol": "healthy",
+      "description": "Service/mode/freshness/balance/error/commit readiness conditions"
+    },
+    {
+      "id": "runtime-desktop-launcher",
+      "path": "scripts/TradingDashboardLauncher.cs",
+      "description": "Current browser launcher source; not native packaged-product acceptance"
+    },
+    {
+      "id": "runtime-dashboard-opener",
+      "path": "scripts/Open-TradingDashboard.ps1",
+      "description": "Existing dashboard opening and task-start route"
+    },
+    {
+      "id": "verification-workflow",
+      "path": ".github/workflows/windows-native.yml",
+      "description": "Exact native, dashboard, ownership, PG and browser job selections"
+    },
+    {
+      "id": "browser-completed-get",
+      "path": "tests/browser/completed_get.cjs",
+      "anchor": "function completedJsonGet(",
+      "description": "Bounded newly issued same-origin saved-record UI GET and completed-body capture, without replacement requests or response retries"
+    },
+    {
+      "id": "map-workflow",
+      "path": ".github/workflows/codebase-map.yml",
+      "description": "Standalone standard-library map job for every PR and main push"
+    },
+    {
+      "id": "map-tool",
+      "path": "tools/codebase_map.py",
+      "symbol": "main",
+      "description": "Map navigation, selected traces and explicit snapshot maintenance"
+    },
+    {
+      "id": "map-tool-tests",
+      "path": "tests/test_codebase_map.py",
+      "description": "Isolated map-tool positive and negative behavior coverage"
+    },
+    {
+      "id": "product-overview-read",
+      "path": "src/trading/research_overview.py",
+      "description": "Bounded independent owner observations without dispatch, detail disclosure or financial writes",
+      "symbol": "snapshot"
+    },
+    {
+      "id": "product-supervised-start",
+      "path": "src/trading/research_overview.py",
+      "description": "Reviewed component startup with exact current scope/policy and Pause revisions",
+      "symbol": "start"
+    },
+    {
+      "id": "product-setup-panel",
+      "path": "apps/web/src/ResearchSetup.tsx",
+      "description": "Normal saved-scope setup, revised review and nonreplaying acknowledgment recovery"
+    },
+    {
+      "id": "product-owner-tests",
+      "path": "tests/test_research_product.py",
+      "description": "Read purity, waiting identity, configuration/expiry/revision and idempotent owner tests"
+    },
+    {
+      "id": "product-browser-proof",
+      "path": "tests/browser/research_product.cjs",
+      "description": "Compiled normal product, unsuppressed polling and native disposable-owner workflow"
+    },
+    {
+      "id": "product-browser-server",
+      "path": "tests/browser/research_product_server.py",
+      "description": "Finite isolated PG/scanner/role driver with synthetic inputs, clock and software model callbacks",
+      "symbol": "main"
+    },
+    {
+      "id": "product-navigation",
+      "path": "apps/web/src/productNavigation.ts",
+      "description": "Exact account/task/trial navigation and account selection with Back and current-view preservation"
+    },
+    {
+      "id": "product-account-economics",
+      "path": "apps/web/src/PaperEconomicsPanel.tsx",
+      "literal": "export function PaperEconomicsPanel",
+      "description": "URL-scoped economics and cost controls; unavailable exact accounts and account-bound settings feedback"
+    },
+    {
+      "id": "product-model-scope",
+      "path": "src/trading/peft_role_model.py",
+      "description": "Existing verified profile to disabled recurring scope, create-only policy and exact acknowledgment",
+      "symbol": "configure_paper_scope"
+    },
+    {
+      "id": "paper-rule-source",
+      "path": "src/trading/paper_learning.py",
+      "description": "Original immutable reservation, unique mature score, exact frozen rule and economic provenance",
+      "symbol": "rule_source"
+    },
+    {
+      "id": "paper-rule-admission",
+      "path": "src/trading/paper_learning.py",
+      "description": "Separate prospective rule/control funding through existing writer and unchanged capacity/risk gates",
+      "symbol": "admit_rule"
+    },
+    {
+      "id": "paper-rule-runtime",
+      "path": "src/trading/paper_runtime.py",
+      "description": "Read-only original review outside writer, indexed immutable-receipt recheck inside financial transaction",
+      "symbol": "PaperRuntime.qualify_rule"
+    },
+    {
+      "id": "research-verified-original",
+      "path": "src/trading/role_worker.py",
+      "description": "Verified hot/cold canonical predecessor recovery preserving original task and mature outcome",
+      "symbol": "RoleWorker._verified_pattern_learning_record"
+    },
+    {
+      "id": "product-live-readiness",
+      "path": "src/trading/live_readiness.py",
+      "description": "Existing dated readiness owner; no authenticated order connector or live permission",
+      "symbol": "packet"
+    },
+    {
+      "id": "product-live-readiness-panel",
+      "path": "apps/web/src/ReadinessPanel.tsx",
+      "description": "Existing readiness decision packet under Accounts and Results safeguards"
+    },
+    {
+      "id": "product-workspace-style",
+      "path": "apps/web/src/workspace.css",
+      "description": "Compact navy/teal shell, active-area navigation, Overview grid and responsive focused workspaces."
+    }
   ],
   "tasks": [
-    {"id":"runtime-update-mismatch","title":"Updater refuses an approved target or installed code differs","guide":"runtime-updates.md","section":"updater-target-and-preservation","references":["runtime-updater","runtime-updater-tests","runtime-health-predicate","runtime-health-tests"],"symptoms":["ExpectedCommit mismatch","installed version","merge is not rollout"]},
-    {"id":"runtime-owner-recovery","title":"Identify the existing service owner before recovery","guide":"runtime-updates.md","section":"process-and-task-identity","references":["runtime-service-host","runtime-paper-supervisor","runtime-process-ownership","runtime-startup-identity","runtime-update-shutdown","runtime-supervision-tests"],"symptoms":["worker stopped","scheduled task","duplicate server","unknown writer","NAT mapping"]},
-    {"id":"startup-optional-failure","title":"Trace startup or an optional subsystem failure","guide":"architecture.md","section":"from-startup-to-background-work","references":["platform-cli","platform-app","platform-lifespan","platform-collector-lock","platform-monitor-store","platform-settings"],"symptoms":["startup fails","research unavailable","paper continues","store unavailable"]},
-    {"id":"shutdown-storage-owner","title":"Trace cancellation and store ownership before changing shutdown","guide":"architecture.md","section":"shutdown-and-recovery","references":["platform-lifespan","platform-collector-lock","runtime-update-shutdown"],"symptoms":["close store","cancellation","shared recorder","cold recovery"]},
-    {"id":"choose-verification","title":"Choose checks and report the correct proof stage","guide":"verification.md","section":"choose-the-check-that-covers-the-outcome","references":["verification-workflow","platform-package","map-tool-tests"],"symptoms":["which tests","PostgreSQL skipped","CI failure","synthetic proof"]},
-    {"id":"map-drift","title":"Repair stale code-map coverage after a source change","guide":"maintenance.md","section":"keep-behavior-and-navigation-together","references":["map-tool","map-tool-tests"],"symptoms":["stale reference","new module","broken map","lookup missing"]},
-    {"id":"coherent-product-startup","title":"Trace saved setup into supervised research and visible waiting work","guide":"dashboard-api.md","section":"coherent-product-setup-and-observation","references":["product-overview-read","product-supervised-start","product-setup-panel","product-model-scope","product-navigation","product-owner-tests","product-browser-proof"],"symptoms":["where is automation","waiting task disappears","startup unknown","new Pause","saved configuration"]},
-    {"id":"frozen-rule-qualification","title":"Trace a mature frozen rule to subsequent paper qualification","guide":"strategy-experiments.md","section":"forward-qualification-and-designation","references":["paper-rule-source","paper-rule-admission","paper-rule-runtime","paper-forward-comparison","paper-designate","paper-learning-tests"],"symptoms":["RuleSpec qualification","original retired trial","unknown funding acknowledgment","28 daily blocks","incumbent drift"]}
+    {
+      "id": "runtime-update-mismatch",
+      "title": "Updater refuses an approved target or installed code differs",
+      "guide": "runtime-updates.md",
+      "section": "updater-target-and-preservation",
+      "references": [
+        "runtime-updater",
+        "runtime-updater-tests",
+        "runtime-health-predicate",
+        "runtime-health-tests"
+      ],
+      "symptoms": [
+        "ExpectedCommit mismatch",
+        "installed version",
+        "merge is not rollout"
+      ]
+    },
+    {
+      "id": "runtime-owner-recovery",
+      "title": "Identify the existing service owner before recovery",
+      "guide": "runtime-updates.md",
+      "section": "process-and-task-identity",
+      "references": [
+        "runtime-service-host",
+        "runtime-paper-supervisor",
+        "runtime-process-ownership",
+        "runtime-startup-identity",
+        "runtime-update-shutdown",
+        "runtime-supervision-tests"
+      ],
+      "symptoms": [
+        "worker stopped",
+        "scheduled task",
+        "duplicate server",
+        "unknown writer",
+        "NAT mapping"
+      ]
+    },
+    {
+      "id": "startup-optional-failure",
+      "title": "Trace startup or an optional subsystem failure",
+      "guide": "architecture.md",
+      "section": "from-startup-to-background-work",
+      "references": [
+        "platform-cli",
+        "platform-app",
+        "platform-lifespan",
+        "platform-collector-lock",
+        "platform-monitor-store",
+        "platform-settings"
+      ],
+      "symptoms": [
+        "startup fails",
+        "research unavailable",
+        "paper continues",
+        "store unavailable"
+      ]
+    },
+    {
+      "id": "shutdown-storage-owner",
+      "title": "Trace cancellation and store ownership before changing shutdown",
+      "guide": "architecture.md",
+      "section": "shutdown-and-recovery",
+      "references": [
+        "platform-lifespan",
+        "platform-collector-lock",
+        "runtime-update-shutdown"
+      ],
+      "symptoms": [
+        "close store",
+        "cancellation",
+        "shared recorder",
+        "cold recovery"
+      ]
+    },
+    {
+      "id": "choose-verification",
+      "title": "Choose checks and report the correct proof stage",
+      "guide": "verification.md",
+      "section": "choose-the-check-that-covers-the-outcome",
+      "references": [
+        "verification-workflow",
+        "platform-package",
+        "map-tool-tests"
+      ],
+      "symptoms": [
+        "which tests",
+        "PostgreSQL skipped",
+        "CI failure",
+        "synthetic proof"
+      ]
+    },
+    {
+      "id": "map-drift",
+      "title": "Repair stale code-map coverage after a source change",
+      "guide": "maintenance.md",
+      "section": "keep-behavior-and-navigation-together",
+      "references": [
+        "map-tool",
+        "map-tool-tests"
+      ],
+      "symptoms": [
+        "stale reference",
+        "new module",
+        "broken map",
+        "lookup missing"
+      ]
+    },
+    {
+      "id": "coherent-product-startup",
+      "title": "Trace saved setup into supervised research and visible waiting work",
+      "guide": "dashboard-api.md",
+      "section": "coherent-product-setup-and-observation",
+      "references": [
+        "product-overview-read",
+        "product-supervised-start",
+        "product-setup-panel",
+        "product-model-scope",
+        "product-navigation",
+        "product-owner-tests",
+        "product-browser-proof"
+      ],
+      "symptoms": [
+        "where is automation",
+        "waiting task disappears",
+        "startup unknown",
+        "new Pause",
+        "saved configuration"
+      ]
+    },
+    {
+      "id": "frozen-rule-qualification",
+      "title": "Trace a mature frozen rule to subsequent paper qualification",
+      "guide": "strategy-experiments.md",
+      "section": "forward-qualification-and-designation",
+      "references": [
+        "paper-rule-source",
+        "paper-rule-admission",
+        "paper-rule-runtime",
+        "paper-forward-comparison",
+        "paper-designate",
+        "paper-learning-tests"
+      ],
+      "symptoms": [
+        "RuleSpec qualification",
+        "original retired trial",
+        "unknown funding acknowledgment",
+        "28 daily blocks",
+        "incumbent drift"
+      ]
+    }
   ]
 }

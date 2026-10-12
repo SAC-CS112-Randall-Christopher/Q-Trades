@@ -139,6 +139,13 @@ def main():
                 "WorkspaceViews.tsx",
                 "TradeHistory.tsx",
                 "productNavigation.ts",
+                "workspaceNavigation.ts",
+                "workspace.css",
+                "MarketStation.tsx",
+                "ScannerWorkspace.tsx",
+                "DailyAnalyzer.tsx",
+                "CandleWorkspace.tsx",
+                "PaperRiskPanel.tsx",
                 "theme.css",
             )
         ]
@@ -273,6 +280,10 @@ def main():
                 scanner_reads.universe,
                 copy.deepcopy(scanner_reads.history),
             )
+            # Match the normal universe scan handoff without network acquisition.
+            # Station validation must read the same native fixture instruments.
+            paper.instruments = paper.universe.instruments
+            paper.metadata_at = paper.universe.metadata_at
             paper.control_frames = lambda: {"BTCUSD": causal_frame(f.now, paper.history["BTCUSD"])}
             paper.memory_book, paper.constrained = lambda symbol: None, lambda *args: False
             paper.ready_at, paper.disk_free = f.now - 60, 10 * 1024**3
