@@ -1,0 +1,5 @@
+# Dedicated study environment only. The base requirements are pinned at the recorded source base.
+-r ../../requirements-lock.txt
+zstandard==0.25.0
+lz4==4.3.3
+psutil==7.0.0

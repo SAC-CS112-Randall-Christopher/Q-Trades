@@ -1,0 +1,92 @@
+{
+  "version": "bounded-owner-diagnosis-v1",
+  "scope": "Owner/activity diagnosis only; no benchmark sampling or inference",
+  "study_head": "7d06558665acbcc157b3caac606d1ebfa64259c2",
+  "benchmark_source_commit": "a167fe84e9788fe09cbcf58f716543c169780954",
+  "product_source_commit": "dcf7ccbb178cdd89175e427962dec80475620c73",
+  "observation": {
+    "offsets_s": [
+      0,
+      15,
+      30
+    ],
+    "completed_points": 3,
+    "elapsed_s": 30.640999999828637,
+    "supervised_ceiling_s": 60,
+    "process_trees_identity_and_membership_stable": true,
+    "source_owner_files_stable": true,
+    "process_metadata_complete_during_window": true,
+    "classified_model_work_entries": 4,
+    "confirmed_active_model_work_entries": 0,
+    "non_model_roles": {
+      "execution_helpers": 2,
+      "local_workbench_api_launcher_and_server": 2
+    },
+    "execution_helpers_cpu_s": 0,
+    "execution_helpers_process_read_bytes": 0,
+    "execution_helpers_process_write_bytes": 0,
+    "local_workbench_nonterminal_job_counts": [
+      0,
+      0,
+      0
+    ],
+    "local_workbench_durable_status_totals_stable": true,
+    "local_workbench_api_cpu_s": 0.046875,
+    "local_workbench_api_process_read_bytes": 0,
+    "local_workbench_api_process_write_bytes": 0,
+    "ollama_loaded_model_counts": [
+      0,
+      0,
+      0
+    ],
+    "ollama_cpu_s": 0,
+    "ollama_process_read_bytes": 0,
+    "ollama_process_write_bytes": 178,
+    "ollama_write_attribution": "Unattributed; could include the observer's status requests. Not a model-activity proof.",
+    "ollama_pending_or_inflight_requests": "unknown; residency endpoint does not expose request state",
+    "gpu_activity": "unknown; NVML initialization failed for all three bounded reads",
+    "resident_application_client_ownership": "shared default host; exclusive consuming application not established",
+    "initial_resident_cwd": "permission unavailable; not guessed",
+    "idle_scope": "Workbench heavy-job queue and observed helpers; no continuous or future quiet-window guarantee",
+    "allowed_read_operations": [
+      "process identity/tree/resource metadata",
+      "non-mutating queue-status projection",
+      "GET model residency",
+      "GPU status utility"
+    ],
+    "owner_lifecycle_or_configuration_changes": 0,
+    "status_methods_with_reconciliation_invoked": 0,
+    "model_requests_sent": 0,
+    "benchmark_measurements": 0,
+    "new_specimens_drawn": 0
+  },
+  "verification": {
+    "child_priority": "IDLE",
+    "hard_child_memory_bytes": 536870912,
+    "total_owned_scratch_logical_bytes": 264950624,
+    "source_database_reader": "Pinned SQLite3.49.1 mode=ro&readonly_shm=1; normal change detection; no owner construction or reconciliation",
+    "no_operating_db_wal_shm_byte_unchanged_claim": true,
+    "private_process_details_published": false
+  },
+  "disposition": {
+    "gate_trigger": "Broad command-line training matching plus unconditional unknown residency classification",
+    "safety_result": "Controlled measurement still not admitted; request-state and GPU activity gaps retained",
+    "proposed_code_scope": "Existing benchmark workloads classifier only; no production/runtime changes",
+    "correction_status": "Proposed, not implemented",
+    "regression_tests_status": "Proposed cases, not added or run",
+    "next_action": "Resolve actual shared-runtime request/quiescence proof and GPU observation (or equally authoritative owner status), then consider the reviewed benchmark-only parser correction. No unchanged waiting cycle.",
+    "production_integration": "deferred",
+    "production_read_latency_and_capture_disposition": "Later acceptance decisions, not automatic prerequisites for collecting a valid benchmark sample"
+  },
+  "preserved": {
+    "candidate_draw": 8,
+    "excluded_candidates": 7,
+    "existing_frozen_real_specimens": 1,
+    "existing_frozen_real_bytes": 860160,
+    "max_real_specimens": 8,
+    "max_input_bytes": 134217728,
+    "max_individual_bytes": 33554432,
+    "failed_receipts_retained": true,
+    "original_capture_test_deadline_changed": false
+  }
+}
